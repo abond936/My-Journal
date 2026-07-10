@@ -11,9 +11,11 @@
 import fs from 'fs';
 import path from 'path';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-
-const BACKUPS_SUBDIR = 'Firebase Backups';
-const KEEP_RUNS = 5;
+import {
+  pruneOldBackupRuns,
+  resolveBackupRootPath,
+  safeBackupTimestamp,
+} from '@/lib/scripts/firebase/recoveryConstants';
 
 export type StorageBackupAction = 'dry_run' | 'downloaded' | 'copied' | 'skipped_missing_prior';
 
@@ -30,6 +32,20 @@ export type StorageBackupOptions = {
   apply: boolean;
   limit: number | null;
   progressEvery: number;
+  runDir?: string;
+  runId?: string;
+  skipPrune?: boolean;
+};
+
+export type StorageBackupResult = {
+  runId: string;
+  runDir: string;
+  bucket: string;
+  objectCount: number;
+  totalBytes: number;
+  downloaded: number;
+  copied: number;
+  mode: 'apply' | 'dry-run';
 };
 
 export function parseStorageBackupArgs(argv: string[]): StorageBackupOptions {
@@ -45,8 +61,8 @@ export function parseStorageBackupArgs(argv: string[]): StorageBackupOptions {
   };
 }
 
-function safeTimestamp(): string {
-  return new Date().toISOString().replace(/[:.]/g, '-');
+function pruneOldRuns(backupRoot: string, log: (message: string) => void): void {
+  pruneOldBackupRuns(backupRoot, log);
 }
 
 export function localStorageObjectPath(runDir: string, storagePath: string): string {
@@ -106,25 +122,6 @@ export function loadPriorObjectIndex(backupRoot: string, excludeRunId: string): 
   return index;
 }
 
-function pruneOldRuns(backupRoot: string, log: (message: string) => void): void {
-  const entries = fs
-    .readdirSync(backupRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith('run-'))
-    .map((entry) => entry.name)
-    .sort()
-    .reverse();
-
-  if (entries.length <= KEEP_RUNS) {
-    return;
-  }
-
-  for (const name of entries.slice(KEEP_RUNS)) {
-    const runPath = path.join(backupRoot, name);
-    fs.rmSync(runPath, { recursive: true, force: true });
-    log(`Removed old backup run: ${name}`);
-  }
-}
-
 function verifyManifestEntries(
   manifest: StorageManifestEntry[],
   runDir: string
@@ -152,25 +149,20 @@ function verifyManifestEntries(
   return { verified, failed };
 }
 
-export async function runStorageBackup(options: StorageBackupOptions): Promise<void> {
+export async function runStorageBackup(options: StorageBackupOptions): Promise<StorageBackupResult> {
   const lines: string[] = [];
   const log = (message: string) => {
     lines.push(message);
     console.log(message);
   };
 
-  const onedrive = process.env.ONEDRIVE_PATH?.trim();
-  if (!onedrive) {
-    throw new Error('ONEDRIVE_PATH is not set; cannot write backup under OneDrive.');
-  }
-
-  const backupRoot = path.join(onedrive, BACKUPS_SUBDIR);
+  const backupRoot = resolveBackupRootPath();
   if (!fs.existsSync(backupRoot)) {
     fs.mkdirSync(backupRoot, { recursive: true });
   }
 
-  const runId = `run-${safeTimestamp()}`;
-  const runDir = path.join(backupRoot, runId);
+  const runId = options.runId ?? `run-${safeBackupTimestamp()}`;
+  const runDir = options.runDir ?? path.join(backupRoot, runId);
   fs.mkdirSync(runDir, { recursive: true });
 
   log(`=== Firebase Storage byte backup ===`);
@@ -295,9 +287,20 @@ export async function runStorageBackup(options: StorageBackupOptions): Promise<v
 
   fs.writeFileSync(path.join(runDir, 'storage-summary.txt'), lines.join('\n') + '\n', 'utf8');
 
-  if (options.apply) {
+  if (options.apply && !options.skipPrune) {
     pruneOldRuns(backupRoot, log);
   }
 
   log('=== Storage backup finished ===');
+
+  return {
+    runId,
+    runDir,
+    bucket: bucket.name,
+    objectCount: manifest.length,
+    totalBytes,
+    downloaded,
+    copied,
+    mode: options.apply ? 'apply' : 'dry-run',
+  };
 }

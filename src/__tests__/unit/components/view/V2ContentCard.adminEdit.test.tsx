@@ -58,6 +58,10 @@ jest.mock('@/components/providers/CardProvider', () => ({
   useCardContext: () => ({ readerMode: 'freeform', patchVisibleCard }),
 }));
 
+jest.mock('@/components/providers/TagProvider', () => ({
+  useTag: () => ({ tags: [], loading: false }),
+}));
+
 jest.mock('@/components/common/JournalImage', () => ({
   __esModule: true,
   default: function MockJournalImage({ alt }: { alt?: string }) {

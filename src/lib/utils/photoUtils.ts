@@ -5,6 +5,9 @@ type PhotoLike = {
     studio?: {
       storageUrl?: string | null;
     } | null;
+    reader?: {
+      storageUrl?: string | null;
+    } | null;
   } | null;
 };
 
@@ -34,15 +37,20 @@ function getStudioRenditionUrl(photo: PhotoLike | null | undefined): string | nu
   return studioUrl?.trim() ? studioUrl : null;
 }
 
+function getReaderRenditionUrl(photo: PhotoLike | null | undefined): string | null {
+  const readerUrl = photo?.renditions?.reader?.storageUrl;
+  return readerUrl?.trim() ? readerUrl : null;
+}
+
 /** Admin/Studio surfaces: prefer the optional studio WebP rendition, else original. */
 export function getStudioDisplayUrl(photo: PhotoLike | null | undefined): string {
   return getStudioRenditionUrl(photo) ?? getDisplayUrl(photo);
 }
 
 /**
- * Reader feed/detail tiles: reuse the studio WebP rendition when present (960px max, import/backfill),
- * else fall back to the original. Lightbox/zoom surfaces should keep using `getDisplayUrl`.
+ * Reader feed/detail tiles: prefer the dedicated reader WebP rendition (640px max),
+ * then the studio rendition, else the original. Lightbox/zoom surfaces should keep using `getDisplayUrl`.
  */
 export function getReaderDisplayUrl(photo: PhotoLike | null | undefined): string {
-  return getStudioRenditionUrl(photo) ?? getDisplayUrl(photo);
+  return getReaderRenditionUrl(photo) ?? getStudioRenditionUrl(photo) ?? getDisplayUrl(photo);
 }

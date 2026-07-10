@@ -109,6 +109,19 @@
   align-items: center;
 }
 
+.feed {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.feed .chip {
+  color: var(--reader-body-color);
+}
+
+.feed .chips {
+  align-items: center;
+}
+
 .badge {
   flex-shrink: 0;
 }

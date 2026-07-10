@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { Copy, Save, Trash2, Undo2, X } from 'lucide-react';
@@ -497,29 +498,32 @@ export default function ReaderCardEditModal({
           {children}
         </button>
       ) : null}
-      {isOpen && modalFrame ? (
-        <div className={styles.readerOverlay}>
-          <div
-            ref={modalRef}
-            className={styles.readerModal}
-            style={{
-              width: `${modalFrame.width}px`,
-              height: `${modalFrame.height}px`,
-              left: `${modalFrame.x}px`,
-              top: `${modalFrame.y}px`,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.readerBody}>{modalBody}</div>
-            <div
-              className={styles.resizeHandle}
-              onPointerDown={handleResizeStart}
-              role="presentation"
-              aria-hidden="true"
-            />
-          </div>
-        </div>
-      ) : null}
+      {isOpen && modalFrame && typeof document !== 'undefined'
+        ? createPortal(
+            <div className={styles.readerOverlay}>
+              <div
+                ref={modalRef}
+                className={styles.readerModal}
+                style={{
+                  width: `${modalFrame.width}px`,
+                  height: `${modalFrame.height}px`,
+                  left: `${modalFrame.x}px`,
+                  top: `${modalFrame.y}px`,
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.readerBody}>{modalBody}</div>
+                <div
+                  className={styles.resizeHandle}
+                  onPointerDown={handleResizeStart}
+                  role="presentation"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }

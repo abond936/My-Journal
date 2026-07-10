@@ -35,7 +35,23 @@ describe('photoUtils', () => {
     ).toBe('https://example.com/original.webp');
   });
 
-  it('prefers the studio rendition for reader tiles when present', () => {
+  it('prefers the reader rendition for reader tiles when present', () => {
+    expect(
+      getReaderDisplayUrl({
+        storageUrl: 'https://example.com/original.webp',
+        renditions: {
+          reader: {
+            storageUrl: 'https://example.com/reader.webp',
+          },
+          studio: {
+            storageUrl: 'https://example.com/studio.webp',
+          },
+        },
+      })
+    ).toBe('https://example.com/reader.webp');
+  });
+
+  it('falls back to the studio rendition for reader tiles when reader is missing', () => {
     expect(
       getReaderDisplayUrl({
         storageUrl: 'https://example.com/original.webp',

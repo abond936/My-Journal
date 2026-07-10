@@ -91,8 +91,8 @@ const baseCard = {
 } as Card;
 
 describe('V2ContentCard cover framing', () => {
-  it('uses a landscape-oriented frame for landscape covers in the reader feed', () => {
-    render(
+  it('uses a square feed shell for landscape story covers with focal-aware cropping', () => {
+    const { container } = render(
       <V2ContentCard
         card={{
           ...baseCard,
@@ -106,13 +106,16 @@ describe('V2ContentCard cover framing', () => {
       />
     );
 
+    const link = container.querySelector('a[data-card-id="card-1"]');
+    expect(link?.className).toContain('squareFeedTile');
+
     const image = screen.getByAltText('Landscape story');
-    expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+    expect(image.parentElement).not.toHaveStyle({ aspectRatio: '3/2' });
     expect(image).toHaveStyle({ objectPosition: '50% 50%' });
   });
 
-  it('collapses closed-story portrait covers into the shorter landscape-style frame', () => {
-    render(
+  it('keeps portrait story covers inside the square feed shell', () => {
+    const { container } = render(
       <V2ContentCard
         card={{
           ...baseCard,
@@ -128,12 +131,15 @@ describe('V2ContentCard cover framing', () => {
       />
     );
 
+    const link = container.querySelector('a[data-card-id="card-1"]');
+    expect(link?.className).toContain('squareFeedTile');
+
     const image = screen.getByAltText('Portrait story');
-    expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+    expect(image.parentElement).not.toHaveStyle({ aspectRatio: '3/2' });
   });
 
-  it('uses the same shorter frame for closed-story placeholder covers', () => {
-    render(
+  it('uses the square shell for closed-story placeholder covers', () => {
+    const { container } = render(
       <V2ContentCard
         card={{
           ...baseCard,
@@ -144,13 +150,16 @@ describe('V2ContentCard cover framing', () => {
       />
     );
 
-    const title = screen.getByText('Placeholder story');
-    const imageContainer = title.closest('a')?.querySelector('.imageContainer');
-    expect(imageContainer).toHaveStyle({ aspectRatio: '3/2' });
+    const link = container.querySelector('a[data-card-id="card-1"]');
+    expect(link?.className).toContain('squareFeedTile');
+
+    const imageContainer = link?.querySelector('.imageContainer');
+    expect(imageContainer).toBeTruthy();
+    expect(imageContainer).not.toHaveStyle({ aspectRatio: '3/2' });
   });
 
   it('uses contain rendering when the card cover mode is fit', () => {
-    render(
+    const { container } = render(
       <V2ContentCard
         card={{
           ...baseCard,
@@ -166,8 +175,10 @@ describe('V2ContentCard cover framing', () => {
       />
     );
 
+    expect(container.querySelector('a[data-card-id="card-1"]')?.className).toContain('squareFeedTile');
+
     const image = screen.getByAltText('Welcome wordmark');
-    expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+    expect(image.parentElement).not.toHaveStyle({ aspectRatio: '3/2' });
     expect(image).toHaveStyle({ objectFit: 'contain', objectPosition: 'center' });
   });
 
@@ -221,7 +232,7 @@ describe('V2ContentCard cover framing', () => {
     expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
   });
 
-  it('forces closed quote and callout tiles onto the utility portrait frame even when cover metadata exists', () => {
+  it('keeps closed callout tiles on the utility portrait frame while quote uses the square feed shell', () => {
     const { container } = render(
       <>
         <V2ContentCard
@@ -262,8 +273,8 @@ describe('V2ContentCard cover framing', () => {
     const quoteCard = container.querySelector('[data-card-id="quote-with-cover"]');
     const calloutCard = container.querySelector('[data-card-id="callout-with-cover"]');
 
-    expect(quoteCard?.className).toContain('closedFeedPortrait');
-    expect(quoteCard?.className).not.toContain('closedFeedLandscape');
+    expect(quoteCard?.className).toContain('squareFeedTile');
+    expect(quoteCard?.className).not.toContain('closedFeedPortrait');
     expect(calloutCard?.className).toContain('closedFeedPortrait');
     expect(calloutCard?.className).not.toContain('closedFeedLandscape');
   });

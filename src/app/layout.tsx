@@ -57,7 +57,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0070f3" />
@@ -81,11 +84,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeProvider>
             <AppFeedbackProvider>
               <TagProvider>
-                <CardProvider>
-                  <AppShell>
-                    {children}
-                  </AppShell>
-                </CardProvider>
+                  <CardProvider>
+                    <AppShell>
+                      {children}
+                    </AppShell>
+                  </CardProvider>
               </TagProvider>
             </AppFeedbackProvider>
           </ThemeProvider>

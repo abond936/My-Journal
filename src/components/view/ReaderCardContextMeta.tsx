@@ -7,7 +7,7 @@ import styles from './ReaderCardContextMeta.module.css';
 interface ReaderCardContextMetaProps {
   badgeLabel?: string | null;
   chips: ReaderCardContextChip[];
-  variant: 'overlay' | 'inline' | 'detail';
+  variant: 'overlay' | 'inline' | 'detail' | 'feed';
 }
 
 export default function ReaderCardContextMeta({

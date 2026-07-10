@@ -12,6 +12,7 @@ const mediaRenditionSchema = z.object({
 
 const mediaRenditionsSchema = z.object({
   studio: mediaRenditionSchema.optional(),
+  reader: mediaRenditionSchema.optional(),
 });
 
 // Defines the canonical metadata for a single media asset in the system.

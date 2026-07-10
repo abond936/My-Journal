@@ -1,0 +1,15 @@
+.feedTileChipStrip {
+  flex: 0 0 var(--reader-feed-tile-chip-strip-height);
+  display: flex;
+  align-items: center;
+  min-height: var(--reader-feed-tile-chip-strip-height);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--reader-question-card-background-color);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.feedTileChipStripSpacer {
+  width: 100%;
+  min-height: calc(var(--reader-feed-tile-chip-strip-height) - (2 * var(--spacing-xs)));
+}

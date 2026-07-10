@@ -44,6 +44,7 @@
   height: auto;
   display: block;
   margin: 0 auto;
+  pointer-events: none;
 }
 
 .titleImageDark {
@@ -58,6 +59,8 @@
 
 /* Welcome section */
 .welcomeSection {
+  position: relative;
+  z-index: 2;
   max-width: 800px;
   margin: calc(-1 * var(--spacing-4xl)) auto 0;
   text-align: center;

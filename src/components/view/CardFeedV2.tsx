@@ -142,7 +142,10 @@ export default function CardFeedV2({
   }
 
   const renderGrid = (items: Card[]) => (
-    <div className={`${styles.grid} ${activeDimension === 'collections' ? styles.guidedGrid : ''}`}>
+    <div
+      className={`${styles.grid} ${activeDimension === 'collections' ? styles.guidedGrid : ''}`}
+      data-feed-virtualization="css-containment"
+    >
       {items.map((card) => (
         <V2ContentCard
           key={card.docId}

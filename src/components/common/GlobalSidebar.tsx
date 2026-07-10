@@ -46,29 +46,11 @@ interface GlobalSidebarProps {
 type TagDimension = 'who' | 'what' | 'when' | 'where';
 
 export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
-  const [mounted, setMounted] = useState(false);
   const [showFeedOptions, setShowFeedOptions] = useState(false);
+  const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const treeControlsRef = useRef<{ expandAll: () => void; collapseAll: () => void } | null>(null);
-  const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>(() => {
-    if (typeof window === 'undefined') return 'filter';
-    const saved =
-      window.localStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) ??
-      window.sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY);
-    return saved === 'library' ? 'library' : 'filter';
-  });
-  const [expandedCollectionIds, setExpandedCollectionIds] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    const raw =
-      window.localStorage.getItem(CURATED_TREE_EXPANDED_KEY) ??
-      window.sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
-    if (!raw) return new Set();
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? new Set(parsed.filter((id): id is string => typeof id === 'string')) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+  const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>('filter');
+  const [expandedCollectionIds, setExpandedCollectionIds] = useState<Set<string>>(() => new Set());
 
   const {
     tags,
@@ -156,7 +138,29 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
+    if (typeof window === 'undefined') return;
+    const savedTab =
+      window.localStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) ??
+      window.sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY);
+    if (savedTab === 'library') {
+      setViewTagSidebarTab('library');
+    }
+    const rawExpanded =
+      window.localStorage.getItem(CURATED_TREE_EXPANDED_KEY) ??
+      window.sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
+    if (rawExpanded) {
+      try {
+        const parsed = JSON.parse(rawExpanded);
+        if (Array.isArray(parsed)) {
+          setExpandedCollectionIds(
+            new Set(parsed.filter((id): id is string => typeof id === 'string'))
+          );
+        }
+      } catch {
+        // ignore corrupt persisted expansion state
+      }
+    }
+    setPreferencesHydrated(true);
   }, []);
 
   const FREEFORM_DIMENSION_TABS = [
@@ -391,8 +395,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   return (
     <div className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}>
-      {mounted ? (
-        <>
+      <>
           <div className={styles.sidebarHeader}>
             <div className={styles.headerTopRow}>
               <h2 className={styles.title}>Explore</h2>
@@ -702,7 +705,11 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               </div>
 
               <nav className={styles.navigation}>
-                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+                {!preferencesHydrated || tagsLoading ? (
+                  <div className={styles.loadingPlaceholder} aria-busy="true">
+                    Loading explore filters...
+                  </div>
+                ) : !showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
                   <TagTree
                     tree={filteredTagTree}
                     selectedTags={selectedFilterTagIds}
@@ -747,7 +754,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
           )}
           </div>
         </>
-      ) : null}
     </div>
   );
 }

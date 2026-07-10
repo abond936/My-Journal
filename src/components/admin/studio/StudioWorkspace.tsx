@@ -22,6 +22,7 @@ import {
   StudioShellProvider,
   type StudioShellContextValue,
 } from '@/components/admin/studio/StudioShellContext';
+import { createStudioShellImperativeRegistry } from '@/components/admin/studio/studioShellImperativeRegistry';
 import {
   mergeStudioCatalogCard,
   toStudioSelectedDetail,
@@ -264,7 +265,11 @@ export default function StudioWorkspace() {
   const [cardMediaItems, setCardMediaItems] = useState<Media[]>([]);
   const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
-  const bodyMediaInsertRef = useRef<((m: Media) => void) | null>(null);
+  const studioImperatives = useMemo(() => createStudioShellImperativeRegistry(), []);
+  const registerBodyMediaInsert = useCallback((handler: ((media: Media) => void) | null) => {
+    studioImperatives.register('bodyMediaInsert', handler);
+  }, [studioImperatives]);
+  const bodyMediaInsertRef = studioImperatives.bodyMediaInsertRef;
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const collectionsRemoveCardRef = useRef<((cardId: string) => void) | null>(null);
   const questionCardDeleteSyncRef = useRef<((cardId: string, questionId?: string | null) => void) | null>(null);
@@ -1212,6 +1217,7 @@ export default function StudioWorkspace() {
       selectNoneMedia,
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
+      registerBodyMediaInsert,
       bodyMediaInsertRef,
     }),
     [
@@ -1244,6 +1250,8 @@ export default function StudioWorkspace() {
       selectNoneMedia,
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
+      registerBodyMediaInsert,
+      bodyMediaInsertRef,
     ]
   );
 

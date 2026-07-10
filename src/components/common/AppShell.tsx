@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
@@ -28,14 +28,13 @@ export default function AppShell({ children }: AppShellProps) {
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
   const shouldRenderShell =
     !isHomeRoute && (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
-  const [isSidebarOpen, setSidebarOpen] = useState(
-    pathname !== '/' && !pathname?.startsWith('/admin/studio')
-  );
+  // SSR and first client render must match (false); desktop open state syncs in useLayoutEffect.
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const swipeStartRef = useRef<{ x: number; y: number; tracking: boolean } | null>(null);
 
-  // Keep shell sidebar state aligned with the mobile breakpoint.
-  useEffect(() => {
+  // Keep shell sidebar state aligned with the mobile breakpoint before first paint when possible.
+  useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
 
     const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
@@ -48,7 +47,7 @@ export default function AppShell({ children }: AppShellProps) {
       setIsMobileViewport(isMobile);
       setSidebarOpen((current) => {
         if (isMobile) return false;
-        if (forceDesktopDefault) return true;
+        if (forceDesktopDefault || !current) return true;
         return current;
       });
     };

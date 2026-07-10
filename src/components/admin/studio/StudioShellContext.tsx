@@ -56,8 +56,11 @@ export type StudioShellContextValue = {
   hasSelectedCardMedia: boolean;
   openSelectedCardMediaEditor: (mediaId?: string | null) => void;
   /**
-   * Compose-only: `CardForm` registers `insertImage` here so `handleStudioRelationshipDragEnd` can insert
-   * bank media into TipTap when the user drops onto `drop:body`.
+   * Compose-only: register TipTap body insert handler for Studio relationship DnD (`drop:body`).
+   */
+  registerBodyMediaInsert: (handler: ((media: Media) => void) | null) => void;
+  /**
+   * @deprecated Prefer {@link registerBodyMediaInsert}; retained for DnD bridge reads.
    */
   bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
 };

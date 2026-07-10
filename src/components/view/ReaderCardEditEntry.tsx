@@ -39,9 +39,18 @@ export default function ReaderCardEditEntry({
     setDesktopOpen(true);
   }, [onBeforeOpen]);
 
+  const handleOpenClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      openEditor();
+    },
+    [openEditor]
+  );
+
   return (
     <>
-      <button type="button" className={className} onClick={openEditor}>
+      <button type="button" className={className} onClick={handleOpenClick}>
         {children}
       </button>
       {mobileOpen ? (

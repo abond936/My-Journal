@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card } from '@/lib/types/card';
@@ -129,7 +130,7 @@ export default function ReaderMobileQuickEdit({
 
   if (!open) return null;
 
-  return (
+  const sheet = (
     <div className={styles.overlay} role="presentation" onClick={() => void requestClose()}>
       <div
         className={styles.sheet}
@@ -229,4 +230,6 @@ export default function ReaderMobileQuickEdit({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(sheet, document.body) : sheet;
 }

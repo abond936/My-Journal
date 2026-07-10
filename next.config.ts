@@ -1,6 +1,9 @@
 import path from "path";
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
 import { withSentryConfig } from "@sentry/nextjs";
+
+loadEnvConfig(path.resolve(__dirname));
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(__dirname),

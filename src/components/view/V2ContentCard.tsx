@@ -16,6 +16,9 @@ import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@
 import TipTapStaticContent from '@/components/common/TipTapStaticContent';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { SQUARE_FEED_TILE_ASPECT, usesSquareFeedTile } from '@/lib/reader/readerFeedPresentation';
+import FeedTileMetaBand from '@/components/view/FeedTileMetaBand';
+import FeedTileChipStrip from '@/components/view/FeedTileChipStrip';
 import styles from './V2ContentCard.module.css';
 import { useCardContext } from '@/components/providers/CardProvider';
 
@@ -70,10 +73,12 @@ function getClosedFeedTypeBadgeLabel(cardType: Card['type']): 'Story' | 'Gallery
 const StoryCardContent: React.FC<{
   card: Card;
   displayMode: string;
-}> = ({ card, displayMode }) => {
+  squareFeedTile: boolean;
+}> = ({ card, displayMode, squareFeedTile }) => {
   const coverBucket = getAspectRatioBucket(card.coverImage);
-  const coverRatio =
-    displayMode !== 'inline' && (!card.coverImage || coverBucket === 'portrait')
+  const coverRatio = squareFeedTile
+    ? SQUARE_FEED_TILE_ASPECT
+    : displayMode !== 'inline' && (!card.coverImage || coverBucket === 'portrait')
       ? '3/2'
       : getAspectRatioValue(coverBucket);
   const coverObjectFit = getCoverObjectFitMode(card);
@@ -93,11 +98,12 @@ const StoryCardContent: React.FC<{
   const typeBadgeLabel = getClosedFeedTypeBadgeLabel(card.type);
   const useStoryPlaceholder = !card.coverImage && displayMode !== 'inline';
   const showVisualFrame = Boolean(card.coverImage) || useStoryPlaceholder;
+  const imageContainerStyle = squareFeedTile ? undefined : { aspectRatio: coverRatio };
 
   return (
     <>
       {showVisualFrame && (
-        <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
+        <div className={styles.imageContainer} style={imageContainerStyle}>
           {card.coverImage ? (
             <JournalImage 
               src={getReaderDisplayUrl(card.coverImage)} 
@@ -115,18 +121,32 @@ const StoryCardContent: React.FC<{
           {typeBadgeLabel ? <span className={styles.cardTypeBadgeOverlay}>{typeBadgeLabel}</span> : null}
         </div>
       )}
-      <div className={styles.content}>
-        {!showVisualFrame && typeBadgeLabel ? (
-          <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
-        ) : null}
-        <h3 className={styles.title}>{card.title}</h3>
-        {/* Add inline content for inline display mode */}
-        {displayMode === 'inline' && card.content && (
-          <div className={styles.inlineContent}>
-            <TipTapStaticContent content={card.content} headingVariant="story" />
-          </div>
-        )}
-      </div>
+      {squareFeedTile ? (
+        <>
+          <FeedTileMetaBand
+            card={card}
+            titleClassName={styles.title}
+            typeBadgeInline={
+              !showVisualFrame && typeBadgeLabel ? (
+                <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+              ) : null
+            }
+          />
+          <FeedTileChipStrip card={card} />
+        </>
+      ) : (
+        <div className={styles.content}>
+          {!showVisualFrame && typeBadgeLabel ? (
+            <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+          ) : null}
+          <h3 className={styles.title}>{card.title}</h3>
+          {displayMode === 'inline' && card.content && (
+            <div className={styles.inlineContent}>
+              <TipTapStaticContent content={card.content} headingVariant="story" />
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };
@@ -134,7 +154,8 @@ const StoryCardContent: React.FC<{
 // Gallery feed: Swiper with cover as first slide when set; gallery items omit any row whose mediaId matches cover (dedupe).
 const GalleryCardContent: React.FC<{
   card: Card;
-}> = ({ card }) => {
+  squareFeedTile: boolean;
+}> = ({ card, squareFeedTile }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const coverObjectFit = getCoverObjectFitMode(card);
@@ -154,15 +175,18 @@ const GalleryCardContent: React.FC<{
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          getFeedCoverFrame(card.coverImage),
+          squareFeedTile ? SQUARE_FEED_TILE_ASPECT : getFeedCoverFrame(card.coverImage),
           400
         )
       : 'center';
-  const galleryFrameRatio = card.coverImage
-    ? getFeedCoverFrame(card.coverImage)
-    : gallerySlides[0]?.media
-      ? getFeedCoverFrame(gallerySlides[0].media)
-      : CLOSED_FEED_MEDIA_ASPECT_RATIO;
+  const galleryFrameRatio = squareFeedTile
+    ? SQUARE_FEED_TILE_ASPECT
+    : card.coverImage
+      ? getFeedCoverFrame(card.coverImage)
+      : gallerySlides[0]?.media
+        ? getFeedCoverFrame(gallerySlides[0].media)
+        : CLOSED_FEED_MEDIA_ASPECT_RATIO;
+  const imageContainerStyle = squareFeedTile ? undefined : { aspectRatio: galleryFrameRatio };
 
   const hasCoverSlide = Boolean(card.coverImage);
   const showSwiper = hasCoverSlide || gallerySlides.length > 0;
@@ -176,7 +200,7 @@ const GalleryCardContent: React.FC<{
   return (
     <>
       {showSwiper ? (
-        <div className={styles.imageContainer} style={{ aspectRatio: galleryFrameRatio }}>
+        <div className={styles.imageContainer} style={imageContainerStyle}>
           <Swiper
             spaceBetween={8}
             slidesPerView={totalSlides > 1 ? 1.08 : 1}
@@ -227,12 +251,27 @@ const GalleryCardContent: React.FC<{
           ) : null}
         </div>
       ) : null}
-      <div className={styles.content}>
-        {!showSwiper && typeBadgeLabel ? (
-          <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
-        ) : null}
-        <h3 className={styles.title}>{card.title}</h3>
-      </div>
+      {squareFeedTile ? (
+        <>
+          <FeedTileMetaBand
+            card={card}
+            titleClassName={styles.title}
+            typeBadgeInline={
+              !showSwiper && typeBadgeLabel ? (
+                <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+              ) : null
+            }
+          />
+          <FeedTileChipStrip card={card} />
+        </>
+      ) : (
+        <div className={styles.content}>
+          {!showSwiper && typeBadgeLabel ? (
+            <span className={styles.cardTypeBadgeInline}>{typeBadgeLabel}</span>
+          ) : null}
+          <h3 className={styles.title}>{card.title}</h3>
+        </div>
+      )}
     </>
   );
 };
@@ -241,8 +280,26 @@ const GalleryCardContent: React.FC<{
  * Quote feed tile: closed reader quote cards follow the same title-driven utility-tile contract as Question cards.
  * Detail/open quote rendering still owns the rich-text body plus attribution path.
  */
-const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
+const QuoteCardContent: React.FC<{ card: Card; squareFeedTile: boolean }> = ({ card, squareFeedTile }) => {
   const titleText = card.title?.trim() ?? '';
+
+  if (squareFeedTile) {
+    return (
+      <>
+        <div className={styles.utilityTileHeroFullCenter}>
+          <div className={styles.content}>
+            {titleText ? (
+              <div className={`${styles.qaTextBlock} ${styles.quoteTextBlock}`}>
+                <h3 className={`${styles.qaQuestion} ${styles.quoteHeadline}`}>{titleText}</h3>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <FeedTileChipStrip card={card} />
+      </>
+    );
+  }
+
   return (
     <div className={styles.content}>
       {titleText ? (
@@ -257,8 +314,9 @@ const QuoteCardContent: React.FC<{ card: Card }> = ({ card }) => {
 const QACardContent: React.FC<{
   card: Card;
   displayMode: string;
-}> = ({ card, displayMode }) => {
-  const coverRatio = getFeedCoverFrame(card.coverImage);
+  squareFeedTile: boolean;
+}> = ({ card, displayMode, squareFeedTile }) => {
+  const coverRatio = squareFeedTile ? SQUARE_FEED_TILE_ASPECT : getFeedCoverFrame(card.coverImage);
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
     coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
@@ -309,6 +367,17 @@ const QACardContent: React.FC<{
   }
 
   if (displayMode === 'static') {
+    if (squareFeedTile) {
+      return (
+        <>
+          <div className={styles.utilityTileHeroFullCenter}>
+            <div className={styles.content}>{questionText}</div>
+          </div>
+          <FeedTileChipStrip card={card} />
+        </>
+      );
+    }
+
     return (
       <div className={styles.content}>
         {questionText}
@@ -317,6 +386,33 @@ const QACardContent: React.FC<{
   }
 
   // navigate — question-first card; optional cover hero like story
+  if (squareFeedTile) {
+    return (
+      <>
+        {card.coverImage ? (
+          <div className={styles.imageContainer}>
+            <JournalImage
+              src={getReaderDisplayUrl(card.coverImage)}
+              alt={card.title}
+              className={styles.image}
+              width={400}
+              height={300}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              style={{ objectFit: coverObjectFit, objectPosition }}
+              priority={false}
+            />
+          </div>
+        ) : (
+          <div className={styles.utilityTileHeroFullCenter}>
+            <div className={styles.content}>{questionText}</div>
+          </div>
+        )}
+        {card.coverImage ? <div className={styles.content}>{questionText}</div> : null}
+        <FeedTileChipStrip card={card} />
+      </>
+    );
+  }
+
   return (
     <>
       {card.coverImage && (
@@ -399,13 +495,14 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
     (displayMode === 'navigate' || displayMode === 'inline')
       ? styles.qaWithCover
       : '';
+  const squareFeedTile = usesSquareFeedTile(card.type, displayMode);
   const closedFeedFrameClass =
-    displayMode === 'inline'
+    squareFeedTile || displayMode === 'inline'
       ? ''
       : getClosedFeedFrame(card) === 'portrait'
         ? styles.closedFeedPortrait
         : styles.closedFeedLandscape;
-  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${closedFeedFrameClass} ${fullWidth ? styles.fullWidth : ''}`.trim();
+  const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${closedFeedFrameClass} ${squareFeedTile ? styles.squareFeedTile : ''} ${fullWidth ? styles.fullWidth : ''}`.trim();
 
   const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
     const [pathAndQuery, hashFragment] = returnTo.split('#');
@@ -444,11 +541,11 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return <GalleryCardContent card={card} />;
+        return <GalleryCardContent card={card} squareFeedTile={squareFeedTile} />;
       case 'quote':
-        return <QuoteCardContent card={card} />;
+        return <QuoteCardContent card={card} squareFeedTile={squareFeedTile} />;
       case 'qa':
-        return <QACardContent card={card} displayMode={displayMode} />;
+        return <QACardContent card={card} displayMode={displayMode} squareFeedTile={squareFeedTile} />;
       case 'callout':
         return (
           <>
@@ -467,7 +564,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         );
       case 'story':
       default:
-        return <StoryCardContent card={card} displayMode={displayMode} />;
+        return <StoryCardContent card={card} displayMode={displayMode} squareFeedTile={squareFeedTile} />;
     }
   };
 

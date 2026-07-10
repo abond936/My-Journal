@@ -59,4 +59,21 @@ describe('CardFeedV2 guided transitions', () => {
     expect(screen.getByText('The next part of the guided journal is opening.')).toBeInTheDocument();
     expect(screen.queryByText('Old Collection Card')).not.toBeInTheDocument();
   });
+
+  it('uses CSS containment virtualization on feed grids', () => {
+    mockContext({ activeDimension: 'who' });
+
+    const { container } = render(
+      <CardFeedV2
+        cards={[{ docId: 'card-1', title: 'Story One' } as never]}
+        sections={null}
+        loading={false}
+        loadMoreRef={() => {}}
+        onSaveScrollPosition={() => {}}
+      />
+    );
+
+    expect(container.querySelector('[data-feed-virtualization="css-containment"]')).toBeTruthy();
+    expect(screen.getByText('Story One')).toBeInTheDocument();
+  });
 });

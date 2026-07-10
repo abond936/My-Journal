@@ -94,7 +94,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/maintenance/cleanup', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/diagnose-cover', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
-  { method: 'POST', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 ] as const;
 
 /** Mutation write routes receive per-actor rate limits in middleware (post-review step 8a). */

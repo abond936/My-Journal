@@ -146,9 +146,9 @@ const CardForm: React.FC = () => {
   const editorRef = useRef<RichTextEditorRef>(null);
 
   useEffect(() => {
-    if (!studioShellDnd || !studioShell?.bodyMediaInsertRef) return;
-    const r = studioShell.bodyMediaInsertRef;
-    r.current = (media: Media) => {
+    if (!studioShellDnd || !studioShell) return;
+    const register = studioShell.registerBodyMediaInsert;
+    register((media: Media) => {
       const tryInsert = (remainingFrames: number) => {
         const editor = editorRef.current;
         if (editor) {
@@ -161,9 +161,9 @@ const CardForm: React.FC = () => {
         });
       };
       tryInsert(8);
-    };
+    });
     return () => {
-      r.current = null;
+      register(null);
     };
   }, [studioShellDnd, studioShell]);
 

@@ -13,9 +13,10 @@ type StorageUrlLike = {
   storageUrl?: string;
 };
 
-type MediaWithStudioRendition = StorageUrlLike & {
+type MediaWithRenditions = StorageUrlLike & {
   renditions?: {
     studio?: StorageUrlLike & Record<string, unknown>;
+    reader?: StorageUrlLike & Record<string, unknown>;
   };
 };
 
@@ -43,15 +44,17 @@ export function applyPublicStorageUrl<T extends StorageUrlLike>(item: T): T {
   };
 }
 
-export function applyPublicStorageUrlsToMedia<T extends MediaWithStudioRendition>(item: T): T {
+export function applyPublicStorageUrlsToMedia<T extends MediaWithRenditions>(item: T): T {
   const withOriginal = applyPublicStorageUrl(item);
   const studio = withOriginal.renditions?.studio;
-  if (!studio) return withOriginal;
+  const reader = withOriginal.renditions?.reader;
+  if (!studio && !reader) return withOriginal;
   return {
     ...withOriginal,
     renditions: {
       ...withOriginal.renditions,
-      studio: applyPublicStorageUrl(studio),
+      ...(studio ? { studio: applyPublicStorageUrl(studio) } : {}),
+      ...(reader ? { reader: applyPublicStorageUrl(reader) } : {}),
     },
   };
 }
@@ -63,5 +66,5 @@ export function applyPublicStorageUrlsToMedia<T extends MediaWithStudioRendition
 export function applyPublicStorageUrls<T extends { storagePath?: string; storageUrl?: string }>(
   items: T[]
 ): T[] {
-  return items.map((item) => applyPublicStorageUrlsToMedia(item as T & MediaWithStudioRendition) as T);
+  return items.map((item) => applyPublicStorageUrlsToMedia(item as T & MediaWithRenditions) as T);
 }

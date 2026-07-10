@@ -29,14 +29,33 @@ const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const STUDIO_RENDITION_MAX_WIDTH = 960;
 const STUDIO_RENDITION_MAX_HEIGHT = 960;
 const STUDIO_RENDITION_QUALITY = 78;
+const READER_RENDITION_MAX_WIDTH = 640;
+const READER_RENDITION_MAX_HEIGHT = 640;
+const READER_RENDITION_QUALITY = 75;
 
 // Utility functions for consistent path handling
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
 
 type StudioMediaRendition = NonNullable<NonNullable<Media['renditions']>['studio']>;
+type ReaderMediaRendition = NonNullable<NonNullable<Media['renditions']>['reader']>;
 
 function getStudioRenditionStoragePath(mediaId: string): string {
   return `images/renditions/studio/${mediaId}.webp`;
+}
+
+function getReaderRenditionStoragePath(mediaId: string): string {
+  return `images/renditions/reader/${mediaId}.webp`;
+}
+
+function mergeMediaRenditions(
+  studioRendition?: StudioMediaRendition,
+  readerRendition?: ReaderMediaRendition
+): Media['renditions'] | undefined {
+  if (!studioRendition && !readerRendition) return undefined;
+  return {
+    ...(studioRendition ? { studio: studioRendition } : {}),
+    ...(readerRendition ? { reader: readerRendition } : {}),
+  };
 }
 
 async function buildStudioMediaRendition(
@@ -53,6 +72,32 @@ async function buildStudioMediaRendition(
     .toBuffer({ resolveWithObject: true });
 
   const storagePath = getStudioRenditionStoragePath(mediaId);
+  return {
+    buffer: data,
+    rendition: {
+      storagePath,
+      storageUrl: getPublicStorageUrl(storagePath),
+      width: info.width,
+      height: info.height,
+      contentType: 'image/webp',
+    },
+  };
+}
+
+async function buildReaderMediaRendition(
+  mediaId: string,
+  fileBuffer: Buffer
+): Promise<{ buffer: Buffer; rendition: ReaderMediaRendition }> {
+  const { data, info } = await sharp(fileBuffer)
+    .rotate()
+    .resize(READER_RENDITION_MAX_WIDTH, READER_RENDITION_MAX_HEIGHT, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: READER_RENDITION_QUALITY })
+    .toBuffer({ resolveWithObject: true });
+
+  const storagePath = getReaderRenditionStoragePath(mediaId);
   return {
     buffer: data,
     rendition: {
@@ -100,6 +145,48 @@ async function persistStudioMediaRenditionBestEffort(
     return await persistStudioMediaRendition(bucket, mediaId, fileBuffer);
   } catch (error) {
     console.warn('[media] studio rendition generation failed', {
+      mediaId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+}
+
+async function persistReaderMediaRendition(
+  bucket: {
+    file: (
+      storagePath: string
+    ) => {
+      save: (buffer: Buffer, options: { metadata: { contentType: string } }) => Promise<unknown>;
+    };
+  },
+  mediaId: string,
+  fileBuffer: Buffer
+): Promise<ReaderMediaRendition> {
+  const { buffer, rendition } = await buildReaderMediaRendition(mediaId, fileBuffer);
+  await bucket.file(rendition.storagePath).save(buffer, {
+    metadata: {
+      contentType: rendition.contentType,
+    },
+  });
+  return rendition;
+}
+
+async function persistReaderMediaRenditionBestEffort(
+  bucket: {
+    file: (
+      storagePath: string
+    ) => {
+      save: (buffer: Buffer, options: { metadata: { contentType: string } }) => Promise<unknown>;
+    };
+  },
+  mediaId: string,
+  fileBuffer: Buffer
+): Promise<ReaderMediaRendition | undefined> {
+  try {
+    return await persistReaderMediaRendition(bucket, mediaId, fileBuffer);
+  } catch (error) {
+    console.warn('[media] reader rendition generation failed', {
       mediaId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -194,6 +281,8 @@ async function createMediaAsset(
   // 4. Build permanent public URL (no expiration; requires Storage rules for public read)
   const storageUrl = getPublicStorageUrl(storagePath);
   const studioRendition = await persistStudioMediaRenditionBestEffort(bucket, docId, fileBuffer);
+  const readerRendition = await persistReaderMediaRenditionBestEffort(bucket, docId, fileBuffer);
+  const renditions = mergeMediaRenditions(studioRendition, readerRendition);
 
   const tagIdsResolved = [
     ...new Set((tagIds || []).filter((id): id is string => typeof id === 'string' && id.length > 0)),
@@ -226,7 +315,7 @@ async function createMediaAsset(
   const newMedia: Media = derived
     ? {
         ...baseFields,
-        ...(studioRendition ? { renditions: { studio: studioRendition } } : {}),
+        ...(renditions ? { renditions } : {}),
         tags: tagIdsResolved,
         filterTags: derived.filterTags,
         who: derived.dimensionalTags.who ?? [],
@@ -241,7 +330,7 @@ async function createMediaAsset(
       }
     : {
         ...baseFields,
-        ...(studioRendition ? { renditions: { studio: studioRendition } } : {}),
+        ...(renditions ? { renditions } : {}),
         hasTags: false,
         hasWho: false,
         hasWhat: false,
@@ -817,6 +906,7 @@ export async function replaceMediaAssetContent(
 
   const storageUrl = getPublicStorageUrl(existing.storagePath);
   const studioRendition = await persistStudioMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
+  const readerRendition = await persistReaderMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
 
   const payload: Record<string, unknown> = {
     filename: originalFilename || existing.filename,
@@ -827,10 +917,11 @@ export async function replaceMediaAssetContent(
     storageUrl,
     updatedAt: Date.now(),
   };
-  if (studioRendition) {
+  const mergedRenditions = mergeMediaRenditions(studioRendition, readerRendition);
+  if (mergedRenditions) {
     payload.renditions = {
       ...(existing.renditions ?? {}),
-      studio: studioRendition,
+      ...mergedRenditions,
     };
   }
 
@@ -891,6 +982,62 @@ export async function refreshMediaStudioRendition(
     ok: true,
     updated: true,
     message: `Studio rendition refreshed at ${rendition.storagePath}.`,
+  };
+}
+
+export async function refreshMediaReaderRendition(
+  mediaId: string,
+  options?: { dryRun?: boolean }
+): Promise<{ ok: true; updated: boolean; message: string } | { ok: false; message: string }> {
+  const dryRun = options?.dryRun ?? false;
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const bucket = app.storage().bucket();
+  const mediaRef = firestore.collection('media').doc(mediaId);
+  const snap = await mediaRef.get();
+  if (!snap.exists) {
+    return { ok: false, message: `Media document ${mediaId} not found.` };
+  }
+
+  const media = snap.data() as Media;
+  if (!media.storagePath?.trim()) {
+    return { ok: false, message: `Media ${mediaId} has no storagePath.` };
+  }
+
+  const storageFile = bucket.file(media.storagePath);
+  const [exists] = await storageFile.exists();
+  if (!exists) {
+    return { ok: false, message: `Storage object missing for ${mediaId} at ${media.storagePath}.` };
+  }
+
+  const [buffer] = await storageFile.download();
+  const { buffer: renditionBuffer, rendition } = await buildReaderMediaRendition(mediaId, buffer);
+
+  if (dryRun) {
+    return {
+      ok: true,
+      updated: false,
+      message: `Would write reader rendition ${rendition.storagePath} (${rendition.width}x${rendition.height}).`,
+    };
+  }
+
+  await bucket.file(rendition.storagePath).save(renditionBuffer, {
+    metadata: {
+      contentType: rendition.contentType,
+    },
+  });
+  await mediaRef.update({
+    renditions: {
+      ...(media.renditions ?? {}),
+      reader: rendition,
+    },
+    updatedAt: Date.now(),
+  });
+  void syncMediaToTypesenseById(mediaId);
+  return {
+    ok: true,
+    updated: true,
+    message: `Reader rendition refreshed at ${rendition.storagePath}.`,
   };
 }
 

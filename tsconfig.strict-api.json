@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true
+  },
+  "include": [
+    "src/lib/types/next-auth.d.ts",
+    "src/lib/api/**/*.ts",
+    "src/lib/utils/photoUtils.ts",
+    "src/lib/utils/storageUrl.ts",
+    "src/components/admin/studio/studioShellImperativeRegistry.ts"
+  ]
+}

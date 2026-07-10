@@ -14,8 +14,8 @@
 import fs from 'fs';
 import path from 'path';
 import { adminDb, getAdminApp } from '../../config/firebase/admin';
+import { PRODUCTION_PROJECT_ID } from './recoveryConstants';
 
-const PRODUCTION_PROJECT_ID = 'my-journal-936';
 const MAX_BATCH_WRITES = 400;
 
 type BackupDoc = {
@@ -25,14 +25,14 @@ type BackupDoc = {
 
 type BackupData = Record<string, BackupDoc[]>;
 
-type ParsedArgs = {
+export type RestoreFirestoreArgs = {
   allowNonEmpty: boolean;
   apply: boolean;
   backupPath: string | null;
   confirmProject: string | null;
 };
 
-function parseArgs(argv: string[]): ParsedArgs {
+export function parseRestoreFirestoreArgs(argv: string[]): RestoreFirestoreArgs {
   let allowNonEmpty = false;
   let apply = false;
   let backupPath: string | null = null;
@@ -56,7 +56,7 @@ function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
     if (arg === '--help' || arg === '-h') {
-      printUsageAndExit(0);
+      printFirestoreUsageAndExit(0);
     }
     throw new Error(`Unknown argument: ${arg}`);
   }
@@ -69,7 +69,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   };
 }
 
-function printUsageAndExit(code: number): never {
+function printFirestoreUsageAndExit(code: number): never {
   const lines = [
     'Usage:',
     '  npm run restore:database -- --backup="<path-to-run-dir-or-firestore.json>"',
@@ -91,7 +91,7 @@ function printUsageAndExit(code: number): never {
   process.exit(code);
 }
 
-function resolveFirestoreJsonPath(inputPath: string): string {
+export function resolveFirestoreJsonPath(inputPath: string): string {
   const resolved = path.resolve(process.cwd(), inputPath);
   if (!fs.existsSync(resolved)) {
     throw new Error(`Backup path does not exist: ${resolved}`);
@@ -213,10 +213,10 @@ function summarizeBackup(data: BackupData): {
   };
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+export async function runFirestoreRestore(argv: string[]): Promise<void> {
+  const args = parseRestoreFirestoreArgs(argv);
   if (!args.backupPath) {
-    printUsageAndExit(1);
+    printFirestoreUsageAndExit(1);
   }
 
   const firestoreJsonPath = resolveFirestoreJsonPath(args.backupPath);
@@ -273,15 +273,4 @@ async function main() {
   console.log('\nApplying restore...');
   await commitRestore(backupData);
   console.log('Restore write completed.');
-  console.log('Next steps: deploy matching indexes/rules if needed, rebuild Typesense, then run integrity/build verification.');
 }
-
-main().catch((error) => {
-  console.error('\nRestore failed.');
-  if (error instanceof Error) {
-    console.error(error.message);
-  } else {
-    console.error(String(error));
-  }
-  process.exitCode = 1;
-});

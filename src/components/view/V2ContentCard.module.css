@@ -29,6 +29,47 @@
   aspect-ratio: auto;
 }
 
+.card.squareFeedTile.story,
+.card.squareFeedTile.gallery,
+.card.squareFeedTile.quote,
+.card.squareFeedTile.qa {
+  aspect-ratio: 1 / 1;
+  --reader-feed-tile-chip-strip-height: 2rem;
+}
+
+.card.squareFeedTile .imageContainer {
+  flex: 1 1 0;
+  min-height: 0;
+  aspect-ratio: auto !important;
+  height: auto;
+}
+
+.utilityTileHeroFullCenter {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  padding-bottom: var(--reader-feed-tile-chip-strip-height);
+  margin-bottom: calc(-1 * var(--reader-feed-tile-chip-strip-height));
+}
+
+.squareFeedTile.qa:not(.qaWithCover) .utilityTileHeroFullCenter .content,
+.squareFeedTile.quote .utilityTileHeroFullCenter .content {
+  flex: 0 1 auto;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-xl) var(--spacing-lg);
+}
+
+.squareFeedTile.qa.qaWithCover .content {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
 @media (min-width: 769px) {
   .card.closedFeedLandscape.story,
   .card.closedFeedLandscape.gallery,
@@ -847,6 +888,7 @@
   min-width: 0;
   height: auto;
   align-self: start;
+  isolation: isolate;
 }
 
 .adminEditLink {
@@ -854,7 +896,8 @@
   top: 50%;
   right: var(--spacing-sm);
   transform: translateY(-50%);
-  z-index: 20;
+  z-index: 30;
+  pointer-events: auto;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   padding: var(--spacing-xs) var(--spacing-sm);

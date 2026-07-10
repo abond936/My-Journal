@@ -12,8 +12,13 @@
 
 import path from 'path';
 import fs from 'fs';
-import { adminDb } from '@/lib/config/firebase/admin';
+import { adminDb, getAdminApp } from '@/lib/config/firebase/admin';
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
+import {
+  pruneOldBackupRuns,
+  resolveBackupRootPath,
+  safeBackupTimestamp,
+} from '@/lib/scripts/firebase/recoveryConstants';
 
 const TYPESENSE_COLLECTIONS = ['cards', 'media'] as const;
 
@@ -21,12 +26,21 @@ const REPO_ROOT = process.cwd();
 const INDEXES_SRC = path.join(REPO_ROOT, 'src/lib/config/firebase/firestore.indexes.json');
 const RULES_SRC = path.join(REPO_ROOT, 'src/lib/config/firebase/firestore.rules');
 
-const BACKUPS_SUBDIR = 'Firebase Backups';
-const KEEP_RUNS = 5;
+export type FullBackupOptions = {
+  runDir?: string;
+  runId?: string;
+  skipPrune?: boolean;
+  bundledWithStorage?: boolean;
+};
 
-function safeTimestamp(): string {
-  return new Date().toISOString().replace(/[:.]/g, '-');
-}
+export type FullBackupResult = {
+  runId: string;
+  runDir: string;
+  firestoreDocCount: number;
+  firestoreJsonBytes: number;
+  firestoreCollections: Record<string, number>;
+  sourceProjectId: string | null;
+};
 
 export function serializeBackupDoc(
   docId: string,
@@ -60,42 +74,29 @@ async function exportTypesenseCollection(
 }
 
 function pruneOldRuns(backupRoot: string, log: (s: string) => void): void {
-  const entries = fs
-    .readdirSync(backupRoot, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name.startsWith('run-'))
-    .map((d) => d.name)
-    .sort()
-    .reverse();
-
-  if (entries.length <= KEEP_RUNS) return;
-
-  for (const name of entries.slice(KEEP_RUNS)) {
-    const p = path.join(backupRoot, name);
-    fs.rmSync(p, { recursive: true, force: true });
-    log(`Removed old backup run: ${name}`);
-  }
+  pruneOldBackupRuns(backupRoot, log);
 }
 
-export async function runFullBackup(): Promise<void> {
+export async function runFullBackup(options: FullBackupOptions = {}): Promise<FullBackupResult> {
   const lines: string[] = [];
   const log = (s: string) => {
     lines.push(s);
     console.log(s);
   };
 
-  const onedrive = process.env.ONEDRIVE_PATH?.trim();
-  if (!onedrive) {
-    throw new Error('ONEDRIVE_PATH is not set; cannot write backup under OneDrive.');
-  }
-
-  const backupRoot = path.join(onedrive, BACKUPS_SUBDIR);
+  const backupRoot = resolveBackupRootPath();
   if (!fs.existsSync(backupRoot)) {
     fs.mkdirSync(backupRoot, { recursive: true });
   }
 
-  const runId = `run-${safeTimestamp()}`;
-  const runDir = path.join(backupRoot, runId);
+  const runId = options.runId ?? `run-${safeBackupTimestamp()}`;
+  const runDir = options.runDir ?? path.join(backupRoot, runId);
   fs.mkdirSync(runDir, { recursive: true });
+
+  const sourceProjectId =
+    getAdminApp().options.projectId ??
+    process.env.FIREBASE_SERVICE_ACCOUNT_PROJECT_ID ??
+    null;
 
   log(`=== Full database backup ===`);
   log(`Run directory: ${runDir}`);
@@ -170,10 +171,15 @@ export async function runFullBackup(): Promise<void> {
     firestoreJsonBytes: fs.statSync(firestorePath).size,
     configFiles: configMeta,
     typesense: typesenseResults,
-    notes: [
-      'Firebase Storage object bytes are not in this backup; run `npm run backup:storage` for Storage bytes.',
-      'Typesense schema lives in code (typesenseService / typesenseMediaService); documents exported as JSONL when configured.',
-    ],
+    notes: options.bundledWithStorage
+      ? [
+          'Paired Firestore + Storage backup run (see run-manifest.json).',
+          'Typesense schema lives in code (typesenseService / typesenseMediaService); documents exported as JSONL when configured.',
+        ]
+      : [
+          'Firebase Storage object bytes are not in this backup; run `npm run backup:storage` or `npm run backup:run` for Storage bytes.',
+          'Typesense schema lives in code (typesenseService / typesenseMediaService); documents exported as JSONL when configured.',
+        ],
   };
 
   fs.writeFileSync(path.join(runDir, 'metadata.json'), JSON.stringify(metadata, null, 2), 'utf8');
@@ -182,6 +188,21 @@ export async function runFullBackup(): Promise<void> {
   const summaryPath = path.join(runDir, 'summary.txt');
   fs.writeFileSync(summaryPath, lines.join('\n') + '\n', 'utf8');
 
-  pruneOldRuns(backupRoot, log);
+  const firestoreDocCount = Object.values(firestoreData).reduce((sum, docs) => sum + docs.length, 0);
+
+  if (!options.skipPrune) {
+    pruneOldRuns(backupRoot, log);
+  }
   log('=== Backup finished ===');
+
+  return {
+    runId,
+    runDir,
+    firestoreDocCount,
+    firestoreJsonBytes: fs.statSync(firestorePath).size,
+    firestoreCollections: Object.fromEntries(
+      Object.entries(firestoreData).map(([name, docs]) => [name, docs.length])
+    ),
+    sourceProjectId: sourceProjectId ? String(sourceProjectId) : null,
+  };
 }
