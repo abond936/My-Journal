@@ -141,6 +141,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
           >
             Landing Page 3
           </Link>
+          <Link
+            href="/my-stories/4"
+            className={`${styles.navLink} ${pathname === '/my-stories/4' ? styles.active : ''}`}
+          >
+            Landing Page 4
+          </Link>
           {isAdmin ? (
             <>
               <Link

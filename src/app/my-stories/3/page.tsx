@@ -130,8 +130,8 @@ export default function LandingPageThree() {
           <Link href="/" className={styles.primaryAction}>
             Sign in
           </Link>
-          <Link href="/my-stories/1" className={styles.secondaryAction}>
-            View landing page 1
+          <Link href="/my-stories/4" className={styles.secondaryAction}>
+            View landing page 4
           </Link>
         </div>
       </section>

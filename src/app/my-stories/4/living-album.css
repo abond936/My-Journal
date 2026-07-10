@@ -1,0 +1,185 @@
+/*
+ * THE LIVING ALBUM — scoped theme for Landing Page 4
+ * Warm ivory paper, espresso ink, burnt terracotta accent.
+ */
+@import 'tailwindcss';
+
+@source './LivingAlbumLanding.tsx';
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-terracotta: oklch(0.6 0.145 45);
+  --color-terracotta-deep: oklch(0.52 0.14 42);
+  --color-sage: oklch(0.55 0.06 145);
+  --color-espresso: oklch(0.28 0.03 50);
+  --color-paper: oklch(0.965 0.012 85);
+  --color-paper-deep: oklch(0.935 0.018 82);
+}
+
+.livingAlbum {
+  --radius: 0.375rem;
+  --paper: oklch(0.965 0.012 85);
+  --paper-deep: oklch(0.935 0.018 82);
+  --espresso: oklch(0.28 0.03 50);
+  --terracotta: oklch(0.6 0.145 45);
+  --terracotta-deep: oklch(0.52 0.14 42);
+  --background: var(--paper);
+  --foreground: var(--espresso);
+  --card: oklch(0.985 0.008 88);
+  --card-foreground: var(--espresso);
+  --popover: oklch(0.985 0.008 88);
+  --popover-foreground: var(--espresso);
+  --primary: var(--terracotta);
+  --primary-foreground: oklch(0.98 0.008 85);
+  --secondary: var(--paper-deep);
+  --secondary-foreground: var(--espresso);
+  --muted: oklch(0.93 0.015 84);
+  --muted-foreground: oklch(0.47 0.028 55);
+  --accent: oklch(0.91 0.03 60);
+  --accent-foreground: var(--espresso);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.87 0.02 75);
+  --input: oklch(0.87 0.02 75);
+  --ring: var(--terracotta);
+  --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--espresso);
+  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+.livingAlbum .container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .livingAlbum .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .livingAlbum .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 1280px;
+  }
+}
+
+.livingAlbum .kicker {
+  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+}
+
+.livingAlbum .photo-print {
+  background: #fdfcf9;
+  padding: 0.625rem;
+  padding-bottom: 2.25rem;
+  box-shadow:
+    0 1px 2px oklch(0.28 0.03 50 / 0.08),
+    0 8px 24px -6px oklch(0.28 0.03 50 / 0.22);
+  transition:
+    transform 0.28s var(--ease-out-soft),
+    box-shadow 0.28s var(--ease-out-soft);
+}
+
+.livingAlbum .photo-print:hover {
+  transform: rotate(0deg) translateY(-5px) !important;
+  box-shadow:
+    0 2px 4px oklch(0.28 0.03 50 / 0.08),
+    0 16px 36px -8px oklch(0.28 0.03 50 / 0.28);
+}
+
+.livingAlbum .tape {
+  position: absolute;
+  width: 6rem;
+  height: 1.75rem;
+  background: oklch(0.93 0.04 85 / 0.65);
+  box-shadow: 0 1px 3px oklch(0.28 0.03 50 / 0.12);
+  backdrop-filter: blur(1px);
+}
+
+.livingAlbum .hand-underline {
+  position: relative;
+  white-space: nowrap;
+}
+
+.livingAlbum .hand-underline::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: -0.12em;
+  height: 0.28em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'%3E%3Cpath d='M3 10 C 45 4, 120 3, 197 8' stroke='%23C25A2E' stroke-width='4.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .livingAlbum .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.65s var(--ease-out-soft),
+      transform 0.65s var(--ease-out-soft);
+  }
+
+  .livingAlbum .reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .livingAlbum .reveal-d1 {
+    transition-delay: 80ms;
+  }
+
+  .livingAlbum .reveal-d2 {
+    transition-delay: 160ms;
+  }
+
+  .livingAlbum .reveal-d3 {
+    transition-delay: 240ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .livingAlbum .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
