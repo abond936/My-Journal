@@ -953,6 +953,8 @@ const CardForm: React.FC = () => {
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
                   onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  feedPreviewCard={cardData}
+                  feedPreviewTags={allTags}
                 />
               </div>
 
@@ -1149,6 +1151,8 @@ const CardForm: React.FC = () => {
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
                   onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  feedPreviewCard={cardData}
+                  feedPreviewTags={allTags}
                 />
               </StudioDropZone>
             ) : (
@@ -1170,6 +1174,8 @@ const CardForm: React.FC = () => {
                 error={errors.coverImage}
                 filterTagIds={cardData.tags ?? []}
                 onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                feedPreviewCard={cardData}
+                feedPreviewTags={allTags}
               />
             )}
           </div>

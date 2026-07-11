@@ -688,6 +688,10 @@ export function buildThemeTokensCss(
   /* Card/media admin grid thumbnail overlays — not in theme JSON; must live in injected CSS */
   --font-size-admin-grid-overlay: 0.5rem;
   --admin-grid-overlay-font: var(--font-weight-medium) var(--font-size-admin-grid-overlay) / 1.2 var(--font-family-sans);
+  --studio-tag-chip-font-size: calc(var(--font-size-admin-grid-overlay) + 0.125rem + 0.25px);
+  --admin-grid-cell-title-font-size: 0.75rem;
+  --admin-grid-cell-title-font-weight: var(--font-weight-semibold);
+  --admin-grid-cell-title-line-height: 1.25;
 
   --line-height-base: ${themeData.typography.lineHeights.base};
   --line-height-tight: ${themeData.typography.lineHeights.tight};
@@ -1019,6 +1023,26 @@ export function buildThemeTokensCss(
   --reader-card-badge-compact-padding-block: 0.0625rem;
   --reader-card-badge-compact-padding-inline: 0.375rem;
   --reader-card-badge-compact-min-height: 1.0625rem;
+  --reader-feed-tile-chip-font-size: var(--studio-tag-chip-font-size);
+  --reader-feed-tile-chip-font-family: var(--body-font-family);
+  --reader-feed-tile-chip-font-weight: var(--font-weight-medium);
+  --reader-feed-tile-chip-font-weight-empty: var(--font-weight-medium);
+  --reader-feed-tile-chip-line-height: 1;
+  --reader-feed-tile-chip-strip-height: 1.1875rem;
+  --reader-feed-tile-title-font-size: 0.8125rem;
+  --reader-feed-tile-title-font-weight: var(--font-weight-semibold);
+  --reader-feed-tile-title-line-height: 1.25;
+  --reader-feed-tile-meta-band-padding: 6px 6px 0;
+  /* Compact discovery rails (V2ContentCard size small). */
+  --reader-feed-tile-rail-title-font-size: 0.8125rem;
+  --reader-feed-tile-rail-title-font-weight: var(--font-weight-semibold);
+  --reader-feed-tile-rail-title-line-height: 1.25;
+  --reader-feed-tile-rail-meta-band-padding: 4px 4px 0;
+  --reader-feed-tile-rail-badge-font-size: 0.5625rem;
+  --reader-feed-tile-rail-badge-line-height: 1;
+  --reader-feed-tile-rail-badge-padding-block: 0;
+  --reader-feed-tile-rail-badge-padding-inline: 0.3125rem;
+  --reader-feed-tile-rail-badge-min-height: 0.875rem;
   --reader-card-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.background)};
   --reader-card-flat-background-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.canvasPage.background)};
   --reader-card-border-color: ${getThemeRecipeRefValue(themeData, recipes.surfaces.card.border)};

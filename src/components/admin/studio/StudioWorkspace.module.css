@@ -14,7 +14,6 @@
   --studio-pane-inner-border-color: var(--admin-window-border-color);
   --studio-pane-shadow: none;
   --studio-tag-chip-text-color: var(--admin-chrome-text-color);
-  --studio-tag-chip-font-size: calc(var(--font-size-admin-grid-overlay) + 0.125rem + 0.25px);
 }
 
 :global(html[data-theme='light']) .page {

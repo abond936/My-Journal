@@ -1,15 +1,87 @@
-.feedTileChipStrip {
-  flex: 0 0 var(--reader-feed-tile-chip-strip-height);
-  display: flex;
-  align-items: center;
-  min-height: var(--reader-feed-tile-chip-strip-height);
-  padding: var(--spacing-xs) var(--spacing-md);
-  background: var(--reader-question-card-background-color);
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.feedTileChipStripSpacer {
-  width: 100%;
-  min-height: calc(var(--reader-feed-tile-chip-strip-height) - (2 * var(--spacing-xs)));
-}
+.feedTileChipStrip {
+  flex: 0 0 var(--reader-feed-tile-chip-strip-height);
+  display: flex;
+  align-items: center;
+  min-height: var(--reader-feed-tile-chip-strip-height);
+  padding: 4px 6px;
+  background: var(--reader-question-card-background-color);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.feedTileChipStripRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+}
+
+.slot {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0.9375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 4px;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid transparent;
+  font-family: var(--reader-feed-tile-chip-font-family);
+  font-size: var(--reader-feed-tile-chip-font-size);
+  font-weight: var(--reader-feed-tile-chip-font-weight);
+  line-height: var(--reader-feed-tile-chip-line-height);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.slotEmpty {
+  justify-content: center;
+  color: var(--reader-tag-muted-text-color);
+  font-weight: var(--reader-feed-tile-chip-font-weight-empty);
+}
+
+.slot:not(.slotEmpty) {
+  color: var(--reader-tag-text-color);
+}
+
+.slot[data-dimension='who']:not(.slotEmpty) {
+  background: var(--tag-who-bg-color);
+  border-color: color-mix(in srgb, var(--tag-who-bg-color) 82%, var(--reader-window-border-color) 18%);
+}
+
+.slot[data-dimension='what']:not(.slotEmpty) {
+  background: var(--tag-what-bg-color);
+  border-color: color-mix(in srgb, var(--tag-what-bg-color) 82%, var(--reader-window-border-color) 18%);
+}
+
+.slot[data-dimension='when']:not(.slotEmpty) {
+  background: var(--tag-when-bg-color);
+  border-color: color-mix(in srgb, var(--tag-when-bg-color) 82%, var(--reader-window-border-color) 18%);
+}
+
+.slot[data-dimension='where']:not(.slotEmpty) {
+  background: var(--tag-where-bg-color);
+  border-color: color-mix(in srgb, var(--tag-where-bg-color) 82%, var(--reader-window-border-color) 18%);
+}
+
+.slotEmpty[data-dimension='who'] {
+  background: color-mix(in srgb, var(--tag-who-bg-color) 18%, var(--reader-question-card-background-color) 82%);
+  border-color: color-mix(in srgb, var(--tag-who-bg-color) 28%, var(--reader-window-border-color) 72%);
+}
+
+.slotEmpty[data-dimension='what'] {
+  background: color-mix(in srgb, var(--tag-what-bg-color) 18%, var(--reader-question-card-background-color) 82%);
+  border-color: color-mix(in srgb, var(--tag-what-bg-color) 28%, var(--reader-window-border-color) 72%);
+}
+
+.slotEmpty[data-dimension='when'] {
+  background: color-mix(in srgb, var(--tag-when-bg-color) 18%, var(--reader-question-card-background-color) 82%);
+  border-color: color-mix(in srgb, var(--tag-when-bg-color) 28%, var(--reader-window-border-color) 72%);
+}
+
+.slotEmpty[data-dimension='where'] {
+  background: color-mix(in srgb, var(--tag-where-bg-color) 18%, var(--reader-question-card-background-color) 82%);
+  border-color: color-mix(in srgb, var(--tag-where-bg-color) 28%, var(--reader-window-border-color) 72%);
+}

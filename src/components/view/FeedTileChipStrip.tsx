@@ -1,35 +1,59 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import clsx from 'clsx';
 import { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { useTag } from '@/components/providers/TagProvider';
 import { resolveFeedTileDirectTagIds } from '@/lib/reader/readerFeedPresentation';
-import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
-import ReaderCardContextMeta from '@/components/view/ReaderCardContextMeta';
+import { buildFeedTileDimensionSlots } from '@/lib/utils/readerCardContext';
+import { DIMENSION_LABEL } from '@/lib/utils/tagDisplay';
 import styles from './FeedTileChipStrip.module.css';
 
 interface FeedTileChipStripProps {
   card: Card;
+  /** When provided (admin grid), skip TagProvider lookup. */
+  allTags?: Tag[];
+  className?: string;
 }
 
-/** Fixed-height bottom tag row for square feed tiles; spacer when no tags resolve. */
-export default function FeedTileChipStrip({ card }: FeedTileChipStripProps) {
-  const { tags: allTags, loading: tagsLoading } = useTag();
-  const chips = useMemo(() => {
-    if (tagsLoading || allTags.length === 0) return [];
-    return buildReaderCardPresentation(
-      { ...card, tags: resolveFeedTileDirectTagIds(card) },
+/** Fixed four-slot bottom tag row for square feed tiles (Who | What | When | Where). */
+export default function FeedTileChipStrip({ card, allTags: allTagsOverride, className }: FeedTileChipStripProps) {
+  const { tags: contextTags, loading: tagsLoading } = useTag();
+  const allTags = allTagsOverride ?? contextTags;
+  const tagsLoadingEffective = allTagsOverride ? false : tagsLoading;
+
+  const slots = useMemo(() => {
+    if (tagsLoadingEffective) {
+      return buildFeedTileDimensionSlots({ tags: [] }, []);
+    }
+    return buildFeedTileDimensionSlots(
+      { tags: resolveFeedTileDirectTagIds(card) },
       allTags
-    ).chips;
-  }, [allTags, card, tagsLoading]);
+    );
+  }, [allTags, card, tagsLoadingEffective]);
 
   return (
-    <div className={styles.feedTileChipStrip}>
-      {chips.length > 0 ? (
-        <ReaderCardContextMeta badgeLabel={null} chips={chips} variant="feed" />
-      ) : (
-        <div className={styles.feedTileChipStripSpacer} aria-hidden="true" />
-      )}
+    <div className={clsx(styles.feedTileChipStrip, className)}>
+      <div className={styles.feedTileChipStripRow}>
+        {slots.map((slot) => {
+          const empty = !slot.label;
+          const ariaLabel = empty
+            ? `${DIMENSION_LABEL[slot.dimension]}: empty`
+            : `${DIMENSION_LABEL[slot.dimension]}: ${slot.label}`;
+          return (
+            <span
+              key={slot.dimension}
+              className={clsx(styles.slot, empty && styles.slotEmpty)}
+              data-dimension={slot.dimension}
+              aria-label={ariaLabel}
+              title={empty ? undefined : slot.label}
+            >
+              {empty ? '-' : slot.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }

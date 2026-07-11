@@ -16,7 +16,7 @@ import { getEffectiveGalleryCaption, getEffectiveGalleryObjectPosition } from '@
 import TipTapStaticContent from '@/components/common/TipTapStaticContent';
 import TipTapRenderer from '@/components/common/TipTapRenderer';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
-import { SQUARE_FEED_TILE_ASPECT, usesSquareFeedTile } from '@/lib/reader/readerFeedPresentation';
+import { SQUARE_FEED_TILE_ASPECT, SQUARE_FEED_TILE_COVER_BAND_ASPECT, getFeedTileVariant, showFeedTileChipStrip, usesSquareFeedTile } from '@/lib/reader/readerFeedPresentation';
 import FeedTileMetaBand from '@/components/view/FeedTileMetaBand';
 import FeedTileChipStrip from '@/components/view/FeedTileChipStrip';
 import styles from './V2ContentCard.module.css';
@@ -74,26 +74,30 @@ const StoryCardContent: React.FC<{
   card: Card;
   displayMode: string;
   squareFeedTile: boolean;
-}> = ({ card, displayMode, squareFeedTile }) => {
+  showChipStrip: boolean;
+  previewCoverObjectPosition?: string;
+}> = ({ card, displayMode, squareFeedTile, showChipStrip, previewCoverObjectPosition }) => {
   const coverBucket = getAspectRatioBucket(card.coverImage);
   const coverRatio = squareFeedTile
     ? SQUARE_FEED_TILE_ASPECT
     : displayMode !== 'inline' && (!card.coverImage || coverBucket === 'portrait')
       ? '3/2'
       : getAspectRatioValue(coverBucket);
+  const focalCoverAspect = squareFeedTile ? SQUARE_FEED_TILE_COVER_BAND_ASPECT : coverRatio;
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
-    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    previewCoverObjectPosition ??
+    (coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          coverRatio,
+          focalCoverAspect,
           400
         )
-      : 'center';
+      : 'center');
 
   const typeBadgeLabel = getClosedFeedTypeBadgeLabel(card.type);
   const useStoryPlaceholder = !card.coverImage && displayMode !== 'inline';
@@ -132,7 +136,7 @@ const StoryCardContent: React.FC<{
               ) : null
             }
           />
-          <FeedTileChipStrip card={card} />
+          {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
         </>
       ) : (
         <div className={styles.content}>
@@ -155,7 +159,9 @@ const StoryCardContent: React.FC<{
 const GalleryCardContent: React.FC<{
   card: Card;
   squareFeedTile: boolean;
-}> = ({ card, squareFeedTile }) => {
+  showChipStrip: boolean;
+  previewCoverObjectPosition?: string;
+}> = ({ card, squareFeedTile, showChipStrip, previewCoverObjectPosition }) => {
   const coverId = useMemo(() => getCoverMediaId(card), [card]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const coverObjectFit = getCoverObjectFitMode(card);
@@ -168,17 +174,18 @@ const GalleryCardContent: React.FC<{
   }, [card.galleryMedia, coverId]);
 
   const coverObjectPosition =
-    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    previewCoverObjectPosition ??
+    (coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          squareFeedTile ? SQUARE_FEED_TILE_ASPECT : getFeedCoverFrame(card.coverImage),
+          squareFeedTile ? SQUARE_FEED_TILE_COVER_BAND_ASPECT : getFeedCoverFrame(card.coverImage),
           400
         )
-      : 'center';
+      : 'center');
   const galleryFrameRatio = squareFeedTile
     ? SQUARE_FEED_TILE_ASPECT
     : card.coverImage
@@ -262,7 +269,7 @@ const GalleryCardContent: React.FC<{
               ) : null
             }
           />
-          <FeedTileChipStrip card={card} />
+          {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
         </>
       ) : (
         <div className={styles.content}>
@@ -280,7 +287,11 @@ const GalleryCardContent: React.FC<{
  * Quote feed tile: closed reader quote cards follow the same title-driven utility-tile contract as Question cards.
  * Detail/open quote rendering still owns the rich-text body plus attribution path.
  */
-const QuoteCardContent: React.FC<{ card: Card; squareFeedTile: boolean }> = ({ card, squareFeedTile }) => {
+const QuoteCardContent: React.FC<{
+  card: Card;
+  squareFeedTile: boolean;
+  showChipStrip: boolean;
+}> = ({ card, squareFeedTile, showChipStrip }) => {
   const titleText = card.title?.trim() ?? '';
 
   if (squareFeedTile) {
@@ -295,7 +306,7 @@ const QuoteCardContent: React.FC<{ card: Card; squareFeedTile: boolean }> = ({ c
             ) : null}
           </div>
         </div>
-        <FeedTileChipStrip card={card} />
+        {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
       </>
     );
   }
@@ -315,21 +326,25 @@ const QACardContent: React.FC<{
   card: Card;
   displayMode: string;
   squareFeedTile: boolean;
-}> = ({ card, displayMode, squareFeedTile }) => {
+  showChipStrip: boolean;
+  previewCoverObjectPosition?: string;
+}> = ({ card, displayMode, squareFeedTile, showChipStrip, previewCoverObjectPosition }) => {
   const coverRatio = squareFeedTile ? SQUARE_FEED_TILE_ASPECT : getFeedCoverFrame(card.coverImage);
+  const focalCoverAspect = squareFeedTile ? SQUARE_FEED_TILE_COVER_BAND_ASPECT : coverRatio;
   const coverObjectFit = getCoverObjectFitMode(card);
   const objectPosition =
-    coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
+    previewCoverObjectPosition ??
+    (coverObjectFit === 'cover' && card.coverImageFocalPoint && card.coverImage?.width && card.coverImage?.height
       ? getObjectPositionForAspectRatio(
           {
             x: card.coverImageFocalPoint.x ?? 0,
             y: card.coverImageFocalPoint.y ?? 0,
           },
           { width: card.coverImage.width, height: card.coverImage.height },
-          coverRatio,
+          focalCoverAspect,
           400
         )
-      : 'center';
+      : 'center');
 
   const questionText = (
     <div className={styles.qaTextBlock}>
@@ -373,7 +388,7 @@ const QACardContent: React.FC<{
           <div className={styles.utilityTileHeroFullCenter}>
             <div className={styles.content}>{questionText}</div>
           </div>
-          <FeedTileChipStrip card={card} />
+          {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
         </>
       );
     }
@@ -408,7 +423,7 @@ const QACardContent: React.FC<{
           </div>
         )}
         {card.coverImage ? <div className={styles.content}>{questionText}</div> : null}
-        <FeedTileChipStrip card={card} />
+        {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
       </>
     );
   }
@@ -466,6 +481,10 @@ interface V2ContentCardProps {
   onBeforeNavigateToAdminEdit?: () => void;
   /** `returnTo` query for edit page Back link (e.g. `/view` from feed, `/view/[id]` from detail rails). */
   adminEditReturnTo?: string;
+  /** Non-interactive closed feed tile preview (Compose). */
+  previewOnly?: boolean;
+  /** Live Compose override for closed-feed cover crop. */
+  previewCoverObjectPosition?: string;
 }
 
 const V2ContentCard: React.FC<V2ContentCardProps> = ({
@@ -475,6 +494,8 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   onClick,
   onBeforeNavigateToAdminEdit,
   adminEditReturnTo = '/view',
+  previewOnly = false,
+  previewCoverObjectPosition,
 }) => {
   const { data: session } = useSession();
   const { readerMode, patchVisibleCard } = useCardContext();
@@ -483,6 +504,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   
   // Determine if card should be interactive based on display mode
   const isInteractive =
+    !previewOnly &&
     displayMode === 'navigate' &&
     (card.type === 'story' || card.type === 'gallery' || card.type === 'qa');
 
@@ -496,6 +518,8 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       ? styles.qaWithCover
       : '';
   const squareFeedTile = usesSquareFeedTile(card.type, displayMode);
+  const chipStrip = showFeedTileChipStrip(squareFeedTile, size);
+  const feedTileVariant = getFeedTileVariant(squareFeedTile, size);
   const closedFeedFrameClass =
     squareFeedTile || displayMode === 'inline'
       ? ''
@@ -518,7 +542,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       ? addFocusCardToReturnTo(adminEditReturnTo, card.docId)
       : adminEditReturnTo;
 
-  const canEdit = Boolean(card.docId && isAdmin);
+  const canEdit = !previewOnly && Boolean(card.docId && isAdmin);
   const detailHref = card.docId ? `/view/${card.docId}?mode=${readerMode}` : '#';
   const quickEditMetadata = useMemo(
     () => ({
@@ -541,11 +565,26 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   const renderContent = () => {
     switch (card.type) {
       case 'gallery':
-        return <GalleryCardContent card={card} squareFeedTile={squareFeedTile} />;
+        return (
+          <GalleryCardContent
+            card={card}
+            squareFeedTile={squareFeedTile}
+            showChipStrip={chipStrip}
+            previewCoverObjectPosition={previewCoverObjectPosition}
+          />
+        );
       case 'quote':
-        return <QuoteCardContent card={card} squareFeedTile={squareFeedTile} />;
+        return <QuoteCardContent card={card} squareFeedTile={squareFeedTile} showChipStrip={chipStrip} />;
       case 'qa':
-        return <QACardContent card={card} displayMode={displayMode} squareFeedTile={squareFeedTile} />;
+        return (
+          <QACardContent
+            card={card}
+            displayMode={displayMode}
+            squareFeedTile={squareFeedTile}
+            showChipStrip={chipStrip}
+            previewCoverObjectPosition={previewCoverObjectPosition}
+          />
+        );
       case 'callout':
         return (
           <>
@@ -564,7 +603,15 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         );
       case 'story':
       default:
-        return <StoryCardContent card={card} displayMode={displayMode} squareFeedTile={squareFeedTile} />;
+        return (
+          <StoryCardContent
+            card={card}
+            displayMode={displayMode}
+            squareFeedTile={squareFeedTile}
+            showChipStrip={chipStrip}
+            previewCoverObjectPosition={previewCoverObjectPosition}
+          />
+        );
     }
   };
 
@@ -575,11 +622,12 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         className={className}
         onClick={onClick}
         data-card-id={card.docId}
+        data-feed-tile-variant={feedTileVariant}
       >
         {renderContent()}
       </Link>
     ) : (
-      <div className={className} data-card-id={card.docId}>
+      <div className={className} data-card-id={card.docId} data-feed-tile-variant={feedTileVariant}>
         {renderContent()}
       </div>
     );

@@ -1,0 +1,10 @@
+/* Match main feed grid column width (CardFeedV2 ~300px min column). */
+.composeFeedTilePreview {
+  width: min(100%, 300px);
+  flex: 0 1 min(100%, 300px);
+  pointer-events: none;
+}
+
+.composeFeedTilePreview :global([class*='closedTileCoverBand']) {
+  cursor: default;
+}

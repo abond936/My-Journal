@@ -74,6 +74,28 @@ jest.mock('@/components/admin/common/DimensionalTagVerticalChips', () => ({
   default: () => null,
 }));
 
+jest.mock('@/components/view/FeedTileChipStrip', () => ({
+  __esModule: true,
+  default: () => <div data-testid="feed-tile-chip-strip" />,
+}));
+
+jest.mock('@/components/admin/studio/cards/AdminClosedCardTileShell', () => ({
+  __esModule: true,
+  default: (props: Record<string, unknown>) => {
+    mockJournalImage({
+      style: {
+        objectFit: props.previewObjectFit,
+        objectPosition: props.previewObjectPosition,
+      },
+    });
+    return (
+      <div data-testid="admin-closed-tile-shell">
+        {(props.card as { title?: string })?.title}
+      </div>
+    );
+  },
+}));
+
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
     showToast: jest.fn(),
@@ -179,7 +201,7 @@ describe('CardAdminGrid', () => {
     );
 
     expect(screen.queryByText('No cover')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Question prompt')).toHaveLength(2);
+    expect(screen.getByText('Question prompt')).toBeInTheDocument();
   });
 
   it('renders a reader-style quote utility preview even when cover metadata exists', () => {
@@ -212,7 +234,7 @@ describe('CardAdminGrid', () => {
 
     expect(screen.queryByText('No cover')).not.toBeInTheDocument();
     expect(screen.queryByTestId('journal-image')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Quoted title')).toHaveLength(2);
+    expect(screen.getByText('Quoted title')).toBeInTheDocument();
   });
 
   it('renders a reader-style callout utility preview with visible body content', () => {
@@ -239,7 +261,8 @@ describe('CardAdminGrid', () => {
     );
 
     expect(screen.queryByText('No cover')).not.toBeInTheDocument();
-    expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
+    expect(screen.getByTestId('admin-closed-tile-shell')).toBeInTheDocument();
+    expect(screen.getByText('Callout title')).toBeInTheDocument();
   });
 
   it('applies cover focal-point positioning to Studio compact-grid thumbnails', () => {

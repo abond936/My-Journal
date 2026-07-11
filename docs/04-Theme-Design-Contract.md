@@ -701,6 +701,8 @@ This is the part that caused the most confusion and needs to stay explicit:
 
 So "small card title" belongs in the theme system as a **named variant**, but "this card is in a constrained rail, use the small title recipe" belongs in component code.
 
+**Open debt (2026-07-11):** closed **Quote** / **Question** **utility headline + watermark** still lack one theme-owned scale consumed everywhere. Today `/view` grid, discovery rails, Studio `UtilityCardPreview`, and open-card headers each hard-code different clamps (`vw`, `rem`, ad hoc `cqi`). Do not add rail-only typography tokens until `docs/03-Implementation.md` -> **Utility typography surface parity** defines the shared contract (planned with **Feed Presentation Matrix** / theme refactor).
+
 ### 5.2a Component-oriented authoring surface
 
 The current implementation direction is more concrete than a single flat list of summary roles. Theme authoring is now being organized around **real components and variants**, because that maps better to how the app is actually designed and reviewed.

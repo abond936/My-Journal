@@ -19,6 +19,8 @@ export type AdminGridCellChromeProps = {
   belowThumbnail?: React.ReactNode;
   /** Extra class on the left tag rail (e.g. studio compact typography). */
   overlayLeftRailClassName?: string;
+  /** When true, omit the full-stack thumb scrim (cover band supplies its own). */
+  hideThumbScrim?: boolean;
 };
 
 /**
@@ -36,6 +38,7 @@ export default function AdminGridCellChrome({
   belowMeta,
   belowThumbnail,
   overlayLeftRailClassName,
+  hideThumbScrim = false,
 }: AdminGridCellChromeProps) {
   const { className: rootClassFromProps, ref: rootRef, ...restRoot } = rootProps ?? {};
   return (
@@ -46,7 +49,7 @@ export default function AdminGridCellChrome({
     >
       <div className={styles.thumbStack}>
         {thumbnail}
-        <div className={styles.thumbScrim} aria-hidden />
+        {hideThumbScrim ? null : <div className={styles.thumbScrim} aria-hidden />}
         <div className={styles.overlayTop}>
           {overlayTopStart ? (
             <div className={styles.overlayTopStart} data-admin-chrome={ADMIN_GRID_CHROME.overlayTopStart}>

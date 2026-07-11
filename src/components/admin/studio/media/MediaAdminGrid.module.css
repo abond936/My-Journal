@@ -87,10 +87,10 @@
 
 .mediaTitle {
   padding: 6px 6px 0;
-  font-size: 0.6875rem;
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--admin-grid-cell-title-font-size);
+  font-weight: var(--admin-grid-cell-title-font-weight);
   color: var(--admin-support-label-color);
-  line-height: 1.25;
+  line-height: var(--admin-grid-cell-title-line-height);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;

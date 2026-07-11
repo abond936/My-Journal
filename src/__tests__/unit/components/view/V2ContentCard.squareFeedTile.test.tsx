@@ -126,8 +126,8 @@ describe('V2ContentCard square feed tile', () => {
     expect(container.querySelector('[data-card-id="qa-1"] .utilityTileHeroFullCenter')).toBeTruthy();
   });
 
-  it('renders chip strip spacer when a square tile has no resolved tags', () => {
-    const { container } = render(
+  it('renders four chip placeholders when a square tile has no resolved tags', () => {
+    render(
       <V2ContentCard
         card={{
           ...baseStory(),
@@ -139,7 +139,23 @@ describe('V2ContentCard square feed tile', () => {
         }}
       />
     );
-    expect(container.querySelector('[class*="feedTileChipStripSpacer"]')).toBeTruthy();
+    expect(screen.getByLabelText('Who: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('What: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('When: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('Where: empty')).toHaveTextContent('-');
+  });
+
+  it('omits the bottom chip strip on compact small square tiles', () => {
+    render(<V2ContentCard card={baseStory()} size="small" />);
+    expect(screen.queryByText('Alan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Travel')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Summer trip' })).toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('data-feed-tile-variant', 'rail');
+  });
+
+  it('marks main-grid square tiles as feed grid variant', () => {
+    render(<V2ContentCard card={baseStory()} size="medium" />);
+    expect(screen.getByRole('link')).toHaveAttribute('data-feed-tile-variant', 'grid');
   });
 
   it('does not apply square feed layout for inline gallery cards', () => {

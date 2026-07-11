@@ -3,11 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import JournalImage from '@/components/common/JournalImage';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
 import {
   buildResolvedTagDimensionMap,
@@ -16,7 +14,13 @@ import {
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './CardAdminGrid.module.css';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
-import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
+import AdminClosedCardTileShell from '@/components/admin/studio/cards/AdminClosedCardTileShell';
+import {
+  getPreviewObjectFit,
+  getPreviewObjectPosition,
+  previewImage,
+  shouldRenderUtilityPreviewInCover,
+} from '@/components/admin/studio/cards/closedCardTilePreviewUtils';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
@@ -31,12 +35,6 @@ import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
 } from '@/lib/dnd/collectionsDragContract';
-import type { StudioCatalogCard } from '@/components/admin/studio/studioCardTypes';
-import UtilityCardPreview from '@/components/admin/studio/cards/UtilityCardPreview';
-import {
-  getObjectPositionForAspectRatio,
-  getObjectPositionFromFocalPoint,
-} from '@/lib/utils/objectPositionUtils';
 
 interface CardAdminGridProps {
   cards: Card[];
@@ -74,52 +72,36 @@ const CARD_TYPE_LABELS: Record<Card['type'], string> = {
   callout: 'Callout',
 };
 
-function coverAspectStyle(cover: Card['coverImage'], uniform = false): React.CSSProperties {
-  if (uniform) {
-    return { aspectRatio: '4 / 3' };
-  }
-  const w = cover?.width;
-  const h = cover?.height;
-  if (typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0) {
-    return { aspectRatio: `${w} / ${h}` };
-  }
-  return { aspectRatio: '4 / 5' };
+function gridImageSizes(compactStudioGrid: boolean): string {
+  return compactStudioGrid
+    ? '(max-width: 768px) 95vw, min(360px, 40vw)'
+    : '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px';
 }
 
-function previewImage(card: Card): Card['coverImage'] {
-  const studioCard = card as Card & Partial<StudioCatalogCard>;
-  return card.coverImage ?? studioCard.displayThumbnail ?? null;
-}
-
-function getPreviewObjectFit(card: Card, preview: Card['coverImage']): 'cover' | 'contain' {
-  if (!preview) return 'cover';
-  if (card.coverImage?.docId && preview.docId === card.coverImage.docId && card.coverImageMode === 'fit') {
-    return 'contain';
-  }
-  return 'cover';
-}
-
-function getPreviewObjectPosition(
+function renderCardOverlayBottom(
   card: Card,
-  preview: Card['coverImage'],
-  compactStudioGrid: boolean
-): string {
-  if (!preview) return 'center';
-  const isCoverPreview = Boolean(card.coverImage?.docId && preview.docId === card.coverImage?.docId);
-  if (!isCoverPreview || !card.coverImageFocalPoint || !preview.width || !preview.height) {
-    return preview.objectPosition || 'center';
-  }
-  if (getPreviewObjectFit(card, preview) === 'contain') {
-    return getObjectPositionFromFocalPoint(
-      { x: card.coverImageFocalPoint.x ?? 0, y: card.coverImageFocalPoint.y ?? 0 },
-      { width: preview.width, height: preview.height }
-    );
-  }
-  return getObjectPositionForAspectRatio(
-    { x: card.coverImageFocalPoint.x ?? 0, y: card.coverImageFocalPoint.y ?? 0 },
-    { width: preview.width, height: preview.height },
-    compactStudioGrid ? '4/3' : `${preview.width}/${preview.height}`,
-    400
+  secondaryMeta?: { label: string; title?: string } | null
+): React.ReactNode {
+  return (
+    <div className={styles.overlayBottomRow}>
+      <div className={styles.overlayBottomStart}>
+        <span className={chromeStyles.metaBadge}>{CARD_TYPE_LABELS[card.type]}</span>
+        <span
+          className={
+            card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
+          }
+        >
+          {card.status}
+        </span>
+      </div>
+      {secondaryMeta ? (
+        <div className={styles.overlayBottomEnd}>
+          <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
+            {secondaryMeta.label}
+          </span>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -128,16 +110,6 @@ function pickCaption(card: Card): string {
     if (v != null && String(v).trim()) return String(v).trim();
   }
   return '';
-}
-
-function shouldRenderStudioUtilityPreview(
-  card: Card,
-  preview: Card['coverImage'],
-  compactStudioGrid: boolean
-): boolean {
-  if (!compactStudioGrid) return false;
-  if (card.type === 'quote' || card.type === 'callout') return true;
-  return card.type === 'qa' && !preview;
 }
 
 /** Cover hover: title, caption, then full Who/What/When/Where tag lines. */
@@ -249,8 +221,8 @@ function CardAdminGridPlainCell({
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
   const previewObjectFit = getPreviewObjectFit(card, preview);
-  const previewObjectPosition = getPreviewObjectPosition(card, preview, compactStudioGrid);
-  const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
+  const previewObjectPosition = getPreviewObjectPosition(card, preview);
+  const renderUtilityPreview = shouldRenderUtilityPreviewInCover(card, preview);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -325,81 +297,27 @@ function CardAdminGridPlainCell({
           </div>
         </div>
       }
-      overlayLeftRail={
-        undefined
-      }
-      overlayBottom={
-        <div className={styles.overlayBottomRow}>
-          <div className={styles.overlayBottomStart}>
-            <span className={chromeStyles.metaBadge}>{CARD_TYPE_LABELS[card.type]}</span>
-            <span
-              className={
-                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-              }
-            >
-              {card.status}
-            </span>
-          </div>
-          {secondaryMeta ? (
-            <div className={styles.overlayBottomEnd}>
-              <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
-                {secondaryMeta.label}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      }
+      overlayLeftRail={undefined}
+      hideThumbScrim
+      overlayBottom={undefined}
       belowMeta={undefined}
       thumbnail={
-        <div
-          className={styles.thumbnailWrap}
-          style={coverAspectStyle(preview, compactStudioGrid)}
-          title={thumbnailTooltip}
-          onClick={onImageColumnClick}
-        >
-          {renderUtilityPreview ? (
-            <UtilityCardPreview card={card} />
-          ) : preview ? (
-            <JournalImage
-              src={getStudioDisplayUrl(preview)}
-              alt={card.title || 'Cover'}
-              fill
-              className={styles.thumbnailNatural}
-              style={{ objectFit: previewObjectFit, objectPosition: previewObjectPosition }}
-              sizes={
-                compactStudioGrid
-                  ? '(max-width: 768px) 95vw, min(360px, 40vw)'
-                  : '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px'
-              }
-            />
-          ) : (
-            <div className={styles.noCover}>No cover</div>
-          )}
-          {pendingFocus ? (
-            <div className={styles.pendingThumbOverlay} aria-hidden="true">
-              <div className={styles.pendingThumbSpinner} />
-              <span className={styles.pendingThumbLabel}>Opening...</span>
-            </div>
-          ) : null}
-        </div>
+        <AdminClosedCardTileShell
+          card={card}
+          allTags={allTags}
+          preview={preview}
+          previewObjectFit={previewObjectFit}
+          previewObjectPosition={previewObjectPosition}
+          renderUtilityPreview={renderUtilityPreview}
+          pendingFocus={pendingFocus}
+          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta)}
+          onCoverClick={onImageColumnClick}
+          thumbnailTooltip={thumbnailTooltip}
+          imageSizes={gridImageSizes(compactStudioGrid)}
+        />
       }
       belowThumbnail={
         <>
-          <div className={styles.title} title={card.title}>
-            {card.title || 'Untitled'}
-          </div>
-          <div {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
-            <DimensionalTagVerticalChips
-              className={styles.tagChipsInline}
-              tagIds={card.tags ?? []}
-              subjectTagId={card.subjectTagId ?? null}
-              allTags={allTags}
-              disabled={interactionDisabled}
-              variant="inline"
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
-            />
-          </div>
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}
@@ -562,8 +480,8 @@ function CardAdminGridStudioCell({
   const captionLine = pickCaption(card);
   const preview = previewImage(card);
   const previewObjectFit = getPreviewObjectFit(card, preview);
-  const previewObjectPosition = getPreviewObjectPosition(card, preview, compactStudioGrid);
-  const renderUtilityPreview = shouldRenderStudioUtilityPreview(card, preview, compactStudioGrid);
+  const previewObjectPosition = getPreviewObjectPosition(card, preview);
+  const renderUtilityPreview = shouldRenderUtilityPreviewInCover(card, preview);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
     [card, allTags]
@@ -655,81 +573,27 @@ function CardAdminGridStudioCell({
           </button>
         </div>
       }
-      overlayLeftRail={
-        undefined
-      }
-      overlayBottom={
-        <div className={styles.overlayBottomRow}>
-          <div className={styles.overlayBottomStart}>
-            <span className={chromeStyles.metaBadge}>{CARD_TYPE_LABELS[card.type]}</span>
-            <span
-              className={
-                card.status === 'draft' ? chromeStyles.metaBadgeDraft : chromeStyles.metaBadgePublished
-              }
-            >
-              {card.status}
-            </span>
-          </div>
-          {secondaryMeta ? (
-            <div className={styles.overlayBottomEnd}>
-              <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
-                {secondaryMeta.label}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      }
+      overlayLeftRail={undefined}
+      hideThumbScrim
+      overlayBottom={undefined}
       belowMeta={undefined}
       thumbnail={
-        <div
-          className={styles.thumbnailWrap}
-          style={coverAspectStyle(preview, compactStudioGrid)}
-          title={thumbnailTooltip}
-          onClick={onImageColumnClick}
-        >
-          {renderUtilityPreview ? (
-            <UtilityCardPreview card={card} />
-          ) : preview ? (
-            <JournalImage
-              src={getStudioDisplayUrl(preview)}
-              alt={card.title || 'Cover'}
-              fill
-              className={styles.thumbnailNatural}
-              style={{ objectFit: previewObjectFit, objectPosition: previewObjectPosition }}
-              sizes={
-                compactStudioGrid
-                  ? '(max-width: 768px) 95vw, min(360px, 40vw)'
-                  : '(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 200px'
-              }
-            />
-          ) : (
-            <div className={styles.noCover}>No cover</div>
-          )}
-          {pendingFocus ? (
-            <div className={styles.pendingThumbOverlay} aria-hidden="true">
-              <div className={styles.pendingThumbSpinner} />
-              <span className={styles.pendingThumbLabel}>Opening...</span>
-            </div>
-          ) : null}
-        </div>
+        <AdminClosedCardTileShell
+          card={card}
+          allTags={allTags}
+          preview={preview}
+          previewObjectFit={previewObjectFit}
+          previewObjectPosition={previewObjectPosition}
+          renderUtilityPreview={renderUtilityPreview}
+          pendingFocus={pendingFocus}
+          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta)}
+          onCoverClick={onImageColumnClick}
+          thumbnailTooltip={thumbnailTooltip}
+          imageSizes={gridImageSizes(compactStudioGrid)}
+        />
       }
       belowThumbnail={
         <>
-          <div className={styles.title} title={card.title}>
-            {card.title || 'Untitled'}
-          </div>
-          <div {...{ [DND_POINTER_IGNORE_ATTR]: '' }}>
-            <DimensionalTagVerticalChips
-              className={styles.tagChipsInline}
-              tagIds={card.tags ?? []}
-              subjectTagId={card.subjectTagId ?? null}
-              allTags={allTags}
-              disabled={interactionDisabled}
-              variant="inline"
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
-            />
-          </div>
           {!compactStudioGrid && captionLine ? (
             <div className={styles.caption} title={captionLine}>
               {captionLine}

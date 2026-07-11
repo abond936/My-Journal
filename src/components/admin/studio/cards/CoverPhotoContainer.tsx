@@ -1,14 +1,19 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { ChevronDown, ChevronUp, ImageIcon } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
 import { Media } from '@/lib/types/photo';
+import type { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
+import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
+import { usesSquareFeedTile } from '@/lib/reader/readerFeedPresentation';
+import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedTilePreview';
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useMedia } from '@/components/providers/MediaProvider';
@@ -30,6 +35,10 @@ interface CoverPhotoContainerProps {
   /** Narrow Library tab in photo picker to media matching these card tags. */
   filterTagIds?: string[];
   onOpenMediaEditor?: (mediaId: string) => void;
+  /** Live card snapshot for closed feed tile preview (Compose). */
+  feedPreviewCard?: Card | null;
+  /** Tags for feed tile preview chip row. */
+  feedPreviewTags?: Tag[];
 }
 
 export default function CoverPhotoContainer({ 
@@ -47,9 +56,12 @@ export default function CoverPhotoContainer({
   showSavingOverlay = true,
   filterTagIds,
   onOpenMediaEditor,
+  feedPreviewCard,
+  feedPreviewTags = [],
 }: CoverPhotoContainerProps) {
   const { registerCreatedMedia } = useMedia();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [feedPreviewOpen, setFeedPreviewOpen] = useState(true);
   const [horizontalPosition, setHorizontalPosition] = useState(50);
   const [verticalPosition, setVerticalPosition] = useState(50);
   const [portraitError, setPortraitError] = useState<string | null>(null);
@@ -185,6 +197,125 @@ export default function CoverPhotoContainer({
   const coverBucket = getAspectRatioBucket(coverImage);
   const coverFrameRatio = getAspectRatioValue(coverBucket);
 
+  const resolvedFeedPreviewCard = feedPreviewCard
+    ? {
+        ...feedPreviewCard,
+        coverImage: coverImage ?? feedPreviewCard.coverImage ?? undefined,
+        coverImageMode: coverImageMode ?? feedPreviewCard.coverImageMode,
+        coverImageFocalPoint:
+          coverImage?.width && coverImage?.height
+            ? {
+                x: (horizontalPosition / 100) * coverImage.width,
+                y: (verticalPosition / 100) * coverImage.height,
+              }
+            : feedPreviewCard.coverImageFocalPoint,
+      }
+    : null;
+  const feedPreviewDisplayMode = resolvedFeedPreviewCard
+    ? normalizeDisplayModeForType(resolvedFeedPreviewCard.type ?? 'story', resolvedFeedPreviewCard.displayMode)
+    : 'navigate';
+  const showFeedPreviewPanel = Boolean(
+    resolvedFeedPreviewCard &&
+      usesSquareFeedTile(resolvedFeedPreviewCard.type ?? 'story', feedPreviewDisplayMode)
+  );
+
+  /** Compose preview: same raw focal % as the main cover frame so sliders track live. */
+  const feedPreviewCoverObjectPosition = useMemo(() => {
+    if (coverImageMode === 'fit' || !coverImage) return 'center';
+    return `${horizontalPosition}% ${verticalPosition}%`;
+  }, [coverImage, coverImageMode, horizontalPosition, verticalPosition]);
+
+  const repositionControls = (
+    <div
+      className={`${styles.repositionControls} ${layoutMode === 'studioCompact' ? styles.repositionControlsStudioCompact : ''} ${showFeedPreviewPanel ? styles.repositionControlsInFeedRow : ''}`}
+    >
+      <div
+        className={`${styles.coverModeControls} ${layoutMode === 'studioCompact' ? styles.coverModeControlsStudioCompact : ''}`}
+      >
+        <span className={styles.coverModeLabel}>Framing:</span>
+        <div className={styles.coverModeButtonRow}>
+          <button
+            type="button"
+            className={`${styles.coverModeButton} ${coverImageMode === 'fill' ? styles.coverModeButtonActive : ''}`}
+            onMouseDown={swallowButtonEvent}
+            onClick={(e) => {
+              swallowButtonEvent(e);
+              handleCoverModeSelect('fill');
+            }}
+            disabled={isSaving || isUploading}
+          >
+            Fill
+          </button>
+          <button
+            type="button"
+            className={`${styles.coverModeButton} ${coverImageMode === 'fit' ? styles.coverModeButtonActive : ''}`}
+            onMouseDown={swallowButtonEvent}
+            onClick={(e) => {
+              swallowButtonEvent(e);
+              handleCoverModeSelect('fit');
+            }}
+            disabled={isSaving || isUploading}
+          >
+            Fit
+          </button>
+        </div>
+      </div>
+      <div className={styles.sliderContainer}>
+        <label htmlFor="horizontal-position">Horizontal:</label>
+        <input
+          id="horizontal-position"
+          type="range"
+          min="0"
+          max="100"
+          value={horizontalPosition}
+          onChange={(e) => {
+            const newHorizontal = parseInt(e.target.value);
+            latestHorizontalRef.current = newHorizontal;
+            setHorizontalPosition(newHorizontal);
+            handlePositionChange(newHorizontal, verticalPosition);
+          }}
+          onPointerUp={() =>
+            commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+          }
+          onBlur={() =>
+            commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+          }
+          className={styles.slider}
+          disabled={isSaving || isUploading || coverImageMode === 'fit'}
+        />
+      </div>
+      <div className={styles.sliderContainer}>
+        <label htmlFor="vertical-position">Vertical:</label>
+        <input
+          id="vertical-position"
+          type="range"
+          min="0"
+          max="100"
+          value={verticalPosition}
+          onChange={(e) => {
+            const newVertical = parseInt(e.target.value);
+            latestVerticalRef.current = newVertical;
+            setVerticalPosition(newVertical);
+            handlePositionChange(horizontalPosition, newVertical);
+          }}
+          onPointerUp={() =>
+            commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+          }
+          onBlur={() =>
+            commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
+          }
+          className={styles.slider}
+          disabled={isSaving || isUploading || coverImageMode === 'fit'}
+        />
+      </div>
+      {coverImageMode === 'fit' ? (
+        <p className={styles.coverModeHint}>
+          Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
     <div
       ref={pasteAreaRef}
@@ -264,94 +395,39 @@ export default function CoverPhotoContainer({
               </button>
             </div>
           </div>
-          <div
-            className={`${styles.repositionControls} ${layoutMode === 'studioCompact' ? styles.repositionControlsStudioCompact : ''}`}
-          >
-            <div
-              className={`${styles.coverModeControls} ${layoutMode === 'studioCompact' ? styles.coverModeControlsStudioCompact : ''}`}
-            >
-              <span className={styles.coverModeLabel}>Framing:</span>
-              <div className={styles.coverModeButtonRow}>
-                <button
-                  type="button"
-                  className={`${styles.coverModeButton} ${coverImageMode === 'fill' ? styles.coverModeButtonActive : ''}`}
-                  onMouseDown={swallowButtonEvent}
-                  onClick={(e) => {
-                    swallowButtonEvent(e);
-                    handleCoverModeSelect('fill');
-                  }}
-                  disabled={isSaving || isUploading}
+          {showFeedPreviewPanel ? (
+            <div className={styles.feedPreviewPanel}>
+              <button
+                type="button"
+                className={styles.feedPreviewToggle}
+                aria-expanded={feedPreviewOpen}
+                onClick={() => setFeedPreviewOpen((open) => !open)}
+              >
+                <span>Feed tile preview</span>
+                {feedPreviewOpen ? (
+                  <ChevronUp size={16} aria-hidden="true" />
+                ) : (
+                  <ChevronDown size={16} aria-hidden="true" />
+                )}
+              </button>
+              {feedPreviewOpen ? (
+                <div
+                  className={`${styles.feedPreviewRow} ${layoutMode === 'studioCompact' ? styles.feedPreviewRowStudioCompact : styles.feedPreviewRowDefault}`}
                 >
-                  Fill
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.coverModeButton} ${coverImageMode === 'fit' ? styles.coverModeButtonActive : ''}`}
-                  onMouseDown={swallowButtonEvent}
-                  onClick={(e) => {
-                    swallowButtonEvent(e);
-                    handleCoverModeSelect('fit');
-                  }}
-                  disabled={isSaving || isUploading}
-                >
-                  Fit
-                </button>
-              </div>
+                  {resolvedFeedPreviewCard ? (
+                    <ComposeFeedTilePreview
+                      card={resolvedFeedPreviewCard}
+                      allTags={feedPreviewTags}
+                      coverObjectPosition={feedPreviewCoverObjectPosition}
+                    />
+                  ) : null}
+                  {repositionControls}
+                </div>
+              ) : null}
             </div>
-            <div className={styles.sliderContainer}>
-              <label htmlFor="horizontal-position">Horizontal:</label>
-              <input
-                id="horizontal-position"
-                type="range"
-                min="0"
-                max="100"
-                value={horizontalPosition}
-                onChange={(e) => {
-                  const newHorizontal = parseInt(e.target.value);
-                  latestHorizontalRef.current = newHorizontal;
-                  setHorizontalPosition(newHorizontal);
-                  handlePositionChange(newHorizontal, verticalPosition);
-                }}
-                onPointerUp={() =>
-                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
-                }
-                onBlur={() =>
-                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
-                }
-                className={styles.slider}
-                disabled={isSaving || isUploading || coverImageMode === 'fit'}
-              />
-            </div>
-            <div className={styles.sliderContainer}>
-              <label htmlFor="vertical-position">Vertical:</label>
-              <input
-                id="vertical-position"
-                type="range"
-                min="0"
-                max="100"
-                value={verticalPosition}
-                onChange={(e) => {
-                  const newVertical = parseInt(e.target.value);
-                  latestVerticalRef.current = newVertical;
-                  setVerticalPosition(newVertical);
-                  handlePositionChange(horizontalPosition, newVertical);
-                }}
-                onPointerUp={() =>
-                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
-                }
-                onBlur={() =>
-                  commitPositionChange(latestHorizontalRef.current, latestVerticalRef.current)
-                }
-                className={styles.slider}
-                disabled={isSaving || isUploading || coverImageMode === 'fit'}
-              />
-            </div>
-            {coverImageMode === 'fit' ? (
-              <p className={styles.coverModeHint}>
-                Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.
-              </p>
-            ) : null}
-          </div>
+          ) : (
+            repositionControls
+          )}
         </>
       ) : (
         <div

@@ -38,7 +38,7 @@
   outline-offset: 2px;
 }
 
-/* Feed-facing preview uses the same closed-card media frame as the main reader feed. */
+/* Open/detail preview frame uses orientation-aware reader detail ratios. */
 .dropOverlay {
   position: absolute;
   inset: 0;
@@ -85,6 +85,60 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.feedPreviewPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
+}
+
+.feedPreviewToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: transparent;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+  cursor: pointer;
+  text-align: left;
+}
+
+.feedPreviewToggle:hover {
+  color: var(--admin-support-label-color);
+}
+
+.feedPreviewRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  align-self: center;
+  box-sizing: border-box;
+  padding: 0 clamp(var(--spacing-xl), 10%, var(--spacing-2xl)) var(--spacing-md);
+}
+
+.feedPreviewRowDefault {
+  width: min(100%, 600px);
+}
+
+.feedPreviewRowStudioCompact {
+  width: min(100%, 460px);
+}
+
+.repositionControlsInFeedRow {
+  flex: 1 1 0;
+  min-width: 0;
+  border-top: none;
+  padding-top: 0;
 }
 
 .placeholder {

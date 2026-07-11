@@ -8,9 +8,23 @@ export interface ReaderCardContextChip {
   label: string;
 }
 
+export interface FeedTileDimensionSlot {
+  dimension: TagDimension;
+  /** `null` = empty placeholder (`-` on tile). */
+  label: string | null;
+}
+
 export interface ReaderCardPresentation {
   badgeLabel: 'Story' | 'Gallery' | 'Question' | null;
   chips: ReaderCardContextChip[];
+}
+
+/** Operational sentinels (e.g. `zNA`) are not reader tile vocabulary. */
+export function isOperationalSentinelTagName(name: string | undefined | null): boolean {
+  const normalized = name?.trim().toLowerCase() ?? '';
+  if (!normalized) return false;
+  if (normalized === 'zna' || normalized === 'zmisc') return true;
+  return normalized.startsWith('z-');
 }
 
 const EXACT_YEAR_RE = /^\d{4}$/;
@@ -204,4 +218,41 @@ export function buildReaderCardPresentation(card: Pick<Card, 'type' | 'tags'>, a
   });
 
   return { badgeLabel, chips };
+}
+
+/** Fixed Who / What / When / Where slots for closed feed tile chip rows. */
+export function buildFeedTileDimensionSlots(
+  card: Pick<Card, 'tags'>,
+  allTags: Tag[]
+): FeedTileDimensionSlot[] {
+  if (!allTags.length) {
+    return DIMENSION_ORDER.map((dimension) => ({ dimension, label: null }));
+  }
+
+  const tagById = buildTagByIdMap(allTags);
+  const resolvedDimensionById = buildResolvedTagDimensionMap(allTags);
+  const directTags = (card.tags ?? [])
+    .map((id) => tagById.get(id))
+    .filter((tag): tag is Tag => Boolean(tag?.docId))
+    .filter((tag) => !isOperationalSentinelTagName(tag.name));
+
+  return DIMENSION_ORDER.map((dimension) => {
+    const dimensionalDirectTags = directTags.filter(
+      (tag) => resolvedDimensionById.get(tag.docId!) === dimension
+    );
+    if (dimensionalDirectTags.length === 0) {
+      return { dimension, label: null };
+    }
+    const displayTag = getDisplayTagForDimension(
+      dimension,
+      dimensionalDirectTags,
+      tagById,
+      resolvedDimensionById
+    );
+    const label = displayTag?.name?.trim();
+    if (!label || isOperationalSentinelTagName(displayTag.name)) {
+      return { dimension, label: null };
+    }
+    return { dimension, label };
+  });
 }

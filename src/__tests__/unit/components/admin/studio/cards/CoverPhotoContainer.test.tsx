@@ -28,6 +28,22 @@ jest.mock('@/components/providers/MediaProvider', () => ({
   }),
 }));
 
+jest.mock('@/components/admin/studio/cards/ComposeFeedTilePreview', () => ({
+  __esModule: true,
+  default: function MockComposeFeedTilePreview({
+    coverObjectPosition,
+  }: {
+    coverObjectPosition?: string;
+  }) {
+    return (
+      <div
+        data-testid="compose-feed-tile-preview"
+        data-cover-object-position={coverObjectPosition ?? ''}
+      />
+    );
+  },
+}));
+
 describe('CoverPhotoContainer', () => {
   const mockOnChange = jest.fn();
   const mockMedia: Media = {
@@ -86,6 +102,84 @@ describe('CoverPhotoContainer', () => {
 
     const image = screen.getByAltText('landscape.jpg');
     expect(image.parentElement).toHaveStyle({ aspectRatio: '3/2' });
+  });
+
+  it('renders a collapsible full feed tile preview beside framing controls by default', () => {
+    renderWithProps({
+      coverImage: {
+        ...mockMedia,
+        width: 1600,
+        height: 900,
+        filename: 'landscape.jpg',
+      },
+      objectPosition: '80% 20%',
+      feedPreviewCard: {
+        docId: 'card-1',
+        type: 'story',
+        title: 'Summer trip',
+        status: 'published',
+        displayMode: 'navigate',
+        tags: ['who-1'],
+        who: ['who-1'],
+      } as never,
+    });
+
+    expect(screen.getByRole('button', { name: /feed tile preview/i })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('compose-feed-tile-preview')).toBeInTheDocument();
+    expect(screen.getByLabelText('Horizontal:')).toBeInTheDocument();
+  });
+
+  it('passes live slider object-position to the feed tile preview', () => {
+    renderWithProps({
+      coverImage: {
+        ...mockMedia,
+        width: 1600,
+        height: 900,
+        filename: 'landscape.jpg',
+      },
+      objectPosition: '50% 50%',
+      feedPreviewCard: {
+        docId: 'card-1',
+        type: 'story',
+        title: 'Summer trip',
+        status: 'published',
+        displayMode: 'navigate',
+        tags: [],
+      } as never,
+    });
+
+    const preview = screen.getByTestId('compose-feed-tile-preview');
+    expect(preview).toHaveAttribute('data-cover-object-position', '50% 50%');
+
+    const vertical = screen.getByLabelText('Vertical:');
+    fireEvent.change(vertical, { target: { value: '80' } });
+    expect(preview).toHaveAttribute('data-cover-object-position', '50% 80%');
+  });
+
+  it('collapses the feed tile preview and framing controls together', async () => {
+    const user = userEvent.setup();
+    renderWithProps({
+      coverImage: {
+        ...mockMedia,
+        width: 1600,
+        height: 900,
+        filename: 'landscape.jpg',
+      },
+      feedPreviewCard: {
+        docId: 'card-1',
+        type: 'story',
+        title: 'Summer trip',
+        status: 'published',
+        displayMode: 'navigate',
+        tags: [],
+      } as never,
+    });
+
+    await user.click(screen.getByRole('button', { name: /feed tile preview/i }));
+    expect(screen.getByRole('button', { name: /feed tile preview/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('compose-feed-tile-preview')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Horizontal:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Framing:')).not.toBeInTheDocument();
   });
 
   it('supports fit mode for text-centric or unusually wide covers', async () => {

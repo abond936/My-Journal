@@ -1,0 +1,113 @@
+.closedTileShell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  background: var(--reader-question-card-background-color);
+}
+
+.closedTileCoverBand {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--admin-window-background-color);
+}
+
+.closedTileCoverScrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: var(--gradient-bottom-overlay);
+}
+
+.closedTileCoverImage {
+  object-fit: cover;
+}
+
+.closedTileUtilityWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.closedTileCoverOverlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  pointer-events: none;
+}
+
+.closedTileCoverOverlay > * {
+  pointer-events: auto;
+}
+
+.closedTileTitle {
+  flex: 0 0 auto;
+  padding: 6px 6px 0;
+  font-size: var(--reader-feed-tile-title-font-size);
+  font-weight: var(--reader-feed-tile-title-font-weight);
+  color: var(--admin-support-label-color);
+  line-height: var(--reader-feed-tile-title-line-height);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  min-width: 0;
+  background: var(--reader-question-card-background-color);
+}
+
+.noCover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--admin-support-meta-color);
+  background: var(--admin-window-background-color);
+}
+
+.pendingThumbOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: color-mix(in srgb, var(--admin-window-background-color) 62%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--admin-support-title-color);
+}
+
+.pendingThumbSpinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--admin-window-border-color) 70%, transparent);
+  border-top-color: var(--admin-support-control-strong-background-color);
+  animation: adminClosedTileSpin 0.75s linear infinite;
+}
+
+.pendingThumbLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes adminClosedTileSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
