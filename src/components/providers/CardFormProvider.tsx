@@ -98,6 +98,12 @@ interface FormContextValue {
   commitGalleryMediaPersisted: (nextGallery: HydratedGalleryMediaItem[]) => void;
 
   /**
+   * After children-order-only PATCH succeeds: align `childrenIds` and dirty baseline without
+   * running full-card validation or remounting relationship UI.
+   */
+  commitChildrenIdsPersisted: (nextChildrenIds: string[]) => void;
+
+  /**
    * Studio: merge shell-refetched relationship fields into `cardData` only (not `lastSavedState`).
    * Relationship DnD PATCHes the server first; this keeps the form UI in sync while leaving Compose
    * Save enabled until a full save aligns the dirty baseline.
@@ -295,6 +301,27 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           galleryMedia: nextGallery,
         };
         const merged = mergeEditorContentInto(cardWithGallery);
+        return {
+          ...prev,
+          cardData: merged,
+          lastSavedState: {
+            cardData: { ...merged },
+          },
+        };
+      });
+    },
+    [mergeEditorContentInto]
+  );
+
+  const commitChildrenIdsPersisted = useCallback(
+    (nextChildrenIds: string[]) => {
+      setDirtyHint(false);
+      setFormState((prev) => {
+        const cardWithChildren: CardUpdate = {
+          ...prev.cardData,
+          childrenIds: nextChildrenIds,
+        };
+        const merged = mergeEditorContentInto(cardWithChildren);
         return {
           ...prev,
           cardData: merged,
@@ -644,6 +671,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      commitChildrenIdsPersisted,
       applyShellRelationshipSync,
     }),
     [
@@ -664,6 +692,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       registerEditorContentGetter,
       syncPersistableBaseline,
       commitGalleryMediaPersisted,
+      commitChildrenIdsPersisted,
       applyShellRelationshipSync,
     ]
   );

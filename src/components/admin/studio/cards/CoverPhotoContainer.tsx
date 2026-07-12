@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, ChevronUp, ImageIcon } from 'lucide-react';
+import { ChevronDown, ChevronUp, ImageIcon, Info } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
@@ -17,6 +17,9 @@ import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedT
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useMedia } from '@/components/providers/MediaProvider';
+
+const COVER_FIT_MODE_HINT =
+  'Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.';
 
 interface CoverPhotoContainerProps {
   coverImage: Media | null;
@@ -232,7 +235,19 @@ export default function CoverPhotoContainer({
       <div
         className={`${styles.coverModeControls} ${layoutMode === 'studioCompact' ? styles.coverModeControlsStudioCompact : ''}`}
       >
-        <span className={styles.coverModeLabel}>Framing:</span>
+        <span className={styles.coverModeLabelRow}>
+          <span className={styles.coverModeLabel}>Framing:</span>
+          {coverImageMode === 'fit' ? (
+            <button
+              type="button"
+              className={styles.coverModeInfoButton}
+              aria-label="Fit framing help"
+              title={COVER_FIT_MODE_HINT}
+            >
+              <Info size={14} aria-hidden="true" />
+            </button>
+          ) : null}
+        </span>
         <div className={styles.coverModeButtonRow}>
           <button
             type="button"
@@ -282,6 +297,7 @@ export default function CoverPhotoContainer({
           }
           className={styles.slider}
           disabled={isSaving || isUploading || coverImageMode === 'fit'}
+          title={coverImageMode === 'fit' ? COVER_FIT_MODE_HINT : undefined}
         />
       </div>
       <div className={styles.sliderContainer}>
@@ -306,13 +322,9 @@ export default function CoverPhotoContainer({
           }
           className={styles.slider}
           disabled={isSaving || isUploading || coverImageMode === 'fit'}
+          title={coverImageMode === 'fit' ? COVER_FIT_MODE_HINT : undefined}
         />
       </div>
-      {coverImageMode === 'fit' ? (
-        <p className={styles.coverModeHint}>
-          Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.
-        </p>
-      ) : null}
     </div>
   );
 

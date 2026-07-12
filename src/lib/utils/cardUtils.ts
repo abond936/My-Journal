@@ -158,6 +158,45 @@ type DehydrateCardInput = Record<string, unknown> & {
   contentMedia?: string[];
 };
 
+/** Strip hydrated `media` (and empty overrides) from gallery slots for API PATCH bodies. */
+export function dehydrateGalleryMediaForPatch(
+  galleryMedia: DehydrateGalleryItem[] | null | undefined
+): Array<Record<string, unknown>> {
+  const gallerySource = Array.isArray(galleryMedia) ? galleryMedia : [];
+  return gallerySource.map((item) => {
+    const g = { ...(item || {}) };
+    delete g.media;
+    let out = { ...g };
+    const trimmed = typeof out.objectPosition === 'string' ? out.objectPosition.trim() : '';
+    if (!trimmed) {
+      delete out.objectPosition;
+    } else {
+      out = { ...out, objectPosition: trimmed };
+    }
+    if (!Object.prototype.hasOwnProperty.call(out, 'caption') || out.caption === undefined) {
+      delete out.caption;
+    }
+    return out;
+  });
+}
+
+/**
+ * Narrow PATCH body hygiene for Studio shell mutations: keep local optimistic hydration, but
+ * never send nested `media` / cover image objects that Zod will reject on incomplete docs.
+ */
+export function dehydrateCardPatchPayload(payload: Partial<Card>): Partial<Card> {
+  const next: Partial<Card> = { ...payload };
+  delete next.coverImage;
+  delete next.displayThumbnail;
+  delete (next as { displayThumbnailSource?: unknown }).displayThumbnailSource;
+  if (Object.prototype.hasOwnProperty.call(payload, 'galleryMedia')) {
+    next.galleryMedia = dehydrateGalleryMediaForPatch(
+      payload.galleryMedia as DehydrateGalleryItem[] | undefined
+    ) as Card['galleryMedia'];
+  }
+  return next;
+}
+
 export function dehydrateCardForSave(raw: DehydrateCardInput): CardUpdate {
   const { galleryMedia, contentMedia } = raw;
   const rest = { ...raw };
@@ -177,23 +216,7 @@ export function dehydrateCardForSave(raw: DehydrateCardInput): CardUpdate {
   delete rest.tagPathsMap;
 
   // Coerce to array so "missing gallery" and "empty gallery" match for dirty/compare and PATCH slices.
-  const gallerySource = Array.isArray(galleryMedia) ? galleryMedia : [];
-  const dehydratedGallery = gallerySource.map((item) => {
-    const g = { ...(item || {}) };
-    delete g.media;
-    let out = { ...g };
-    const trimmed = typeof out.objectPosition === 'string' ? out.objectPosition.trim() : '';
-    if (!trimmed) {
-      delete out.objectPosition;
-    } else {
-      out = { ...out, objectPosition: trimmed };
-    }
-    if (!Object.prototype.hasOwnProperty.call(out, 'caption') || out.caption === undefined) {
-      delete out.caption;
-    }
-    return out;
-  });
-
+  const dehydratedGallery = dehydrateGalleryMediaForPatch(galleryMedia);
   // Ensure contentMedia is always an array before saving.
   const cleanedContent = Array.isArray(contentMedia) ? contentMedia : [];
 

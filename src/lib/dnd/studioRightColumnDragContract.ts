@@ -75,6 +75,10 @@ export function prioritizeStudioRightColumnHits(
  * For cross-pane assignment/append drags, releasing outside a live target must not reuse
  * an earlier hover target. Child reorder keeps the small tolerance because it remains
  * a local reorder interaction inside one destination surface.
+ *
+ * Gallery domain stays `false` here so assignment targets (e.g. `drop:cover`) are never
+ * reused via this broad gate. Local gallery reorder reuse is handled narrowly in
+ * `resolveStudioShellExternalDropId` (gallery row / end / append-zone ids only).
  */
 export function shouldReuseLastOverOnDrop(domain: StudioRightColumnDragDomain): boolean {
   return domain === 'studioChild';

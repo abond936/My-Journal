@@ -1,26 +1,23 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
-import Link from 'next/link';
-import JournalImage from '@/components/common/JournalImage';
 import type { Card } from '@/lib/types/card';
-import { getReaderDisplayUrl } from '@/lib/utils/photoUtils';
-import {
-  getAspectRatioBucket,
-  getAspectRatioValue,
-  getObjectPositionForAspectRatio,
-} from '@/lib/utils/objectPositionUtils';
-import { useCardContext } from '@/components/providers/CardProvider';
+import V2ContentCard from '@/components/view/V2ContentCard';
 import styles from './ChildCardsRail.module.css';
 
 export interface ChildCardsRailProps {
   cards: Card[];
   /** Section heading (default matches story-parent context). */
   title?: string;
+  /** `returnTo` for admin edit Back link from detail-page child tiles. */
+  adminEditReturnTo?: string;
 }
 
-export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsRailProps) {
-  const { readerMode } = useCardContext();
+export default function ChildCardsRail({
+  cards,
+  title = 'More...',
+  adminEditReturnTo = '/view',
+}: ChildCardsRailProps) {
   const [showNavButtons, setShowNavButtons] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -90,64 +87,20 @@ export default function ChildCardsRail({ cards, title = 'More...' }: ChildCardsR
           className={styles.scroll}
           onKeyDown={handleKeyDown}
           tabIndex={0}
-          role="region"
+          role="list"
           aria-label="Open a card in this story"
         >
-          {items.map((child) => {
-            const cover = child.coverImage;
-            const bucket = getAspectRatioBucket(cover);
-            const ratio = getAspectRatioValue(bucket);
-            const frameClass =
-              bucket === 'landscape'
-                ? styles.thumbLandscape
-                : bucket === 'square'
-                  ? styles.thumbSquare
-                  : styles.thumbPortrait;
-            const coverObjectFit = child.coverImageMode === 'fit' ? 'contain' : 'cover';
-            const objectPosition =
-              cover &&
-              coverObjectFit === 'cover' &&
-              child.coverImageFocalPoint &&
-              cover.width &&
-              cover.height
-                ? getObjectPositionForAspectRatio(
-                    {
-                      x: child.coverImageFocalPoint.x ?? 0,
-                      y: child.coverImageFocalPoint.y ?? 0,
-                    },
-                    { width: cover.width, height: cover.height },
-                    ratio,
-                    320
-                  )
-                : 'center';
-
-            return (
-              <div key={child.docId} className={styles.slide}>
-                <Link
-                  href={`/view/${child.docId}?mode=${readerMode}`}
-                  className={styles.slideLink}
-                  data-card-id={child.docId}
-                >
-                  <div className={`${styles.thumb} ${frameClass}`}>
-                    {cover ? (
-                      <JournalImage
-                        src={getReaderDisplayUrl(cover)}
-                        alt={child.title?.trim() || 'Cover'}
-                        className={styles.thumbImage}
-                        width={320}
-                        height={400}
-                        sizes="(max-width: 768px) 72vw, 280px"
-                        style={{ objectFit: coverObjectFit, objectPosition }}
-                      />
-                    ) : (
-                      <div className={styles.noCover}>No cover</div>
-                    )}
-                  </div>
-                  <p className={styles.slideTitle}>{child.title?.trim() || 'Untitled'}</p>
-                </Link>
-              </div>
-            );
-          })}
+          {items.map((child) => (
+            <div key={child.docId} className={styles.slide} role="listitem">
+              <V2ContentCard
+                card={child}
+                size="medium"
+                fullWidth
+                forceSquareFeedTile
+                adminEditReturnTo={adminEditReturnTo}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </section>

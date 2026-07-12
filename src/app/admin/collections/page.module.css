@@ -58,7 +58,9 @@
   max-width: 100%;
   min-height: 0;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 0%;
+  /* One bounded row so columns cannot grow the page with Compose/form content. */
+  grid-template-rows: minmax(0, 1fr);
   /* Keep wide tables / grid cards from painting over sibling columns (grid overflow is visible by default). */
   overflow: hidden;
   box-sizing: border-box;
@@ -70,6 +72,9 @@
 
 .layout > *:not(.colResizeHandle) {
   min-width: 0;
+  /* Default grid min-height:auto expands the row with Compose content — block that. */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .layoutStacked {
@@ -81,7 +86,7 @@
   max-width: 100%;
   min-height: 0;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 0%;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -953,12 +958,17 @@
   max-width: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 1;
-  height: 100%;
+  flex: 1 1 0%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.studioEmbeddedRoot .mainShell {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .studioEmbeddedRoot .stickyTop {
@@ -974,6 +984,12 @@
   border-color: var(--studio-pane-border-color, var(--border1-color));
   background: var(--studio-pane-background, var(--layout-background1-color));
   box-shadow: var(--studio-pane-shadow, none);
+  /* Prefer the Studio grid row height over viewport calc max-height + visible overflow. */
+  max-height: none;
+  height: auto;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .studioEmbeddedRoot .panel > h2,
@@ -1009,7 +1025,10 @@
 
 /* Studio: first column = Tags | Tree tabs */
 .panelStudioLeftTabs {
-  max-height: calc(100dvh - var(--admin-tabs-height, 56px) - 10rem);
+  max-height: none;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Wraps card-admin viewToggleButtonGroup for Tags | Tree (matches Grid | Table). */

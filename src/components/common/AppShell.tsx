@@ -201,7 +201,13 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
           </>
         )}
-        <main className={styles.mainContent}>{children}</main>
+        <main
+          className={
+            isAdminRoute ? `${styles.mainContent} ${styles.mainContentAdmin}` : styles.mainContent
+          }
+        >
+          {children}
+        </main>
       </div>
       <LazyThemeAdminOverlay />
     </div>

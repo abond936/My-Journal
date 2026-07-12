@@ -55,6 +55,89 @@ function parseSortableOrder(id: string, prefix: 'gallery:' | 'studioChild:'): nu
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * Sortable id format: `gallery:${mediaId}:${order}`.
+ * Match by mediaId so form vs shell `order` encoding drift cannot no-op a drop.
+ */
+export function parseGallerySortableMediaId(id: string): string | null {
+  if (!id.startsWith('gallery:')) return null;
+  if (id === 'gallery:end') return null;
+  const rest = id.slice('gallery:'.length);
+  const lastColon = rest.lastIndexOf(':');
+  if (lastColon <= 0) return null;
+  const orderPart = rest.slice(lastColon + 1);
+  if (!/^\d+$/.test(orderPart)) return null;
+  const mediaId = rest.slice(0, lastColon);
+  return mediaId.length > 0 ? mediaId : null;
+}
+
+function findGalleryIndexBySortableId(
+  items: Array<{ mediaId?: string | null }>,
+  sortableId: string
+): number {
+  const mediaId = parseGallerySortableMediaId(sortableId);
+  if (!mediaId) return -1;
+  return items.findIndex((item) => item.mediaId === mediaId);
+}
+
+/**
+ * Local / shell gallery reorder from sortable drag ids.
+ * Returns null when the drop is not a gallery reorder (or is a no-op).
+ */
+export function reorderGalleryMediaFromDragIds<
+  T extends { mediaId?: string | null; order?: number | null },
+>(items: T[], activeId: string, overId: string): T[] | null {
+  if (!activeId.startsWith('gallery:') || activeId === overId) return null;
+
+  const oldIndex = findGalleryIndexBySortableId(items, activeId);
+  if (oldIndex < 0) return null;
+
+  if (overId === 'gallery:end' || overId === 'drop:gallery') {
+    if (oldIndex === items.length - 1) return null;
+    return arrayMove(items, oldIndex, items.length - 1).map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+  }
+
+  if (!overId.startsWith('gallery:') || overId === 'gallery:end') return null;
+  const newIndex = findGalleryIndexBySortableId(items, overId);
+  if (newIndex < 0 || oldIndex === newIndex) return null;
+  return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
+    ...item,
+    order: index,
+  }));
+}
+
+/**
+ * Local / shell children reorder from sortable drag ids (`studioChild:{id}`, `studioChildAfter:{parentId}`).
+ * Returns null when the drop is not a children reorder (or is a no-op).
+ */
+export function reorderChildrenIdsFromDragIds(
+  childrenIds: string[],
+  activeId: string,
+  overId: string,
+  parentId?: string | null
+): string[] | null {
+  if (!activeId.startsWith('studioChild:') || activeId === overId) return null;
+
+  const childId = activeId.slice('studioChild:'.length);
+  const oldIndex = childrenIds.indexOf(childId);
+  if (oldIndex < 0) return null;
+
+  const afterId = parentId ? `studioChildAfter:${parentId}` : null;
+  if (afterId && overId === afterId) {
+    if (oldIndex === childrenIds.length - 1) return null;
+    return arrayMove(childrenIds, oldIndex, childrenIds.length - 1);
+  }
+
+  if (!overId.startsWith('studioChild:')) return null;
+  const overChildId = overId.slice('studioChild:'.length);
+  const newIndex = childrenIds.indexOf(overChildId);
+  if (newIndex < 0 || oldIndex === newIndex) return null;
+  return arrayMove(childrenIds, oldIndex, newIndex);
+}
+
 export function StudioGallerySortableRow({
   id,
   galleryFocusMediaId,
@@ -326,70 +409,30 @@ export async function handleStudioRelationshipDragEnd(
   const afterId = ctx.selectedCardId ? `studioChildAfter:${ctx.selectedCardId}` : null;
   if (activeId.startsWith('studioChild:') && afterId && overId === afterId) {
     const ids = [...(ctx.selectedCardDetail.childrenIds || [])];
-    const childId = activeId.slice('studioChild:'.length);
-    const oldIndex = ids.indexOf(childId);
-    if (oldIndex < 0) return true;
-    if (oldIndex === ids.length - 1) return true;
-    const reordered = arrayMove(ids, oldIndex, ids.length - 1);
+    const reordered = reorderChildrenIdsFromDragIds(ids, activeId, overId, ctx.selectedCardId);
+    if (!reordered) return true;
     await ctx.patchSelectedCard({ childrenIds: reordered }, 'Child order updated.');
     return true;
   }
 
   if (activeId.startsWith('studioChild:') && overId.startsWith('studioChild:')) {
     const ids = ctx.selectedCardDetail.childrenIds || [];
-    const itemIds = ids.map((cid) => `studioChild:${cid}`);
-    const oldIndex = itemIds.indexOf(activeId);
-    const newIndex = itemIds.indexOf(overId);
-    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return true;
-    const reordered = arrayMove(ids, oldIndex, newIndex);
+    const reordered = reorderChildrenIdsFromDragIds(ids, activeId, overId, ctx.selectedCardId);
+    if (!reordered) return true;
     await ctx.patchSelectedCard({ childrenIds: reordered }, 'Child order updated.');
     return true;
   }
 
-  if (activeId.startsWith('gallery:') && overId.startsWith('gallery:')) {
+  if (activeId.startsWith('gallery:') && (overId === 'gallery:end' || overId === 'drop:gallery' || overId.startsWith('gallery:'))) {
     const items = ctx.selectedCardDetail.galleryMedia || [];
-    const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
-    const oldIndex = itemIds.indexOf(activeId);
-    const newIndex = itemIds.indexOf(overId);
-    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return true;
-    const reordered = arrayMove(items, oldIndex, newIndex).map((item, index) => ({
-      ...item,
-      order: index,
-    }));
-    await ctx.patchSelectedCard({ galleryMedia: reordered }, 'Gallery order updated.');
-    return true;
-  }
-
-  if (activeId.startsWith('gallery:') && overId === 'gallery:end') {
-    const items = ctx.selectedCardDetail.galleryMedia || [];
-    const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
-    const oldIndex = itemIds.indexOf(activeId);
-    if (oldIndex < 0) return true;
-    if (oldIndex === items.length - 1) return true;
-    const reordered = arrayMove(items, oldIndex, items.length - 1).map((item, index) => ({
-      ...item,
-      order: index,
-    }));
-    await ctx.patchSelectedCard({ galleryMedia: reordered }, 'Gallery order updated.');
-    return true;
-  }
-
-  if (activeId.startsWith('gallery:') && overId === 'drop:gallery') {
-    const items = ctx.selectedCardDetail.galleryMedia || [];
-    const itemIds = items.map((item) => `gallery:${item.mediaId}:${item.order}`);
-    const oldIndex = itemIds.indexOf(activeId);
-    if (oldIndex < 0) return true;
-    if (oldIndex === items.length - 1) return true;
-    const reordered = arrayMove(items, oldIndex, items.length - 1).map((item, index) => ({
-      ...item,
-      order: index,
-    }));
+    const reordered = reorderGalleryMediaFromDragIds(items, activeId, overId);
+    if (!reordered) return true;
     await ctx.patchSelectedCard({ galleryMedia: reordered }, 'Gallery order updated.');
     return true;
   }
 
   if (activeId.startsWith('gallery:') && overId === 'drop:cover') {
-    const mediaId = activeId.split(':')[1];
+    const mediaId = parseGallerySortableMediaId(activeId);
     if (!mediaId) return true;
     const gallery = ctx.selectedCardDetail.galleryMedia || [];
     await ctx.patchSelectedCard({

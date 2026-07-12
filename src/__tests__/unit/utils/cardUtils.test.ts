@@ -1,5 +1,9 @@
 import type { Card, CardUpdate } from '@/lib/types/card';
-import { groupCollectionsByDimension, persistableSnapshotsEqual } from '@/lib/utils/cardUtils';
+import {
+  dehydrateCardPatchPayload,
+  groupCollectionsByDimension,
+  persistableSnapshotsEqual,
+} from '@/lib/utils/cardUtils';
 
 describe('groupCollectionsByDimension', () => {
   it('preserves incoming collection order within each dimension group', () => {
@@ -55,5 +59,50 @@ describe('persistableSnapshotsEqual', () => {
     };
 
     expect(persistableSnapshotsEqual(mediumFigure, largeFigure)).toBe(false);
+  });
+});
+
+describe('dehydrateCardPatchPayload', () => {
+  it('strips nested gallery media objects from Studio PATCH bodies', () => {
+    const payload: Partial<Card> = {
+      galleryMedia: [
+        {
+          mediaId: 'media-1',
+          order: 0,
+          media: {
+            docId: 'media-1',
+            filename: 'a.jpg',
+            width: 10,
+            height: 10,
+            size: 1,
+            contentType: 'image/jpeg',
+            storageUrl: 'https://example.com/a.jpg',
+            storagePath: 'images/a.jpg',
+            source: 'local',
+            sourcePath: '/a.jpg',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ],
+      coverImage: {
+        docId: 'media-1',
+        filename: 'a.jpg',
+        width: 10,
+        height: 10,
+        size: 1,
+        contentType: 'image/jpeg',
+        storageUrl: 'https://example.com/a.jpg',
+        storagePath: 'images/a.jpg',
+        source: 'local',
+        sourcePath: '/a.jpg',
+        createdAt: 1,
+        updatedAt: 1,
+      } as Card['coverImage'],
+    };
+
+    expect(dehydrateCardPatchPayload(payload)).toEqual({
+      galleryMedia: [{ mediaId: 'media-1', order: 0 }],
+    });
   });
 });

@@ -36,6 +36,7 @@ import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWid
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
+import { dehydrateCardPatchPayload } from '@/lib/utils/cardUtils';
 import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import {
   createStudioPaneWidthPreference,
@@ -923,7 +924,7 @@ export default function StudioWorkspace() {
         const res = await fetch(`/api/cards/${selectedCardId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(dehydrateCardPatchPayload(payload)),
         });
         const data = await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'Update failed.');
@@ -1258,7 +1259,7 @@ export default function StudioWorkspace() {
   return (
     <StudioShellProvider value={studioShellValue}>
       <div className={styles.page}>
-        <div className={cardAdminPageStyles.stickyTop}>
+        <div className={`${cardAdminPageStyles.stickyTop} ${styles.studioChrome}`}>
           <div className={styles.studioHeaderRow}>
             <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>Content Studio</h1>
             <div className={styles.studioPaneToolbar} aria-label="Studio panes">

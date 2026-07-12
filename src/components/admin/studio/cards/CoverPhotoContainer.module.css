@@ -330,8 +330,13 @@
   margin-bottom: var(--spacing-xs);
 }
 
-.coverModeLabel,
-.coverModeHint {
+.coverModeLabelRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.coverModeLabel {
   color: var(--admin-support-meta-color);
   font-family: var(--admin-support-meta-font-family);
   font-size: var(--admin-support-meta-font-size);
@@ -339,8 +344,22 @@
   line-height: var(--admin-support-meta-line-height);
 }
 
-.coverModeHint {
+.coverModeInfoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   margin: 0;
+  border: none;
+  background: none;
+  color: var(--admin-support-meta-color);
+  cursor: help;
+}
+
+.coverModeInfoButton:focus-visible {
+  outline: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
 }
 
 .coverModeButtonRow {

@@ -475,6 +475,11 @@ interface V2ContentCardProps {
   size?: 'small' | 'medium' | 'large';
   /** When true, card stretches to parent width (use with fixed-width rail cells). */
   fullWidth?: boolean;
+  /**
+   * Structural child rails: always use the main-feed closed square shell even when the card
+   * is authored as inline (inline would otherwise grow with portrait cover bands).
+   */
+  forceSquareFeedTile?: boolean;
   /** Save feed scroll before navigating to card detail (Content → detail). */
   onClick?: () => void;
   /** Save feed scroll before opening admin edit from Content feed (optional). */
@@ -491,6 +496,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   card,
   size = 'medium',
   fullWidth = false,
+  forceSquareFeedTile = false,
   onClick,
   onBeforeNavigateToAdminEdit,
   adminEditReturnTo = '/view',
@@ -501,27 +507,31 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   const { readerMode, patchVisibleCard } = useCardContext();
   const isAdmin = session?.user?.role === 'admin';
   const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
-  
+  const tileDisplayMode =
+    forceSquareFeedTile && displayMode === 'inline' ? 'navigate' : displayMode;
+
   // Determine if card should be interactive based on display mode
   const isInteractive =
     !previewOnly &&
-    displayMode === 'navigate' &&
+    tileDisplayMode === 'navigate' &&
     (card.type === 'story' || card.type === 'gallery' || card.type === 'qa');
 
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
-  const displayModeClass = styles[displayMode] || '';
+  const displayModeClass = styles[tileDisplayMode] || '';
   const qaWithCoverClass =
     card.type === 'qa' &&
     card.coverImage &&
-    (displayMode === 'navigate' || displayMode === 'inline')
+    (tileDisplayMode === 'navigate' || tileDisplayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const squareFeedTile = usesSquareFeedTile(card.type, displayMode);
+  const squareFeedTile = forceSquareFeedTile
+    ? usesSquareFeedTile(card.type, tileDisplayMode)
+    : usesSquareFeedTile(card.type, displayMode);
   const chipStrip = showFeedTileChipStrip(squareFeedTile, size);
   const feedTileVariant = getFeedTileVariant(squareFeedTile, size);
   const closedFeedFrameClass =
-    squareFeedTile || displayMode === 'inline'
+    squareFeedTile || tileDisplayMode === 'inline'
       ? ''
       : getClosedFeedFrame(card) === 'portrait'
         ? styles.closedFeedPortrait
@@ -579,7 +589,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         return (
           <QACardContent
             card={card}
-            displayMode={displayMode}
+            displayMode={tileDisplayMode}
             squareFeedTile={squareFeedTile}
             showChipStrip={chipStrip}
             previewCoverObjectPosition={previewCoverObjectPosition}
@@ -606,7 +616,7 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         return (
           <StoryCardContent
             card={card}
-            displayMode={displayMode}
+            displayMode={tileDisplayMode}
             squareFeedTile={squareFeedTile}
             showChipStrip={chipStrip}
             previewCoverObjectPosition={previewCoverObjectPosition}

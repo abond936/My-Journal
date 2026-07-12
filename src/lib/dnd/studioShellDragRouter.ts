@@ -29,6 +29,20 @@ export const studioShellCollisionDetection: CollisionDetection = (args) => {
   return studioRightColumnCollisionDetection(args);
 };
 
+/**
+ * Local gallery reorder targets only.
+ * Do not treat `drop:cover` as reusable — that is an assignment target and must not
+ * commit from a stale hover when the pointer is released outside a live target.
+ */
+export function isLocalGalleryReorderDropId(dropId: string | null | undefined): boolean {
+  if (!dropId) return false;
+  return (
+    dropId.startsWith('gallery:') ||
+    dropId === 'gallery:end' ||
+    dropId === 'drop:gallery'
+  );
+}
+
 export function resolveStudioShellExternalDropId(args: {
   activeId: string;
   rawOverId: string | null;
@@ -36,6 +50,14 @@ export function resolveStudioShellExternalDropId(args: {
 }): string | null {
   if (args.rawOverId) return args.rawOverId;
   const domain = classifyStudioRightColumnDragId(args.activeId);
+
+  // Gallery local reorder mirrors studioChild: pointerWithin often clears `over` on drop
+  // even when the last hover was a valid gallery row / end zone. Reuse that last local
+  // target only — never reuse assignment targets like drop:cover.
+  if (domain === 'gallery' && isLocalGalleryReorderDropId(args.lastValidOverId)) {
+    return args.lastValidOverId;
+  }
+
   if (!shouldReuseLastOverOnDrop(domain)) return null;
   return args.lastValidOverId;
 }

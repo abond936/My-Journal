@@ -135,7 +135,8 @@ describe('studioRightColumnDragContract', () => {
       expect(shouldUseRectIntersectionFallback('studioChild')).toBe(true);
     });
 
-    it('does not reuse stale hover targets for source or gallery drags', () => {
+    it('does not broadly reuse stale hover targets for source or gallery assignment via shouldReuseLastOverOnDrop', () => {
+      // Gallery local reorder reuse is handled narrowly in resolveStudioShellExternalDropId.
       expect(shouldReuseLastOverOnDrop('source')).toBe(false);
       expect(shouldReuseLastOverOnDrop('gallery')).toBe(false);
       expect(shouldReuseLastOverOnDrop('studioChild')).toBe(true);

@@ -211,7 +211,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       ) : null}
 
       {displayCard.type === 'story' && childrenCards.length > 0 ? (
-        <ChildCardsRail cards={childrenCards} />
+        <ChildCardsRail
+          cards={childrenCards}
+          adminEditReturnTo={detailReturnTo ?? '/view'}
+        />
       ) : null}
 
       {/* Inline Gallery */}

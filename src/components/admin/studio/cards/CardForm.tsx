@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
-import { DndContext } from '@dnd-kit/core';
+import { closestCenter, DndContext, type DragEndEvent, type DragOverEvent } from '@dnd-kit/core';
 import { ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
@@ -21,10 +21,20 @@ import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils
 import { arrayMove } from '@dnd-kit/sortable';
 import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
-import { StudioDropZone } from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import {
+  reorderGalleryMediaFromDragIds,
+  reorderChildrenIdsFromDragIds,
+  StudioDropZone,
+} from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import {
+  isLocalGalleryReorderDropId,
+  resolveStudioShellExternalDropId,
+} from '@/lib/dnd/studioShellDragRouter';
+import { classifyStudioRightColumnDragId } from '@/lib/dnd/studioRightColumnDragContract';
 import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
 import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 
 type CardDraftOption = {
   title: string;
@@ -135,6 +145,7 @@ const CardForm: React.FC = () => {
     updateContentMedia,
     registerEditorContentGetter,
     commitGalleryMediaPersisted,
+    commitChildrenIdsPersisted,
   } = useCardForm();
 
   const studioFormCtx = useStudioCardFormStudioOptional();
@@ -404,6 +415,131 @@ const CardForm: React.FC = () => {
       }
     },
     [cardData, commitGalleryMediaPersisted, feedback, studioShell]
+  );
+
+  /**
+   * Persist children order on the card (PATCH childrenIds only).
+   * Mirrors gallery slot save: narrow PATCH + local baseline sync without full-card persist.
+   */
+  const persistChildrenAfterReorder = useCallback(
+    async (nextChildrenIds: string[]): Promise<boolean> => {
+      const docId = cardData.docId?.trim();
+      if (!docId) {
+        await feedback.alert({
+          title: 'Save card first',
+          message: 'Save the card once before reordering children.',
+        });
+        return false;
+      }
+
+      const body = { childrenIds: nextChildrenIds };
+
+      try {
+        const res = await fetch(`/api/cards/${docId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        if (!res.ok) {
+          await feedback.alert({
+            title: 'Could not save child order',
+            message: formatCardApiError(payload),
+          });
+          return false;
+        }
+        commitChildrenIdsPersisted(nextChildrenIds);
+        if (studioShell?.selectedCardId === docId) {
+          void studioShell.loadSelectedCard(docId, { quiet: true });
+        }
+        return true;
+      } catch (e) {
+        console.error('[persistChildrenAfterReorder]', e);
+        await feedback.alert({
+          title: 'Could not save child order',
+          message: e instanceof Error ? e.message : 'Network error saving child order.',
+        });
+        return false;
+      }
+    },
+    [cardData.docId, commitChildrenIdsPersisted, feedback, studioShell]
+  );
+
+  const localShellFormSensors = useDefaultDndSensors();
+  const lastLocalShellOverRef = useRef<string | null>(null);
+
+  const handleLocalShellFormDragOver = useCallback((event: DragOverEvent) => {
+    const overId = event.over?.id != null ? String(event.over.id) : null;
+    if (!overId) return;
+    const activeId = String(event.active.id);
+    const domain = classifyStudioRightColumnDragId(activeId);
+    if (domain === 'gallery' && isLocalGalleryReorderDropId(overId)) {
+      lastLocalShellOverRef.current = overId;
+      return;
+    }
+    if (
+      domain === 'studioChild' &&
+      (overId.startsWith('studioChild:') || overId.startsWith('studioChildAfter:'))
+    ) {
+      lastLocalShellOverRef.current = overId;
+    }
+  }, []);
+
+  const handleLocalShellFormDragCancel = useCallback(() => {
+    lastLocalShellOverRef.current = null;
+  }, []);
+
+  /** Reader Compose modal (and other non-shell Studio form hosts): commit gallery/children reorder locally. */
+  const handleLocalShellFormDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const activeId = String(event.active.id);
+      const rawOverId = event.over?.id != null ? String(event.over.id) : null;
+      const overId = resolveStudioShellExternalDropId({
+        activeId,
+        rawOverId,
+        lastValidOverId: lastLocalShellOverRef.current,
+      });
+      lastLocalShellOverRef.current = null;
+      if (!overId) return;
+
+      const gallery = (cardData.galleryMedia || []) as HydratedGalleryMediaItem[];
+      const reorderedGallery = reorderGalleryMediaFromDragIds(gallery, activeId, overId);
+      if (reorderedGallery) {
+        const previousGallery = gallery;
+        setField('galleryMedia', reorderedGallery);
+        const ok = await persistGalleryAfterSlotSave(reorderedGallery);
+        if (!ok) {
+          setField('galleryMedia', previousGallery);
+        }
+        return;
+      }
+
+      const childrenIds = cardData.childrenIds || [];
+      const reorderedChildren = reorderChildrenIdsFromDragIds(
+        childrenIds,
+        activeId,
+        overId,
+        cardData.docId
+      );
+      if (!reorderedChildren) return;
+
+      const previousChildren = childrenIds;
+      setField('childrenIds', reorderedChildren);
+      const ok = await persistChildrenAfterReorder(reorderedChildren);
+      if (!ok) {
+        setField('childrenIds', previousChildren);
+      }
+    },
+    [
+      cardData.childrenIds,
+      cardData.docId,
+      cardData.galleryMedia,
+      persistChildrenAfterReorder,
+      persistGalleryAfterSlotSave,
+      setField,
+    ]
   );
 
   const handleSetGalleryItemAsCover = useCallback(
@@ -809,7 +945,15 @@ const CardForm: React.FC = () => {
         />
       )}
       {studioShellForm && !studioShellDnd ? (
-        <DndContext onDragEnd={() => undefined}>
+        <DndContext
+          sensors={localShellFormSensors}
+          collisionDetection={closestCenter}
+          onDragOver={handleLocalShellFormDragOver}
+          onDragCancel={handleLocalShellFormDragCancel}
+          onDragEnd={(event) => {
+            void handleLocalShellFormDragEnd(event);
+          }}
+        >
           <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
             <div className={styles.mainContent}>
               <div className={styles.header}>

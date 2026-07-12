@@ -147,6 +147,19 @@
   background-position: 0 0, center top;
 }
 
+/**
+ * Admin/Studio: pane-local scroll only. Do not let this shell become a second vertical scroller
+ * under the app header — nested Studio Compose owns its own `.studioCardEditScroll`.
+ */
+.mainContentAdmin {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--spacing-sm);
+}
+
 @media (max-width: 1024px) {
   .mainContent {
     padding-left: 0;
