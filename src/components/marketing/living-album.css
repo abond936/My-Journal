@@ -205,3 +205,115 @@
     transform: none;
   }
 }
+
+.livingAlbum .featureCard,
+.livingAlbum .trustCard,
+.livingAlbum .faqItem,
+.livingAlbum .pricingCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.livingAlbum .pricingCardFeatured {
+  border-color: oklch(0.72 0.1 45);
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.1 45 / 0.35),
+    0 18px 40px -18px oklch(0.28 0.03 50 / 0.28);
+}
+
+@media (min-width: 1024px) {
+  .livingAlbum .pricingCardFeatured {
+    transform: translateY(-0.35rem);
+  }
+}
+
+.livingAlbum .pricingBadge {
+  background: oklch(0.91 0.04 55);
+  color: var(--terracotta-deep);
+}
+
+.livingAlbum .pricingPrice {
+  letter-spacing: -0.02em;
+}
+
+.livingAlbum .pipelineStep {
+  position: relative;
+  padding-left: 1.25rem;
+  border-left: 2px solid oklch(0.87 0.02 75);
+}
+
+.livingAlbum .pipelineStep::before {
+  content: '';
+  position: absolute;
+  left: -0.4rem;
+  top: 0.35rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 9999px;
+  background: var(--terracotta);
+}
+
+.livingAlbum .landingForm {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+}
+
+.livingAlbum .landingForm label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--espresso);
+}
+
+.livingAlbum .landingForm input,
+.livingAlbum .landingForm textarea,
+.livingAlbum .landingForm select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: oklch(0.985 0.008 88);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9375rem;
+  color: var(--espresso);
+}
+
+.livingAlbum .landingForm input:disabled,
+.livingAlbum .landingForm textarea:disabled,
+.livingAlbum .landingForm select:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.livingAlbum .landingFormNote {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.livingAlbum .resourceLink {
+  display: block;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.livingAlbum .resourceLink:hover {
+  border-color: oklch(0.75 0.06 45);
+  box-shadow: 0 4px 14px -6px oklch(0.28 0.03 50 / 0.18);
+}
+
+.livingAlbum .resourceLinkTitle {
+  font-weight: 600;
+  color: var(--espresso);
+}
+
+.livingAlbum .resourceLinkDesc {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}

@@ -7,7 +7,7 @@
 import './living-album.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight } from 'lucide-react';
+import { ArrowDown, ArrowRight, Check, ExternalLink } from 'lucide-react';
 import { useReveal } from '@/lib/hooks/useReveal';
 
 const IMG = {
@@ -17,8 +17,50 @@ const IMG = {
     'https://images.unsplash.com/photo-1611532736597-dea2dccb660b?auto=format&fit=crop&w=1000&q=80',
 };
 
+const NAV_LINKS = [
+  { href: '#about', label: 'About' },
+  { href: '#features', label: 'Features' },
+  { href: '#how', label: 'How It Works' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#faq', label: 'FAQ' },
+];
+
 const signInButtonClass =
   'rounded-full bg-terracotta text-primary-foreground font-semibold transition-all duration-150 hover:bg-terracotta-deep active:scale-[0.97]';
+
+function SectionIntro({
+  kicker,
+  title,
+  titleEmphasis,
+  children,
+  className = '',
+}: {
+  kicker: string;
+  title: string;
+  titleEmphasis?: string;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`max-w-2xl ${className}`.trim()}>
+      <p className="kicker reveal mb-5">{kicker}</p>
+      <h2 className="reveal reveal-d1 font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
+        {title}
+        {titleEmphasis ? (
+          <>
+            {' '}
+            <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
+              {titleEmphasis}
+            </em>
+          </>
+        ) : null}
+      </h2>
+      {children ? (
+        <div className="reveal reveal-d2 mt-6 text-lg leading-relaxed text-muted-foreground">{children}</div>
+      ) : null}
+    </div>
+  );
+}
 
 function PhoneStoryFeedMock({ className = '' }: { className?: string }) {
   return (
@@ -51,20 +93,12 @@ function StoryCardTextMock() {
           <span className="rounded-full bg-[oklch(0.58_0.14_45)] px-2.5 py-0.5 text-[0.65rem] font-semibold text-[oklch(0.98_0.008_85)]">
             Family
           </span>
-          <span className="rounded-full bg-[oklch(0.52_0.08_145)] px-2.5 py-0.5 text-[0.65rem] font-semibold text-[oklch(0.98_0.008_85)]">
-            Summer
-          </span>
-          <span className="rounded-full bg-[oklch(0.48_0.1_310)] px-2.5 py-0.5 text-[0.65rem] font-semibold text-[oklch(0.98_0.008_85)]">
-            Michigan
-          </span>
         </div>
         <h4 className="mt-4 font-[Fraunces] text-2xl font-semibold text-[oklch(0.97_0.008_85)]">
           Wood&apos;s Lake
         </h4>
         <p className="mt-3 font-[Newsreader] text-base leading-relaxed text-[oklch(0.88_0.012_85)]">
-          Occasionally we would go swimming at Wood&apos;s Lake — a short drive from our house. I was
-          probably half a palisade swimming rat. The woods were not clearing, and the sandy pods are
-          lovely. It is a beautiful summer haunt. It had a large slide in the middle.
+          Occasionally we would go swimming at Wood&apos;s Lake — a short drive from our house.
         </p>
       </div>
     </div>
@@ -91,24 +125,14 @@ function Header() {
     >
       <div className="container flex items-center justify-between gap-4 py-4">
         <a href="#top" className="flex shrink-0 items-center gap-2.5">
-          <img
-            src={IMG.logo}
-            alt="My Stories mark"
-            width={144}
-            height={36}
-            className="brandMark"
-          />
+          <img src={IMG.logo} alt="My Stories mark" width={144} height={36} className="brandMark" />
         </a>
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-8 px-4 text-sm font-medium text-muted-foreground md:flex">
-          <a href="#problem" className="hover:text-terracotta transition-colors">
-            The Problem
-          </a>
-          <a href="#how" className="hover:text-terracotta transition-colors">
-            How It Works
-          </a>
-          <a href="#promise" className="hover:text-terracotta transition-colors">
-            The Promise
-          </a>
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-6 px-2 text-sm font-medium text-muted-foreground lg:flex lg:gap-8">
+          {NAV_LINKS.map((link) => (
+            <a key={link.href} href={link.href} className="hover:text-terracotta transition-colors">
+              {link.label}
+            </a>
+          ))}
         </nav>
         <Link href="/login" className={`${signInButtonClass} shrink-0 text-sm px-5 py-2.5`}>
           Sign in
@@ -138,34 +162,33 @@ function Hero() {
             </em>
           </h1>
           <p className="reveal reveal-d2 mt-7 text-lg md:text-xl leading-relaxed text-muted-foreground">
-            My Stories combines your media and stories into a beautiful, shareable, private,
-            social-media-like feed.
+            My Stories helps one author organize media, build story-rich cards and collections, and
+            deliver a private mobile reading experience for family and friends.
           </p>
           <div className="reveal reveal-d3 mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/login"
               className={`group inline-flex items-center gap-2 ${signInButtonClass} px-7 py-3.5`}
             >
-              Start your first story
+              Sign in
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
             <a
-              href="#problem"
+              href="#about"
               className="inline-flex items-center gap-2 text-sm font-semibold text-espresso/80 hover:text-terracotta transition-colors"
             >
-              Why it matters
+              Learn more
               <ArrowDown className="h-4 w-4" />
             </a>
           </div>
         </div>
-
         <PhoneStoryFeedMock className="reveal reveal-d1 lg:justify-self-end" />
       </div>
     </section>
   );
 }
 
-function Problem() {
+function About() {
   const failures = [
     { title: 'Printed albums', text: 'They sit on a shelf.' },
     { title: 'Digital folders', text: 'Just electronic scrapbooks.' },
@@ -174,28 +197,28 @@ function Problem() {
   ];
 
   return (
-    <section id="problem" className="relative bg-paper-deep py-24 md:py-32">
-      <div className="container grid gap-14 lg:grid-cols-[42fr_58fr] lg:gap-20 items-start">
+    <section id="about" className="relative bg-paper-deep py-24 md:py-32">
+      <div className="container grid gap-16 lg:grid-cols-[42fr_58fr] lg:gap-20 items-start">
         <div className="lg:sticky lg:top-28">
-          <p className="kicker reveal mb-5">The problem</p>
-          <h2 className="reveal reveal-d1 font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
-            Photos pile up. Stories get{' '}
-            <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
-              trapped.
-            </em>
-          </h2>
-          <p className="reveal reveal-d2 mt-6 text-lg leading-relaxed text-muted-foreground">
-            You have hundreds to thousands of pictures in your phone, folders or boxes with the stories
-            trapped inside.
-          </p>
-          <p className="reveal reveal-d3 mt-5 font-[Newsreader] italic text-lg text-espresso/80">
-            You want more than a pile of pictures — you want to experience and share the stories that go
-            with them.
-          </p>
+          <SectionIntro kicker="About" title="Built for one author," titleEmphasis="shared with family.">
+            <p>
+              My Stories is a private hosted app for a single storyteller — the person who owns the
+              archive — and the family and friends they invite to read.
+            </p>
+            <p className="mt-4">
+              It is not a public social network, a photo manager, or a professional DAM. The promise
+              is simpler: <strong className="font-semibold text-espresso">organize → integrate stories → deliver</strong>{' '}
+              so memories can be re-experienced on a phone.
+            </p>
+          </SectionIntro>
         </div>
 
         <div>
-          <figure className="photo-print reveal mx-auto w-full max-w-lg rotate-[1.5deg]">
+          <p className="reveal kicker mb-4">The problem</p>
+          <h3 className="reveal reveal-d1 font-[Fraunces] text-2xl font-semibold text-espresso">
+            Photos pile up. Stories get trapped.
+          </h3>
+          <figure className="photo-print reveal reveal-d2 mx-auto mt-8 w-full max-w-lg rotate-[1.5deg]">
             <img
               src={IMG.scattered}
               alt="A scattered pile of old printed photographs and a closed album"
@@ -212,7 +235,7 @@ function Problem() {
                 key={failure.title}
                 className={`reveal ${index % 2 === 1 ? 'reveal-d1' : ''} bg-card p-6`}
               >
-                <h3 className="font-[Fraunces] font-semibold text-lg text-espresso">{failure.title}</h3>
+                <h4 className="font-[Fraunces] font-semibold text-lg text-espresso">{failure.title}</h4>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{failure.text}</p>
               </div>
             ))}
@@ -223,103 +246,431 @@ function Problem() {
   );
 }
 
-function Solution() {
+function Features() {
+  const features = [
+    {
+      title: 'Organization assistance',
+      text: 'AI-assisted tools help you sort and tag media — with you in control. Suggestions are reviewed; nothing is silently rewritten.',
+    },
+    {
+      title: 'Story integration',
+      text: 'Build cards and collections that combine photos, narrative, captions, and covers into one editorial unit.',
+    },
+    {
+      title: 'Private mobile reading',
+      text: 'Family readers browse a beautiful feed on their phones — in Guided collections or Freeform discovery.',
+    },
+    {
+      title: 'Author-controlled publishing',
+      text: 'You decide what is draft and what is published. Invited readers see only what you share.',
+    },
+  ];
+
   return (
-    <section id="how" className="py-24 md:py-32">
+    <section id="features" className="py-24 md:py-32">
       <div className="container">
-        <div className="max-w-2xl">
-          <p className="kicker reveal mb-5">How My Stories works</p>
-          <h2 className="reveal reveal-d1 font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
-            Three steps to{' '}
-            <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
-              living stories.
-            </em>
-          </h2>
-        </div>
+        <SectionIntro
+          kicker="Features"
+          title="Everything you need to turn an archive into"
+          titleEmphasis="living stories."
+        >
+          <p>Honest capabilities aligned with how My Stories actually works today and where it is headed.</p>
+        </SectionIntro>
 
-        <div className="mt-20 grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <div className="reveal">
-            <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">01</span>
-            <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">
-              Organize the photos
-            </h3>
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Bring order to your unruly media with powerful, AI-assisted tools.
-            </p>
-          </div>
-          <PhoneStoryFeedMock className="reveal reveal-d1" />
-        </div>
-
-        <div className="mt-24 grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <StoryCardTextMock />
-          <div className="reveal order-1 lg:order-2">
-            <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">02</span>
-            <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Tell the stories</h3>
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Add titles, covers, narrative and captions.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-24 grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
-          <div className="reveal">
-            <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">03</span>
-            <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">
-              Enjoy and share
-            </h3>
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Publish to your private, always-available feed and share with family and friends.
-            </p>
-          </div>
-          <PhoneStoryFeedMock className="reveal reveal-d1" />
+        <div className="mt-14 grid gap-5 sm:grid-cols-2">
+          {features.map((feature, index) => (
+            <article
+              key={feature.title}
+              className={`featureCard reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-6 md:p-7`}
+            >
+              <h3 className="font-[Fraunces] text-xl font-semibold text-espresso">{feature.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{feature.text}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function Promise() {
+function HowItWorks() {
+  const pipeline = [
+    { step: 'Digitize (optional)', detail: 'Scan or convert prints elsewhere — My Stories does not scan in-app.' },
+    { step: 'Import', detail: 'Bring media into your private library through supported import paths.' },
+    { step: 'Organize & tag', detail: 'Sort, tag, and curate with assistive tools you confirm.' },
+    { step: 'Build stories', detail: 'Compose cards and collections with titles, narrative, and covers.' },
+    { step: 'Publish', detail: 'Release finished work to your private reader feed when you are ready.' },
+    { step: 'Family reads', detail: 'Invited readers explore on mobile — Guided paths or Freeform browsing.' },
+  ];
+
   return (
-    <section id="promise" className="bg-paper-deep py-24 md:py-28">
+    <section id="how" className="bg-paper-deep py-24 md:py-32">
       <div className="container">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="kicker reveal mb-6">The promise</p>
-          <blockquote className="reveal reveal-d1 font-[Newsreader] italic text-3xl md:text-4xl leading-snug text-espresso">
-            &ldquo;Your images captured the moments.{' '}
-            <span className="text-terracotta">My Stories</span> brings them to life.&rdquo;
-          </blockquote>
-          <div className="reveal reveal-d2 mx-auto mt-8 h-px w-24 bg-terracotta/40" />
-          <p className="reveal reveal-d2 mt-8 text-lg leading-relaxed text-muted-foreground">
-            Finally, a way to turn what you&apos;ve captured into a living, story-rich experience.
+        <SectionIntro kicker="How it works" title="Three steps in the app," titleEmphasis="one clear journey.">
+          <p>The product workflow inside My Stories — plus where outside help fits.</p>
+        </SectionIntro>
+
+        <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:gap-20">
+          <div className="reveal space-y-10">
+            <div>
+              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">01</span>
+              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Organize the photos</h3>
+              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+                Bring order to unruly media with powerful, AI-assisted tools — always under your control.
+              </p>
+            </div>
+            <div>
+              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">02</span>
+              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Tell the stories</h3>
+              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+                Add titles, covers, narrative, and captions that give your images context.
+              </p>
+            </div>
+            <div>
+              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">03</span>
+              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Enjoy and share</h3>
+              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+                Publish to a private, always-available feed for family and friends.
+              </p>
+            </div>
+          </div>
+
+          <div className="reveal reveal-d1">
+            <StoryCardTextMock />
+            <ol className="mt-10 space-y-5">
+              {pipeline.map((item) => (
+                <li key={item.step} className="pipelineStep pl-4">
+                  <p className="font-semibold text-espresso">{item.step}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const PRICING_TIERS = [
+  {
+    name: 'Personal',
+    tagline: 'One author, a small private circle',
+    features: [
+      'Single author account',
+      'Up to a handful of family readers',
+      'Private hosted library',
+      'Story cards and collections',
+      'Mobile reader feed',
+    ],
+    featured: false,
+  },
+  {
+    name: 'Family',
+    tagline: 'The core My Stories experience',
+    badge: 'Most families',
+    features: [
+      'Single author account',
+      'More invited family readers',
+      'Full organization and story tools',
+      'Guided and Freeform reading',
+      'Author-controlled publishing',
+      'Hosted backup posture',
+    ],
+    featured: true,
+  },
+  {
+    name: 'Legacy',
+    tagline: 'Larger archives and gift projects',
+    features: [
+      'Single author account',
+      'Expanded reader invitations',
+      'Priority onboarding support',
+      'Legacy or gift-project setup',
+      'Everything in Family',
+    ],
+    featured: false,
+  },
+] as const;
+
+function Pricing() {
+  return (
+    <section id="pricing" className="py-24 md:py-32">
+      <div className="container">
+        <SectionIntro
+          kicker="Pricing"
+          title="Private hosting for one author"
+          titleEmphasis="and family readers."
+          className="mx-auto max-w-3xl text-center"
+        >
+          <p>
+            My Stories is a commercially shaped private app: one author account, invited family readers,
+            and hosted infrastructure you do not have to run yourself.
           </p>
+          <p className="mt-4">
+            Three plan shapes below reflect how most families will use the product. Exact prices and trials
+            are still being defined — we are not publishing numbers yet.
+          </p>
+        </SectionIntro>
+
+        <div className="mt-14 grid gap-6 lg:grid-cols-3 lg:gap-8 lg:items-stretch">
+          {PRICING_TIERS.map((tier, index) => (
+            <article
+              key={tier.name}
+              className={`pricingCard reveal flex flex-col p-6 md:p-8 ${
+                tier.featured ? 'pricingCardFeatured reveal-d1' : index === 2 ? 'reveal-d2' : ''
+              }`}
+            >
+              {'badge' in tier && tier.badge ? (
+                <p className="pricingBadge mb-4 w-fit rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                  {tier.badge}
+                </p>
+              ) : (
+                <div className="mb-4 h-[1.625rem]" aria-hidden="true" />
+              )}
+              <h3 className="font-[Fraunces] text-2xl font-semibold text-espresso">{tier.name}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tier.tagline}</p>
+              <p className="pricingPrice mt-6 font-[Fraunces] text-3xl font-semibold text-espresso">
+                Pricing TBD
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Per month · details coming soon</p>
+              <ul className="pricingFeatures mt-8 flex-1 space-y-3">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex gap-2.5 text-sm leading-relaxed text-muted-foreground">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-terracotta" aria-hidden="true" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#contact"
+                className={`mt-8 block w-full px-6 py-3 text-center text-sm font-semibold transition-all duration-150 ${
+                  tier.featured
+                    ? signInButtonClass
+                    : 'rounded-full border border-border bg-card text-espresso hover:border-terracotta/40 hover:bg-accent active:scale-[0.97]'
+                }`}
+              >
+                Request access
+              </a>
+            </article>
+          ))}
+        </div>
+
+        <p className="reveal reveal-d3 mx-auto mt-10 max-w-2xl text-center text-sm leading-relaxed text-muted-foreground">
+          Have an invitation already?{' '}
+          <Link href="/login" className="font-semibold text-terracotta hover:text-terracotta-deep">
+            Sign in
+          </Link>{' '}
+          above. Questions about which plan fits? Use the contact section below when request access opens.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Resources() {
+  const resources = [
+    {
+      title: 'Library of Congress — Personal Archiving',
+      href: 'https://www.loc.gov/programs/personal-archiving/',
+      description: 'Guidance on preserving photos, audio, and video at home.',
+    },
+    {
+      title: 'National Archives — Preserving Family Records',
+      href: 'https://www.archives.gov/preservation/family-archives',
+      description: 'Practical tips for storing and handling family documents and prints.',
+    },
+    {
+      title: 'Association of Personal Photo Organizers',
+      href: 'https://www.appo.org/',
+      description: 'Professional organizers who help sort and digitize personal archives.',
+    },
+  ];
+
+  return (
+    <section id="resources" className="bg-paper-deep py-24 md:py-32">
+      <div className="container">
+        <SectionIntro kicker="Resources" title="Helpful pointers," titleEmphasis="not partnerships.">
+          <p>
+            Digitization and heavy organization often happen outside the app. These are editorial
+            references only — not endorsements, integrations, or vendor relationships.
+          </p>
+        </SectionIntro>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-3">
+          {resources.map((resource, index) => (
+            <a
+              key={resource.href}
+              href={resource.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`resourceLink reveal ${index === 1 ? 'reveal-d1' : ''} ${index === 2 ? 'reveal-d2' : ''}`}
+            >
+              <span className="resourceLinkTitle inline-flex items-center gap-1.5">
+                {resource.title}
+                <ExternalLink className="h-3.5 w-3.5 text-terracotta" aria-hidden />
+              </span>
+              <span className="resourceLinkDesc">{resource.description}</span>
+            </a>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function CTA() {
+function PrivacyTrust() {
+  const points = [
+    {
+      title: 'Family-private by design',
+      text: 'Content is meant for invited readers, not the open web or a public social feed.',
+    },
+    {
+      title: 'Authenticated access',
+      text: 'Accounts are operator-granted in v1. Readers sign in to see published material.',
+    },
+    {
+      title: 'Author-owned content',
+      text: 'You control drafts, publishing, and who can read what you share.',
+    },
+    {
+      title: 'Backup posture',
+      text: 'Your archive is hosted with operational backup practices; this summary is not a legal policy.',
+    },
+  ];
+
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
-      <div
-        aria-hidden
-        className="absolute -bottom-48 left-1/2 h-[30rem] w-[44rem] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
-        style={{
-          background: 'radial-gradient(closest-side, oklch(0.8 0.1 55 / 0.6), transparent)',
-        }}
-      />
+    <section id="privacy" className="py-24 md:py-32">
+      <div className="container">
+        <SectionIntro kicker="Privacy & trust" title="Your stories stay" titleEmphasis="yours.">
+          <p>Plain-language expectations before you sign in — not terms of service.</p>
+        </SectionIntro>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2">
+          {points.map((point, index) => (
+            <article
+              key={point.title}
+              className={`trustCard reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-6`}
+            >
+              <h3 className="font-[Fraunces] text-lg font-semibold text-espresso">{point.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{point.text}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FAQ() {
+  const faqs = [
+    {
+      q: 'How do I get an account?',
+      a: 'v1 access is invitation-based. An operator creates accounts for the author and invited family readers. Open self-signup is not available yet.',
+    },
+    {
+      q: 'Who can see my stories?',
+      a: 'Only signed-in users you have been granted access for. Draft work stays private to the author until published.',
+    },
+    {
+      q: 'Is this Google Photos with stories?',
+      a: 'No. My Stories is a private editorial storytelling app — not unlimited cloud sync, not a DAM, and not a public network.',
+    },
+    {
+      q: 'What is the difference between mobile reading and Studio?',
+      a: 'Readers use the mobile-friendly feed (Guided and Freeform). Authors use Studio in admin to organize, compose, and publish.',
+    },
+    {
+      q: 'Where do I get help?',
+      a: 'Invited users should contact their project operator. In-app Help is planned; for now, use Sign in once you have credentials.',
+    },
+  ];
+
+  return (
+    <section id="faq" className="bg-paper-deep py-24 md:py-32">
+      <div className="container max-w-3xl">
+        <SectionIntro kicker="FAQ" title="Common questions" className="mx-auto text-center">
+          <p className="mx-auto">Short answers for prospective authors and family readers.</p>
+        </SectionIntro>
+
+        <dl className="mt-12 space-y-4">
+          {faqs.map((faq, index) => (
+            <div key={faq.q} className={`faqItem reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-5 md:p-6`}>
+              <dt className="font-[Fraunces] text-lg font-semibold text-espresso">{faq.q}</dt>
+              <dd className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">{faq.a}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+function ContactAccess() {
+  return (
+    <section id="contact" className="py-24 md:py-32">
+      <div className="container grid gap-12 lg:grid-cols-2 lg:items-start">
+        <SectionIntro kicker="Contact / access" title="Request access" titleEmphasis="(coming soon).">
+          <p>
+            If you do not yet have credentials, request-access and operator contact channels are still
+            being set up. Use the placeholder form below to preview the flow — submissions are not active
+            yet.
+          </p>
+          <p className="mt-4">
+            Already invited?{' '}
+            <Link href="/login" className="font-semibold text-terracotta hover:text-terracotta-deep">
+              Sign in here
+            </Link>
+            .
+          </p>
+        </SectionIntro>
+
+        <div className="reveal reveal-d1 rounded-xl border border-border bg-card p-6 md:p-8">
+          <h3 className="font-[Fraunces] text-xl font-semibold text-espresso">Request access (placeholder)</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Disabled until the contact channel is configured. No data is sent.
+          </p>
+          <form className="landingForm mt-6" aria-label="Request access placeholder form">
+            <label>
+              Name
+              <input type="text" name="contact-name" placeholder="Your name" disabled />
+            </label>
+            <label>
+              Email
+              <input type="email" name="contact-email" placeholder="you@example.com" disabled />
+            </label>
+            <label>
+              Message
+              <textarea
+                name="contact-message"
+                rows={4}
+                placeholder="Tell us about your project (optional)"
+                disabled
+              />
+            </label>
+            <button
+              type="button"
+              disabled
+              className={`${signInButtonClass} mt-2 w-full cursor-not-allowed px-6 py-3 text-sm opacity-60`}
+            >
+              Send request — coming soon
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClosingCta() {
+  return (
+    <section className="relative overflow-hidden border-t border-border py-20 md:py-24">
       <div className="container relative text-center">
-        <h2 className="reveal font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
-          Start bringing your photos{' '}
-          <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
-            to life.
-          </em>
-        </h2>
-        <p className="reveal reveal-d1 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-          <span className="block">Gather the photos. Tell the stories. Enjoy at your fingertips.</span>
-          <span className="block">Your first story takes just minutes.</span>
-        </p>
-        <div className="reveal reveal-d2 mt-9 flex flex-wrap items-center justify-center gap-4">
+        <blockquote className="reveal font-[Newsreader] italic text-2xl md:text-3xl leading-snug text-espresso">
+          &ldquo;Your images captured the moments.{' '}
+          <span className="text-terracotta">My Stories</span> brings them to life.&rdquo;
+        </blockquote>
+        <div className="reveal reveal-d1 mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/login"
             className={`group inline-flex items-center gap-2 ${signInButtonClass} px-8 py-4 text-lg`}
@@ -338,15 +689,9 @@ function Footer() {
     <footer className="border-t border-border py-10">
       <div className="container flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="flex items-center gap-2.5">
-          <img
-            src={IMG.logo}
-            alt="My Stories mark"
-            width={112}
-            height={28}
-            className="brandMarkFooter"
-          />
+          <img src={IMG.logo} alt="My Stories mark" width={112} height={28} className="brandMarkFooter" />
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground text-center sm:text-left">
           Gather the photos. Tell the stories. Enjoy at your fingertips.
         </p>
         <Link
@@ -369,10 +714,15 @@ export default function LivingAlbumLanding() {
       <Header />
       <main>
         <Hero />
-        <Problem />
-        <Solution />
-        <Promise />
-        <CTA />
+        <About />
+        <Features />
+        <HowItWorks />
+        <Pricing />
+        <Resources />
+        <PrivacyTrust />
+        <FAQ />
+        <ContactAccess />
+        <ClosingCta />
       </main>
       <Footer />
     </div>

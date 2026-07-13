@@ -186,16 +186,16 @@ Legend:
 
 **§ Landing & entry (`02` Navigation — Landing Page, Sign-in)**
 
-- **Landing page program** - **shipped** (public `/` without auth redirect; sign-in at `/login` redirects when already credentialed).
-- **Hero** - Product promise and **Sign in** CTA.
-- **About** - Audience and problem statement.
-- **Features** - Organization assistance, story integration, private mobile reading, author-controlled publishing.
-- **How it works** - Digitize (optional) → import → organize/tag → build stories → publish → family reads.
-- **Pricing** - Commercial shape TBD; do not overpromise.
-- **Resources** - Curated external pointers (disclaimer: not endorsements).
-- **Privacy & trust** - Family-private hosting summary.
-- **FAQ** - Access, mobile vs admin, help pointers.
-- **Contact / access** - Request-access channel TBD.
+- **Landing page program** - **shipped** (full v1 section stack; pricing/contact forms are disabled placeholders until tiers and operator channel are locked).
+- **Hero** - **shipped** — product promise and **Sign in** CTA.
+- **About** - **shipped** — audience and problem statement.
+- **Features** - **shipped** — organization, stories, private reading, publishing.
+- **How it works** - **shipped** — in-app steps + honest external pipeline.
+- **Pricing** - **placeholder shipped** — three-tier card layout (Personal / Family / Legacy); **Pricing TBD** copy; **Request access** links to contact section; numeric tiers and interest form wiring **TBD**.
+- **Resources** - **shipped** — curated external pointers (disclaimer: not endorsements).
+- **Privacy & trust** - **shipped** — family-private hosting summary.
+- **FAQ** - **shipped** — access, mobile vs admin, help pointers.
+- **Contact / access** - **placeholder shipped** — disabled request form; channel TBD.
 - **Sign-in route** - **shipped** at `/login` with landing CTAs and auth redirects.
 
 **§ Top Navigation (`02`)**

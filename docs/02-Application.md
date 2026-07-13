@@ -115,17 +115,16 @@ Legend:
 - **Public landing at /** - Living Album marketing page at root; scoped marketing theme/fonts via `(marketing)` layout; app shell hidden on marketing routes (`/`, `/login`, `/my-stories/*`).
 - **Route split** - Sign-in at `/login`; CTAs on landing link to `/login`; `/` stays on the public landing even when a session exists; `/my-stories/4` redirects to `/`.
 - **Hero & how-it-works (v1)** - Living Album hero, problem, three-step flow, promise, and sign-in CTAs shipped.
+- **Full page sections (v1)** - About, Features, How it works (in-app steps + honest pipeline), Pricing (three-tier placeholder cards; no numeric prices), Resources (outbound pointers + disclaimer), Privacy & trust, FAQ, Contact/access placeholder (disabled form), closing Sign in CTA.
 
 ⭕1 **Planned**
 
-- **About** - Who the product is for (one author, family/friends readers); expanded problem statement beyond current sections.
-- **Features** - Core capabilities aligned with `01` Product Vision: organization assistance, story integration (cards/collections), private mobile reading (Guided/Freeform), author-controlled publishing.
-- **How it works** - High-level stages: digitize elsewhere (optional) -> import -> organize/tag -> build stories -> publish -> family reads on phone. No false claim that scanning happens in-app.
-- **Pricing** - Commercial shape for v1 private hosted app (single author / family audience). Exact tiers, trial, and packaging TBD; page must not overpromise before pricing is locked.
-- **Resources** - Curated external links: photo scanning/digitization services, optional freelancers or services that help with organizing/tagging. Editorial disclaimer: pointers only, not endorsements or integrations.
-- **Privacy & trust** - Family-private hosting, authenticated access, author-owned content, backup/restore posture (summary—not legal policy).
-- **FAQ** - Short answers on access (invitation model), who can see content, mobile vs admin, and where to get help.
-- **Contact / access** - Request-access or operator contact channel (channel TBD in **❓ Open**).
+- **Pricing tiers** - Enable pricing interest form and publish tiers when packaging is locked (**❓ Open**).
+- **Contact / access channel** - Wire request-access form to operator contact when channel is chosen (**❓ Open**).
+
+❓ **Deferred (copy-only placeholders shipped)**
+
+- **Brand assets** - Final product name treatment, logo, and hero artwork source (current Title mark + phone mock retained).
 
 📋 **Contracts**
 
@@ -135,7 +134,7 @@ Legend:
 - **Refuse list (copy guardrails)** - Must not claim: public social feed, DAM/lightroom replacement, unlimited cloud sync from Google/Apple Photos, automatic story publishing, in-app photo scanning, professional print fulfillment unless shipped.
 - **Feature honesty** - Organization copy reflects assist + author control (suggest-and-confirm, not silent AI takeover). Story copy reflects cards/collections reader, not generic blog.
 - **Resources** - External links open in new tab with disclaimer; no vendor logos implying partnership unless explicitly approved later.
-- **Pricing placeholder** - Until tiers locked: describe private hosted, one author, family readers without numeric price commitment; optional request-access CTA aligned with **Contact / access**.
+- **Pricing placeholder** - Until tiers locked: three plan-shape cards (Personal, Family, Legacy) describe private hosted, one author, and family readers without numeric price commitment; **Request access** CTAs scroll to **Contact / access** (form still disabled until channel locked).
 - **Visual & theme** - Public page uses reader-adjacent branding (Journal/Editorial feel) but does not load Theme Management workbench or admin bundles on anonymous visit. Responsive layout follows `04` §9 spirit where applicable.
 - **SEO & sharing** - Basic title/description for private product; no indexed user content on public routes.
 
@@ -150,6 +149,7 @@ Legend:
 ❓ **Open**
 
 - **Brand assets** - Final product name treatment, logo, and hero artwork source.
+- **Pricing & contact wiring** - Enable placeholder forms when tiers and operator contact channel are locked.
 
 📘 **Resources** - In-app Help and FAQ depth: **Top Navigation** ⭕1 **In-app Help**; canon promise: `01` Product Vision.
 
