@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Figtree, Fraunces, Newsreader } from 'next/font/google';
-import '@/components/marketing/living-album.css';
 
 const figtree = Figtree({
   subsets: ['latin'],
@@ -21,7 +20,7 @@ const newsreader = Newsreader({
   display: 'swap',
 });
 
-export default function LandingPageFourLayout({ children }: { children: ReactNode }) {
+export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className={`${figtree.className} ${fraunces.className} ${newsreader.className}`}>
       {children}

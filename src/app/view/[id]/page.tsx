@@ -6,6 +6,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
+import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
 import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
 
 interface CardPageProps {
@@ -49,7 +50,7 @@ export default async function CardPage({ params }: CardPageProps) {
   const session = (await getServerSession(authOptions)) as Session | null;
 
   if (!session) {
-    redirect(`/?callbackUrl=/view/${encodeURIComponent(id)}`);
+    redirect(buildLoginRedirectPath(`/view/${encodeURIComponent(id)}`));
   }
 
   const pageData = await getCardData(id, session);

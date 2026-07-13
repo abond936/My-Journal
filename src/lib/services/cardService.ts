@@ -1821,6 +1821,18 @@ export async function updateCardGallery(
   void syncCardToTypesense(updatedCard);
   const syncMediaIds = new Set<string>([...mediaRemoved, ...mediaAdded]);
   syncMediaIds.forEach((mediaId) => void syncMediaToTypesenseById(mediaId));
+
+  if (mediaSetChanged) {
+    const { syncGalleryTagInheritanceForCard } = await import(
+      '@/lib/services/galleryTagInheritanceService'
+    );
+    await syncGalleryTagInheritanceForCard(cardId);
+    const afterInherit = await getCardById(cardId);
+    if (afterInherit) {
+      return afterInherit;
+    }
+  }
+
   return updatedCard;
 }
 

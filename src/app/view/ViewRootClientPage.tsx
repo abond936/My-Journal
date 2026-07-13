@@ -144,15 +144,20 @@ function ViewPageContent() {
   }
 
   if (error) {
-    return (
-      <div className={`${styles.page} ${styles.errorState}`} role="alert">
-        <p className={styles.errorTitle}>This view could not update right now.</p>
-        <p className={styles.errorDetail}>{feedErrorMessage}</p>
-        <p className={styles.errorDetail}>
-          Try clearing filters or reloading the page in a moment.
-        </p>
-      </div>
-    );
+    const hasFeedContent =
+      visibleCards.length > 0 ||
+      Boolean(visibleFeedSections?.some((section) => section.cards.length > 0));
+    if (!hasFeedContent && !isInitialLoading) {
+      return (
+        <div className={`${styles.page} ${styles.errorState}`} role="alert">
+          <p className={styles.errorTitle}>This view could not update right now.</p>
+          <p className={styles.errorDetail}>{feedErrorMessage}</p>
+          <p className={styles.errorDetail}>
+            Try clearing filters or reloading the page in a moment.
+          </p>
+        </div>
+      );
+    }
   }
 
   return (

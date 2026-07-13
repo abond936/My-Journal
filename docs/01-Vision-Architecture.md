@@ -18,7 +18,7 @@ Legend:
   - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
   - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
 - **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, reader responsive/nav contract §9, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
-- **AI Behavior** - AI process, approval, and execution rules live in `.cursor/rules/Execution-Discipline.mdc`, while the collaboration contract for author and AI roles lives in `00-Project-Framework.md`.
+- **AI Behavior** - Agent process, approval, scope, and execution rules live in `.cursor/rules/Agent-Discipline.mdc` and first-turn grounding in `.cursor/rules/Startup-Grounding.mdc`.
 - **Decision hierarchy** - `01` is the canonical source for platform invariants, data authority, mutation rules, and integrity boundaries. Product or workflow simplification is encouraged, but it must preserve tagging truth, relationship truth, and reader truth.
 
 ### Document Structure
@@ -34,10 +34,11 @@ Legend:
 
 ### Content Placement
 
-- **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under Tag Management, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
+- **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under **Studio Tags**, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
 - **One Fact, One Home** - Each fact lives in exactly one document. `02-Application.md` describes *what exists today* and *what's planned per area*. `03-Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `02-Application.md` and remove it from `03-Implementation.md`.
 - **Implementation wording** - Do not paraphrase `⭕1` bullets when copying them into `03-Implementation.md`. Paste the **bold label** and the description after `-` exactly as in the source doc (`02-Application.md` or, for Backend planned work, `01-Vision-Architecture.md`). If the product text changes, change it in the source doc first, then mirror the update in `03-Implementation.md`.
 - **Execution scope** - `03-Implementation.md` is the active milestone plan, not a historical log. It should carry only the current milestone, the next milestones, their gating criteria, and the active `⭕1` items required to advance them. Dated closeout notes and shipped status narration belong in `02` only if they define current product behavior; otherwise they should be removed from canon.
+- **Backend status** - Shipped backend hardening, commercial gates, and slice narration live in `03-Implementation.md`. This file's Backend *Features* carries stack anchors, architectural `📐` contracts, and summary `⭕1` / `⭕2` intent only—not file paths, env wiring, or dated closeout detail.
 
 ---
 
@@ -45,38 +46,34 @@ Legend:
 
 *Intent*
 
-The product combines media (photos and videos) and text into an interactive journal-album that supports both author-guided storytelling and freeform discovery. It is not a generic journal app and not just a photo manager with captions.
+People have masses (boxes, drives, phones) of disorganized media (photos and videos). They want to flexibly and easily enjoy and share them with others, and, in some cases, they want to integrate the stories they contain. But until now no integrated tools provide this. The challenges are the following:
 
-- **Storytelling** - A private hosted storytelling journal built from personal and family archives.
-- **Comprehensive** - Media, authored narrative, and structured discovery in one coherent product.
+- often images are still in hard copy and difficult to repurpose.
+- even if digitized, they lack useful organization.
+- even if organized, they lack the integration their stories.
+- even if integrated with stories, they lack the flexible, friction-less vehicle to consume and share them.
 
-Phone-native and scanned-photo imports are both first-class inputs. The product should reduce image overload by helping the author organize, tag, and shape media into meaningful cards and collections for family consumption.
+The easiest part is digitizing the media--many services exist for this. Once the media is digitized, this product solves the remaining three difficult problems. It:
 
-What must make this product distinctly better is not feature breadth alone, but authoring simplicity. The core workflows, creating cards, tagging cards, importing images, tagging images, and assigning images to cards, must feel intuitive, fast, and fluid enough that working with a large archive is manageable rather than exhausting. Even if the product does more than consumer photo apps, it should still aspire to their clarity of navigation, selection, and search rather than tolerating admin friction as the cost of capability.
+- **organizes** digitized media with the help of AI.
+- **integrates** the organized media with the stories behind them, and
+- **delivers** the media-illustrated stories in a mobile, private social-media-like feed.
+
+It is not a generic journal app, a photo manager with captions or a social media app.
 
 - **Primary customer** - v1 is for one author first, then for others with similar archive/storytelling needs.
-- **Commercial shape** - The initial commercial shape is a **private hosted journal** for one author and family audience.
+- **Commercial shape** - The initial commercial shape is a **private hosted app** for one author and family/friends audience.
+- **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family/friends as the primary readers.
 - **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
-- **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family members as the primary readers.
 
 *Principles*
 
-- **Creation + Consumption** - The product succeeds only if both administration and consumption workflows are strong enough to support each other.
-- **Authoring Simplicity** - Core archive workflows should feel intuitive, fast, and fluid, with as little friction as possible between media intake, organization, and story-building.
-- **Media-native Performance** - Core browsing and authoring interactions should feel closer to a modern media app than to a conventional admin screen, especially for tile browsing, card switching, and lightweight edits.
-- **Progressive Honesty** - When work cannot be truly instant, the product should still respond immediately, preserve context, and communicate truthful background progress rather than blanking, stalling, or forcing ritual refresh behavior.
-- **Curated & Freeform** - The product should support both guided narrative exploration and open-ended discovery as first-class modes.
-- **Import-Critical** - Importing and structuring large photo libraries is a core product capability, not a side utility.
-- **Relational** - Large archives should become discoverable through dimensional, hierarchical tags and card relationships rather than feeling like undifferentiated media storage.
-- **Multi-Media** - Stories should combine text and media in one interactive reading experience.
-- **Archive + Renditions** - Preserve original assets for archive, recovery, and eventual print/export while serving fit-for-surface derivatives for browsing, authoring, and reader delivery.
-- **Future-aware Media Model** - The media model should be mature enough for video, phone-native formats, metadata-rich ingest, system-derived organization aids, and eventual print/export workflows without treating those as afterthoughts.
-- **Trustworthy** - Private, author-owned, exportable, backed-up, and restorable content handling is part of the product promise.
-- **Mobile-first** - Reader experience must work naturally on mobile first, with coherent desktop behavior for administration and reading.
-- **Phone-Ready** - Phone-origin media, including video and modern capture formats, should be treated as normal product inputs rather than edge cases bolted on later.
-- **Operationally Practical** - The product should support large personal archives without requiring expert-level maintenance.
-- **Narrative Control** - The author should be able to shape directed story paths through curated collections, ordering, and card relationships when that structure matters.
-- **Commercial Direction** - Build v1 as a credible private hosted journal for one author and family audience without blocking near-term multi-tenant evolution.
+- **Two halves** - Administration and reader experience must both be strong; neither carries the product alone.
+- **Organize to tell** - Import and organization exist so authors can attach and preserve stories at scale; not a DAM and not a side utility.
+- **Effortless at scale** - Large archives should feel manageable: intuitive workflows, modern media-app clarity, immediate feedback, and honest progress when work continues in the background.
+- **Private and durable** - Family-private, author-controlled, backed up and restorable; not public social.
+- **Mobile family reading** - Primary delivery is re-experiencing stories on mobile; administration may remain desktop-heavier.
+- **Author shapes the story** - The author decides structure and meaning; the system assists with suggestions but never auto-publishes, auto-deletes, or replaces author judgment.
 
 
 
@@ -92,93 +89,69 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 *Principles*
 
-- **Client/Server** - Clear separation of concerns; client/server boundaries and service-layer.
-- **Validation & Authorization** - Server-side validation and authorization for data integrity.
-- **Private-by-default** - Content, admin actions, and operational data should default to least-privilege access. Public exposure is never assumed.
-- **Schema** - Type-safe contracts and explicit server-side schema validation.
-- **Services** - Use managed services pragmatically (Firebase/Auth.js/Next.js).
-- **Secrets & Configuration** - Secrets must stay out of source control and operational flows must preserve safe secret handling across local, hosted, and recovery scenarios.
-- **Data planes** - **Firestore** (and Storage for binaries) is the **authoritative** store for cards, media, and tags. **Derived fields** on cards (`filterTags`, dimensional tag arrays, sort keys, denormalized flags) are computed from authoritative inputs by explicit service rules—not re-derived ad hoc in UI or duplicated with conflicting logic. **Typesense** (and any other search index) is a **projection** for search and list efficiency; treat it as **eventually consistent** with Firestore. It must not force **synchronous** full-document pipelines (full hydration, unrelated media index churn, repeated full-tag-catalog reads) on **narrow** mutations unless the product explicitly requires immediate search parity for that path.
-- **Asset model** - Treat every media item as a canonical **original asset** plus optional **derived renditions** for tiles, previews, reader display, and future export/print or video playback needs. Reader/admin surfaces should request the smallest sufficient rendition by contract rather than assuming original-asset delivery.
-- **Processing lifecycle** - Expensive media work (metadata extraction, thumbnail/poster generation, transcoding, indexing, identity/duplicate analysis) should move through explicit ingest/readiness states and background processing where possible, not through interactive authoring saves or view switches.
-- **Metadata enrichment** - Preserve and expose enough capture metadata and processing outputs to support future organization modes such as face clustering, location views, transcript/search enrichment, duplicate detection, and export-safe media decisions without forcing those capabilities into today's UI prematurely.
-- **Mutation scope** - Classify every write as **narrow** (e.g. tag-only, status-only, single-field metadata) or **wide** (body HTML, gallery structure, cover changes, structural `childrenIds` / collection edits). **Narrow** paths must use **bounded** Firestore reads/writes: avoid N× full `updateCard`-style pipelines for N rows, avoid reloading entire admin catalogs as the default success path, and skip redundant Typesense/media sync when indexed fields did not change. **Wide** paths may use heavier recomputation and index sync; keep that work explicit and documented at the call site. **Never** skip or weaken **denormalized count and derived-field maintenance** (tag `cardCount` / `mediaCount`, card `filterTags` and dimensional arrays, etc.) solely to look “narrow”—those are **product invariants** for filters, admin truth, and reader consistency; narrow work must still apply the **same accounting rules**, batched or once-per-request, not omitted.
-- **Denormalized counts** - Card, media, and tag documents carry **denormalized counts and derived tag projections** so queries and UI stay fast and honest. Any mutation that changes assignments must keep those fields **correct** in Firestore (and indices when the product requires search parity). Refactors that replace “full `updateCard`” for speed must **re-home** the same `updateTagCountsFor*` / `mergeDerivedTags*` (or equivalent) logic into the new path—not drop it. Historical use of the wide pipeline is often **because counts and derived fields were already wired there**; slimmer paths are desirable, but **accuracy is non-negotiable**.
-- **Subject-tag invariants** - If `Subject` is added, it is **metadata on an object's assigned tags**, not a separate taxonomy or count source. Unique card/media counts under a tag subtree remain **per object**, not per assignment row, even when both child tags and an ancestor/group tag are assigned directly to the same object. Subject selection must not alter the ordinary assigned-tag derivations (`filterTags`, dimensional arrays, sort keys, tag counts); any subject-only query support must come from **explicit server-maintained subject projections**, not UI-only inference.
-- **Responsiveness** - Authoring responsiveness is a product requirement, not a polish pass. Tagging and relationship-editing actions should acknowledge quickly; architectural choices should prefer narrow writes, local patching, and deferred secondary sync where invariants remain intact.
-- **Catalog reads** - Do not load the **full tags collection** or **unbounded card lists** once per item inside a single API handler or transaction. Prefer a single read (or request-scoped cache), batched `get`/`in` chunks, or precomputed maps passed into helpers.
-- **Transactions** - Keep Firestore **transactions** minimal: only reads and writes that **must** be atomic together. Prefer computing derived payloads **outside** the transaction when ordering and integrity allow, then writing in one transaction.
-- **Card–media integrity** - `**coverImageId`**, `**galleryMedia[].mediaId**`, `**contentMedia**`, and media embedded in `**content**` are **foreign keys** to `media/{id}`. The system must not enter a state where a card names a missing media doc, or where a media doc names a **missing Storage object**, without a **classified** incident (logic bug vs drift) and a **repair path** at the service or remediation layer—not a UI-only workaround. Writes that update peer `media` documents (e.g. `referencedByCardIds`, focal metadata, tag counts) **must not assume** the peer still exists; treat absent peers as **integrity violations** to resolve (detach + log, or block with a **domain-level** error), not raw `NOT_FOUND` surfaced to the client.
-- **Delete graph** - Deleting or replacing media is a **graph** problem: enumerate every card edge, update **both** card and media sides (and denormalized fields / indices per rules above) in a **documented order**, or **refuse** with an explicit blocker list. If two cards can reference the same media id, that sharing must be **first-class** (reference counting or forbidden duplicates)—never “delete the blob because this card’s delete path listed it” while another card can still hold the id.
-- **Durability boundary** - Do not report client success for a new or replaced asset until **Storage** and the `**media`** row (and any card pointer update in the same operation) match: either all durable or none; partial success must be **detectable, retryable, or compensatable**—never a silent orphan pointer.
-- **Recoverability** - Backup, export, and restore capability are part of commercial readiness, not optional maintenance extras.
-- **Verification** - Code changes require verification by default. Changes affecting behavior, integrity, auth, import, or shared contracts should add or update tests when warranted rather than relying on explanation alone.
-- **Commercial readiness** - Commercial readiness requires explicit gates for access/privacy, data integrity, import trust, operational recovery, workflow quality, engineering quality, and security hardening. Treat these as release criteria, not polish.
+- **Server authority** - Server-side validation and authorization; private-by-default; secrets out of source control; type-safe contracts. Managed stack: Next.js, Firebase, Auth.js.
+- **Authoritative data planes** - Firestore and Storage are truth; Typesense and other indices are projections. Derived card/tag fields are computed in explicit service rules, not re-derived in UI.
+- **Bounded writes & reads** - Classify narrow vs wide mutations; keep transactions and catalog reads minimal; prefer bounded work and deferred secondary sync for authoring responsiveness.
+- **Honest denormalization** - Counts and derived tag projections stay correct on every assignment change; faster paths re-home the same accounting rules—never omit them for convenience.
+- **Media platform** - Canonical originals plus surface-appropriate renditions; expensive ingest work through background readiness states; preserve metadata for future organization modes without premature UI commitment.
+- **Integrity graph** - Card-media references, delete/replace order, and upload durability are first-class; classify drift vs logic bugs and repair at the service layer, not in UI workarounds.
+- **Recoverable operation** - Backup, export, and restore are part of platform architecture, not optional maintenance extras.
+- **Unit economics** - Track per-archive operational cost drivers (Firestore, Storage, Typesense, paid AI, restoration, faces, video) as platform features ship; informs adapter, processing, and face/API choices before commercial promises.
 
 *Features*
 ✅ **Complete**
 
-- **Next.js 15** - App Router, all API routes secured at the edge.
-- **React 19**
-- **TypeScript**
-- `**firebase-admin`** - SDK for server-side operations.
-- **Zod** - Schema validation.
-- **Layered structure** - App Router routes live under `src/app`, reusable UI under `src/components`, and core logic/contracts under `src/lib` with service, type, hook, and utility layers.
-- **Data Models** - `src/lib/types/` (read directly; fully commented).
-- **Typesense** - Full-text search for cards/media with CRUD sync and Firestore fallback.
-- **Typesense list limits** - Typesense Cloud allows at most **250 hits per page** (`per_page`). API routes and services that list cards (or other indexed entities) through Typesense **must not** pass client `limit` values greater than 250 directly as `per_page`; use **paging** (multiple search requests) or cap and document. Exceeding the limit yields **422**, logged failures, and **Firestore fallback**, which harms latency and masks index health. This cap is a **per-request transport** limit on Typesense—not a statement that the **filtered population** is only 250 rows; serving a larger matching set requires **multiple ordered chunks** (or a different list path), not widening `per_page`.
-- **Card detail child hydration** - `GET /api/cards/[id]` returns the parent card with its native `childrenIds` (the ID list, free with the parent fetch — no extra reads). Hydrated child documents come back on the `children` sidecar **only when requested** (`?limit=N` paginated, max 250, with `lastChildId` cursor and `hasMoreChildren` flag). Callers that need only parent fields—including the child **count**—pass `?children=skip` to bypass child hydration entirely; the standard Studio card-click, admin pre-PATCH snapshot, and reader edit-modal paths all use `skip`. This implements the **narrow read path** principle for the single-card endpoint.
-- **Auth.js** - Firebase adapter, role-based access control, session persistence, app wrapper `AuthProvider`.
-- **ESLint CLI** - `npm run lint` now runs the direct ESLint CLI (`eslint .`) instead of deprecated `next lint`. Treat lint status as a maintained engineering baseline and keep canon aligned with the latest verified result rather than preserving an old clean-pass claim after regressions reappear.
+- **App platform** - Next.js App Router, React, TypeScript; API routes secured at the edge.
+- **Firebase** - Firestore authoritative data, Storage for media binaries, firebase-admin for server operations.
+- **Auth** - Auth.js with Firestore-backed users, admin vs viewer roles, session persistence.
+- **Search** - Typesense full-text search for cards and media with CRUD sync and Firestore fallback.
+- **Validation** - Zod and explicit service-layer schema validation.
+- **Structure** - Layered codebase: routes, components, and shared lib (types, services, hooks, utilities).
+- **Data models** - Typed card, media, and tag contracts in shared types.
 
 ⭕1 **Planned**
 
-- **Narrow mutation paths** - Continue the rollout of dedicated service functions for **narrow** admin mutations. Current shipped slices include card tag-only/status-only/content-only/metadata-only PATCH routing plus dedicated bulk tag mutation paths for cards and media; remaining work is to extend the same bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires. Keep wide `updateCard` (or equivalent) for structural and rich-content changes.
+- **Narrow mutation paths** - Extend dedicated narrow admin mutation paths wherever flows still fall back to wider card saves than the change requires; keep wide saves for structural and rich-content edits.
 - **Code** - Comment code.
 - **Directory** - Cleanup directory.
 - **Quality** - QA app.
-- **Security Hardening** - Threat-model review, authorization review, secret-handling review, and hosted deployment hardening for commercial readiness. Current boundary: `storage.rules` and `.env.example` are present in repo (shipped 2026-06-12); **API route access audit + automated admin-boundary tests shipped 2026-06-12 (slice 3b)** — inventory in `src/lib/auth/apiRouteAccessAudit.ts`, behavior in `docs/02-Application.md` **API route access audit**; **env-password auth fallback retired 2026-06-12 (slice 3d)** — sign-in is `journal_users` only.
-- **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke tests for reader and admin workflows where API/unit tests alone are insufficient.
-- **CI gate expansion** - Shipped 2026-06-12: PR workflow runs lint, build, and the full Jest suite (`npm test -- --ci --runInBand`); nightly emulator-backed integrity remains separate.
-- **API input caps** - **7a shipped 2026-06-12:** shared bounds in `src/lib/api/inputCaps.ts` on high-traffic list/search/bulk routes.
-- **API route envelope** - **7b shipped 2026-06-12:** shared auth + `{ ok, error }` helpers in `src/lib/api/routeEnvelope.ts` on migrated routes.
-- **Transaction catalog reads** - **7d shipped 2026-06-12:** full tag-catalog reads moved outside hot card/tag delete transactions (`cardService`, `tagService.deleteTag`).
-- **Atomic media-reference removal** - **7e shipped 2026-06-12:** `removeMediaReferenceFromCard` uses one Firestore transaction for card surfaces, `referencedByCardIds`, and media signals.
-- **Playwright smoke tests** - Shipped v1 suite (`npm run test:e2e`); **6a** admin reader quick-edit PATCH smoke with restore; **6b** PR gate via `integrity-gate.yml`. Nightly/manual hosted CI also in `e2e-smoke.yml`.
-- **Typesense reconciliation** - **7c shipped 2026-06-12:** runtime sync retry (`typesenseSync.ts`) + `GET /api/admin/maintenance/typesense-status`; repair via `npm run sync:typesense*`.
-- **Mutation rate limiting** - **8a shipped 2026-06-12:** per-actor write buckets on `/api` mutations in `middleware.ts` (`mutationRateLimit.ts`); in-process v1 (not multi-instance coordinated).
-- **Maintenance script logging hygiene** - **8b shipped 2026-06-12:** `safeMaintenanceLog.ts`; operator scripts log env presence only; maintenance API errors redacted.
-- **Tag count exposure on reads** - **8c shipped 2026-06-12:** viewer `GET /api/tags` and `GET /api/tags/[id]` omit denormalized operational fields (`cardCount`, `mediaCount`, `uniqueCardIds`, `uniqueMediaIds`); admin sessions retain full tag payloads; reader `TagTree` hides `(cards/media)` when counts are absent.
-- **Error monitoring** - **8d shipped 2026-06-12:** opt-in Sentry via `@sentry/nextjs` (`sentryRuntime.ts`, `instrumentation.ts`, `instrumentation-client.ts`, `global-error.tsx`); production-only when `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` set; errors-only baseline (`tracesSampleRate: 0`); secret/header scrubbing in `beforeSend`; `tunnelRoute: '/monitoring'` in `next.config.ts`; optional source-map upload when `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` set on the host build. Tracing, Session Replay, and Sentry Logs intentionally off (free-tier baseline).
-- **Access & privacy gate** - Re-verify hosted reader/admin boundaries in deployed use: direct URL behavior, hosted auth/session configuration, and absence of admin affordance leakage. Current boundary: hosted reader routes and APIs are authenticated, viewer sessions stay reader-only, admin sessions can access both reader/admin surfaces, and local import helpers remain admin-only operational routes.
-- **Integrity gate expansion** - Expand integrity verification for card-media references, tag counts, derived card fields, delete/replace graph behavior, and import drift detection. **Shipped 2026-06-12 (slice 3c):** tag-count invariants and service-layer emulator scenarios documented in `docs/03-Implementation.md` review program step 3c.
-- **Import trust gate** - Verify source identity, duplicate signals, metadata preservation, partial-failure handling, and operator recovery paths for import workflows. Current boundary: local-source restore/import now follows a preflight-first, canonical-path, folder-complete workflow rather than mutating cards during partial or ambiguous recovery.
-- **Operational recovery gate** - Verify database backup, local secrets backup, restore drill, rollback/incident response, and admin account recovery before commercial release. Current boundary: **Firestore + Storage byte restore proven 2026-07-10** on disposable `my-journal-restore-drill`. **Shipped 2026-07-10:** paired **`backup:run`**, guarded **`restore:storage`**, and **`restore:run`**; post-drill **`npm run build`** + **`npm run test:integrity -- --runInBand`** pass. **Remaining before commercial release:** rollback/incident drills, disposable-target Typesense rebuild with isolated config, hosted-runtime proof on recovered data. Operator path: `docs/NPM-SCRIPTS.md` -> **Restore drill**; sequencing in `03` step **12**.
-- **Workflow quality gate** - Validate family-demo reader flow, hosted-alpha repeated-use flow, admin prep friction, and mobile reader usability against milestone pass criteria. Current boundary: authenticated hosted reader and representative admin save/revert flows are functioning; remaining work is broader live browser usability proof across devices.
-- **Hosted search reliability** - Production reader/admin search must not depend on undeclared Firestore composite indexes. If Firestore fallback or non-Typesense paths are part of the supported runtime behavior, the required indexes must be provisioned and documented, or the code path must degrade predictably instead of failing with `FAILED_PRECONDITION`. Current boundary: hosted authenticated search no longer depends on the legacy dynamic `filterTags.<term>` Firestore query path.
+- **Security Hardening** - Threat-model, authorization, secret-handling, and hosted deployment hardening for commercial readiness.
+- **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke where unit/API tests are insufficient.
 
 ⭕2 **Future**
 
 - **Performance** - Possibilities captured from engineering review.
-- **Tenant ID** - Not implemented for v1. If multi-tenancy is needed for commercial SaaS (Model C), add `tenantId` to cards, media, tags, questions, and journal_users; apply tenant filters to all queries/rules.
-- **Storage Abstraction** - Wrap storage operations in `storageService.ts` (upload/delete/getUrl) to reduce migration scope and enable cache-busting on replaced images.
-- **Advanced observability** - Baseline Sentry error monitoring shipped (8d). Future: tracing budgets, log pipelines, dashboards beyond Issues.
+- **Tenant ID** - Multi-tenant isolation when commercial shape expands beyond single-tenant v1.
+- **Storage Abstraction** - Centralize storage upload/delete/URL operations to reduce migration scope.
+- **Advanced observability** - Tracing, log pipelines, and dashboards beyond baseline error monitoring.
 - **Caching Strategy**
 - **Sharing**
 - **Content Versioning / History**
 - **Hosting**
-- **Commercial evolution** - If the product broadens beyond the current private hosted journal shape, treat tenancy, auth expansion, source adapters, and web-vs-mobile packaging as one coordinated commercial architecture pass rather than piecemeal feature drift.
+- **Commercial evolution** - Coordinated pass for tenancy, auth expansion, source adapters, and packaging—not piecemeal drift.
+
+📐 **Provisional storage (product contract)** - Machine proposals (tag suggest, cluster/stack, face hint) live **outside** confirmed tag assignments on media/card documents until author accept (see `02` **Administration** 📋 **Provisional suggestions**). Accept paths must invoke the same assignment/mutation accounting as manual tag apply (counts, derived fields, index sync). Dismiss removes provisional only. Exact Firestore collection layout, indexes, and retention: **❓ Open** until build slice—must not block product contract above.
+📐 **Media processing lifecycle** - Imports and replacements progress through explicit **readiness states** on the media row (uploaded → thumbnailed/indexed → ready, with failure/retry visible). UI must not imply full readiness before states say so. Background jobs may defer expensive work; **Durability boundary** still governs when client success is reported for new/replaced assets. Video/transcode depth: product **❓ Open** in **Studio Media**.
+📐 **Typesense paging** - Typesense allows at most **250 hits per page** (`per_page`). List paths must page or chunk—not pass larger client limits as `per_page`. Exceeding the cap yields **422**, fallback, and masked index health. This is a **transport** limit, not a population cap; larger filtered sets require multiple ordered chunks.
+📐 **Card detail hydration** - Single-card reads return native `childrenIds` with the parent; hydrated child documents are optional, paginated sidecar data. Callers that need only parent fields—including child count—must skip child hydration. Studio selection and admin pre-save snapshots use the skip path.
+📐 **Mutation scope** - Classify **narrow** writes (tag-only, status-only, single-field metadata) vs **wide** writes (body, gallery, cover, structural children). Narrow paths must stay bounded—no N× full-card-save pipelines, no default full-catalog reload, no redundant index sync when indexed fields unchanged. Never skip denormalized count or derived-field maintenance to look narrow; re-home the same accounting rules instead.
+📐 **Card-media integrity** - Cover, gallery, contentMedia, and inline content media ids are foreign keys to media documents and Storage objects. Missing peers are integrity incidents with a service-layer repair path—not UI workarounds or raw transport errors to the client.
+📐 **Delete graph** - Media delete/replace is a graph update across every card edge, both card and media sides, denormalized fields, and indices—or an explicit refuse with blockers. Shared media ids require first-class sharing semantics.
+📐 **Durability boundary** - Do not report client success for a new or replaced asset until Storage, the media row, and any same-operation card pointer updates are all durable—or failure is detectable, retryable, and compensatable.
+📐 **Subject-tag invariants** - If Subject is enabled, it is metadata on assigned tags—not a separate taxonomy or count source. Subject-only query support requires explicit server-maintained projections, not UI inference.
 📐 **Denormalized Read** - Keep denormalized read patterns where Firestore query limits demand it.
 📐 **List refresh** - After a successful mutation, prefer **patching** the current list or **invalidating a targeted query** over reloading entire admin catalogs; use full reload only when list membership or ordering cannot be derived locally.
-📐 **Filtered population & stable ordering** - A filter defines the **full server-side universe** for that query (all matching cards or media), not “whatever rows were fetched first.” **Chunked** delivery—infinite scroll, Load more, or discrete pages—must walk **one deterministic ordered stream**: each chunk uses the **same filter parameters and the same declared sort** as the prior chunk, and ordering must be **stable** across chunks (include a **tie-break**, e.g. `docId`, wherever ties are possible). **Do not** re-sort only the client-held subset across fetches in a way that reorders relative to rows not yet loaded. **Seek-only** modes (e.g. some `GET /api/media` assignment/dimension paths) are **exceptions**: they may be **forward-biased** without stable random access; product copy and controls should reflect that, not imply a fixed numbered book over the whole corpus. **Reader vs admin:** the **reader** may use **infinite-style** loading for consumption UX; **admin** may use **pages** or **append** patterns as long as the **same** stability rules apply to the **active** query. Speed goals still favor **small payloads** and **targeted invalidation** (see 📐 **List refresh** and Frontend **List stability**).
+📐 **Filtered population & stable ordering** - A filter defines the **full server-side universe** for that query (all matching cards or media), not “whatever rows were fetched first.” **Chunked** delivery—infinite scroll, Load more, or discrete pages—must walk **one deterministic ordered stream**: each chunk uses the **same filter parameters and the same declared sort** as the prior chunk, and ordering must be **stable** across chunks (include a **tie-break**, e.g. `docId`, wherever ties are possible). **Do not** re-sort only the client-held subset across fetches in a way that reorders relative to rows not yet loaded. **Seek-only** modes (e.g. some `GET /api/media` assignment/dimension paths) are **exceptions**: they may be **forward-biased** without stable random access; product copy and controls should reflect that, not imply a fixed numbered book over the whole corpus. **Reader vs admin:** the **reader** may use **infinite-style** loading for consumption UX; **admin** may use **pages** or **append** patterns as long as the **same** stability rules apply to the **active** query. Speed goals still favor **small payloads** and **targeted invalidation** (see 📐 **List refresh** and Frontend **Perceived speed**).
 📐 **Bulk writes** - Bulk tag and similar operations must be **O(batch)** bounded work (batched reads/writes, shared tag maps), not **O(cards × full-card-save)** unless explicitly accepted and measured.
 📐 **Contract vs product** - Efficiency and pipeline-shape rules in this document are **constraints on how** work is done, not permission to break **what** the product must preserve (accurate counts, derived dimensions, published/draft behavior, auth). If the leanest design appears to conflict with an invariant, **raise the conflict explicitly** (tradeoffs, risks, options)—do not implement a shortcut and later justify regressions by citing “architecture.” Author decides when to accept risk or spend complexity.
 📐 **Subject-tag mutation contract** - Subject truth must reconcile anywhere tag assignments reconcile: card/media tag-only edits, bulk tag edits, import/create flows that assign tags, duplicate/clone paths, and delete/merge/removal paths that can drop an assigned tag. If the assigned subject tag is removed, the subject marker clears in the same authoritative write path; do not leave detached subject state for the UI to guess around later.
 📐 **Script-Heavy** - Keep script-heavy maintenance available while admin UX matures.
-📐 **Auth bootstrap** - Run `npm run seed:journal-users` once when `journal_users` is empty (`ADMIN_EMAIL` / `ADMIN_PASSWORD` in env are **seed-only**, not runtime login). After seed, manage access in Admin > Users (`/admin/journal-users`): create viewer accounts, set/reset passwords, enable/disable access.
-📐 **Auth at Rollout** - Sign-in is Firestore `journal_users` only (env-password runtime fallback retired 2026-06-12, slice 3d). Ensure at least one enabled admin exists before go-live.
+📐 **Auth bootstrap** - Seed Firestore users once when the collection is empty; env admin credentials are **seed-only**, not runtime login. Operational detail: `docs/NPM-SCRIPTS.md`.
+📐 **Auth at Rollout** - Sign-in is Firestore-backed users only; ensure at least one enabled admin exists before go-live.
 📐 **One Admin** - One admin (author), all other accounts are viewers.
-📐 **Local source helpers** - OneDrive-backed helper routes under `/api/images/local/*` are admin-only operational/import surfaces tied to `ONEDRIVE_ROOT_FOLDER`; they are not part of the reader trust boundary and must not be exposed to anonymous or viewer sessions.
+📐 **Local source helpers** - Local/OneDrive import helper routes are admin-only operational surfaces; they are not part of the reader trust boundary.
+
+📘 **Backend status** - Shipped hardening slices, commercial gates, and execution detail: `docs/03-Implementation.md` **§ Backend**.
 
 ### **Frontend**
 
@@ -189,43 +162,28 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 *Principles*
 
-- **UI Alignment** - Align UI behavior with **validated server contracts** (types/schemas); the client does not override server authority on writes. Clear **presentation and client-state** boundaries; business rules stay in services/API layer.
-- **State domains** - Complex admin shells (especially **Studio**) should separate **global structural truth** (tag taxonomy, collections structure) from **pane-local working sets** (filtered cards/media lists) and from the **active editing context** (selected card). One pane's visible subset must not silently redefine another pane's universe.
-- **Design surfaces** - The reader (`/view`) UI is the primary **designed** surface—typography, color rhythm, spacing, and tone. Admin may stay denser for workflows but should **reuse the same design tokens** (and previews where it matters) so what the author sees while authoring matches what the family sees when reading.
-- **Swappable looks** - Theme Management should move toward **named design packages** (coherent font, color, and spacing choices) selected as a whole, not only isolated slider tweaks. **Tokenization** (CSS variables in `theme.css` driven from persisted theme data) is the practical path to plug-and-play designs.
-- **List stability** - After mutations, update the **smallest** sufficient UI state: patch a row, remove/add ids in the current page, or refetch **one** page or cursor scope—not entire unbounded lists by default. Reserve full catalog refetch for recovery, unknown membership change, or explicit user refresh.
-- **Authoritative confirmation** - Separate **optimistic** display from **confirmed** server state where it improves perceived speed; do not block the UI on secondary work (search index sync, full media hydration) when the user action can be acknowledged from Firestore alone.
-- **Preview then hydrate** - In authoring shells with an active object (for example, the selected card in **Studio**), selection should populate local context from the best available preview immediately, then enrich from background hydration. Hydration failure should degrade detail, not blank the active editing surface.
-- **Progressive first paint** - In dense admin shells, prefer a **truthful first batch** and then background catch-up over blocking the whole pane on totals or full hydration. Use cancellable requests, short-lived query caches, and chunked stable streams where they preserve the same authoritative query contract.
-- **Media-native browsing** - Browsing interactions such as tile-density changes, album or workspace switches, and open-detail transitions should behave like local presentation changes over already-available data whenever possible, not as full reload rituals.
-- **Continuous browsing** - Large card/media libraries should normally browse through stable append or virtualized streams rather than page-by-page rituals. Density changes, filter refinements, and sort/view switches should preserve flow instead of feeling like a reset to a different tool.
-- **Lightweight mobile edits** - Reader/mobile-safe edits such as caption changes, story touchups, and future lightweight card creation should use narrow mutation paths with immediate local reconciliation rather than form-like round trips that freeze the browsing surface.
-- **Runtime split** - Desktop Studio authoring, reader consumption, and future lightweight mobile editing should share data truth and media contracts, but they should not share one blunt runtime model. Each surface should load and hydrate to the level its job requires. Viewer sessions should not parse or bundle admin-only authoring surfaces (for example Theme Management or Studio); admin-only code should load lazily on explicit admin routes or explicit admin edit affordances on `/view`.
-- **Surface simplification** - Prefer fewer, stronger interaction models for authoring when capability is preserved. Simplification should remove parallel UI patterns, not remove the tagging and relationship power the product depends on.
-- **Admin performance strategy** - Treat slow admin work as an **architecture** problem before a polish problem. Converge on **Studio** as the only day-to-day content-admin runtime, and remove duplicated loaders, modes, and compatibility branches before spending time on isolated UI tuning. Prioritize: 
-  -  **thumbnail-tier media delivery** for admin grids, pickers, and previews instead of original-image URLs; 
-  - **server-shaped card/media workspaces** so filtering, sorting, and pagination define the active universe on the server rather than in large client-held catalogs; 
-  - **windowed/virtualized rendering** for large banks and grids; 
-  - **payload tiers** (`tile`, `preview`, `edit`) so only the active object is fully hydrated; and 
-  - **local post-mutation reconciliation** over broad reloads wherever integrity allows. Current first landed slice for media delivery: admin/Studio preview surfaces may prefer one optional smaller Studio/admin rendition on each media doc, with safe fallback to the canonical original until backfill catches up. When old card/media admin code still powers Studio, retire runtime duplication first and postpone naming-only cleanup until behavior is simpler.
+- **Server contracts first** - UI aligns with validated server contracts; business rules stay in services and API layers, not client overrides.
+- **Studio state domains** - Separate global structural truth (tags, collections) from pane-local working sets and the active editing context; one pane's filter must not silently redefine another pane's universe.
+- **Perceived speed** - Preview-then-hydrate, progressive first paint, optimistic vs confirmed state, smallest sufficient list updates, and continuous media-native browsing over stable append streams.
+- **Reader-first design** - Reader is the primary designed surface; admin reuses tokens and previews; theme evolves as named packages via tokenization (see `04-Theme-Design-Contract.md`).
+- **Runtime split** - Viewer sessions stay lean; admin and Studio load lazily; shared data and media contracts; Studio is the single day-to-day content-admin runtime with payload tiers and rendition-appropriate delivery.
 
 *Features*
 ✅ **Complete**
 
-- **Theme** - CSS modules for styling, global `theme.css` and `fonts.css`.
-- **Rich Text Editing** - `@tiptap/react`.
-- **Media Selection** - PhotoPicker for admin modal picker and simple upload.
-- **Galleries** - GalleryManager and Swiper.
-- **Image Optimization** - `next/image` via `JournalImage`.
-- **Drag and Drop** - `@dnd-kit/core` and `@dnd-kit/sortable`.
-- **Data Fetching** - `SWR` for client-side fetching and caching.
+- **Reader shell** - Mobile-first `/view` consumption with responsive layout contract in `04` §9.
+- **Studio** - Unified admin shell for organize, cards, compose, questions, and media.
+- **Theme** - CSS modules, global theme tokens, Theme Management workspace.
+- **Editing** - TipTap rich text; `@dnd-kit` drag-and-drop; SWR data fetching.
+- **Media UI** - PhotoPicker, galleries (Swiper), optimized images via `next/image`.
 
 ⭕2 **Future**
 
-- **Unused Dependencies** - Remove unused packages from `package.json`: `react-markdown`, `@uiw/react-md-editor`, `@minoru/react-dnd-treeview`. Evaluate `react-photo-album` and `framer-motion` before removing.
+- **Dependency cleanup** - Remove unused packages after evaluation.
+- **Visual direction** - Archival yet professional consumer feel through theme presets and type roles, not scattered one-off styles.
+- **Studio convergence** - Relationship editing and library-first media picking fully inside Studio-owned workflows.
 
-- **Visual direction** - The product should feel **journal / archival** and **mobile-native**, while also reading as a **clear, professional** consumer app. Those aims can conflict (for example, a handwriting display face vs neutral UI typography). Prefer resolving tension through **theme presets** and distinct **type roles** (e.g. display vs body) wired to tokens, rather than scattered one-off styles. Iteration on the Theme Management model is expected as presets mature.
-- **Unified Studio (content admin)** - Long-term content administration converges on **Studio** as the unified shell for cards, media, tags, questions, collections, and their relationships. Users and Themes remain separate admin routes. Relationship editing and library-first media picking should converge inside shell-owned card/media workflows rather than parallel standalone admin surfaces.
+📘 **Frontend status** - Surface behavior, shipped reader/Studio detail, and theme work: `docs/02-Application.md` and `docs/03-Implementation.md`.
 
 ### **Scripts**
 
@@ -240,14 +198,13 @@ What must make this product distinctly better is not feature breadth alone, but 
 *Features*
 ✅ **Complete**
 
-- **Syntax** - `npx ts-node -r tsconfig-paths/register -P tsconfig.scripts.json`.
-- **Firebase Setup** - Credentials live in `.env`.
-- **.env** - Scripts load `.env` **before** any static import of `admin.ts` (`-r dotenv/config` on the Node/tsx invocation, optionally `DOTENV_CONFIG_PATH=.env`). In-file `dotenv.config()` alone is **not** enough if the same file statically imports Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` → **Firebase Admin CLI (dotenv)**.
-- **Maintenance Scripts** - Active scripts: `reconcile:media-cards`, `regenerate:storage-urls`, `cleanup:media`, `backup:database`, `backfill:media-metadata`, `seed:journal-users`.
+- **Invocation** - TypeScript scripts via ts-node/tsx with path registration; credentials from `.env`.
+- **Env footgun** - Load `.env` **before** any static import of Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` **Firebase Admin CLI (dotenv)**.
+- **Maintenance** - Reconciliation, backup, backfill, and seed scripts wired through `package.json`; index in `docs/NPM-SCRIPTS.md`.
 
 ⭕2 **Future**
 
-- **Script Cleanup** - Legacy migration/debug/demo utilities have been pruned aggressively; `src/lib/scripts/` is down to 66 files as of 2026-05-27. Continue reviewing anything not wired into `package.json`, canon, or live admin-maintenance flows so ad hoc helpers do not quietly become permanent product surface.
+- **Script Cleanup** - Continue pruning ad hoc helpers not wired into `package.json`, canon, or live maintenance flows.
 📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
 📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
 
@@ -255,7 +212,7 @@ What must make this product distinctly better is not feature breadth alone, but 
 
 *Intent*
 
-- **Protection** - Provide protection against irrecoverabel damage to the code repo and the database.
+- **Protection** - Provide protection against irrecoverable damage to the code repo and the database.
 
 *Principles*
 
@@ -266,18 +223,14 @@ What must make this product distinctly better is not feature breadth alone, but 
 *Features*
 ✅ **Complete**
 
-- **Database** - `npm run backup:database` writes under `ONEDRIVE_PATH/Firebase Backups/run-<timestamp>/` (all Firestore root collections, index/rules copies, optional Typesense JSONL). Storage file bytes are not included. External original-photo backups outside the app do not replace in-app Firebase Storage recovery when Firestore media rows and Storage objects must match. Optional Windows task: `src/lib/scripts/setup-database-backup-task.ps1` (uses `tsx -r dotenv/config` and `firebase/backup-firestore.ts`; requires `.env` visible to the task user).
-- **Source tree (Git)** - **Off-device source of truth** is the **remote** (`origin`): commit to `**main`** and push. Do not use feature branches or PR merge flow unless explicitly requested for a specific task. No second full-tree copy is maintained locally or in CI.
-- **Local secrets (not in Git)** - `npm run backup-codebase` (see `docs/NPM-SCRIPTS.md`) zips only **repo-root** files that stay out of version control: `.env`*, `service-account.json`, and `*-firebase-adminsdk-*.json`. Default output directory: `C:\Users\alanb\CodeBase Backups\` (override with `CODEBASE_SECRETS_BACKUP_DIR`); keeps 5 rolling zips plus `backup-*-metadata.json` and `backup-*-output.txt`. If no matching files exist, only a log is written. Optional Windows task registration: `src/lib/scripts/utils/setup-backup-task.ps1` (daily; run **PowerShell as Administrator**; task resolves repo root via `git`). **Paradigm:** Git = code; this zip = env/credentials; `backup:database` = app data.
-- **Recovery playbook** - `docs/NPM-SCRIPTS.md` carries the restore drill, release-readiness checklist, account-recovery path, and incident-response baseline. Current contract: restore source from Git, restore repo-root secrets from `backup-codebase`, restore Firestore from one `backup:database` snapshot, restore Storage bytes from a paired `backup:storage` run (separate `run-*` folder), enable Storage + **`images/**` read rules** on disposable targets, rebuild Typesense from Firestore when using an isolated Typesense config, and verify auth/media before reopening. **Shipped 2026-07-10:** disposable-target Firestore + Storage restore proof on `my-journal-restore-drill`. The guarded `restore:database` helper is for disposable recovery targets first; automated `restore:storage` remains optional (**12d**).
+- **Database backup** - Scheduled Firestore export to off-device storage; details in `docs/NPM-SCRIPTS.md`.
+- **Storage backup** - Firebase Storage byte backup with manifest and verification.
+- **Source control** - Remote Git is code source of truth; commit and push to main.
+- **Secrets backup** - Repo-root env and credential files backed up separately from Git.
+- **Recovery playbook** - Restore drill, release checklist, and incident baseline in `docs/NPM-SCRIPTS.md`.
 
 ⭕1 **Planned**
 
-- **Storage byte backup** - Shipped 2026-06-12 (slice 3a): `npm run backup:storage` backs up Firebase Storage object bytes (originals + renditions) to OneDrive `Firebase Backups/run-<timestamp>/storage/` with `storage-manifest.json` and post-run size verification. Dry-run by default; `--apply` downloads or incrementally copies unchanged blobs from prior runs. **Restore drill shipped 2026-07-10** on disposable `my-journal-restore-drill` — see `03` step **12** and `docs/NPM-SCRIPTS.md` -> **Restore drill**. Optional guarded `restore:storage` helper remains follow-up (**12d**).
-- **Operational** - Ensure both backups are operational and verified end-to-end.
-- **Restore Drill** - Execute the documented restore procedure for database backup, local secrets backup, and deployment configuration against a realistic recovery target before commercial release.
-- **Release Readiness** - Run the documented minimum production-release checklist for deployment, auth configuration, backup verification, and rollback/recovery against the intended launch revision.
-- **Account Recovery** - Exercise the documented v1 password reset, viewer access repair, and admin lockout recovery path against live Firestore-backed users before treating the gate as closed.
-- **Incident Response** - Dry-run the documented v1 operator response for broken deploy, failed import, missing media, access leak suspicion, and backup/restore failure so the playbook is proven, not just written.
+- **Operational closeout** - End-to-end backup verification, restore drill, release readiness, account recovery, and incident-response proof before commercial release. Status: `docs/03-Implementation.md` **§ Backup** and step **12**.
 
 ⭕2 **Future**

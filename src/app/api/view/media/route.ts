@@ -41,15 +41,21 @@ function getDimensionIds(item: Media, dimension: string): string[] {
   }
 }
 
-function mediaMatchesDimensionalTags(item: Media, dt: DimensionalTagIdMap): boolean {
+function mediaMatchesDimensionalTags(
+  item: Media,
+  dt: DimensionalTagIdMap,
+  tagScope: 'all' | 'subject' = 'all'
+): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
   for (const dim of dims) {
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
-    const ok = selected.some(
-      (tid) => idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
+    const ok = selected.some((tid) =>
+      tagScope === 'subject'
+        ? Boolean(item.subjectFilterTags?.[tid])
+        : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
     );
     if (!ok) return false;
   }
@@ -71,13 +77,21 @@ function parseExactDimensionalTagParams(searchParams: URLSearchParams): ExactDim
   return result;
 }
 
-function mediaMatchesExactDimensionalTags(item: Media, exact: ExactDimensionalTagIdMap): boolean {
+function mediaMatchesExactDimensionalTags(
+  item: Media,
+  exact: ExactDimensionalTagIdMap,
+  tagScope: 'all' | 'subject' = 'all'
+): boolean {
   const directTags = new Set(item.tags ?? []);
   const dims: Array<keyof ExactDimensionalTagIdMap> = ['who', 'what', 'when', 'where'];
   for (const dim of dims) {
     const selected = exact[dim];
     if (!selected?.length) continue;
-    const ok = selected.some((tid) => directTags.has(tid));
+    const ok = selected.some((tid) =>
+      tagScope === 'subject'
+        ? Boolean(item.subjectFilterTags?.[tid])
+        : directTags.has(tid)
+    );
     if (!ok) return false;
   }
   return true;
@@ -164,6 +178,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
     const dimensionalTags = parseDimensionalTagParamsFromSearchParams(searchParams);
     const exactDimensionalTags = parseExactDimensionalTagParams(searchParams);
+    const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
     const hasDimensionalTagSeek = dimensionalTagMapHasFilters(dimensionalTags);
     const hasExactDimensionalTags = Object.values(exactDimensionalTags).some((ids) => ids && ids.length > 0);
 
@@ -171,6 +186,7 @@ export async function GET(request: NextRequest) {
 
     const canUseTypesense =
       isTypesenseConfigured() &&
+      tagScope !== 'subject' &&
       !hasExactDimensionalTags &&
       (q.length > 0 || hasDimensionalTagSeek);
 
@@ -187,15 +203,16 @@ export async function GET(request: NextRequest) {
         dimensionalTags,
       });
       const items = applyPublicStorageUrls(await fetchMediaByIdsInOrder(firestore, result.docIds));
+      const filteredItems = items.filter((row) => mediaMatchesDimensionalTags(row, dimensionalTags, tagScope));
       return NextResponse.json({
-        items,
+        items: filteredItems,
         hasMore: result.hasNext,
       } satisfies PaginatedResult<Media>);
     }
 
     const result = await seekMediaWithPredicates(firestore, limit, lastDocId, (row) => {
-      if (hasDimensionalTagSeek && !mediaMatchesDimensionalTags(row, dimensionalTags)) return false;
-      if (hasExactDimensionalTags && !mediaMatchesExactDimensionalTags(row, exactDimensionalTags)) return false;
+      if (hasDimensionalTagSeek && !mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
+      if (hasExactDimensionalTags && !mediaMatchesExactDimensionalTags(row, exactDimensionalTags, tagScope)) return false;
       if (q && !mediaMatchesSearch(row, q)) return false;
       return true;
     });

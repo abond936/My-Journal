@@ -1,0 +1,112 @@
+.page {
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-width: 40rem;
+  margin: 0;
+}
+
+.header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+}
+
+.lead,
+.muted,
+.hint {
+  margin: 0;
+  color: var(--text2-color);
+  line-height: 1.5;
+  font-size: var(--font-size-sm);
+}
+
+.section {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--layout-background2-color);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text1-color);
+}
+
+.toggleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.toggleRow input {
+  accent-color: var(--color3);
+}
+
+.hint {
+  margin-top: var(--spacing-sm);
+}
+
+.actions {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.saveButton {
+  padding: 0.42rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: var(--border-width-thin) solid var(--color3);
+  background: var(--color3);
+  color: var(--button-solid-text-color);
+}
+
+.saveButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 0.42rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: var(--layout-background2-color);
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

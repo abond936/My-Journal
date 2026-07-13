@@ -40,9 +40,11 @@ export default function CardFeedV2({
     activeDimension,
     collectionId,
     collectionTreeCards,
+    readerMode,
     feedGroupBy,
     isGuidedCollectionTransition,
     guidedTransitionTitle,
+    readerTagFilterScope,
   } = useCardContext();
 
   const activeCollectionCard =
@@ -104,21 +106,31 @@ export default function CardFeedV2({
       : cards.length === 0;
 
   if (isEmpty) {
+    const isCollectionsListMode = activeDimension === 'collections' && collectionId === null;
     const hasTagOrTypeFilters =
       selectedTags.length > 0 || isFeedCardTypesFilterActive || Boolean(searchTerm?.trim());
-    const hasCollectionOrGroup =
-      collectionId !== null || feedGroupBy !== 'none' || activeDimension === 'collections';
+    const hasCollectionOrGroup = collectionId !== null || feedGroupBy !== 'none';
     const likelyFiltered = hasTagOrTypeFilters || hasCollectionOrGroup;
 
     return (
       <main className={styles.feedMain}>
         <div className={styles.emptyFeed}>
-          <p className={styles.emptyFeedTitle}>No cards match the current view.</p>
-          {likelyFiltered ? (
+          <p className={styles.emptyFeedTitle}>
+            {isCollectionsListMode ? 'No guided collections to show.' : 'No cards match the current view.'}
+          </p>
+          {isCollectionsListMode ? (
             <p className={styles.emptyFeedHint}>
-              {activeDimension === 'collections'
+              {readerMode === 'guided'
+                ? 'There are no collection roots yet, or none are visible at your access level. Switch to Freeform to browse cards by tag, or create collections in Studio.'
+                : 'Select a collection in the sidebar or switch browsing mode.'}
+            </p>
+          ) : likelyFiltered ? (
+            <p className={styles.emptyFeedHint}>
+              {collectionId !== null
                 ? 'This guided section does not have visible cards yet.'
-                : 'Tag, type, search, collection, or "group by" may be limiting results.'}
+                : readerTagFilterScope === 'subject'
+                  ? 'Tag match is set to Subject only — only cards with a marked subject tag for the selected filter will appear. Try Any assigned, or mark subjects in Studio.'
+                  : 'Tag, type, search, collection, or "group by" may be limiting results.'}
             </p>
           ) : !isAdmin ? (
             <p className={styles.emptyFeedHint}>
@@ -131,7 +143,7 @@ export default function CardFeedV2({
               by curation or tags.
             </p>
           )}
-          {likelyFiltered ? (
+          {likelyFiltered && !isCollectionsListMode ? (
             <button type="button" className={styles.emptyClearButton} onClick={() => clearFilters()}>
               Clear filters
             </button>

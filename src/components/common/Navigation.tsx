@@ -40,6 +40,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
   const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
   const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
+  const isSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
 
   useEffect(() => {
     setMounted(true);
@@ -124,6 +125,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             Content
           </Link>
           <Link
+            href="/"
+            className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`}
+          >
+            Home
+          </Link>
+          <Link
             href="/my-stories/1"
             className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
           >
@@ -160,6 +167,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 className={`${styles.navLink} ${isUsersRoute ? styles.active : ''}`}
               >
                 Users
+              </Link>
+              <Link
+                href="/admin/settings"
+                className={`${styles.navLink} ${isSettingsRoute ? styles.active : ''}`}
+              >
+                Settings
               </Link>
               <Link
                 href="/admin/theme-admin"

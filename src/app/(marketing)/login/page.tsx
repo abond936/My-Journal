@@ -1,11 +1,13 @@
-// page.tsx - Main page component for the Next.js app
-// This is the entry point for our application
-// We're using the Home component as our landing page
-
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Home from '@/components/view/Home';
 
-export default function Page() {
+export const metadata: Metadata = {
+  title: 'Sign in — My Stories',
+  description: 'Sign in to My Stories.',
+};
+
+export default function LoginPage() {
   return (
     <Suspense
       fallback={

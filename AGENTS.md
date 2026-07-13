@@ -4,9 +4,8 @@ This file is an **index only**.
 
 | Topic | Location |
 |--------|----------|
-| Session start | `.cursor/rules/Startup-Grounding.mdc` |
-| Execution discipline, approval, scope, verification | `.cursor/rules/Execution-Discipline.mdc` |
-| Collaboration model: author role, AI role, product-development flow | `docs/00-Project-Framework.md` |
+| Agent behavior (always on) | `.cursor/rules/Agent-Discipline.mdc` |
+| First-turn canon read | `.cursor/rules/Startup-Grounding.mdc` |
 | Vision, principles, tech stack, stable decisions | `docs/01-Vision-Architecture.md` |
 | App/product truth by area | `docs/02-Application.md` |
 | Current planned execution sequence (`1 planned`) | `docs/03-Implementation.md` |

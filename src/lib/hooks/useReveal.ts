@@ -22,7 +22,13 @@ export function useReveal(selector = '.reveal') {
       { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
     );
 
-    elements.forEach((element) => observer.observe(element));
+    elements.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        element.classList.add('revealed');
+      }
+      observer.observe(element);
+    });
     return () => observer.disconnect();
   }, [selector]);
 }

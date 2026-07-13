@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = '/';
+  loginUrl.pathname = '/login';
   loginUrl.search = '';
   loginUrl.searchParams.set('callbackUrl', `${pathname}${search}`);
 

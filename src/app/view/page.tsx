@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
+import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
 import ViewRootClientPage from './ViewRootClientPage';
 
 interface ViewPageProps {
@@ -35,7 +36,7 @@ export default async function CardsPage({ searchParams }: ViewPageProps) {
 
   if (!session) {
     const callbackUrl = buildCallbackUrl('/view', await searchParams);
-    redirect(`/?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    redirect(buildLoginRedirectPath(callbackUrl));
   }
 
   return <ViewRootClientPage />;

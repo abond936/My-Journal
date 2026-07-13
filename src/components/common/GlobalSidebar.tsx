@@ -83,6 +83,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     setFeedGroupBy,
     includeSubTagsInFeed,
     setIncludeSubTagsInFeed,
+    readerTagFilterScope,
+    setReaderTagFilterScope,
     clearFilters,
   } = useCardContext();
 
@@ -91,6 +93,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isViewRoute = pathname === '/view' || (pathname?.startsWith('/view/') ?? false);
+  const isSearchRoute = pathname === '/search' || (pathname?.startsWith('/search/') ?? false);
+  const isReaderFilterRoute = isViewRoute || isSearchRoute;
   const isViewDetailRoute = pathname?.startsWith('/view/') ?? false;
   const returnToFeedIfViewingDetail = useCallback(() => {
     if (isViewDetailRoute) {
@@ -453,7 +457,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 <span className={styles.srOnly}>Clear filters</span>
               </button>
             </div>
-            {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+            {isTagMode && (!showViewTagLibrary || viewTagSidebarTab === 'filter') ? (
               <div className={`${styles.sectionControlRow} ${styles.headerDimensionControls}`}>
                 <h3 className={styles.sectionHeading}>Tags</h3>
                 <div className={styles.sectionControlRowMain}>
@@ -702,6 +706,24 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     </button>
                   </div>
                 </div>
+                {isReaderFilterRoute ? (
+                  <div className={styles.inlineFieldRow}>
+                    <label htmlFor="reader-tag-filter-scope">Tag match</label>
+                    <select
+                      id="reader-tag-filter-scope"
+                      value={readerTagFilterScope}
+                      onChange={(e) => {
+                        setReaderTagFilterScope(e.target.value as 'all' | 'subject');
+                        returnToFeedIfViewingDetail();
+                      }}
+                      className={`${styles.compactControl} ${styles.compactControlInline}`}
+                      aria-label="Tag match scope"
+                    >
+                      <option value="all">Any assigned</option>
+                      <option value="subject">Subject only</option>
+                    </select>
+                  </div>
+                ) : null}
               </div>
 
               <nav className={styles.navigation}>

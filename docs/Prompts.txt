@@ -3,7 +3,7 @@ Prompts
 Product Development Prompts
 
 1) Session Start
-Read `AGENTS.md`, `.cursor/rules/Execution-Discipline.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
+Read `AGENTS.md`, `.cursor/rules/Agent-Discipline.mdc`, `.cursor/rules/Startup-Grounding.mdc`, and `docs/01-Vision-Architecture.md` (TECHNICAL backend/frontend principles). Then read the relevant feature area in `docs/02-Application.md` and sequencing context in `docs/03-Implementation.md` if needed. Confirm completion only; no summary.
 
 2) Product Vision
 Clarify the product in plain terms:

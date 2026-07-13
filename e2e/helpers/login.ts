@@ -9,7 +9,7 @@ export function requireEnv(name: string): string {
 }
 
 export async function signInThroughHome(page: Page, username: string, password: string): Promise<void> {
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByPlaceholder('Username').fill(username);
   await page.getByPlaceholder('Password').fill(password);
   await page.getByRole('button', { name: 'Sign In' }).click();

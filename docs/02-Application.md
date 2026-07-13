@@ -8,6 +8,8 @@ Legend:
 ⭕2`Future`
 ❓`Open`
 📐`Decision`
+📋`Contract`
+📌`Vision migrate (integrate when section is reviewed)`
 📘`Resource`
 
 ---
@@ -16,8 +18,8 @@ Legend:
 
 - Under each *Features* block, use plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
 - Items under each heading are bullets: `- **Title** - description`.
-- Keep `📐` and `📘` outside the status buckets. Use standalone `📐` / `📘` lines when the items are few or should remain individually referenceable; use a single `📐 Decisions` or `📘 Resources` label with bullets underneath when a section has a cohesive local cluster.
-- `**📐` vs `⭕`:** `📐` records **design stance, data shapes, and operational truth** (including known gaps between intent and enforcement). It is **not** the execution backlog. When a gap should be fixed in code, add an explicit `**⭕1` / `⭕2`** bullet—do not rely on `📐` alone to imply scheduled work.
+- Keep `📐`, `📋`, and `📘` outside the status buckets. Use standalone lines when the items are few or should remain individually referenceable; use a grouped label (`📐 Decisions`, `📋 Contracts`, `📘 Resources`) with bullets underneath when a section has a cohesive local cluster.
+- `**📐` vs `📋` vs `⭕`:** `📐` records a **product or design choice** (why we chose a direction). `📋` records a **cross-surface behavior contract** agents must preserve when building or changing features (what must stay true at boundaries). `⭕` records **backlog work**. Do not rely on `📐` or `📋` alone to imply scheduled implementation—add `⭕1` / `⭕2` when a gap needs code.
 - `**✅` wording:** Describe **what is implemented and wired today**. Avoid implying stronger guarantees than the code provides (e.g. treating a denormalized field as a proven invariant).
 - This document is the **canonical application/product behavior spec by surface**. It should state what the user can do, how the surface is expected to behave, and what quality/trust bar applies.
 - Keep migration notes, dated stabilization history, and execution sequencing out of `02` unless they materially define current product behavior. Put sequencing in `03`.
@@ -33,33 +35,21 @@ Legend:
 
 *Principles*
 
-- **Ease of Use** - Core reader and admin flows should feel obvious and low-friction.
-- **Responsiveness** - Reader and admin surfaces should respond quickly enough to preserve trust and flow.
-- **Media-native Feel** - Browsing and lightweight editing should feel closer to a modern media app than to a slow CRUD console, especially on reader/mobile surfaces and dense card/media workspaces.
-- **Bulk Authoring** - Administration should support efficient high-volume organization and editing.
-- **Low-friction Editing** - Small corrective edits should be possible without forcing a full workflow transition.
-- **Few Primitives** - The product centers on cards, media, tags, and relationships rather than multiplying surface types.
-- **Mode Clarity** - Consumption and administration should stay distinct even when linked by quick-edit affordances.
-- **Trust by Default** - Privacy, data ownership, recoverability, and author control are product behavior.
-- **Quality Bar** - Reader and admin surfaces should feel deliberate, stable, and credible in real use.
+- **Two halves** - Reader and admin must both be strong; neither carries the product alone.
+- **Surface separation** - Consumption and administration stay distinct top-level surfaces (routes, roles, editing context), even when admin quick-edit reaches into the reader.
+- **Core model** - The product centers on cards, media, tags, and relationships—not parallel entity types or extra admin surfaces.
+- **Organize to tell** - Organization between import and story-building is core product work, not a side utility; large heterogeneous libraries are the normal case.
+- **Media-native operation** - Browsing and lightweight edits should feel like a modern media app, not a slow CRUD console.
+- **Author control** - Family-private audience; author publishes; the system may suggest but never auto-publishes or auto-deletes over author judgment.
 
 *Features*
 ✅ **Complete**
 
-- **Surface Split** - The application has distinct reader and admin surfaces with separate routes and explicit editing context.
-- **Role Boundary** - Reader use and admin authoring stay separated by session and route boundaries; admin-only operational routes remain restricted to administrators.
-- **Reader Shell Stability** - Protected reader routes keep their shell chrome and navigation context stable during client session hydration.
-- **Reader mobile text edit** - Shipped 2026-06-12 (review program step 5, slices 5a-5d): card detail + feed tiles use `ReaderCardEditEntry` with mobile quick-edit (metadata, eligible plain-prose body, gallery captions) via narrow PATCH branches; desktop keeps lazy full Compose modal.
-- **Reader bundle separation** - Shipped 2026-06-12 (2a, 5d): Theme Management and feed-tile edit paths lazy-load admin chunks; Studio remains admin-route scoped.
-- **Playwright E2E hardening** - Shipped 2026-06-12 (post-review step **6**): admin-save mutation smoke (`admin-save.spec.ts`, **6a**) and PR-gate hosted smoke (**6b** via `integrity-gate.yml`).
-- **API input caps and shared auth envelope** - Shipped 2026-06-12 (post-review step **7a-7b**): `inputCaps.ts` + `routeEnvelope.ts` on the high-traffic card/media route set.
-- **Typesense reconciliation** - Shipped 2026-06-12 (post-review step **7c**): sync retry + `GET /api/admin/maintenance/typesense-status`.
-- **Transaction catalog reads** - Shipped 2026-06-12 (post-review step **7d**): tag catalog pre-read outside hot card mutations; `deleteTag` passes preloaded catalog to derived-field helpers per affected card/media.
-- **Atomic media-reference removal** - Shipped 2026-06-12 (post-review step **7e**): `removeMediaReferenceFromCard` runs card detach, `referencedByCardIds`, and media-signal refresh in one Firestore transaction.
-- **Mutation rate limiting** - Shipped 2026-06-12 (post-review step **8a**): write-route buckets enforced in `middleware.ts` via `mutationRateLimit.ts`.
-- **Maintenance script logging hygiene** - Shipped 2026-06-12 (post-review step **8b**): `safeMaintenanceLog.ts`; no key-fragment env logging in operator scripts.
-- **Tag count exposure on reads** - Shipped 2026-06-12 (post-review step **8c**): viewer `GET /api/tags` and `GET /api/tags/[id]` omit operational count/id-set fields; reader Explore `TagTree` shows tag names only.
-- **Error monitoring (Sentry)** - Shipped 2026-06-12 (post-review step **8d**): opt-in hosted production monitoring when DSN env vars are set; errors-only; ad-blocker tunnel at `/monitoring`; secret scrubbing in `beforeSend`. **Hosted operator setup (Vercel):** `NEXT_PUBLIC_SENTRY_DSN` (required for client errors); optional `SENTRY_ENVIRONMENT=production` (label you choose — not copied from Sentry); optional build-time `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` for readable stack traces. Verify: Sentry project **Issues** -> Send test event after deploy. See `.env.example`. Local dev stays off unless `NODE_ENV=production` with DSN set.
+- **Surface split** - Distinct reader and admin routes with explicit editing context.
+- **Role boundary** - Viewers consume; one primary author/admin maintains the archive; admin-only operational routes stay restricted to administrators.
+- **Reader shell stability** - Protected reader routes keep shell chrome and navigation context stable during client session hydration.
+- **Reader mobile text edit** - Card detail and feed tiles support mobile quick-edit (metadata, eligible plain-prose body, gallery captions) via narrow PATCH paths; desktop keeps lazy full Compose for deeper edits.
+- **Reader bundle separation** - Viewer sessions do not load admin authoring bundles (Theme Management, Studio, full Compose) until an admin explicitly opens an edit affordance.
 
 ⭕2 **Future**
 
@@ -69,10 +59,22 @@ Legend:
 
 📐 **Decisions**
 
-- **Architecture Split** - Keep content consumption and content administration as separate top-level surfaces to preserve reader performance, reduce accidental edits, and keep role boundaries clear.
-- **Future Editing Path** - Keep the top-level split, but add admin-only on-the-fly editing affordances from reader surfaces as a later optimization.
-- **Mobile v1 Scope** - Mobile first launch is reader-only; Studio/admin are not a mobile target in v1.
-- **Product Shape** - v1 is a private hosted journal focused on turning large personal photo libraries into smoother structured story consumption for family readers.
+- **Architecture split** - Keep consumption and administration as separate top-level surfaces to preserve reader performance, reduce accidental edits, and keep role boundaries clear.
+- **Future editing path** - Keep the top-level split, but add admin-only on-the-fly editing affordances from reader surfaces as a later optimization.
+- **Mobile v1 scope** - Mobile-first launch is reader-only; Studio/admin are not a mobile target in v1.
+- **Product shape** - v1 is a **private hosted app** for one author and family/friends readers. Customer promise: **organize -> integrate stories -> deliver** for private re-experience. Not a generic journal category, photo manager with captions, or public social product.
+- **Starter taxonomy direction** - Optional **Tag Set 0 — Generic** skeleton installed from **Settings** (not forced at first run). Detail: **Studio Tags** 📐 **Tag Set 0**.
+
+📋 **Contracts**
+
+- **Session & route boundary** - Authenticated app throughout. Viewers read published content only. Admins author and may access reader plus admin surfaces. Admin mutations, catalog operations, and import helpers reject viewer and anonymous callers. Operational detail: **User Management** and `01` TECHNICAL auth decisions. API route classification and automated boundary tests: **`03` Phase 4** and `src/lib/auth/apiRouteAccessAudit.ts`.
+- **Reader edit boundary** - Reader quick-edit covers narrow mobile-safe corrections; structural authoring, taxonomy, media bank work, and full Compose live in admin/Studio paths.
+- **Integrity verification** - Card-media graph, derived tag fields, and tag-count invariants are guarded by project integrity tests and CI. Operational detail: **`03` Phase 4** and `npm run test:integrity`.
+- **Shared admin feedback** - Dialogs, toasts, and loading states use one shared contract (**Administration** ✅ **Shared feedback**). No browser-native alerts on migrated surfaces; no second inline status pattern on the same action.
+- **Filters & populations (reader)** - Reader discovery filters define which cards appear; they do not mutate catalog truth. Full population and stable sort rules: **Administration** 📋 **Filtered populations**, **Navigation** 📋.
+- **AI touchpoints** *(horizontal summary)* - **Story Assist** (Compose/Cards): suggestion-only text, never auto-apply. **Tag/cluster/face proposals**: **Provisional suggestions** layer only. **Cover generation** *(future)*: suggestion or draft asset until author sets cover—never silent replace of confirmed cover. **Ingest classify** *(future)*: metadata/tag hints land provisional until accept.
+
+📘 **Platform engineering status** - Backend hardening, CI gates, monitoring, and slice closeout narration live in `docs/03-Implementation.md` and `01` TECHNICAL—not in Application *Features*.
 
 ## **Navigation**
 
@@ -83,30 +85,102 @@ Legend:
 
 *Principles*
 
-- **Continuity** - Navigation should preserve reading flow rather than interrupt it.
-- **Single Filter Surface** - Filtering and discovery controls should live in one canonical left-side surface.
-- **Platform Clarity** - Mobile and desktop may differ in presentation, but the task model should stay recognizable.
-- **Responsive Contract** - Desktop vs narrow layout, breakpoints, sidebar toggle behavior, and main feed column rules are defined in `docs/04-Theme-Design-Contract.md` Section 9; implementation must match that section.
+- **Canonical filter surface** - Filtering and discovery live in one left sidebar/drawer—not competing chrome or bottom-nav patterns.
+- **Mode clarity** - Guided and Freeform are different browse models, not interchangeable skins.
+- **Continuity** - Navigation preserves reading flow rather than interrupting it.
+- **Responsive parity** - Mobile and desktop may differ in presentation, but the task model stays recognizable; layout rules in `docs/04-Theme-Design-Contract.md` Section 9.
 
 ---
 
-### **Home Page**
+### **Landing Page**
 
 *Intent*
 
-- **Entry Point** - Provide the authenticated entry into the application.
-- **Brand Framing** - Introduce the journal visually without competing with login.
+- **Public entry** - Explain the product to prospective and invited family users before sign-in.
+- **Path to access** - Make **Sign in** obvious; credential entry lives on a dedicated route, not mixed into marketing scroll.
+- **Honest promise** - Reflect the real workflow: **organize → integrate stories → deliver** for private family re-experience—not a photo manager, generic journal, public social network, or DAM.
+- **Commercial front door** - v1 private hosted app for one author and invited family readers; set expectations before account exists.
 
 *Principles*
 
-- **Simple** - Keep login obvious and low-friction.
-- **Lightweight** - Preserve branding without turning the page into a dense landing experience.
+- **Scannable** - Section-based page readable on mobile first; short blocks, clear headings, one primary action per viewport region.
+- **Honest scope** - Digitization and heavy organization may happen outside the app; **Resources** points outward without implying integrations. Do not claim in-app scanning, Google/Apple import, or face recognition until shipped.
+- **Trust-forward** - Privacy, author control, family-private access, and backup posture visible before sign-in—not legal policy, but plain-language trust.
+- **Not a competitor clone** - Do not position as Google Photos with stories or Lightroom for families. Differentiation: private editorial storytelling, dimensional discovery, mobile reader.
+- **Same story as canon** - Copy aligns with `01` Product Vision and **Application** 📐 **Product shape**; landing does not invent a second product narrative.
 
 *Features*
 ✅ **Complete**
 
-- **Login Page** - Application opens to home page with login form and SVG logo.
-- **Home Layout**  - Login splash with the current `Title-light2` / `Title-dark2` artwork, added spacing between logo and form, and no nav bar. Redirects to /view after login.
+- **Public landing at /** - Living Album marketing page at root; scoped marketing theme/fonts via `(marketing)` layout; app shell hidden on marketing routes (`/`, `/login`, `/my-stories/*`).
+- **Route split** - Sign-in at `/login`; CTAs on landing link to `/login`; `/` stays on the public landing even when a session exists; `/my-stories/4` redirects to `/`.
+- **Hero & how-it-works (v1)** - Living Album hero, problem, three-step flow, promise, and sign-in CTAs shipped.
+
+⭕1 **Planned**
+
+- **About** - Who the product is for (one author, family/friends readers); expanded problem statement beyond current sections.
+- **Features** - Core capabilities aligned with `01` Product Vision: organization assistance, story integration (cards/collections), private mobile reading (Guided/Freeform), author-controlled publishing.
+- **How it works** - High-level stages: digitize elsewhere (optional) -> import -> organize/tag -> build stories -> publish -> family reads on phone. No false claim that scanning happens in-app.
+- **Pricing** - Commercial shape for v1 private hosted app (single author / family audience). Exact tiers, trial, and packaging TBD; page must not overpromise before pricing is locked.
+- **Resources** - Curated external links: photo scanning/digitization services, optional freelancers or services that help with organizing/tagging. Editorial disclaimer: pointers only, not endorsements or integrations.
+- **Privacy & trust** - Family-private hosting, authenticated access, author-owned content, backup/restore posture (summary—not legal policy).
+- **FAQ** - Short answers on access (invitation model), who can see content, mobile vs admin, and where to get help.
+- **Contact / access** - Request-access or operator contact channel (channel TBD in **❓ Open**).
+
+📋 **Contracts**
+
+- **Route & session** - `/` is **public** (no auth required; no auto-redirect when signed in). `/login` (or equivalent) is **credential entry**; signed-in session hitting `/login` → redirect **`/view`**. Signed-in user may open landing via hamburger **Home** (**Top Navigation** 📋) without signing out.
+- **Page structure (v1 sections, top to bottom)** - **Hero** → **About** → **Features** → **How it works** → **Pricing** → **Resources** → **Privacy & trust** → **FAQ** → **Contact / access** → footer with repeat **Sign in**. Sections may collapse on narrow widths; order preserved.
+- **Primary CTA** - **Sign in** in hero and footer; no competing primary action (no Start free trial until pricing exists).
+- **Refuse list (copy guardrails)** - Must not claim: public social feed, DAM/lightroom replacement, unlimited cloud sync from Google/Apple Photos, automatic story publishing, in-app photo scanning, professional print fulfillment unless shipped.
+- **Feature honesty** - Organization copy reflects assist + author control (suggest-and-confirm, not silent AI takeover). Story copy reflects cards/collections reader, not generic blog.
+- **Resources** - External links open in new tab with disclaimer; no vendor logos implying partnership unless explicitly approved later.
+- **Pricing placeholder** - Until tiers locked: describe private hosted, one author, family readers without numeric price commitment; optional request-access CTA aligned with **Contact / access**.
+- **Visual & theme** - Public page uses reader-adjacent branding (Journal/Editorial feel) but does not load Theme Management workbench or admin bundles on anonymous visit. Responsive layout follows `04` §9 spirit where applicable.
+- **SEO & sharing** - Basic title/description for private product; no indexed user content on public routes.
+
+📐 **Decisions**
+
+- **Route split** - `/` owns the public landing; sign-in moves off the root route when the landing program ships.
+- **Public landing** - `/` always shows the marketing page; returning users enter the app via `/login` or direct `/view`.
+- **Resources boundary** - Resource links are outbound references only; no in-app integration or vendor partnership implied.
+- **Invitation model** - v1 access is operator-granted accounts (**User Management**); landing explains invitation/request-access, not open signup, unless product decision changes.
+- **Pricing & contact (deferred)** - Pricing tiers, trial, packaging, and request-access contact channel remain **TBD**; landing ships with honest placeholder copy until locked.
+
+❓ **Open**
+
+- **Brand assets** - Final product name treatment, logo, and hero artwork source.
+
+📘 **Resources** - In-app Help and FAQ depth: **Top Navigation** ⭕1 **In-app Help**; canon promise: `01` Product Vision.
+
+---
+
+### **Sign-in**
+
+*Intent*
+
+- **Credential entry** - Authenticate invited users with low friction.
+- **Post-auth routing** - Send successful sign-in to `/view` (reader entry).
+
+*Principles*
+
+- **Simple** - Obvious form, clear errors, no competing chrome.
+- **Lightweight** - Branding present but subordinate to the form.
+
+*Features*
+✅ **Complete**
+
+- **Sign-in form** - Email/password against Firestore-backed users; redirects to `/view` after success.
+- **Sign-in route** - Credential entry at `/login`; landing CTAs and unauthenticated reader/admin redirects hand off here with `callbackUrl` preserved.
+
+⭕1 **Planned**
+
+- *(none — route split shipped with **Landing Page**.)*
+
+📋 **Contracts**
+
+- **Landing handoff** - Minimal chrome; link back to public `/` for product info optional; no marketing sections on login route.
+- **Post-auth** - Success always routes to **`/view`**; failed auth stays on login with clear error; no admin auto-redirect.
 
 ---
 
@@ -125,20 +199,40 @@ Legend:
 *Features*
 ✅ **Complete**
 
-- **Header** - Centered logo, contextual Back button, hamburger menu (content/admin/theme/signout).
-- **Logo** - Same `Title-light2` / `Title-dark2` title artwork as home; compact height in header (`Navigation.module.css`).
-- **Hamburger** - Dropdown menu with content links (all users), admin links (admin only), theme toggle, and sign out; this is now the primary admin-entry surface as well.
-- **Theme toggle iconography** - Light/dark switching now uses compact sun/moon icon treatment instead of reader-facing text labels.
-- **Density** - Header height and hamburger spacing are reduced to preserve more vertical space for reader and admin content.
+- **Header** - Centered logo, contextual Back button, hamburger menu (content, admin, theme, sign out).
+- **Hamburger** - Content links for all authenticated users; admin links for admin sessions only; primary admin entry from reader chrome.
+- **Theme toggle** - Compact sun/moon icon in header for light/dark switching.
+- **Density** - Reduced header height and menu spacing to preserve vertical room for content.
+
+📐 **Decisions**
+
+- **Header light/dark** - Keep a one-tap sun/moon control in the header while reading; hamburger repeats theme controls for menu users.
+- **Theme row semantics** - **Theme…** opens Theme Management (admin only). **Preset** control switches named design packages (Journal / Editorial) when exposed to the current role. **Sun/moon** toggles light/dark mode only—never preset or management.
+- **Viewer vs admin chrome** - Viewers get light/dark (and preset if product exposes it); Theme Management stays admin-only.
+
+📋 **Contracts**
+
+- **Hamburger sections (target IA)** - Order: **Home** (public landing at `/`) -> reader content links -> admin links (admin only) -> **Settings** -> **Help** -> **Theme row** -> **Sign out**. Home returns to the landing page without signing the user out.
+- **Settings** - Account-oriented and authoring preferences per **Settings v1 scope** below—not Theme Management, not Help.
+- **Settings v1 scope (admin)** - **Tag inheritance** — four toggles (Who, What, When, Where) per **Studio Tags** 📋 **Gallery→card inheritance**; all default **off** at first install. **Taxonomy** — install/remove **Tag Set 0 — Generic**. **Theme (reader)** — preset package (Journal / Editorial) and light/dark when exposed to admin as reader. **Operations** — run backup, show last backup status/time, link to guarded restore flow (admin-only, confirm-heavy). **Index health** — read-only Typesense/fallback status when available. **Account** — link to **User Management**; password change when supported. Not in v1 Settings: Theme Management workbench, Studio layout, cloud import configuration.
+- **Help** - In-app help entry per **Help v1 scope** below; grows into FAQ/workflows—not a dump of canon docs.
+- **Help v1 scope** - Guided vs Freeform overview; mobile reading tips; link to landing FAQ; pointer to Studio for authoring (admin).
+- **Theme row layout** - One labeled row: **Theme…** | **Preset** (when enabled) | **Light/Dark** icon; three distinct actions, not one ambiguous control.
+
+✅ **Complete**
+
+- **Settings (inheritance)** - `/admin/settings` + hamburger **Settings** link (admin): four gallery→card inheritance toggles, default off, persisted in `app_settings/author`.
 
 ⭕1 **Planned**
 
-- **Top-nav refinement**
-  - Increase logo prominence
-  - Back-button clarity (in header or above viewed card)
-  - Hamburger contents (Content/Admin)
-  - Chrome density so the header feels deliberate without reclaiming excess vertical space.
-  - In reader-only mode, the preferred direction is a minimal control surface unless another named reader theme becomes a real product option.
+- **Top-nav refinement** - Logo prominence, Back-button clarity, chrome density; minimal reader control surface unless a named reader theme becomes a real option.
+- **Hamburger restructure** - Implement target IA: Home, Settings, Help, Theme row separation, admin/content grouping per **Hamburger sections** contract.
+- **In-app Help** - First Help surface (reader basics + link to landing FAQ); admin authoring help as follow-up.
+- **Settings surface (remainder)** - Tag Set 0 install, backup/index health, theme reader prefs per **Settings v1 scope** (inheritance shipped).
+
+⭕2 **Future**
+
+- **Help depth** - Contextual help from reader/admin surfaces; optional guided tours.
 
 ---
 
@@ -152,46 +246,28 @@ Legend:
 
 *Principles*
 
-- **Core Surface** - The left navigation is a primary product surface, not a secondary utility panel. Its architecture and interaction model must feel fluid, easy, capable, and trustworthy in real use.
-- **Reachable** - Filter and browse controls should stay accessible across desktop and mobile.
-- **Compact** - The sidebar should carry dense controls without becoming hard to scan or tap.
-- **Mode-aware** - Guided and Freeform may differ in controls, but each should expose a coherent model.
+- **Core surface** - Left navigation is a primary product surface, not a secondary utility panel.
+- **Reachable** - Filter and browse controls stay accessible across desktop and mobile.
+- **Compact** - Dense controls must remain scannable and tappable.
 
 *Features*
 ✅ **Complete**
 
-- **Drawer vs Sidebar** - At narrow widths, the left navigation becomes a drawer with overlay/backdrop behavior; at wider widths it remains a sidebar. Filter access remains visible across widths per `docs/04-Theme-Design-Contract.md` Section 9.
-- **Guided and Freeform** - Reader navigation supports distinct Guided and Freeform browse modes, with Guided as the default on open and local persistence of the selected mode.
-- **Guided Navigation Model**
-  - Guided presents the curated collections tree as a read-only navigable outline with expand/collapse controls rather than reusing Freeform filter controls.
-  - Guided collection roots come from the real curated structure rather than a shallow recent-card scan.
-  - Draft collection roots stay hidden from non-admin readers; admins see them styled as warning-state entries in the same tree.
-- **Freeform Filtering Model**
-  - Freeform filtering is scoped to `Who | What | When | Where`, with `Who` as the default dimension.
-  - Freeform supports five card-type toggles: Story, Gallery, Question, Quote, and Callout. All five active means no type filter.
-  - The checkbox applies selected tags plus descendants when enabled, and exact selected tags only when disabled.
-  - Tag search narrows the visible tree without dropping selections, and selected tags remain visible as chips grouped by dimension.
-  - Clearing filters in Freeform stays on the Freeform feed path instead of switching back to collection-style results.
-- **Freeform Controls**
-  - Freeform exposes a `Cards | Media` browse-target toggle so the reader sets content scope before filtering.
-  - Freeform supports `Sort by` and `Group by` controls, with grouped sections rendered in-feed when enabled. Guided follows curated tree order instead of these controls.
-  - Freeform keeps `Sort by` and `Group by` behind a compact disclosure rather than always occupying primary sidebar space.
-- **Freeform Layout**
-  - In Freeform, the control stack stays pinned while only the tree region scrolls.
-  - Freeform sidebar controls, spacing, and tree rows are intentionally denser so filtering remains usable on narrower desktop widths and in the mobile drawer.
-  - Desktop sidebar placement keeps the Explore header and primary controls higher in the working area.
-- **Reader Ordering**
-  - Freeform supports archive-wide seeded `Random` plus deterministic `When`, `Created`, `Title`, `Who`, `What`, and `Where` ordering.
-  - Guided follows curated tree order, and text search remains relevance-first.
-- **Local Tree Controls** - Reader and admin tag trees provide local `Expand all` / `Collapse all` controls backed by browser-persisted expansion state rather than shared defaults.
-- **Admin Sidebar Variant** - On `/view` in Freeform mode, admins can switch between `Filter` and `Tag library`; viewers remain filter-first only. Canonical tag-library behavior is owned by **Tag Management**.
+- **Drawer vs sidebar** - Narrow widths use a drawer with overlay/backdrop; wider widths use a persistent sidebar. Filter access stays visible per `04` Section 9.
+- **Browse modes** - Distinct Guided and Freeform modes; Guided default on open; selected mode persists locally.
+- **Local tree controls** - Expand all / collapse all with browser-persisted expansion state on reader and admin tag trees.
 
 📐 **Decisions**
 
-- **One Filter Surface** - The left sidebar/drawer remains the canonical discovery and filtering surface; narrow widths use a drawer rather than a competing bottom-navigation pattern.
-- **Primary reader control surface** - The left sidebar/drawer is the reader's main control surface and entry into the archive's structure, filters, and browse modes. Refinements to this area should prioritize clarity, flow, and confidence over decorative variation or secondary chrome concerns.
-- **Guided vs Freeform Contract** - Guided and Freeform are intentionally different navigation models: Guided follows curated structure, while Freeform exposes taxonomy, target, and ordering controls.
-- **Admin Reader Variant** - Admins may get additional reader-side library/edit affordances where useful, but viewer navigation remains filter-first and read-oriented.
+- **One filter surface** - The left sidebar/drawer remains the canonical discovery and filtering surface.
+- **Primary reader control surface** - Refinements should prioritize clarity, flow, and confidence over decorative chrome.
+- **Admin reader variant** - Admins may get additional reader-side library affordances; viewer navigation stays filter-first and read-oriented.
+
+📋 **Contracts**
+
+- **Guided browse** - Curated collections tree as a read-only navigable outline with expand/collapse—not Freeform filter controls. Collection roots come from real curated structure. Draft collection roots hidden from viewers; admins see warning-styled draft entries in the same tree. Feed order follows curated tree order; text search stays relevance-first. **Multi-parent:** a card linked under multiple collection parents may appear **once per path** in the Guided tree and feeds reached through each path (**Collections Management** 📐 **Multi-parent reader display**).
+- **Freeform browse** - Dimensional filtering on Who | What | When | Where (Who default). Five card-type toggles (Story, Gallery, Question, Quote, Callout); all active means no type filter. Tag checkbox includes descendants when enabled, exact tags when disabled. Tag search narrows the visible tree without dropping selections; chips group selections by dimension. Clearing filters stays on the Freeform feed path. Cards | Media browse-target toggle sets scope before filtering. Sort by and Group by available behind compact disclosure; grouped sections render in-feed when enabled. Control stack pinned; tree region scrolls. Sort options include seeded Random plus deterministic When, Created, Title, Who, What, and Where.
+- **Admin sidebar on `/view`** - In Freeform mode, admins switch between Filter and Tag library; viewers remain filter-only. Tag-library behavior detail: **Studio Tags**.
 
 ⭕1 **Planned**
 
@@ -199,23 +275,24 @@ Legend:
   - Continue simplifying control order. - Current preferred direction: keep `Cards | Media` visibly above taxonomy browsing and make the Freeform header row feel more intuitive without adding competing controls.
   - Browse-target clarity
   - Mobile ergonomics so Guided and Freeform remain easy to understand across widths.
-  
 
 ⭕2 **Future**
 
 - **Guided tree mobile ergonomics** - Increase practical finger usability of the guided/tag tree rows and controls beyond the current desktop-acceptable baseline where needed in real mobile use.
 - **Drawer gesture refinement** - Keep improving narrow-width drawer-open and drawer-close behavior so in-app navigation wins cleanly over browser-history gestures without changing the core drawer model.
+- **Episodic discovery** - Recency, unread, or "what's new" filters for family readers after one-off publishes (spec TBD).
 - **Tag Tree Counts** - Fix numbering and add media counts "(x/y)" on tag tree nodes.
 - **Collection Metadata** - Implement collection metadata (child counts).
 - **Chron Tree** - Provide tree in chronological order (Year / Month / What) for browsing.
 - **Reader filter modality by dimension** - Reader filtering does not need one identical control pattern for all four dimensions. The strongest future visual candidate is `Who` (for example, person tiles / face-led chips when that capability exists). `What`, `Where`, and especially `When` should be free to use the interaction model that best fits the data rather than being forced into the same visual language.
-- **Chronological aggregation** - `When` should eventually support chronological aggregation and step-down browsing rather than only exposing a flat tag tree. The target direction is expandable time buckets such as decade -> year -> month -> day where data quality supports it, similar in spirit to modern photo-library year grouping, while still fitting the journal's `when/date/...` tagging model and reader sidebar contract.
+- **Chronological aggregation** - `When` should eventually support chronological aggregation and step-down browsing rather than only exposing a flat tag tree. The target direction is expandable time buckets such as decade -> year -> month -> day where data quality supports it, similar in spirit to modern photo-library year grouping, while still fitting the `when/date/...` tagging model and reader sidebar contract.
 
 ❓ **Open**
 
-- **Group by control** - Confirm whether reader sidebar should keep `Group by` as a primary control or move/remove it.
-- **Created sort visibility** - Confirm whether `Created` sort options remain visible in reader sidebar or move behind an advanced mode.
-- **Guided tree responsiveness** - Guided tree can feel slow to load in hosted reader use; confirm whether the issue is first-load latency, delayed selection feedback, or both before changing the reader interaction contract.
+- **Group by default** - Keep in advanced disclosure vs remove (product preference).
+- **Created sort visibility** - Primary sort list vs advanced-only (product preference).
+- **Guided tree performance** - Confirm first-load vs selection latency before contract change (investigation).
+- **Messy-archive Studio entry** - Whether new/import-heavy sessions should open **Studio Media** first vs remember last pane (product preference).
 
 ---
 
@@ -228,21 +305,19 @@ Legend:
 
 *Principles*
 
-- **Curated and Freeform** - Support both directed and exploratory reading.
-- **Single Structure** - One card schema should support multiple content families and presentation behaviors.
-- **Differentiated Presentation** - Card families should feel distinct without requiring separate content systems.
-- **Author Control** - Mixing, ordering, and display behavior should remain author-controlled rather than inferred opaquely.
+- **One feed** - One card schema supports multiple content families in one continuous reader surface.
+- **Matrix-governed** - `type`, `displayMode`, and context (feed grid, detail, rail) define presentation and interaction.
+- **Navigation-driven subset** - Active Guided/Freeform/filter state controls which cards appear; browse-mode contracts: **Navigation** 📋.
+- **Author-authored** - Mixing, ordering, and publish state stay author-controlled, not opaque inference.
+- **Reader trust** - Stable, intentional reader behavior with no admin leakage or confusing dead ends.
 
 *Features*
 ✅ **Complete**
 
-- **Guided or Freeform** - Content can be consumed through authored structure or exploratory browsing.
-- **Mixed Feed** - The reader surface supports mixed card families within one continuous feed.
-- **Display Modes** - Cards use `static`, `inline`, or `navigate` presentation depending on card family and reader context.
-- **Author-controlled Presentation** - Content mixing, ordering, and display behavior are controlled by the author.
-- **Contextual Filtering** - Active navigation/filter state controls which subset of content appears in the feed.
-- **Mobile-first Reading** - Reader content is optimized for touch scrolling and responsive consumption.
-- **Display-type Enforcement** - Card family and display-mode combinations are constrained so reader behavior stays intentional rather than arbitrary.
+- **Mixed feed** - Reader `/view` presents mixed card families in one responsive grid (single column at mobile breakpoint per `04` §9.4).
+- **Display modes** - Cards use `static`, `inline`, or `navigate` per family and context.
+- **Guided and Freeform** - Same feed components serve both browse modes; mode-specific behavior: **Navigation** and **Content Page** 📋.
+- **Feed continuity** - Position and focused-card restoration when returning from detail to `/view`.
 
 ---
 
@@ -250,88 +325,29 @@ Legend:
 
 *Intent*
 
-- **Immersive** - Immersive content consumption experience.
-- **Engaging** - Presenting an engaging interface and fluidly scroll through the stories--up and down, left and right.
+- **Immersive reading** - Fluid scroll through stories on `/view`.
 
 *Principles*
 
-- **Dual-Path** - FreeForm or Curated
-- **Reader-first trust** - Reader behavior should feel stable and intentional: no accidental admin leakage, no confusing dead ends, and no interaction model that appears broken or random to family readers.
+- **Equal browse modes** - Guided and Freeform are equal-priority consumption paths.
+- **Reader-first trust** - No accidental admin leakage, dead ends, or random interaction models.
 
 *Features*
 ✅ **Complete**
 
-- **Feed Structure**
-  - The reader feed uses `CardFeedV2` -> `V2ContentCard` (`src/components/view/`) on `/view`.
-  - The feed is a responsive grid and becomes a **single column at `max-width: 768px`** per `docs/04-Theme-Design-Contract.md` Section 9.4.
-  - Feed chrome includes the header, search row, type chips, and `@` card mentions via `CardMention` / `TipTapRenderer`.
-  - Feed edits patch visible card data in place through the feed state owner, so title, cover, and focal-point saves update immediately without reordering the current feed.
-- **Card Interaction Model**
-  - Feed tiles link to `/view/[id]` only when `displayMode === 'navigate'` and `type` is `story`, `gallery`, or `qa`. Other types/modes render as non-link tiles (`V2ContentCard.tsx` `isInteractive`).
-  - Card schema uses `type`: `story` | `gallery` | `qa` | `quote` | `callout` and `displayMode`: `static` | `inline` | `navigate` (`src/lib/types/card.ts`).
-  - Collection structure is carried by `childrenIds` on any type rather than a separate collection-only card type.
-  - `CardDetailPage.tsx` and the reader view components under `src/components/view/` render the open-card experience.
-- **Card Content Presentation**
-  - Title, subtitle, excerpt, and main body (TipTap) roles vary by card type and display mode.
-  - Feed and detail behavior follow the conventions in **Content Page** and **View Page**.
-  - Closed reader feed tiles (`Story`, `Gallery`, `Question`, `Quote` in non-inline modes) use a **uniform 1:1 square shell**: cover or type-native upper band, a title band where applicable, and a fixed **bottom tag-chip strip** on main grid tiles (compact discovery/rails omit chips). The agreed chip-row contract is **four fixed Who / What / When / Where slots** with dimension-colored placeholders when empty (`📐 **Closed-tile dimensional chip contract**` below). `Question` and `Quote` keep title + watermark **optically centered on the full tile** (chip strip excluded from center math when present). Type overlay badges remain on closed `Story` and `Gallery` only; excerpts stay excluded from reader card presentation for now.
-  - Open reader cards remain the place for fuller orientation metadata: keep type + tag/context badges on open `Story`, `Gallery`, and `Question` headers, with placement handled as a deliberate header rule rather than an incidental cover/no-cover fallback.
-  - `Story` remains the baseline reader card language; `Gallery` stays closely related but should read more clearly as image-sequence-first; `Question` and `Quote` should lean further into their more distinct visual identity; `Callout` is currently lower-priority than the other four card families.
-- **Gallery Card Presentation**
-  - Gallery-card **inline** vs **navigate** behavior and **caption** options are governed by the **V1 Matrix** below and the implemented reader/card components.
-  - Closed gallery cards expose a visible swipe affordance plus slide count in the feed when multiple inline images are present.
-  - Closed gallery cards render the active inline image caption as a bottom overlay while swiping through feed-card images.
-  - Compose cover editing is the authoring source of truth for the card's primary cover presentation. The open Reader cover should match the authored Compose crop for the same card and cover mode.
-  - Stored focal-point data remains available as secondary framing guidance for alternate-shape surfaces such as closed feed cards, rails, and `Explore More`, where bounded adaptive crops may still be appropriate.
-- **Discovery and Suggestions**
-  - Detail pages render structural children from the server plus discovery suggestions through `DiscoverySection`. Story parents use `ChildCardsRail`: horizontal rail of **`V2ContentCard` `size="medium"`** tiles matching the main `/view` feed closed-tile contract (1:1 shell, title band, **four-slot chip strip**), including **`forceSquareFeedTile`** so inline/portrait-authored children do not grow taller than grid tiles. Explore More / Related rails remain **`size="small"`** without chips.
-  - Similar / Explore suggestions come from `/api/cards/random` (`count=3`, tag dimensions from the current card).
-  - Discovery rails use compact `V2ContentCard` treatment (`small` + `fullWidth`).
-  - The structural child rail heading (`More...`) uses the same discovery section title typography as **Explore More**.
-- **Guided Reading Behavior**
-  - Guided mode behaves like a TOC/outline flow: selecting a collection node shows that node's direct children rather than the parent card itself.
-  - A sticky guided title bar keeps the current collection visible during scroll.
-  - Leaf nodes remain selectable and show themselves in the feed.
-  - Guided detail pages show authored structural children only; generic `Explore More`, random `Related`, and `Unrelated` discovery suggestions are suppressed whenever the effective reader mode is **Guided**. Freeform detail pages still render generic discovery.
-  - Reader-facing guided context chrome no longer surfaces the internal word `Collection`; the selected guided title stands on its own.
-  - Guided collection loading applies status visibility consistently for readers vs admins.
-  - Guided parent selection clears stale return-position state, suppresses the prior collection snapshot while the next section loads, and shows an explicit guided transition state so collection changes do not appear to leave the previous cards open.
-  - Guided feed grids use capped, container-aware card columns and explicit shrink constraints on card/media containers so cards do not overgrow in sidebar-constrained or mobile-like widths.
-- **Reader Continuity**
-  - Feed position and focused-card restoration are implemented when returning from a card-detail/edit flow to `/view`.
-  - Reader feed loading waits for auth resolution before first fetch.
-  - Layout-affecting CSS media queries use literal pixel breakpoints instead of `var(--breakpoint-*)`, matching the responsive contract in `docs/04-Theme-Design-Contract.md` Section 9.2.
+- **Feed grid** - Responsive grid with search, type chips, and card mentions; feed edits patch visible cards in place without reordering.
+- **Card interaction** - Navigate tiles open `/view/[id]` for `story`, `gallery`, and `qa`; other type/mode pairs render non-link tiles. Collections use `childrenIds` on any type.
+- **Closed tiles** - Uniform **1:1 square shell** for `Story`, `Gallery`, `Question`, and `Quote` (non-inline): cover or type-native upper band, title band where applicable, fixed bottom **four-slot chip strip** on main grid tiles. `Callout` keeps utility portrait shell. Type badges on closed `Story` and `Gallery` only; excerpts excluded from reader closed tiles.
+- **Open headers** - Open `Story`, `Gallery`, and `Question` retain type + tag/context badges in deliberate header placement.
+- **Gallery feed** - Inline gallery swipes with slide count and active-image caption overlay on closed navigate tiles.
+- **Cover truth** - Compose is authoring source for primary cover; open Reader matches authored crop; focal data guides bounded crops on closed tiles, rails, and Explore More.
+- **Discovery rails** - Detail structural children in `More...` rail (medium square tiles matching main grid); Similar / Explore (three compact cards each); Guided detail suppresses generic discovery.
+- **Guided feed** - TOC-style collection browsing with sticky guided title bar, direct-children feed, and explicit transition state on collection change.
+- **Performance paths** - Inline closed tiles use static HTML; feed queries use cover-only hydration; reader renditions preferred for tiles; offscreen tiles use CSS containment.
 
-📐 **Product vs code** - v1 intent: omit story excerpt on feed/detail; `StoryCardContent` still renders `excerpt` when the field is set-clear data or add a guard when enforcing.
-📐 **Horizontal open** - Prefer horizontal open for long-form on mobile where the reader implements it.
-📐 **Reader priority (canonical)** - For demo and early product validation, Guided and Freeform should be treated as **equal-priority** consumption modes; neither is a secondary fallback.
+📋 **Contracts**
 
-⭕1 **Planned**
-
-- **Feed presentation refinement**
-  - Define and enforce a single presentation contract across feed/detail/rail contexts for each `type` + `displayMode` pair, including interaction model (open vs expand), title/excerpt behavior, and media framing rules.
-  - Reconcile closed-card sizing on wider desktop feeds so cover-mode changes do not leave mixed tile heights and awkward rhythm across adjacent cards while preserving the better mobile behavior.
-  - Use cover media orientation metadata to choose from a bounded ratio set (landscape/portrait/square) per approved layout variant so best-fit rendering improves without degrading feed rhythm.
-  - Strengthen overlay icon/button readability on card media without drifting into heavy-handed chrome; cues should remain quiet but clear against varied imagery.
-- **Rail refinement**
-  - Add a curated horizontal rail variant for qualifying sequences (for example, school/college story runs) with explicit eligibility, ordering, and card-size behavior separate from the default feed grid.
-  - On smaller rail tiles, omit excerpts, tags, and content/gallery type icons so compact discovery cards stay clean and readable.
-- **Story expansion refinement**
-  - Add optional `Read more` progressive disclosure for story excerpts in feed cards, with deterministic truncation and explicit collapse/expand behavior that does not break feed scroll continuity.
-- **Question-card visual cue** - Evaluate a question-card cover treatment (for example a question-mark overlay/cover treatment) so Question cards keep more visual interest in card views without pretending to be a different type.
-- **Feed matrix direction (agreed 2026-05-31)** - Closed-card target direction is now: `Story` = cover-led baseline with title visible, type badge retained, no tag/context badges, and no excerpt in reader presentation; `Gallery` = cover-led sibling to `Story` with a stronger multi-image cue, no tag/context badges, and no excerpt; `Question` = type-native background with overlaid question/title and no excerpt or tag/context badges; `Quote` = quote-first visual treatment with no excerpt or feed metadata; `Callout` = de-emphasized until its role is clearer. Open-card target direction is now: keep type + tag/context badges in open headers, keep `Story` and `Gallery` structurally aligned, and give `Question` stronger closed-to-open visual continuity by carrying the background/header treatment forward into the open card.
-- **Closed utility-card content contract (2026-06-01)** - Closed feed `Question` and `Quote` tiles are now title-driven utility cards: `Question` reads from the question/title field and closed `Quote` follows that same title-driven tile contract rather than rendering rich-text body content in the feed. Closed `Callout` remains rich-text-driven, but it must stay bounded to the same fixed utility-tile shell as `Question` and `Quote`; overflow is clipped inside the tile rather than expanding the card height. In the closed Reader feed, `Quote` and `Callout` also ignore hidden cover metadata for shell selection and stay on the same utility portrait frame as the current no-cover `Question` tile so mixed rows keep one height. Within that shared utility family, closed `Quote` uses the same headline size band as closed `Question` while keeping a distinct quote face, and its watermark now follows the darker question-mark family treatment with a larger optically centered glyph. Quote detail/open presentation still owns the full quote body plus attribution path.
-- **Desktop feed rhythm direction (agreed 2026-05-31)** - Desktop closed cards should normalize to one standard landscape size and one restrained portrait variant at the same width. Square covers fold into the landscape family, no-cover cards do not create a separate landscape size, and cover presence must not create a second landscape height. `Story` should now be treated as always cover-led in reader presentation: if a story lacks a real cover, it should use a standard story placeholder rather than falling into a separate no-cover story layout. The landscape family is the dominant rhythm; portrait is the single controlled exception.
-- **Trivia card flip treatment** - Evaluate a `Trivia` card family for short prompt/answer content with a tap/click flip interaction (front = prompt, back = answer) so lightweight Q&A can feel distinct from full Question cards without forcing a detail-page open.
-- **Questions / Quotes** - Source material (Word, books, Notion).
-- **Quote Card** - Attribution modeling (e.g. Content vs subtitle/excerpt).
-- **Inline feed display rendering** - Shipped 2026-06-12 (slice 2b): closed feed tiles with `displayMode === 'inline'` render via `TipTapStaticContent` (`generateHTML`) instead of mounting full TipTap per tile. Display-only; admin edit paths (`ReaderCardEditModal`, Compose) and detail/callout TipTap surfaces unchanged.
-- **Feed hydration tiers** - Shipped 2026-06-12 (slice 2c): reader feed/search CardProvider queries pass `hydration=cover-only` (covers + first gallery slide when no cover); card detail still loads full hydration via `getCardById`. Full gallery swiper hydration remains on detail open.
-- **Reader rendition delivery** - Shipped 2026-06-12 (slice 2d): reader feed/detail tiles use `getReaderDisplayUrl` (`renditions.studio` WebP when present, else original). InlineGallery/ViewMediaFeed lightbox+zoom keep originals. Run `backfill-media-studio-renditions` for legacy media without studio derivatives. **9a shipped 2026-07-10:** dedicated `renditions.reader` (640px WebP) on import/replace; `getReaderDisplayUrl` prefers reader then studio then original; run `npm run backfill:media-reader-renditions -- --apply` for legacy media.
-- **Feed virtualization** - Shipped 2026-06-12 (slice 2e-1, CSS containment): feed grid tiles use `content-visibility: auto` + `contain-intrinsic-size` so offscreen tiles skip layout/paint while staying in the DOM (scroll restore, focus lookup, grouped sections, guided mode unchanged). True DOM windowing deferred unless profiling shows DOM node count itself is the bottleneck.
-- **Square uniform feed tiles (shipped 2026-07-10)** - Closed feed `Story`, `Gallery`, `Question`, and `Quote` tiles (non-inline) share one **1:1 square shell** in `V2ContentCard` via `usesSquareFeedTile`: image or type-native upper band, title band (`FeedTileMetaBand`) where applicable, and a fixed bottom **tag-chip strip** (`FeedTileChipStrip`) on **main feed grid tiles only**. **Four-slot chip row shipped 2026-07-11:** `FeedTileChipStrip` always renders Who / What / When / Where (`buildFeedTileDimensionSlots`); empty dimensions use dimension-colored placeholders with `-`; filled dimensions show one label; operational sentinels (`zNA`, `z-*`) never appear on tiles. Compact discovery/rails (`size="small"`) omit the chip strip. `Question` and `Quote` keep headline + watermark optically centered on the full tile. `Callout` keeps the prior utility portrait shell. **Cover-editor feed preview shipped 2026-07-10:** Compose `CoverPhotoContainer` shows a collapsible **Feed tile preview** (default open) using miniature `V2ContentCard` with live title/tags/cover; framing controls sit to the right; collapse to save vertical space. The main Compose cover frame remains orientation-aware for open-card authoring.
-
-📐 **V1 Matrix** - Initial presentation contract for `type` + `displayMode` behavior by context:
+- **V1 Matrix** - Presentation contract for each `type` + `displayMode` by context:
 
 
 | Type    | Display mode | Feed (default grid)                                                               | Feed (rail variant)                                               | Open card (`/view/[id]`)                              | Excerpt behavior                                          | Cover framing                                                          |
@@ -346,22 +362,37 @@ Legend:
 | callout | static       | Non-interactive callout tile                                                      | Optional callout rail                                             | Render callout content when opened directly           | Not excerpt-driven                                        | Closed feed stays on the utility portrait frame; hidden cover metadata must not change the tile shell |
 
 
-📐 **Matrix Rules** - Keep the matrix as the source of truth for feed/detail behavior; new variants (for example `short`) must be added to this matrix before implementation.
+- **Matrix rules** - The matrix is source of truth for feed/detail behavior; new display modes or variants must be added here before implementation.
+- **Closed-tile dimensional chips** - Main grid closed tiles (`Story`, `Gallery`, `Question`, `Quote`) render a fixed **Who | What | When | Where** bottom row. Empty slots show dimension-colored `-` placeholders (never operational sentinels like `zNA`). Filled slots show **one label per dimension**: the **subject** tag label when set; **`Mixed`** when multiple confirmed tags exist and no subject; a single tag name when only one. **Hover** on a filled slot shows the **full list** of confirmed tags for that dimension on the card. Compact rails (`size="small"`) omit the chip row.
+- **Unified closed-tile shell** - Reader feed, Studio Cards grid, and Compose feed preview share one shell geometry: cover/type band -> title band -> bottom chip row; internal proportions stay fixed as tile width scales. Surface chrome (Reader edit, Studio checkbox/delete, Compose framing controls) sits outside the shell.
+- **Guided feed and detail** - Collection selection shows authored children only; generic Explore More / Related suppressed in Guided; internal label `Collection` not shown to readers; status visibility respects reader vs admin role.
+- **Freeform feed** - Standard feed grid and filters from **Navigation**; generic discovery on Freeform detail pages.
+- **Utility closed tiles** - Closed `Question` and `Quote` are title-driven; closed `Callout` renders bounded rich text clipped inside the utility portrait shell; `Quote` and `Callout` ignore hidden cover metadata for shell selection.
 
-📐 **Closed-tile dimensional chip contract (agreed 2026-07-11; reader main grid shipped 2026-07-11)** - Closed grid tiles that show a bottom chip row (`Story`, `Gallery`, `Question`, `Quote` on main feed grid; future unified Studio grid target) use a **fixed four-slot row** in canonical order **Who | What | When | Where**. Slots never collapse when a neighbor is empty. **Two tile-visible states only:**
-  - **Empty** - no real tag resolves for that dimension on the card: render a **dimension-colored placeholder** chip with **`-`** (muted blank state). Do **not** show `zNA` or other sentinel tag names on tiles.
-  - **Filled** - one or more real tags resolve: render **one label** in the dimension chip (current single-label resolver until the aggregation slice ships). Do **not** use `+N` counts on the chip surface; full dimension detail may arrive later via hover/popover or open-card metadata.
-  Compact discovery/rails (`size="small"`) may omit the row entirely. Open-card headers and detail metadata remain the place for fuller tag context.
+📐 **Decisions**
 
-📐 **Unified closed-tile shell direction (agreed 2026-07-11; reader / Studio Cards / Compose preview shipped 2026-07-11)** - Reader Content View, Studio Cards grid, and Compose feed preview converge on **one closed-tile layout contract**: same shell geometry (1:1 square for the closed families above), same zone order (cover/type band -> title band -> bottom chip row), and **same internal proportions** at any grid column width (responsive tile **width** changes; **ratios** stay fixed). Surface-specific chrome layers sit **outside** the shared shell and must not overlap affordances (for example Reader edit vs Studio delete/checkbox/published). **Shipped 2026-07-11:** Studio Cards grid and Compose `CoverPhotoContainer` feed preview use `AdminClosedCardTileShell` (cover band + title + `FeedTileChipStrip` four-slot row) with shared `closedCardTilePreviewUtils` for cover/focal math; Studio type/status overlay remains on the cover band; tag editing stays on `CardDimensionalTagCommandBar` below the tile. **Dense grid typography (2026-07-11):** closed card/view tile chips use `--studio-tag-chip-font-size`; closed card/view titles use `--reader-feed-tile-title-font-size`; Media grid cell titles use `--admin-grid-cell-title-font-size` (smaller band than closed cards). **Rail variant (shipped 2026-07-11; utility typography open 2026-07-11):** detail-page discovery rails use `--reader-feed-tile-rail-*` for compact badges/meta only; chip row omitted. **Known gap (deferred):** rail **Quote** / **Question** utility **headline + watermark** scale still does not match main `/view` grid tiles (reported: headline too large, watermark too small / not overflowing like grid). Short-term parity attempts (`cqi`, copying grid `vw`/`rem` clamps onto `size="small"`) were reverted or left incomplete; **no further rail typography churn until** unified **utility surface contract** + **theme tokens** land (see `docs/03-Implementation.md` -> **Utility typography surface parity**).
+- **Reader priority** - Guided and Freeform are equal-priority for demo and early validation.
+- **Excerpt omission** - Story excerpts omitted from reader closed-tile presentation; open/detail may still show excerpt when authored.
+- **Horizontal open** - Prefer horizontal open for long-form on mobile where implemented.
+
+⭕1 **Planned**
+
+- **Feed presentation refinement** - Enforce matrix across all contexts; orientation-aware ratio buckets for inline paths; overlay legibility on varied imagery.
+- **Rail variant** - Curated horizontal sequence for qualifying runs with explicit eligibility and sizing separate from main grid.
+- **Read more** - Optional in-feed progressive disclosure for story excerpts with stable scroll behavior.
+- **Question cover cue** - Evaluate question-mark or type-native cover treatment for closed Question tiles.
+- **Utility typography parity** - Rail vs grid Quote/Question headline and watermark scale mismatch; blocked until unified utility tokens (see `03`).
+- **Trivia card** - Evaluate flip prompt/answer family distinct from full Question cards.
+- **Quote attribution** - Clarify attribution modeling (content vs subtitle/excerpt).
+- **Questions / Quotes sourcing** - Import/source material paths (Word, books, Notion).
 
 ⭕2 **Future**
 
-- **Bundle / `next/image`** - Code-split heavy routes; tuning feed image priority.
-- **Gallery slider polish** - Dots, desktop arrows, child rails (see **Feed Types**).
-- **Feed Types** / **Display Strategy** - Alternate layouts post-v1.
+- **Bundle / next/image tuning** - Code-split heavy routes; feed image priority.
+- **Gallery slider polish** - Dots, desktop arrows, child rails.
+- **Feed types / display strategy** - Alternate layouts post-v1.
 
-📘 `src/components/view/CardFeedV2.tsx` · `V2ContentCard.tsx` · `ContentCard.tsx` (legacy / CardGrid)
+📘 **Resources** - Responsive layout: `docs/04-Theme-Design-Contract.md` §9; reader card components under `src/components/view/`.
 
 ---
 
@@ -369,63 +400,40 @@ Legend:
 
 *Intent*
 
-- **Seamless** - Seamless opening of cards to content.
+- **Open-card continuity** - Seamless transition from feed tile to full card reading.
 
 *Principles*
 
-- **Mobile** - Mobile-like behavior as possible.
+- **Mobile-first detail** - Touch-friendly detail layout and navigation.
+- **Detail vs feed** - Open pages own full narrative, gallery, and structural children; feed owns closed-tile contract (**Content Page** 📋).
 
 *Features*
 ✅ **Complete**
 
-- **Open Card Flow**
-  - Clicking a navigate card opens `CardDetailPage.tsx` via server-side fetch (`getCardById`, `getCardsByIds` for children).
-  - Detail components render conditionally based on card data presence.
-- **Detail Content Structure**
-  - Detail pages render title first, then subtitle, then cover image, then body content when those fields are present.
-  - Body content renders through `TipTapRenderer`.
-  - Galleries render on the view page per the current view-detail contract; feed-card gallery behavior remains governed by **Content Page**.
-  - Structural children render on the detail page when present.
-  - Question detail uses kicker `Question` plus `Answer` with TipTap content; Quote detail uses title, blockquote body, and attribution footer from `subtitle` / `excerpt` via `formatQuoteAttribution`; Callout detail uses standard title / subtitle / TipTap with no extra chrome.
-- **Discovery Rails**
-  - Structural child content renders as the reader-facing `More...` rail.
-  - Similar / Explore suggestions each display three compact cards with lighter hierarchy.
-  - Guided detail suppresses generic `Explore More`; Freeform retains generic discovery.
-  - Structural child content renders from server props immediately, while `Similar Topics` and `Explore More` hydrate client-side after mount with per-group loaders in `DiscoverySection.tsx`.
-  - Child-card hydration uses `getCardsByIds(..., { hydrationMode: 'cover-only' })` with first-gallery fallback when no cover exists, reducing read cost relative to full hydration.
-  - Discovery rails use compact tile sizing, lighter section-title hierarchy, and increased surrounding spacing so the discovery block stays visually secondary to the article body.
-- **Reader Access Boundary**
-  - Reader routes (`/view`, `/view/*`, `/search`) require an authenticated session, and reader APIs require a session.
-  - Viewers can read only published cards and published child cards; admins retain draft visibility.
-  - Protected reader routes keep their shell chrome during client session hydration so visible navigation does not drift from auth truth.
-  - Hosted verification matches that contract for anonymous access: `/view`, `/search`, and `/admin` redirect to login, while reader APIs reject anonymous access.
-  - Root `/view` and `/search` enforce the boundary server-side rather than relying on middleware alone.
-  - Admin-only local import helpers and other admin operational APIs stay outside the reader surface.
-- **API route access audit (2026-06-12, slice 3b)**
-  - Canonical inventory: `src/lib/auth/apiRouteAccessAudit.ts` (`API_ROUTE_ACCESS_AUDIT`).
-  - **public-auth** — `/api/auth/[...nextauth]` (NextAuth).
-  - **authenticated-reader** — reader/catalog reads that require a session but not admin: `GET /api/cards`, `/api/cards/search`, `/api/cards/random`, `/api/cards/[id]`, `/api/view/media`, `/api/tags`, `/api/tags/[id]`. Anonymous callers receive **401**; viewers may read published content (draft detail returns **404**).
-  - **admin-only** — all mutations and admin/catalog/operational routes (card/media/tag writes, import/local helpers, theme admin, AI assist, `/api/admin/*`, maintenance). Anonymous or viewer callers receive **403** (some anonymous card mutations also return **403** rather than **401**).
-  - Automated boundary tests: `src/__tests__/integrity/admin-api-access-route.test.ts` (every admin-only handler); reader anonymous/draft rules remain in `reader-access-route.test.ts` and related integrity tests.
-- **Integrity gate invariants (2026-06-12, slice 3c)**
-  - Shared checks in `src/lib/integrity/invariantChecks.ts`: dangling card-media refs, media backref reciprocity, derived tag fields (`filterTags`, dimensional arrays), and published **tag `cardCount`** reconciliation.
-  - Unit gate: `src/__tests__/integrity/integrity-gate.test.ts`.
-  - Emulator gate (when `FIRESTORE_EMULATOR_HOST` is set): `src/__tests__/integrity/emulator.integrity.test.ts` exercises service-layer create/update/delete tag counts, cover backref rewiring, media delete/replace graph cleanup, and card delete reference detachment.
-- **Embedded Media Presentation**
-  - Read-only embedded figures collapse empty caption chrome while preserving real captions and editable caption affordances.
+- **Open flow** - Navigate cards open detail via server fetch; components render by card type and field presence.
+- **Detail structure** - Title, subtitle, cover, then body (TipTap). Question: kicker + Answer; Quote: blockquote + attribution from subtitle/excerpt; Callout: standard title/subtitle/body.
+- **Structural children** - Server-rendered child rail (`More...`) with cover-only hydration; Similar / Explore hydrate client-side after mount.
+- **Guided boundary** - Guided detail suppresses generic discovery; Freeform retains it.
+- **Reader access** - `/view`, `/view/*`, `/search` require authenticated session; viewers see published content only; shell stable during client hydration; server enforces boundary on root reader routes.
+- **Embedded media** - Figures collapse empty caption chrome; preserve real captions and edit affordances for admins.
 
 ⭕1 **Planned**
 
-- **Reader-detail presentation refinement**
-  - Define a consistent optional kicker/subhead treatment for reader cards, detail pages, and discovery surfaces so card families gain lightweight narrative context without overcrowding titles or overloading raw tags.
-  - Improve section typography, compact-card sizing, and overall hierarchy for `Related`, `Explore More`, and similar detail-page discovery blocks.
-- **Drop cap treatment** - Evaluate a reader/TipTap drop-cap treatment for long-form story openings where it strengthens the editorial/journal feel without becoming decorative noise.
+- **Detail presentation refinement** - Consistent optional kicker/subhead; discovery block typography and hierarchy.
+- **Drop cap** - Evaluate for long-form story openings.
 
 ⭕2 **Future**
 
-- **Audience-based reader access** - Potential future feature for adult/child or collection-specific sharing. Likely requires viewer audience/group membership, audience rules on collection roots or cards, direct URL/search/discovery enforcement, and an explicit media visibility rule.
-- **View Mosaic** - Implement view-page gallery mosaic (replace swiper-only if needed).
-- **Social Features** - Like, comment, sharelink - out of scope until revisited.
+- **Audience-based access** - Adult/child or collection-specific sharing rules.
+- **View mosaic** - Gallery mosaic on detail page.
+- **Social features** - Out of scope until revisited.
+
+📋 **Contracts**
+
+- **Open vs closed** - Detail page is **open** presentation per **Content Page** 📋 **V1 Matrix**; does not reuse closed-tile shell geometry for body layout.
+- **Mobile quick-edit** - Admins may use narrow PATCH quick-edit on eligible fields; structural edits open Studio/Compose paths (**Application** 📋 **Reader edit boundary**).
+- **Discovery blocks** - **More...** (structural children), **Similar**, **Explore** on Freeform only; suppressed on Guided detail per **Content Page** 📋.
+- **Gallery detail** - Swiper/lightbox behavior for gallery-type cards; captions editable on admin quick-edit where implemented.
 
 ---
 
@@ -433,75 +441,89 @@ Legend:
 
 *Intent*
 
-- **Archive Administration** - Author, organize, and maintain cards, media, tags, relationships, and supporting admin settings.
-- **Desktop-primary Workflow** - Optimize administration for desktop use, with mobile limited to narrow supporting actions where explicitly allowed.
+- **Archive administration** - Author, organize, and maintain cards, media, tags, relationships, and supporting admin settings.
+- **Organize at scale** - Organization between import and story-building is core product work, not optional utility. Messy heterogeneous libraries (zero, mixed, or rich metadata) are the normal case; large personal archives must stay manageable without expert operator maintenance.
+- **Desktop-primary workflow** - Optimize administration for desktop use; mobile limited to narrow supporting actions where explicitly allowed.
 
 *Principles*
 
-- **Bulk & Individual** - Support both high-volume batch operations and individual edits.
-- **Efficiency** - Keep admin workflows efficient under large import/edit workloads.
-- **Integrity-owned Mutations** - Data-integrity and mutation rules should be enforced at the service/API layer rather than entrusted to UI behavior alone.
-- **Studio-first Workflow** - Day-to-day content administration should converge on Studio as the primary shell rather than parallel legacy routes.
-- **Interaction Economy** - Prefer one strong interaction model per job over parallel table/grid/modal variants when capability can be preserved.
-- **Interaction Contract** - Each major admin surface should have a plain-language behavior contract: what feels instant, what may load progressively, and what must never block routine authoring.
-- **Single-author First** - v1 administration is optimized for one primary author/operator rather than collaborative authoring.
-- **No Operator Traps** - Routine admin actions should preserve data integrity and make destructive or irreversible actions explicit.
+- **Studio-first** - Day-to-day content administration converges on **Studio** at `/admin/studio` rather than parallel legacy routes.
+- **Organize to tell** - Tagging, structure, and media-to-card relationships create the archive the reader experiences; admin optimizes for that work at volume.
+- **Bulk and individual** - Support high-volume batch operations and precise single-item edits.
+- **Grid-first** - Prefer one strong grid/working-set interaction model per job over parallel table/list/modal variants when capability is preserved.
+- **Integrity-owned mutations** - Data-integrity rules enforced at service/API layer, not UI alone.
+- **Interaction economy** - Each major surface has a plain-language contract: what feels instant, what may hydrate progressively, what must never block routine authoring.
+- **Single-author first** - v1 optimized for one primary author/operator, not collaborative authoring.
+- **No operator traps** - Destructive or irreversible actions stay explicit; routine edits preserve integrity.
+- **Import-critical media** - Importing and structuring large libraries is core capability. Phone-origin, cloud, and scanned sources are normal inputs. System-derived organization aids (heuristics, provisional suggestions, later faces/clusters) assist through suggest-and-confirm flows-never silent publish or delete.
 
 *Features*
 ✅ **Complete**
 
-- **Admin Navigation** - The shared hamburger keeps reader destinations for all authenticated users, while admin-only entries appear only for admin sessions; viewers do not see admin navigation affordances on reader surfaces.
-- **Active Domains** - Studio-aligned content administration now centers on `Studio Organize`, `Studio Cards`, `Studio Compose`, `Studio Questions`, and `Studio Media`, while Users and Themes remain specialist admin surfaces outside Studio.
-- **Studio-first Administration** - `**/admin/studio`** is the primary day-to-day content-admin workspace for structure, cards, compose, questions, and embedded media, with detailed behavior owned by the Studio-aligned subsections below.
-- **Legacy Route Demotion** - Standalone legacy admin routes are no longer the intended primary workflow surfaces; day-to-day content administration converges on Studio plus the surviving specialist routes that still remain intentionally outside Studio, such as Users and Themes.
-- **Shared Feedback Model** - Migrated admin surfaces use the shared dialog/loading/toast contract rather than browser-native `alert` / `confirm`.
-- **Compact Studio Shell** - Studio now favors a denser, workspace-oriented shell with persisted pane sizing, preview-first handoff, and local reconciliation where integrity allows.
-- **Operator Tooling** - Scripts, backup, and recovery helpers remain part of the administration lifecycle while first-class admin UX continues to mature. **Operational recovery closeout (review step 12) shipped 2026-07-10:** Firestore + Storage byte restore proven on disposable `my-journal-restore-drill`; **`backup:run`**, **`restore:storage`**, **`restore:run`** shipped; **12c** build + integrity verification pass. **Review program steps 1–12 closed 2026-07-10** (residual **10/11** engineering slices remain incremental Phase 4 backlog). **Studio runtime browser verification closed 2026-07-11.** **Gallery reorder DnD closed 2026-07-11** (Studio shell + reader Compose modal; author verified). **Reader-modal children reorder closed 2026-07-11** (author verified). **Compose pane scroll containment closed 2026-07-11** (author verified). Canonical operational detail lives in `01-Vision-Architecture.md`, `docs/03-Implementation.md` step **12**, and `docs/NPM-SCRIPTS.md`.
-- **Integrity Gate** - Integrity-sensitive admin changes are guarded by project-level verification for card-media edges, denormalized references, and derived tag/count correctness.
-- **Studio Inline Tags (v1)** - Studio Compose uses compact inline tag editing, while fuller tag-management surfaces remain available where broader editing depth is still needed.
-- **Studio desktop shell (v1)** - `**/admin/studio`** (`StudioWorkspace`): embedded Collections Studio-multi-pane layout (**Organize**  -  Cards  -  Compose  -  Questions  -  Media), one shell-owned active-card selection model plus media multiselect, app sidebar closed by default, and per-pane collapse/restore with persisted widths per `📐 **Studio unified shell contract`**.
-- **Studio preview-first handoff** - Compose now keeps local context visible during card changes: cards-pane, tree, and Questions selection should seed the shell from the best locally known preview, keep the prior card visible until the next preview/detail is ready when necessary, and hydrate fuller selected-card context in the background instead of blanking Compose first.
-- **Studio curated tree integration** - Curated tree pane in embedded Studio with attach/detach/reorder using existing `updateCard` semantics, `fetchAdminCardSnapshot`, and optimistic rollback patterns (`📐 **Studio unified shell contract`** (2); technical baseline in `docs/03-Implementation.md` -> `📐 **Studio program status`**).
-- **Studio selected-context elimination (v1)** - Relationship-only column removed; Studio `**@dnd-kit`** cover, gallery, child, and **TipTap body** (`drop:body`) targets live on **in-shell Card Edit** with `**handleStudioRelationshipDragEnd`** / `**patchSelectedCard`** (body: `**insertImage`** + bank page resolve); outer `CollectionsAdminClient` `**DndContext**` coordinates with nested card-form DnD; `**CoverPhotoContainer**` paste/file-drop retained; media bank -> card via embedded **Media admin** (`📐 **Studio media & body (2026-04-22)`**). Residual: keyboard/indicator polish per **DnD interaction contract**.
-- **Studio cards pane tag filter (v1)** - **Cards** pane: search title, **card type**, **display mode**, status, sort, **Clear** (resets all including `MacroTagSelector`), plus a **single** `MacroTagSelector` for **on-card** dimensional tags only (OR within a dimension, AND across dimensions). This filter defines the pane-local **card base** for the current Cards workspace rather than the global Studio shell. The prior **on-card** vs **media-derived** per-dimension matrix was removed; use **full-page card admin** for **media-derived tag suggestions** and apply from gallery metadata until tagging is complete (`CardAdminList` suggestion rows).
-- **Studio embedded media tag filter (v1)** - Media column: a **single** `MacroTagSelector` drives **who/what/when/where** on `**GET /api/media`** (with Typesense when configured). This filter defines the pane-local **media base** for the current Media workspace. **No** merge of compose-card form tags in Studio; full-page or PhotoPicker use card-context + overlay as before.
-- **Studio IA demotion** - **Shipped:** removed admin **Also** strip (**Collections**, **Triage**); retired standalone **Card**, **Media**, and **Tag** admin routes from normal workflow in favor of **Studio** (reader-side card edit now uses the reader modal / Studio path); deleted **Media Triage**-only UI; removed Studio Cards **Collections** full-page view (`CollectionsManagerPanel` deleted) - curated tree + attach workflows live in **Studio** (`📐 **Studio unified shell contract`** (6)). Collections and Questions should be understood as Studio-owned capabilities even if legacy route artifacts still exist in code.
-- **Studio performance hardening (2026-04-24)** - Studio now prefers local post-mutation reconciliation over broad reloads where integrity allows: selected-card saves reuse returned card payloads instead of immediate re-fetch, routine Cards pane edits use local catalog overrides instead of a full 2500-card refresh, Media bulk tag / most delete flows stay local unless paging underflows, and card/media grids plus tree rows are memoized to reduce unnecessary rerender churn. Firestore remains truth; Typesense remains the search projection.
-- **Studio stabilization (2026-04-30)** - Substrate-level performance pass on top of the 2026-04-24 hardening: (a) **ExifTool isolation** - `exiftool-vendored` is `serverExternalPackages` and the storage helpers used by `cardService` were extracted to `mediaStorage.ts`, so non-import card/media routes no longer compile-time pull the ExifTool worker (cold compile ~13s -> ~2-4s on touched routes). (b) **Typesense dispatch gate** - `GET /api/cards` (and `/api/media`) now dispatches to Typesense only when a text query or dimensional filter is present; plain catalog listings go straight to Firestore, ending the 422-and-fallback round-trip. `per_page` is also defensively capped at 250 in the service layer. (c) **Studio bank / tree streaming** - `StudioTreeCandidateCardBank` and `CollectionsAdminClient.load` replaced their fixed-cap one-shot fetches (2500 / 1000 cards) with `?limit=250&page=0` first-paint plus background `lastDocId`-cursored streaming under stable `created desc`, dropping first useful Studio paint from ~5-9s to ~2s; a small "Loading more cards..." indicator next to the Cards-pane Clear button covers the streaming window. (d) **Card detail child skip** - Studio card click, `fetchAdminCardSnapshot`, and the reader edit modal now pass `?children=skip` to `GET /api/cards/[id]` (see `docs/01-Vision-Architecture.md` -> Backend ✅ **Card detail child hydration**), eliminating up to 100 unread Firestore child reads + media hydrations per click.
-- **Studio workspace responsiveness (2026-04-30)** - Follow-on shell/workspace pass: broad Studio card and root loaders now continue chunking until the server reports completion instead of stopping at fixed client caps; tree fallback no longer overwrites a valid shell-selected card simply because it has not streamed in yet; Compose keeps the current card visible during cross-card and question-card handoff until the next preview/detail is ready; Studio media now uses debounced search, cancellable stale-request protection, short-lived query caching, `mediaById` caching, and next-page prefetch; embedded Studio media may return page data before totals when the pane only needs the working set first.
-- **Studio inline tags (v1 closeout 2026-04-23)** - **Compose (in-shell `CardForm`):** tags via `**CardDimensionalTagCommandBar`** (`compact`) only-no `**MacroTagSelector**` expand in Studio shell. **Admin grids/tables:** `**DimensionalTagVerticalChips`** rail + `**CardDimensionalTagCommandBar`** `searchOnly` on card and media grid tiles; media **table** uses the dimensional bar per row-routine add/remove/search without a tile-level tag modal. **Full-page card edit** (`/admin/card-admin/.../edit`) intentionally keeps **Edit tags...** plus expandable `**MacroTagSelector`** for deep tag work. **Cards pane** bulk **Edit tags...** remains a modal for multi-card apply. Optional polish: **Studio Media** ⭕1 **Grid tagging UX** (per-tile parity, table alignment) and keyboard/focus under **DnD interaction contract**.
-- **Studio search focus parity (2026-05-24)** - Studio search fields now share a visible theme-based focus treatment: Cards and Media avoid clipped browser outlines, and Questions uses the same blue active-state ring instead of a white default outline.
+- **Studio shell** - `/admin/studio` is the primary workspace: **Organize** (tags + collections), **Cards**, **Compose**, **Questions**, **Media**. Persisted pane sizing, preview-first card handoff, shell-owned active-card selection, app sidebar closed by default.
+- **Specialist surfaces** - **User Management** and **Theme Management** remain outside Studio.
+- **Legacy demotion** - Standalone card/media/tag/question admin routes redirect to Studio; embedded shell is the product truth.
+- **Shared feedback** - Migrated admin surfaces use shared dialog/loading/toast contract, not browser-native alerts.
+- **Local-first reconciliation** - Routine saves patch local catalog/state where integrity allows instead of broad full-catalog refetch.
+- **Relationship editing** - In-shell Compose accepts cover, gallery, children, and body drops from embedded media bank; structural tree DnD in Organize/Cards (author-verified for gallery reorder and children reorder).
+- **Inline tags in Compose** - Compact dimensional tag bar in Studio Compose; deeper taxonomy in Organize tag rail and `/view` admin Tag library.
+- **Operator tooling** - Backup, restore, reconcile, and import scripts remain part of the lifecycle. Operational detail: `docs/NPM-SCRIPTS.md`, `docs/03-Implementation.md` step **12**, `01` TECHNICAL durability.
+- **Integrity gate** - Project verification guards card-media edges, denormalized references, and derived tag/count correctness.
+- **Studio naming** - Product chrome uses `Content Studio` vocabulary (legacy `Content Management` language retired).
+- **Bulk bar and selection** - Bulk bar hidden when nothing selected; selection copy aligned with growing-list / select-visible semantics.
 
 ⭕1 **Planned**
 
-- **Shared action button contract (2026-05-24)** - The surviving Studio/grid-first admin surfaces, Organize support flows, tag-library rows, and media editor now use one much more consistent compact button language for primary, secondary, destructive, and icon-first actions. This is no longer treated as a broad active project; future button changes should be opportunistic and tied to specific surviving surfaces rather than a separate normalization pass.
-- **DnD hardening pass (status 2026-07-11)** - **Closed 2026-07-11 (author verified):** gallery reorder and reader-modal children reorder verified; author reports no further DnD issues in normal use. Reopen only on a new author-reported defect.
-- **Hosted Admin Responsiveness Pass** - Typing/search/startup responsiveness slices for Studio Media, Cards, Questions, and Compose text/body owners are **landed**; treat those as shipped unless a new stall is reported. **Not a formal “all admin latency closed” claim.** **Compose pane scroll containment closed 2026-07-11** (author verified): long Compose forms scroll inside the pane to Children without requiring document/window scroll.
-- **Studio runtime redesign program** - Define and execute the end-state Studio runtime so Organize, Cards, Compose, Questions, and Media behave as one media-native workspace with narrow payload tiers, local-first transitions, and no broad refreshes for routine work. The resulting day-to-day contract should make card switching feel preview-first and near-instant, keep Compose visible through handoff, and let routine saves acknowledge without freezing the rest of Studio. **Status 2026-07-11:** core runtime slices landed and **author browser-verified**; gallery + reader-modal children reorder + DnD hardening closed from author use; remaining follow-through is interaction-contract polish and Phase 4 `⭕1` items unless a new defect is reported.
-- **Interaction contract alignment** - Pair each major Studio architecture change with a plain-language user-visible contract covering what should feel instant, what may hydrate progressively, and what must never block normal authoring use. Apply that contract explicitly to card/media browsing, selection continuity, drag/drop feedback, and filter persistence so architectural work is reviewed against real operator experience rather than technical cleanliness alone.
-- **Code Path Simplification Pass** - Audit Studio and the surviving admin/card/media paths for deprecated surfaces, duplicated interaction models, stale providers/loaders, and dead compatibility code, then retire what no longer supports the current workflow without weakening shipped behavior or canon contracts.
-- **Retire question-admin** - **Shipped 2026-06-12 (slice 4a):** `/admin/question-admin` redirects to `/admin/studio`; admin nav no longer links a standalone Questions route. Studio **Questions** pane is the sole question-admin surface.
-- **Remove Collections standalone branch** - **Shipped 2026-06-12 (slice 4b):** unreachable `CollectionsAdminClient` standalone path and `CollectionsMediaPanel` removed; Studio Organize pane is the sole Collections surface.
-- **Legacy admin redirect routes** - **Shipped 2026-06-12 (slice 4c):** `/admin/card-admin`, `/admin/media-admin`, `/admin/tag-admin`, and `/admin/question-admin` (plus card deep links) are `next.config.ts` redirects only. **Shipped 2026-06-12 (slice 4d):** shared implementation lives under `src/components/admin/studio/cards`, `studio/media`, and `studio/tags` (no legacy `*-admin` component folder names).
-- **Studio naming cleanup** - Rename the remaining `Content Management` surface/chrome language to `Content Studio` so the product vocabulary matches the shipped `Studio` IA.
-- **Bulk bar idle collapse + selection semantics** - Hide the bulk-actions bar entirely when nothing is selected, and reconcile selection copy/behavior with the current growing-list model so surfaces do not imply a paged `Select all on page` contract where the UI now behaves as `Select visible`.
-- **Operator message pruning** - Remove low-value shell messages such as `working in...` where they add noise without helping the author make a decision.
-- **Studio light-mode shell hierarchy** - Rework the current light-mode Studio shell so the top `Content Studio` header block, the pane workspace block, and the outer gutters read as one intentional hierarchy. The gap between the Studio menu block and the main Studio block should collapse to a near-hairline seam, and the current stacked gray/pale planes should be reduced without changing drag/drop, pane ownership, or shell interaction structure.
+- **Interaction contract alignment** - Document and enforce user-visible latency/feedback contracts for browse, selection, DnD, and filter persistence across Studio panes.
+- **Code path simplification** - Retire deprecated surfaces, duplicate loaders, and dead compatibility paths that no longer support the Studio workflow.
+- **Operator message pruning** - Remove low-value shell noise (for example ambient `working in...` messages).
+- **Studio light-mode hierarchy** - Collapse header/workspace seam and reduce stacked pale planes without changing pane ownership or DnD structure.
 
 ⭕2 **Future**
 
-- **Maintenance Management** - Admin UI over existing secured maintenance APIs (`POST /api/admin/maintenance/*`: reconcile, cleanup, backfill, diagnose-cover). A Maintenance tab existed previously and was removed; restore when in-app diagnose/fix outweighs CLI + manual HTTP. Today: `docs/NPM-SCRIPTS.md` and `npm run ...` scripts.
-- **Admin SWR Deduping** - Revisit `CardProvider` `dedupingInterval: 0` for admin - restore bounded deduping to cut duplicate `/api/cards` requests where safe.
-- **Legacy list-surface retirement audit** - Audit old card/media list-only components and route remnants, and remove them where they no longer support a real workflow and can be retired without weakening the current Studio/grid model.
+- **Maintenance UI** - Admin surface over secured maintenance APIs when in-app diagnose/fix outweighs CLI.
+- **Admin SWR deduping** - Bounded deduping on admin catalog fetches where safe.
+- **Legacy list-surface audit** - Remove list-only remnants that no longer support real workflows.
 
-📐 **Studio unified shell contract** - **(1)** **Tag rail (shipped):** Studio **Organize** column (`TagAdminStudioPane`) plus `/view` admin **Tag library** (`ViewTagLibrarySidebarPane`) deliver **full Tag Admin** on canonical `TagProvider` (add/delete/edit/reorder/reparent); legacy `**/admin/tag-admin`** now redirects to **Studio**. Tag reorder/reparent uses optimistic local cache updates so rows do not snap back while Firestore confirms; reparent still uses Shift-drag in the current UI. **(2)** **Card** area with Studio Cards-grade capabilities plus the **Collections** pane; top-level Studio collection entries are explicit **root cards** (`isCollectionRoot`) ordered by `collectionRootOrder`, not by a hidden Master Parent. Cards may be roots, children, or both; `childrenIds` remain the canonical relationship store. Collections are administered as part of Studio **Organize**, not as a separate product-surface route commitment. **(3)** **Media** area with Studio-grade lists, filters, and actions; legacy `**/admin/media-admin`** now redirects to **Studio**. **(4)** **In-focus editing** - live **Card Edit** for selected card in-shell is the **primary** surface for cover, gallery, children, metadata, and body media; the reader-side edit entry is the modal from `/view`, and legacy `**/admin/card-admin`** routes now redirect into **Studio**. **(5)** **Questions** pane lives in Studio for dimensional prompt browsing, **Untagged** cleanup, assigned/unassigned tracking, and QA answer flow. Studio Questions is the intended question-admin surface; any surviving standalone `**/admin/question-admin`** code path is legacy technical residue, not a product commitment. Users and Themes remain outside Studio. **(6)** **Navigation hygiene** - redundant standalone admin routes are demoted; curated assembly, tagging, card work, media work, collection-tree maintenance, and question-driven QA authoring live in **Studio**. **(7)** **DnD** - use **one authoring drag framework** (`@dnd-kit`) with **bounded drag domains**, but do not run Studio as one free-form cross-pane collision space. Current shell contract is **split by responsibility**: **Collections + Cards bank** own the structural tree/root drag context, while **Compose + Media** own the relationship/reorder drag context. Within those boundaries, keep drop targets **registered continuously**, resolve overlap through explicit **domain-specific collision priority**, and prefer **optimistic local commits + reconcile** over save-first snapback behavior. **Tags** remain their own reorder/reparent domain. **Cross-pane simplification contract:** `Cards -> Children` appends to the end of the selected card's children list, with later reordering owned by the **Children** surface itself. `Media -> Content` appends to the end of the current body/content-media set, with later positioning owned by the **TipTap editor** itself. `Media -> Cover` and `Media -> Gallery` remain direct assignment targets, and structural tree drag keeps separate **on-row** (`nest/attach`) versus **between-row** (`insert/reorder`) semantics. Cross-pane drag should classify the drag class first and then limit participation to targets in that class rather than asking unrelated panes to compete for the same drop. **Reviewer map for current Studio DnD:** `Structural` = source `Cards bank` or `Collections tree`, live targets `tree-root`, `parent:*`, `insertBefore:*`, and `studio-parent:*`, mutation owner `Collections/structure services`; `Media assignment` = source `Media bank`, live targets `drop:cover`, `drop:gallery`, `drop:body`, mutation owner `selected-card patch` or `Compose editor bridge`; `Local reorder` = source existing `gallery:*` or `studioChild:*`, live targets only within that same destination surface, mutation owner `selected-card patch`; `Taxonomy` = source `TagAdminList`, live targets `tag reorder/reparent`, mutation owner `tag management`; `Editor-integrated` = source existing body figures, targets and insertion precision owned by `TipTap/ProseMirror`, not by shell collision helpers. **Fallback policy:** explicit cross-pane append/assignment targets count only when the pointer is inside a live target; do not reuse stale hover state and do not let unrelated panes compete for commit. Small geometric tolerance is acceptable only for local reorder inside the destination surface that already owns that interaction. **Verification expectation:** no DnD path is considered closed from code/tests alone; the exact author-facing path must be browser-proven for target activation, drop result, and post-drop editing continuity. **(8)** **State domains** - Studio is a **shell coordinating multiple domains**, not one giant shared list: **taxonomy** (full tag tree), **structure** (full collections tree), **cards workspace** (filtered/sorted card working set), **media workspace** (filtered/sorted media bank), **active card** (selected card editing context), and **questions** (prompt bank). Pane-local filtering must not silently redefine global structural truth. **(9)** **Selection & hydration** - Studio owns one shell-selected active card. Selection should populate Compose from the best available **preview** immediately, then enrich from background **hydration**. Hydration failure should surface an error without blanking the active card context. **(10)** **Cross-domain actions** - drag/drop, attach/detach, tag assignment, media-to-card relationship edits, and question-to-card flows should be modeled as explicit actions between domains rather than accidental side effects of shared pane state.
-📐 **Admin surface simplification** - Long-term admin direction is **grid-first** and **studio-first** where capability is preserved: reduce parallel views and duplicate edit surfaces, but keep tagging speed and card–media relationship editing first-class.
-📐 **Data integrity (write paths & drift)** - Server behavior must match `docs/01-Vision-Architecture.md` -> **TECHNICAL** -> **Backend** (*Card-media integrity*, *Delete graph*, *Durability boundary*). Touchpoints and ownership live in **Studio Media** -> **Cross-entity sync** (card create/update/delete, media delete/cleanup, Typesense, counts). **Operational reality until code is fully aligned:** drift and orphan checks use `**npm run reconcile:media-cards`** and related scripts cataloged in `**docs/NPM-SCRIPTS.md**`.
-📐 **Errors & operator messaging** - Use a shared backend error shape (domain code + user-safe message + optional actionable detail) and consistent UI channels (inline/banner/dialog/toast) so admin and reader flows communicate failures predictably. Card PATCH when stale `coverImageId` / missing `media` is the first known sharp edge; align route-by-route with `docs/04-Theme-Design-Contract.md` Section 10 instead of surfacing opaque Firestore/transport errors directly.
-Current implementation note (2026-04-27): shared `--state-*` success / warning / error / info styling is already live broadly, but the broader app-level messaging behavior is still mixed across local banners, state treatments, and partial feedback-panel adoption. Reader general/error feedback surfaces are now wired; reader success/warning/info panel variants remain future-facing until matching UI surfaces exist.
+📋 **Contracts**
 
-📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
-📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
+- **Studio shell layout** - Multi-pane workspace with independently collapsible/resizable panes and persisted widths. One shell-selected active card drives Compose; media multiselect is pane-local. Selection seeds Compose from best available preview immediately, then enriches via background hydration without blanking first.
+- **State domains** - Studio coordinates separate domains, not one shared list: **taxonomy** (full tag tree), **structure** (collections tree), **cards workspace** (filtered card working set), **media workspace** (filtered media bank), **active card** (Compose context), **questions** (prompt bank). Pane-local filters must not silently redefine global structural truth.
+- **Filtered populations** - Card and media filters apply to the full server-query population; UI shows contiguous slices of one stable-sorted result. Typesense `per_page` capped at 250; larger sets use chunked fetches along the same order (`01` TECHNICAL Typesense list limits).
+- **DnD platform** - One `@dnd-kit` platform with bounded classes: **Structural** (tree/root/parent-child), **Assignment** (cover/gallery/body), **Local reorder** (gallery/children within surface), **Taxonomy** (tag reorder/reparent), **Upload drop** (files only), **Editor-integrated** (TipTap body precision). Shell owns cross-pane routing and collision policy; services own mutations and rollback. **Cross-pane append rules:** `Cards -> Children` appends to end of children list; `Media -> Content` appends to end of body/content-media; `Media -> Cover` and `Media -> Gallery` are direct assignment. Structural drag keeps **on-row** nest vs **between-row** insert/reorder semantics. No DnD path closed from code/tests alone-browser verification required for target activation, drop result, and post-drop editing continuity.
+- **Studio navigation hygiene** - Curated structure, tagging, card work, media work, collections maintenance, and question authoring live in Studio. Users and Themes stay outside.
+- **Selection & bulk** - Multiselect (shift/control range) is pane-local in Cards and Media workspaces. Shared bulk bar appears when selection non-empty; bulk tag and bounded batch ops use server batched paths. **Select visible** semantics on growing lists—bulk targets loaded visible rows unless explicit select-all-in-filter ships later.
+- **Interaction economy** - Browse/filter/DnD: optimistic or acknowledged within ~100ms where integrity allows; save paths show in-flight state; destructive actions confirm; failed mutations roll back or show recoverable error—no silent partial success.
+- **Search & index (admin)** - Typesense when configured for text search on cards/media; Firestore seek/fallback for unfiltered and dimension-filter paths; 503 when text search requested without Typesense. Admin lists obey **Filtered populations** and 250/page chunking (`01` TECHNICAL).
+- **Provisional suggestions** *(Phase 1.a horizontal — platform suggest-and-confirm layer)*  
+  - **Purpose** - Hold **machine-generated proposals** separately from **confirmed** tags, groupings, and assignments until the author accepts, edits, or dismisses. Powers organize-at-scale (clusters, tag hints, later faces) without polluting reader truth or **Studio Tags** confirmed assignments.  
+  - **Confirmed boundary** - **Confirmed** state lives on media and card documents (tag assignments, gallery membership, published fields). Provisional records **never** update `cardCount` / `mediaCount`, `filterTags`, reader filters, closed-tile chips, or **gallery→card inheritance** inputs (**Studio Tags** 📋). Accept is the only path from provisional → confirmed.  
+  - **Trust bar** - **Never** auto-publish to reader. **Never** auto-delete assets or confirmed tags. **Never** silently overwrite confirmed assignments. Dismiss/reject removes provisional only.  
+  - **Proposal kinds (v1 contract)**  
+    - **Tag suggest** - Proposed dimensional tag on a **media** or **card** subject (Who / What / When / Where), from heuristics, import metadata, or AI.  
+    - **Cluster / stack** - Proposed group of media (time window, folder, burst, similarity, review stack per `docs/05-Guided-Archive-Assistance.md`) for author split/merge/confirm before promotion to cards or bulk tag apply.  
+    - **Face hint** *(future)* - Proposed face region + optional Person / Who link; stays provisional until author confirms (**Studio Tags** 📐 **Person model**).  
+  - **Sources** - Heuristic ingest (time, folder, burst, geo when present); import metadata mapping; AI tag/classify endpoints; face API (later). **Compose Story Assist** and **cover generation** are **authoring suggestions**, not provisional tag/cluster records—separate trust path (**Studio Cards**).  
+  - **Accept** - **Individual** — accept one proposal on one subject. **Bulk** — accept matching proposals on a selection, cluster, or review stack. Accept runs through the same server assignment/mutation paths as manual tag apply (counts, derived fields, index sync).  
+  - **Reject / dismiss** - Drops provisional record(s) only; confirmed state unchanged.  
+  - **Edit before accept** - Author may change proposed tag target, split/merge clusters, or correct Who link before accept; no confirmed write until explicit confirm.  
+  - **Idempotence** - Re-running ingest or clustering may add or refresh proposals but must **not** destroy prior **confirmed** work; stale provisional may be superseded or expired by policy (implementation detail).  
+  - **Review surfaces** - Primary UX in **Studio Media** **Browse | Review** mode (**Studio Media** 📋 **Review mode IA**); card-level tag suggestions may appear in **Studio Cards** / **Compose** with the same accept contract.  
+  - **Storage** - Provisional records are **not** embedded as normal tag assignments on media/card docs. Product contract: keyed by **subject** (`media` | `card`), **kind** (tag | cluster | face), **source** (heuristic | import | ai | face), payload, and status (`pending` | `accepted` | `dismissed`). Exact Firestore/collection shape: **❓ Open** — reconcile into `01` TECHNICAL when schema slice is approved.  
+  - **Promotion to stories** - Confirming a cluster may **offer** create/attach card, apply tags to media, and open Compose—author confirms each promotion step; no automatic card publish.
+
+📐 **Decisions**
+
+- **Suggest-and-confirm platform** - All organize intelligence (clusters, tag hints, faces) uses the **Provisional suggestions** contract; confirmed catalog and reader truth change only on author accept.
+- **Admin simplification** - Grid-first, studio-first; reduce parallel views while keeping tagging speed and card-media relationship editing first-class.
+- **Data integrity** - Write paths must match `01` TECHNICAL Backend (*Card-media integrity*, *Delete graph*, *Durability boundary*). Cross-entity sync detail: **Studio Media** 📋 **Cross-entity sync**; drift repair via `npm run reconcile:media-cards` and related scripts in `docs/NPM-SCRIPTS.md`.
+- **Errors and operator messaging** - Shared backend error shape (domain code + user-safe message) and consistent UI channels. Align card PATCH stale-cover edges with `docs/04-Theme-Design-Contract.md` Section 10.
+
+❓ **Open**
+
+- **Provisional schema** - Firestore collection layout, indexes, and retention for provisional records (`01` TECHNICAL owner when build slice opens).
+
+📘 **Resources** - `docs/NPM-SCRIPTS.md` · `docs/IMPORT-REFERENCE.md` · `docs/05-Guided-Archive-Assistance.md` · Platform engineering status and slice closeout: `docs/03-Implementation.md` Phase 2–4.
 
 ---
 
@@ -509,64 +531,56 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Administration** - Manage card population
+- **Card population management** - Browse, filter, tag, and select cards at archive scale.
 
 *Principles*
 
-- **Ease of Use** - Ease of bulk and individual admin.
-- **Tagging first** - Card management should optimize for easy tag assignment and quick relationship editing; those two actions create the structure everything else depends on.
-- **Continuous browsing** - Large card populations should remain fluid to browse, resize, sort, and filter without forcing the operator through repetitive paging rituals or broad list resets.
-
-📐 **List filtering & pagination (cards + media)** - Filters apply to the **entire** population the active server query represents; list UI (infinite-style, Load more, or paged Prev/Next) must only show **contiguous slices** of **one** stable-sorted result for that query. **Typesense** `per_page` is capped at **250 hits per request** (see `docs/01-Vision-Architecture.md` -> **Typesense list limits**); larger filtered sets use **multiple chunks** along the same order, not a widened single page. **Seek-style** media lists (assignment / dimension seek) are **documented exceptions**-forward chain semantics, not arbitrary page jumps over a fixed total. Canonical framing: `docs/01-Vision-Architecture.md` -> 📐 **Filtered population & stable ordering**.
+- **Tagging first** - Optimize for tag assignment and quick relationship editing; structure depends on both.
+- **Continuous browsing** - Large populations stay fluid to browse, resize, sort, and filter without repetitive paging rituals.
+- **Grid-first** - Grid is the canonical working surface; legacy table/list layouts are retired from product use.
 
 *Features*
 ✅ **Complete**
 
-- **Service & schema** - Firestore `cards`; `src/lib/services/cardService.ts`; `src/lib/types/card.ts` (`cardSchema`). Denormalized fields for filtering; business rules server-side.
-- **Admin surfaces** - `src/components/admin/studio/cards/` (grid/table, `CardForm` + `CardFormProvider`, `AdminFAB`, search/filter via `CardProvider`, `BulkEditTagsModal`); legacy `/admin/card-admin` URLs redirect to Studio.
-- **Fields** - Types `story|gallery|qa|quote|callout`; status; `displayMode`; cover + `PhotoPicker` / `CoverPhotoContainer`; `galleryMedia`; TipTap `content` + embedded media + `@` mentions (see Content Page); `MacroTagSelector`; excerpt + auto (`excerptAuto`); `childrenIds` + picker UI; dirty leave/duplicate flows (`persistableSnapshotsEqual`, `confirmLeaveIfDirty`, `POST /api/cards/[id]/duplicate`).
-- **Import** - Folder-as-card (`ImportFolderModal`, `__X` files, caps) - details in `docs/IMPORT-REFERENCE.md`.
-- **Discovery in edit** - PhotoPicker Library tab mirrors Media list filters + in-modal tag dimensions (`filterTagIds` from `CardForm`).
-- **AI Story Assist** - Admin-only AI suggestion endpoint is active (`POST /api/ai/suggest-card-drafts`) with suggestion-only outputs; no auto-apply. The current editor surface exposes `AI Story Assist` with a selectable named guide, `Bob` or `Sandra`, and the choice should shape tone/presentation rather than factual behavior. The first expanded mode set now includes `Draft from notes`, `Tighten wording`, `Expand this memory`, `Retitle this story`, and `Make this story stronger`.
-- **Question-linked card type recovery** - Card edit no longer traps a question-linked card in `Story` when a valid `questionId` still exists. The `Type` selector should continue to expose `Question` whenever the card is actually question-backed.
-- **Admin Ordering** - Admin lists support deterministic order controls (`When`, `Created`, `Title`, `Who`, `What`, `Where`) with explicit tie-break behavior and no random ordering default.
-- **Admin filter depth** - Card admin supports card-dimension missing filters (`Card Who/What/When/Where: No tags`) and page-level media-signal row filters (`Media Who/What/When/Where`) layered on the visible admin list.
-- **Media-derived tag suggestions (full-page)** - Full-page card admin **grid/table** shows per-dimension **suggestions** from gallery/media tags with **apply** (`getMediaSuggestionTags` / `applyDimensionSuggestions` in `CardAdminList`)-the primary v1 path to fix tags on cards when metadata lived on media first. **Studio** attach bank does not duplicate this UI; use full-page **Studio Cards** for that workflow until a future parity pass.
-- **Bulk tag mutation path** - `POST /api/cards/bulk-update-tags` add/remove mode now uses a dedicated batched service (`bulkApplyTagDelta`) that updates card tag-derived fields and tag counts in bulk transactions instead of per-card `updateCard` calls.
-- **Narrow card PATCH routing** - `PATCH /api/cards/[id]` now routes bounded edits through dedicated handlers instead of always falling through the wide `updateCard` path: cover-only, gallery-only, children-only, collection-root-only, tag-only, status-only, content-only, and metadata-only updates each use their narrower service function.
-- **Bulk bar & list/grid multiselect** - The bulk actions strip is a **single** `bulkActions` bar (fixed min height, count on the **left**, actions on the **right**-same pattern as **Media admin**). **List** and **grid** (and the **Studio Cards** pane) support **Shift+click** (range from the last anchor), **Ctrl/Cmd+click** (toggle membership), and **Shift+Ctrl** / **Shift+Cmd** (add a range) via shared `applyModifierSelection` in `src/lib/utils/adminListSelection.ts`. **Select all on page** applies to the **visible** page list. **Grid:** checkbox and modifier semantics match the list; in **Studio**, a **plain** cell/keyboard primary may **focus** the card for compose while **modifier+click** still participates in multiselect.
-- **Card edit labels** - Card edit now uses concise section/button labels (`Gallery`, `Add`) and removes legacy child-card helper copy (`Add...`, `Current Children`).
-- **Card edit control grouping** - `Status`, `Type`, and `Display Mode` controls are grouped in the top card-edit header section.
-📐 **Admin list/table retirement (2026-07-11)** - Card and media admin **grid** is the canonical working surface in Studio; legacy **table/list** layouts are retired from product use. Remaining code paths, CSS (for example `studioCardsShell.module.css` table blocks), and canon bullets that describe table headers or list rows are **stale** and should be removed in a dedicated cleanup slice-not part of the closed-tile convergence pass unless a live route still exposes them.
+- **Card model** - Types `story|gallery|qa|quote|callout`; status; `displayMode`; cover, gallery, TipTap body, dimensional tags, `childrenIds`; server-side rules in `cardService`.
+- **Studio Cards pane** - Search, type, display mode, status, sort, Clear, and one on-card dimensional tag filter (OR within dimension, AND across). Defines pane-local card workspace, not global shell state.
+- **Grid layout** - Shared `AdminClosedCardTileShell`: 1:1 square closed tile with reader-parity four-slot chip strip, type/status overlay, checkbox/delete/drag chrome, search-only tag bar under tile.
+- **Multiselect and bulk** - Shift/Ctrl range/toggle selection; shared bulk bar; bulk tag apply via batched API; narrow PATCH routes for bounded edits.
+- **Media-derived tag suggestions** - Full-page card admin grid shows per-dimension suggestions from gallery/media tags with apply path (primary workflow when metadata lived on media first).
+- **AI Story Assist** - Admin-only suggestion endpoint; named guides (`Bob`, `Sandra`); modes include draft, tighten, expand, retitle, strengthen. Suggestion-only, no auto-apply.
+- **Import and discovery** - Folder-as-card import; PhotoPicker library tab mirrors media filters during card edit.
 
-- **Admin card grid layout** - Card admin **grid** (including Studio attach bank) uses shared `**AdminGridCellChrome`** plus `**AdminClosedCardTileShell**` (`src/components/admin/studio/cards/AdminClosedCardTileShell.*`): **1:1 square** closed tile (cover band, title band, reader-parity **four-slot** `FeedTileChipStrip`); **type** + **status** overlay on the cover band; top row for checkbox, delete, Studio drag handle when present; **narrow left-aligned** tag search row under the tile (`CardDimensionalTagCommandBar` **search-only**); **excerpt/subtitle** caption under the shell when applicable (non-compact grid). Inline editable dimensional chips on grid tiles were removed-tag edits use the command bar. **Target (agreed 2026-07-11):** see `📐 **Unified closed-tile shell direction**` (shipped for Studio grid).
-- **Type-native admin placeholders** - For non-media-led card types such as `Question`, `Quote`, and `Callout`, admin card tiles should eventually use a type-native placeholder treatment when no real cover is present instead of looking like an empty missing-cover tile. Preferred direction: reuse the reader-family background treatment for those types and place the title in roughly the same visual position/style as reader, but keep this as a pure presentation rule driven by `type` + `has cover`, not as stored/generated cover data or a backend-derived asset.
-- **Inline-title editing scope** - If type-native placeholders land in Studio/admin card tiles, inline title editing should remain scoped to the more media-led card presentations (`Story`, `Gallery`) unless a later overlay-edit affordance proves clean enough for `Question`, `Quote`, and `Callout`. For those type-native cards, Compose remains the preferred title-edit surface.
-- **Admin list (table) layout** - **List** view uses **stacked** compact cells (e.g. type + display + status; content + gallery + children; edit + delete), **resizable** cover and tag-bar columns, and a **dimensional tag** toolbar with **Who/What/When/Where** in the **table header** (`CardDimensionalTagCommandBar` with row labels suppressed in favor of the header row). The older **per-row** **Tags** entry that opened a bulk tag modal is **not** in the list-use the tag bar and per-dimension chips. **Studio Cards** reuses the same `CardAdminList` **table** with `**hideDimensionMediaSuggestions`** so **media-suggestion** columns are **full-page** only.
-- **Card list SWR + Studio cards refresh** - After a successful card `**PATCH`**, full-page card admin **merges the request body over** the SWR list entry (after server JSON) so `tags` and other inline edits reflect immediately. Studio **Cards** **increments a catalog refresh** after in-list card updates so its **filters and card set** see fresh card data.
-- **Cards search-field focus treatment (2026-05-24)** - The Studio Cards search box now uses an explicit theme-based focus ring rather than the clipped browser default, so the full active-field state remains visible inside the compact filter row.
-- **Relationship counts in cards (2026-05-24)** - Studio Cards rows and tiles now surface compact structural counts in their secondary meta, using a concise `x/y` parent/child readout so structure is visible without opening the card.
+📋 **Contracts**
+
+- **Filtered population** - Filters apply to full server-query population; UI shows contiguous slices of one stable-sorted result. Typesense capped at 250 per request; larger sets chunked along same order (`01` TECHNICAL).
+- **Pane-local filters** - Cards workspace filters do not redefine global taxonomy or structure truth.
+- **Card model** *(horizontal)* - **Types** `story | gallery | qa | quote | callout`. **Status** draft/published. **displayMode** `static | inline | navigate` per **Content Page** 📋 **V1 Matrix**. **Media edges** — `coverImageId`, `galleryMedia[]`, body `content` + `contentMedia[]`, ordered `childrenIds`. **Tags** — confirmed dimensional assignments + derived `filterTags`; gallery→card inheritance per **Studio Tags** 📋. **Question link** — optional `questionId` for `qa` type. **Collections** — any card may be root or child; structural truth in `childrenIds` / root flags (**Collections Management**).
+- **AI Story Assist boundary** - Suggestion-only text transforms; never auto-writes card fields without author action. Not provisional tag storage (**Administration** 📋 **Provisional suggestions**).
+- **Closed tile in grid** - Uses **Unified closed-tile shell** (**Content Page** 📋); admin chrome (checkbox, delete, drag) outside shell.
+
+📐 **Decisions**
+
+- **Card-first orchestration** - Primary workflow is card-centric; media and tags operate as relationship panels around active card context.
+- **Question-linked type** - Cards with valid `questionId` remain eligible for `Question` type in edit UI.
 
 ⭕1 **Planned**
 
-- **Grid-first admin convergence** - Reduce dependence on retired table/list layouts where the grid can support identity, tagging, selection, and relationship work without loss of operator clarity.
-- **Context Assist** - Keep historical/background context as a distinct output contract from writing rewrites (even when requested together), so context remains separately reviewable/accept-dismiss and does not couple to rewrite acceptance.
-- **Grid density reduction** - Reduce Studio Cards grid card footprint by ~25% (thumbnail/card block dimensions and spacing) while preserving legibility, click targets, and selection affordances-incremental follow-up now that aspect-accurate thumbnails ship.
-- **Tag picker ergonomics** - Broad ergonomics work is effectively in place: full card edit now uses a compact trigger plus controlled `MacroTagSelector` expansion, root-first `Who / What / When / Where` columns, searchable trees, compact in-line creation, and author-facing suppression of legacy `z-*` utility tags. Remaining work, if needed, is polish-level only: stronger keyboard-first tree interaction and clearer search/path disambiguation for similarly named tags.
-- **Dimension filter picker evolution** - Future admin filter work should not default to a plain browser-style tag dropdown for dimensional matching. The preferred direction is a three-level model: keep fast text entry for known tags; for a single-dimension `Matches` choice, open a small searchable tree popover anchored to that dimension (closer to the left-sidebar tree interaction than to a flat select list); and keep the full `MacroTagSelector` as the advanced tool for multi-select, cross-dimension work, and deeper taxonomy exploration. The common single-dimension case should become lighter without weakening the advanced tree workflow.
-- **Narrative development backlog** - Continue author-facing story buildout inside the current card system: consolidate multi-page story runs where needed, complete year-based story coverage, finish question-backed story coverage, and expand planned callout / quote content.
+- **Grid-first convergence** - Finish retiring table/list code paths and stale CSS where grid covers identity, tagging, selection, and relationships.
+- **Grid density** - Reduce tile footprint ~25% while preserving legibility and selection affordances.
+- **Context Assist** - Keep historical/background context a distinct output from writing rewrites in AI assist.
+- **Tag picker polish** - Keyboard-first tree interaction and search disambiguation if needed after current compact picker.
+- **Dimension filter evolution** - Searchable tree popover for single-dimension `Matches` without replacing full `MacroTagSelector` for advanced work.
+- **Narrative development backlog** - Consolidate story runs, year coverage, question-backed stories, callout/quote expansion.
 
 ⭕2 **Future**
 
-- **Studio cards subject-tag filtering** - Let card admin and Studio Cards mark one assigned tag as subject, render that subject in priority position on compact tiles/rails instead of hiding it behind the current per-dimension `+` summary, and support `All tags` vs `Subject only` filtering without weakening ordinary dimensional tag filters.
-- **Studio cards bulk row actions** - Parity with full-page card admin bulk select/actions when the Studio card list needs the same at-scale operations (deferred; does not block Studio tag filter simplification).
-- **Card Edit Mosaic** - Mosaic layout for gallery manager in card edit (align with Apple/Google Photos-style browsing).
-- **Card Linkage** - Non-hierarchical "See Also" cross-references via `linkedCardIds: string[]` (many-to-many, unordered). Surfaces in reader view alongside tag-affinity related cards. Distinct from parent-child (`childrenIds`) and question->card linkage. Deferred until after import.
-- **Relationship DnD contract (cards ↔ media ↔ tags)** - Standardize direct-manipulation assignment/reorder flows so operators can drag and drop media to card targets (cover/gallery/children where applicable), reorder parent-child card structure, and add/remove relationship edges without modal-heavy seek/insert loops; require keyboard parity and clear drop semantics. **Sequencing:** resume after **Collections Studio** shell and **in-shell** DnD are validated in real use (`📐 **Studio unified shell contract`** (7)); **v1** Studio ship is not a substitute for this consistency pass.
-📐 **Card-first orchestration lens** - Primary admin workflow is card-centric orchestration; media and tags remain first-class domains but operate as relationship panels/actions around the active card context instead of independent form-first workflows.
-📐 **Studio shell & navigation (2026-04-21)** - **Endgame** (same intent as **Administration** -> **Domains**): one shell for **all** content-based admin (cards, media, tags + relationships)-**today** delivered as **Studio** at `**/admin/studio`** (`StudioWorkspace` -> `CollectionsAdminClient` `embedded`): **Organize** column (**Tags** + **Collections**), **Cards**, **Compose**, **Questions**, and **Media**; app sidebar closed by default; panes independently collapsible/resizable with persisted widths. Users/Themes remain outside Studio. **Supersedes** deferring embedded `CardForm`-**Card Edit** in Studio is **live**. Treat Studio as a **multi-domain shell**: collections and taxonomy remain globally addressable, while cards/media panes are operator workspaces and Compose is the active-card context. **DnD:** Studio now uses the shared bounded-domain `@dnd-kit` model for authored relationships; broader keyboard/focus polish remains **2 future** / gated work.
-📐 **Studio media & body (2026-04-22)** - **Cards / orphaned filtering:** the **Cards** column (title/status/sort + **one** on-card `MacroTagSelector` for tag filtering) is the full card-admin surface inside Studio; orphaned cards are a filter/view of that catalog, not a separate identity for the pane. **TipTap body images:** **clipboard paste** unchanged; **Media admin -> body** via bank drag ships with **Studio Compose** ✅ **Compose editor behavior** (Compose `drop:body`). **Cover / gallery / children in Studio:** **Media admin** is the library surface-**drag** to targets on **in-shell Card Edit** (`**Studio selected-context elimination (v1)`**). PhotoPicker: retain in full-page card edit until `**PhotoPicker convergence in Media admin**` supplies bank import + library pick parity; **end state** is **no parallel picker** for Studio and eventually card edit.
-📐 **Structural Collections** - Collection parent = any card with `childrenIds`. `type: 'collection'` is legacy/presentation only. Top-level collection entries are explicit root cards (`isCollectionRoot`) ordered by `collectionRootOrder`; a card may be both a root and a child elsewhere. Full structural detail in Studio Organize.
+- **Subject-tag filtering** - Mark one tag as subject; priority render on tiles; `Subject only` filter mode.
+- **Studio cards bulk parity** - Full bulk operations in Studio Cards pane matching deep admin when needed.
+- **Card Edit Mosaic** - Mosaic gallery manager in edit.
+- **Card linkage** - Non-hierarchical `linkedCardIds` see-also references.
+- **Relationship DnD polish** - Keyboard parity and indicator polish across assignment surfaces.
+
+📐 **Structural collections** - Collection parent = any card with `childrenIds`. Top-level roots use `isCollectionRoot` + `collectionRootOrder`; multi-parent allowed; cycles blocked server-side.
 
 ---
 
@@ -574,148 +588,151 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Active Authoring Context** - Edit the currently selected card in a stable in-shell workspace for narrative, media, structure, and metadata work.
+- **Active authoring context** - Edit the shell-selected card for narrative, media, structure, and metadata.
 
 *Principles*
 
-- **Selection continuity** - Keep the active card context visible and understandable through card changes, deletes, and cross-pane handoffs.
-- **Relationship-ready editing** - Compose should be the working destination for cover, gallery, children, and body-media relationship edits without forcing the author into disconnected routes.
-- **Focused authoring** - Compose should preserve working space and control clarity while still exposing the editing power needed for real story development.
-- **Save continuity** - Routine Compose saves should acknowledge quickly, preserve visible editing context, and avoid freezing unrelated panes while secondary work catches up.
+- **Selection continuity** - Keep active card visible through changes, deletes, and cross-pane handoffs.
+- **Relationship-ready editing** - Cover, gallery, children, and body-media edits stay in-shell without disconnected routes.
+- **Save continuity** - Routine saves acknowledge quickly without freezing unrelated panes.
 
 *Features*
 ✅ **Complete**
 
-- **In-shell card editing**
-  - `**/admin/studio`** **Compose** embeds `**CardForm`** + `**CardFormProvider**` for the shell-selected card (`StudioShellContext`).
-  - Delete, duplicate, and fuller chrome remain available through the linked full-page card-admin surface (`StudioCardEditPane`) where needed.
-  - `Status`, `Type`, and `Display Mode` controls are grouped in the top card-edit header section.
-  - Card edit now uses concise section/button labels such as `Gallery` and `Add`, removing older helper-copy clutter.
-- **Compose selection and continuity**
-  - Compose keeps local context visible during card changes and hydrates fuller selected-card detail in the background rather than blanking first.
-  - Deleting a card from Studio Cards clears stale Compose state immediately and, when possible, hands Compose to the next sensible card from the current Cards view instead of leaving the deleted card visible.
-  - Compose now keeps its action cluster in a stable upper-right header position beside the pane title; in Studio, the new-card affordance also lives in that header, so the floating add button is no longer shown on the Studio route.
-- **Compose media and relationship editing**
-  - Compose supports an in-app Delete path for existing cards, and `Set Cover` persists both the chosen cover and gallery reorder instead of only changing local form state.
-  - `Cover` and `Gallery` expose direct jump-to-media controls that open the assigned image in the Studio media editor without taking over the main Media pane filters.
-  - Cover, gallery, children, and `TipTap` body targets accept bounded cross-pane drops from the embedded media bank under the shared Studio shell contract.
-  - `Media -> Cover` assigns cover, `Media -> Gallery` appends to gallery, and `Media -> Content` appends to the end of body/content-media rather than targeting precise insertion during cross-pane drag.
-  - Gallery reorder remains local to gallery rows, and later body-level repositioning remains editor-owned after insertion.
-- **Compose editor behavior**
-  - `Studio Compose` uses `**CardDimensionalTagCommandBar`** for compact inline tag editing; deeper tag editing remains available in broader editing surfaces where needed.
-  - `TipTap` clipboard image paste remains unchanged.
-  - Dragging `**source:{mediaId}`** from embedded Studio Media onto the `Content` drop zone (`drop:body`) appends media at the end of the current body/content-media set.
-  - Current known gap to keep honest until re-verified: media not loaded on the active bank page still cannot be resolved until paged in or fetched directly, and the editor still needs reliable trailing-caret behavior after image-heavy content.
-- **Compose authoring assist**
-  - `AI Story Assist` is active as a suggestion-only admin tool (`POST /api/ai/suggest-card-drafts`) with named guides such as `Bob` and `Sandra`.
-  - Supported assist modes currently include `Draft from notes`, `Tighten wording`, `Expand this memory`, `Retitle this story`, and `Make this story stronger`.
-  - Story Assist starts collapsed by default and expands automatically once it is actively working or already has suggestions/results, preserving Compose working space when idle.
+- **In-shell editing** - Compose embeds full card form for shell-selected card; delete, duplicate, and deep chrome available where needed.
+- **Handoff behavior** - Preview-first selection; delete clears stale state and selects next sensible card from Cards view when possible.
+- **Media relationships** - Cover, gallery, children, and TipTap body accept bounded drops from embedded media bank; gallery reorder local to gallery rows; cross-pane append rules per **Administration** 📋.
+- **Cover and framing** - Fill vs Fit persisted; collapsible feed tile preview beside framing controls (see **Content Page** 📋).
+- **Inline tags** - Compact dimensional tag bar in Compose shell.
+- **AI Story Assist** - Suggestion-only; named guides; collapses when idle.
+
+📋 **Contracts**
+
+- **Active card** - One shell-selected card; Compose form binds to it until selection changes or delete.
+- **Relationship targets** - Cover, gallery rows, children list, TipTap body accept drops per **Administration** 📋 **DnD platform** append rules.
+- **Gallery source of truth** - Compose gallery order is authoritative for card; Studio Media bank is default add path; inheritance reads **gallery** media tags only (**Studio Tags** 📋).
+- **Inline tags** - Compact bar edits **work truth** on card; does not edit media frame truth.
+- **Preview parity** - Feed tile preview in Compose uses same closed-shell contract as reader/admin grid (**Content Page** 📋).
 
 ⭕1 **Planned**
 
-- **Compose authoring refinement**
-  - Let excerpt guidance/update react as the story body changes instead of requiring a separate stale pass.
-  - Support an author flow that can read narrative content and edit it without an awkward mode break where practical, with admin reader editing styled and structured as a Compose-grade editing surface rather than a second weaker editor.
-- **Compose framing refinement**
-  - Define one authoritative cover-framing target for authoring and reconcile Compose, reader feed, reader detail, and admin/Studio preview surfaces so focal adjustments do not look correct in one surface and wrong in another. Current diagnosed mismatch: Compose uses a fixed `6:5` crop preview, reader detail/rails use orientation-aware frames, and admin preview tiles use additional thumbnail ratios.
-  - Covers now support a persisted per-card framing mode in the main authoring/reader path: `Fill` keeps crop-plus-focal positioning, while `Fit` preserves the full image inside the bounded orientation-aware frame for unusually wide, unusually tall, or text-centric covers. Compose exposes that control in the cover editor, and the main reader surfaces honor it in closed cards, detail view, and child-card rails. Compose also shows a collapsible **Feed tile preview** (default open): a miniature `V2ContentCard` with live title, tags, and cover beside the framing controls; collapse when vertical space is tight. Zoom-like adjustment remains future scope if `Fill` vs `Fit` is still not sufficient for some images.
-- **Editor presentation refinement**
-  - Add optional drop-cap styling support to the rich-text editor.
+- **Compose authoring refinement** - Excerpt guidance reacts to body changes; reader admin editing styled as Compose-grade surface where practical.
+- **Compose framing refinement** - Broader parity across Compose, reader feed, reader detail, and admin preview surfaces.
+- **Editor presentation** - Optional drop-cap styling in rich-text editor.
 
 ⭕2 **Future**
 
-- **Compose subject-tag authoring** - Add a lightweight subject action to the existing tag-edit flow so Compose can mark one already-assigned tag as the card subject without introducing a second free-text subject field or a separate subject-only taxonomy.
-- **Compose relationship hardening** - Keep the `Compose + Media` relationship drag boundary narrow and browser-verified until right-side target activation and post-drop behavior are fully reconfirmed in live use.
+- **Compose subject-tag authoring** - Mark one assigned tag as card subject from existing tag flow.
+- **Compose relationship hardening** - Continue browser verification for edge cases (unpaged media bank resolve, caret after image insert).
 
 ---
 
 ### **Studio Organize**
 
-📐**Admin DnD architecture contract (2026-05-22)** - Treat admin drag-and-drop as **one platform with six bounded classes**: **Structural** (collections/tree/root/parent-child), **Assignment** (media/card relationship placement such as cover/gallery/body), **Local reorder** (same-pane ordering such as gallery/children), **Taxonomy** (tag reorder/reparent), **Upload drop** (file ingestion only), and **Editor-integrated** (rich-text body insertion/movement). **Ownership:** the **shell** owns cross-pane routing, sensors, overlays, and collision policy; each **pane** owns visible targets and hover/empty states; the **service/action layer** owns mutations and rollback/reconcile; the **editor subsystem** owns body insertion precision and in-body moves. **Rules:** use `@dnd-kit` for authored DnD, keep `react-dropzone` only for upload drop, do not run duplicate local + shared DnD paths for the same surface, do not put editor placement logic in shell helpers, and use one shared feedback system on migrated admin surfaces. **Execution stance:** converge **Assignment** first, then **Editor-integrated**, then **Local reorder**, then remaining **Taxonomy/Structural** polish; do not expand admin DnD breadth on a hybrid interaction model.
-
 *Intent*
 
-- Organize the archive through two distinct management surfaces in the same Studio workspace: **Tag Management** for taxonomy and **Collections Management** for curated structure.
+- **Taxonomy and structure** - Manage dimensional tags and curated collection trees in one workspace column.
 
 *Principles*
 
-- **Taxonomy separate from structure** - Tags and Collections share the Organize workspace, but they are separate systems with different responsibilities and should be documented separately.
-- **One workspace, distinct subsections** - Studio Organize is the umbrella workspace; **Tag Management** owns taxonomy behavior and **Collections Management** owns curated structure behavior.
+- **Taxonomy separate from structure** - Tags and collections share Organize workspace but remain distinct systems.
+- **One workspace, distinct subsections** - **Studio Tags** owns taxonomy; **Collections Management** owns curated structure.
 
 *Features*
 ✅ **Complete**
 
-- **Organize workspace split** - Studio Organize includes both the tag-management rail and the collections tree in the same workspace while keeping taxonomy operations separate from curated structure editing.
-- **Subsection ownership** - **Tag Management** below owns taxonomy behavior, and **Collections Management** below owns collection tree, structural DnD, and curated ordering behavior.
+- **Organize split** - Tag rail and collections tree in same column; operations stay domain-separated.
+- **Subsection ownership** - Detailed behavior in **Studio Tags** and **Collections Management** below.
+
+📋 **Contracts**
+
+- **DnD architecture** - Admin DnD uses bounded classes (Structural, Assignment, Local reorder, Taxonomy, Upload drop, Editor-integrated). Shell owns cross-pane routing; panes own targets; services own mutations. Detail: **Administration** 📋 **DnD platform**.
+- **Column layout** - Tag rail above or beside collections tree in Organize column; resizing persists with shell layout; no merged tag/structure document model.
 
 ---
 
-### **Tag Management**
+### **Studio Tags**
 
 *Intent*
 
-- **Multi-Dimensional** - Who, What, When, Where
-- **Hierarchical** - USA/Illinois/Chicago
+- **Dimensional taxonomy** - Who, What, When, Where hierarchy for cards and media.
+- **Tag authority** - Single product rules for how tags are **created**, **assigned**, **inherited or not**, **aggregated**, and **displayed** across media bank, cards, Studio, and reader—so surfaces stop inventing local behavior.
 
 *Principles*
 
-- **Server-side** - All business logic on the server-side (`tagService`).
-- **Universal tagging** - All media and cards tagged for filtering using the same dimensional/hierarchical library.
+- **Server-side truth** - Business logic and count maintenance on server (`tagService`).
+- **Universal tagging** - Same dimensional library for cards and media; card `filterTags` derived on save.
+- **Two truths** - **Frame truth** on each media item (what the asset depicts); **work truth** on each card (curatorial intent for the story). They may diverge until author apply.
+- **Suggest and confirm** - System may propose tags or aggregations; author accept (individual or bulk) writes confirmed assignments. Never auto-publish tag changes to reader-facing truth.
+- **Per-dimension rules** - Create, assign, inherit, and aggregate behavior may differ by Who / What / When / Where—not one global rule for all dimensions.
 
 *Features*
 ✅ **Complete**
 
-- **Model & service** - Firestore `tags`; `src/lib/types/tag.ts`; `tagService`. Dimensions Who / What / When / Where; Reflections under What; `zNA` operational roots per dimension (import/sort; not tile vocabulary); migrations `tags:consolidate-reflection`, `tags:seed-zna`.
-- **Admin UI** - `/admin/tag-admin`, `TagAdminList`, DnD (`SortableTag`), inline rows, delete/move with count recalc, modals + `POST /api/tags`, typeahead in pickers (`filterTreesBySearch`).
-- **Usage** - Same assignment UX on cards and media (`MacroTagSelector` pattern). Card `filterTags` derived on save in `cardService` (not from image tags). At-a-glance: `getCoreTagsByDimension`, `DirectDimensionChips` on card/media **tables**; admin **grids** use shared `**DimensionalTagVerticalChips`** (cards and media) for readable vertical stacks and inline per-dimension remove.
-- **Authoring stance** - Card-level vs frame-level tags are independent; bulk media tagging is primary day-to-day.
-- **Single TagProvider** - One root `TagProvider` in `src/app/layout.tsx`; admin no longer nests extra providers (`admin/layout.tsx`, `tag-admin/page.tsx`).
-- **Tag tree counts (cards/media)** - `cardCount` + `mediaCount` on tag docs; UI `(cards/media)` in `TagAdminRow` and admin-facing sidebar trees. Incremental: `updateTagCountsForCard`, `updateTagCountsForMedia` (media PATCH + delete + `deleteTag` strips tags from affected media). Full recompute: `updateAllTagCardCounts` + `updateAllTagMediaCounts` via `npm run update:tag-counts -- --apply`. **Viewer reads:** authenticated viewer `GET /api/tags` and `GET /api/tags/[id]` omit operational count/id-set fields; reader Explore `TagTree` shows names only (no `(cards/media)` suffix).
-- **Tag admin route status** - `**/admin/tag-admin`** now redirects to **Studio**. Tag administration lives in Studio **Organize** and in the `/view` admin **Tag library** pane; there is no separate tag-admin working surface.
-- **Studio tag rail** - **Shipped:** `**TagAdminStudioPane`** in Studio **Organize** at `**/admin/studio`** (`CollectionsAdminClient` `embedded`)-full add/delete/edit/reorder/reparent on canonical `TagProvider` (`**useTagManagement` + `TagAdminList**`). **Tags | Tree** tab model; reorder/reparent apply optimistic local cache updates, then reconcile with Firestore.
-- **Sidebar integration model** - **Shipped:** one `TagProvider` tree-**viewers** on `/view` use filter-first `**TagTree`**; **admins** on `/view` (Freeform) get **Filter** vs **Tag library** tabs, with **Tag library** = `ViewTagLibrarySidebarPane` (same tag-admin stack as Studio). Not a second taxonomy (`📐 **Studio unified shell contract**` (1); **Left Navigation** -> **Sidebar roles**).
-- **Compact tag editor contract (2026-05-22)** - Full tag editing now aims for one compact-first pattern across card/media/question surfaces: immediate `Edit tags...` search, one selected-state presentation rather than duplicate summaries, four active dimensions sized for the current taxonomy, one-line `New tag` creation controls, and author-facing suppression of legacy `z-*` utility branches in the selector UI. Shared path formatting also now de-duplicates repeated stored ancestors so suggestion labels stay readable.
+- **Model** - Four dimensions; Reflections under What; operational `zNA` roots for import (not author/tile vocabulary).
+- **Studio tag rail** - Full add/delete/edit/reorder/reparent in Organize; optimistic local updates; Shift-drag reparent.
+- **Sidebar integration** - Viewers: filter tree only. Admins on `/view`: Filter vs Tag library tabs; Tag library matches Studio stack.
+- **Usage on cards/media** - Shared picker patterns; compact tag editor with author-facing suppression of legacy `z-*` branches.
+- **Counts** - `cardCount` and `mediaCount` on tag docs; incremental updates on mutations; full recompute via scripts. Viewer API omits operational count fields.
+- **Tag admin routes** - `/admin/tag-admin` redirects to Studio.
+- **Gallery→card inheritance (v1)** - Settings toggles (default off) at `/admin/settings`; when on, gallery membership or gallery-media tag changes auto-update card **work truth** for that dimension via `updateCardTags` (counts, derived fields, index). Gallery-only input; unanimous/union rules per 📋.
+- **Reader filter scope** - Sidebar **Tag match** control on `/view` and `/search`: **Any assigned** (default, `tagScope=all`) vs **Subject only** (`tagScope=subject` on card and media list APIs). Persisted in localStorage; cleared by **Clear filters**.
 
 ⭕1 **Planned**
 
-- **Tag Recomp** - Schedule or queue recomputation for hierarchical counts (and media side) vs relying on `FieldValue.increment` alone when semantics are "unique per subtree."
-- **Node Strategy** - Raw tag overlay to created aggregations.
-- **Dimension shortcut buttons in Organize** - Add direct `Who` / `What` / `When` / `Where` shortcuts in Studio Organize so the author can jump to the relevant part of the tag tree quickly.
-- **Tag tree density follow-up** - Reduce vertical spacing in the Organize tree where possible without weakening drag/drop hit targets or reorder clarity.
-- **Tag-edit iconography** - Replace the generic pencil affordance in tag-edit entry points with tag-specific iconography so the action reads as taxonomy editing rather than generic row edit.
-- **Media-to-card tag aggregation** - Extend full-page media-derived tag suggestions into a documented aggregation pipeline: suggest card tags from gallery/media tags (unanimous, subject, LCA, When span, mixed) with explicit author apply/override; see `📐 **Tag display vs aggregation architecture**`.
+- **Tag recomp** - Queue hierarchical count recomputation when increment semantics insufficient.
+- **Node strategy** - Raw tag overlay to created aggregations.
+- **Organize shortcuts** - Direct Who/What/When/Where jump buttons in Organize tree.
+- **Tag tree density** - Tighter vertical spacing without weakening DnD hit targets.
+- **Tag-edit iconography** - Tag-specific affordance instead of generic pencil.
 
 ⭕2 **Future**
 
-- **DnD interaction contract** - Before expanding drag-and-drop to additional admin flows (card assignment, gallery/media assignment, broader tree operations), standardize one interaction contract across admin DnD surfaces: **single framework** for authored relationships/reorder (`@dnd-kit`), **bounded drag domains** (Tags / Collections / Compose / Media), drop semantics (on vs between), sensors/activation thresholds, visual drop indicators, drag handles, overlays, and keyboard parity. Keep `**react-dropzone**` only for file upload drop; retire `react-dnd` from `CardForm` over staged migration. Expansion is gated on this consistency pass. **Sequencing:** resume with **Relationship DnD contract (cards ↔ media ↔ tags)** in **Studio Cards** after **Studio desktop shell** and related Studio **⭕1** layout are validated (`📐 **Studio unified shell contract`** (7)).
-- **Unified tag edges (conceptual):** Treat assignments as **(subjectType, subjectId, tagId)** even if denormalized on `Card` / `Media` for reads—eases counts, digiKam mapping, migrations. (??)
-- **Face Recognition** - Options:
-  - **Cloud APIs:** Azure Face, AWS Rekognition, Google Cloud Vision (detection; recognition requires custom face DB). Integrate to suggest/auto-populate WHO at image level; faces map to person tags.
-  - **Client-side:** face-api.js (TensorFlow.js). Runs in browser, no uploads; lower accuracy than cloud.
-  - **Apple/Google Photos:** Native face recognition; would require overlay integration to leverage.
-- **Relationship Tagging** - Derive family relationships from minimal primitives (`parent_of`, `spouse_of`); compute uncle, cousin, step-parent, etc. via inference rules. Maps to WHO dimension. Large surface (graph storage, validation, remarriage/step edges). Park until parallel media tagging and bulk Media-admin UX are in place. Detail regenerable.
-📐 **Authoring Vocabulary** - Mirror the same dimensional paths in digiKam keywords and the app tag tree so import/mapping stays predictable. Four scene dimensions on media (Who, What, When, Where); card-level arc/theme tags for narrative framing. **`zNA` (operational only):** root tag `**zNA`** may exist per dimension for import/export alignment (digiKam keyword columns, sort plumbing). It is **not** author-facing tile vocabulary and is **not** a substitute for **unknown**, **empty**, or **mixed** card meaning. Authors should not assign `zNA` to express "not applicable"; empty dimensions and future aggregation states cover those cases. Picker UI continues to suppress legacy utility branches; treat `zNA` like other operational sentinels, not reader chip labels. Key conventions:
-  - **When** - `when/date/...` chronological, sortable (`yyyymmdd`, `00` for unknown). No `when/stage` (stage is who-dependent; infer from who + date). Season out of scope.
-  - **What** - Includes `what/Reflections/...` for reflective / journal-style themes (card-centric; not used for media scene tags). Other buckets: `what/event/...` (occasions/milestones), `what/activity/...` (what people are doing), plus long-running domains under What as needed. Overlap: milestones -> event; school defaults to theme; add event for specific ceremonies.
-  - **Who** - People as stable tag identities (display names). Groups optional (`who/group/...`). Subject vs also-present is not a separate `Who` path: use the normal tag library plus the optional subject marker on one assigned tag. Kinship graph is **Relationship Tagging** (future).
-  - **Where** - Administrative nesting (country -> state -> county -> city), skip levels when irrelevant. Venues, domestic labels, natural settings as children. GPS/EXIF may seed on import; author refines in Tag admin.
+- **DnD interaction contract** - Keyboard parity and indicator polish for taxonomy drag surfaces.
+- **Face recognition** - Cloud or client-side detection options for Who suggestions.
+- **Relationship tagging** - Kinship inference from primitives; deferred.
+- **Subject-tag authoring and filtering** - One subject marker per object; `Subject only` filter mode.
+- **Tag aggregation apply pipeline** - Cached summaries; suggest/apply in Compose and card admin; chip popover for full dimension lists.
+- **Reader/admin filter exclude semantics** - Per-dimension include/exclude aligned with aggregation states.
 
-📐 **Subject tag contract (2026-06-02)** - `Subject` is an optional assignment-level marker on the existing tag library, not a fifth dimension, a free-text field, or a tag-library-wide flag. Each **card** and each **media item** may have **zero or one** subject tag. The subject tag must already be assigned to that object through the normal `Who | What | When | Where` taxonomy. Broad tag assignment still means general association; the subject marker means the object is **mainly about** that tag. Removing the assigned tag clears the subject marker automatically.
-📐 **Subject-tag behavior notes (2026-06-02)** - Subject does **not** create a second counting system or extra hidden assignments. Tag counts stay **unique per card/media item under a subtree**, not "one count per matching direct tag on the same object," so directly tagging both `Siblings` and the four brothers still counts as one item under the `Siblings` subtree. Ordinary tag filters continue to mean broad association through assigned tags plus hierarchy; future `Subject only` filters mean the object's single subject marker points at the selected tag. Compact admin card/media metadata should give the subject tag **priority rendering** when present rather than leaving it hidden behind the current first-tag-plus-`+` summary.
+📋 **Contracts**
 
-📐 **Tag display vs aggregation architecture (agreed 2026-07-11)** - Separate **presentation** (what a closed tile shows) from **aggregation** (how card-level tags relate to media-level tags):
-  - **Frame truth** - dimensional tags on each **media** item (ideal ground truth per photograph).
-  - **Work truth** - dimensional tags on the **card** (curatorial/narrative intent for the story unit). Card tags remain authoritative for browse/filter once the author confirms them; they must not silently overwrite on every gallery edit without an explicit apply/suggest flow.
-  - **Tile presentation (near term)** - fixed four slots; **empty** placeholder + `-` or **filled** with one label (`📐 **Closed-tile dimensional chip contract**` under **Content Page**). No separate **N/A** chip state; no `+N` on chips.
-  - **Aggregation (future slice)** - compute **suggestions** from gallery/media tags (unanimous -> single value; **subject** wins for Who when set; **LCA** when tags share a branch; **span** for When ranges; **mixed/various** as a computed state, not a taxonomy tag like legacy `zMisc`). Author **apply** or override writes card tags. Optional hover/popover on filled/mixed slots lists all tags in a dimension without polluting the tag library.
-  - **Unknown vs mixed vs empty** - **Unknown** = not yet determined (cleanup/untagged workflows). **Mixed** = plural values not collapsed to one label. **Empty** = no tag assigned (or curatorially left blank). None of these require author-facing **N/A** sentinel tags on cards.
-  - **Filter evolution (future)** - admin already supports per-dimension `Any` / `Has any` / `Is empty` / `Matches tag`; reader filters remain positive-selection today. Future work may add exclude/anti-tag semantics and mixed-dimension queries aligned with aggregation states-not sentinel tags in the library.
+- **Tag authority** *(Phase 1.a horizontal — owner for tag system-of-record rules)*  
+  - **Taxonomy shape** - Four dimensions (Who, What, When, Where); Reflections under What. Operational **`zNA`** import roots and legacy **`z-*`** branches are import/operator vocabulary—not author tile vocabulary. Optional starter: **Tag Set 0 — Generic** (**📐 Decisions**).  
+  - **Create** - Tags are created in Organize tag rail (add, reparent, reorder, delete). Import may create or map tags from embedded metadata (XMP/IPTC, digiKam keyword paths). In-app tagging is preferred; digiKam remains optional external prep when metadata prep is faster.  
+  - **Assign — surfaces** - Same library assigned on **media** (bank, Studio Media pane, bulk) and **cards** (Studio Cards, Compose inline bar, reader admin Tag library, bulk tag apply). Pickers suppress operational branches from author-facing lists.  
+  - **Assign — mechanics** - Assignment is an explicit author or accepted-suggestion action on `(subjectType, subjectId, tagId)` edges. Bulk apply is bounded batch work on server. Removing an assigned tag updates counts and derived fields in the same mutation path.  
+  - **Confirmed vs provisional** - **Confirmed** tags live on media and card documents and drive counts, `filterTags`, and reader filters. **Provisional** proposals (heuristic, AI, face) live in a separate layer until accept—see **Administration** 📋 **Provisional suggestions**. Provisional never counts as assigned for tiles, filters, or aggregation input.  
+  - **Frame truth vs work truth** - Media holds **frame truth** (tags describing the asset). Cards hold **work truth** (tags describing curatorial intent). Gallery inheritance (below) updates card work truth only when enabled for that dimension.  
+  - **Gallery→card inheritance** - Author controls **four independent Settings toggles** (Who, What, When, Where). **Default: all off** at first install (**Settings v1 scope**). When a dimension's toggle is **on**, confirmed tags on **gallery** media drive that dimension on the card **automatically** whenever gallery membership or relevant media tags change. When **off**, that dimension on the card is **manual only**. Per enabled dimension: if all gallery media share **one** confirmed tag → card gets that tag; if not → card gets the **deduped union** of all confirmed tags from gallery media; author may mark one assigned tag as **subject** for display or leave unset. Author may edit inherited card tags at any time. Same rule for all four dimensions in v1 (no separate When-span algorithm yet).  
+  - **Reader dimensional filters** - **Default:** reader sidebar tag picks use **`tagScope=all`** — a card or media item matches if the selected tag is among its **confirmed assignments** for that dimension (`filterTags` / dimensional arrays). **Subject-only mode (shipped):** sidebar **Tag match → Subject only** sets **`tagScope=subject`** so only the marked **subject** tag satisfies a dimensional filter chip; applies to card feed (`/api/cards`) and freeform media browse (`/api/view/media`). Subject markers are authored in Studio/Compose today (reader quick-edit path TBD). **Multi-tag without subject:** **`all`** preserves match-any-assigned behavior; closed tiles may still show **`Mixed`** per 📋 **Tile display**. Do **not** force subject scope globally without the user choosing **Subject only**.  
+  - **Card↔card** - **No** parent/child tag inheritance in v1. Optional parent rollup **display** may come later; it must not become silent filter truth.  
+  - **Tile display (inheritance)** - Per dimension on closed tiles: show **subject** label if subject set among assigned tags; else **`Mixed`** if multiple assigned tags; else the single tag name; empty slot shows `-`. **Hover** lists all confirmed tags for that dimension on the card (**Content Page** 📋 **Closed-tile dimensional chips**). **`Mixed`** and **empty** are computed presentation states, not library tags.  
+  - **Derived card fields** - On card save/tag mutation, server maintains dimensional arrays and `filterTags` from **confirmed** card assignments—UI does not invent parallel filter truth.  
+  - **Counts** - `cardCount` / `mediaCount` on tag docs reflect **confirmed** assignments only; incremental on mutation; hierarchical recompute when needed.  
+  - **Subject marker** - Optional marker on one **already-assigned** tag per card or media (not a fifth dimension). Used for tile label when multiple tags exist in a dimension. Clearing the assigned tag clears subject in the same write path.  
+  - **Question vs answer tags** - Question prompts carry classification tags; linked Question **cards** carry answer-specific tags. Tags copy to new card at creation only, then diverge (**Studio Questions**).  
+  - **Person / face downstream** - Who tags are author-facing identity today. When faces ship: **Person entity** linked to Who tags; detections provisional until confirm (**📐 Decisions** below, `docs/05-Guided-Archive-Assistance.md`).
 
-⭕2 **Future**
+- **Subject tag** - Optional marker on one already-assigned tag per card or media item (not a fifth dimension). Removing assigned tag clears subject. Counts stay unique per subtree.
 
-- **Subject-tag authoring and filtering** - Add optional subject selection to card/media tag editing, keep it limited to one already-assigned tag per object, support `Subject only` filtering alongside ordinary association filters, and make compact card/media metadata render the subject tag in priority position rather than hiding it behind the current first-tag-plus-`+` summary.
-- **Tag aggregation apply pipeline** - Cached per-dimension summaries for tile display; suggest/apply from media tags in Compose and full-page card admin; mixed/span labels without library pollution; chip hover/popover for full dimension lists.
-- **Reader/admin filter exclude semantics** - Per-dimension include/exclude (anti-tag) aligned with aggregation states; do not rely on sentinel tags for "mixed" or "unknown."
+- **Tag display vs aggregation** - **Frame truth** on media; **work truth** on card. With inheritance enabled, gallery confirmed tags **write** card assignments per rules above; with inheritance off, card tags are manual. Tile chip rules: **Content Page** 📋 **Closed-tile dimensional chips**.
+
+📐 **Decisions**
+
+- **Authoring vocabulary** - Mirror dimensional paths in digiKam keywords and app tag tree for predictable import mapping.
+- **When** - `when/date/...` chronological sortable paths.
+- **What** - Events, activities, Reflections for journal themes (card-centric).
+- **Who** - Stable person identities; subject marker replaces separate subject path.
+- **Where** - Administrative nesting; venues as children.
+- **Gallery→card inheritance** - Four independent Settings toggles (Who, What, When, Where). **Default off** at first install. When on: auto-sync from gallery media confirmed tags on gallery change; unanimous → single tag; else deduped union + optional subject; tile shows subject or **Mixed**. When off: manual only for that dimension. Author may edit card tags after inherit.
+- **Subject marker (authoring)** - **`subjectTagId`** can be set in Studio (Compose inline bar, Cards grid tag UI, Media grid) on assigned tags; not yet exposed on reader quick-edit. Required before subject-only reader filter mode is useful at scale.
+- **Reader filter scope** - Sidebar **Tag match** control: **match any assigned** by default; **Subject only** is explicit user choice (`tagScope=subject`), not a silent default (**Tag authority** 📋 **Reader dimensional filters**).
+- **Tag Set 0 — Generic** - Optional skeleton installed from **Settings** (not forced at signup): **Who** — family roles (Grandparents, Parents, Siblings, …); **What** — General → Activities, Education, …; **When** — years and months; **Where** — US states and cities (select from list).
+- **Card↔card inheritance** - **No** parent/child tag inheritance in v1; optional parent rollup display may come later—not silent filter truth.
+- **Person model** - When faces ship: **Person entity** linked to Who tags (merge/split, aliases); Who tags alone are insufficient for face operations.
+- **Face processing** - Prefer quality **cloud API** for v1 private family use; self-host only if quality or privacy requires.
+- **Organize sequence** - Heuristic clustering and review spine before face-led Who UI; face detections stay provisional until author confirms (`docs/05-Guided-Archive-Assistance.md`).
 
 ---
 
@@ -723,38 +740,39 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Curated structure** - Shape cards into intentional structural trees and ordered collections for reader-facing narrative paths.
+- **Curated structure** - Shape intentional structural trees and ordered collections for reader-facing narrative paths.
 
 *Principles*
 
 - **Structural, not type-based** - Parent/child via `childrenIds`, not `type: 'collection'`.
-- **Manual ordering** - Author controls curated sequence explicitly; no automatic sorting should replace intentional structure.
-- **Shared structural runtime** - Collections structure is the structural drag-and-drop backbone that other Studio domains can attach to, but structural truth still belongs here.
+- **Manual ordering** - Author controls curated sequence; no automatic sort replacing intent.
+- **Shared structural runtime** - Collections tree is the structural DnD backbone other Studio domains attach to.
 
 *Features*
 ✅ **Complete**
 
-- **Data Model** - Curated tree lives in **Studio** (`/admin/studio`, `**CollectionsAdminClient` `embedded`**). Collections are managed from the Studio **Organize** pane/tree; shared styles remain at `src/app/admin/collections/page.module.css` for `CollectionsAdminClient` / card-admin panels.
-- **Curated Tree**
-  - Drag-and-drop attaches/detaches parent->child edges and promotes cards to explicit top-level roots.
-  - Multi-parent model; cycles blocked in `cardService`.
-  - Admin tree loads up to **1000** cards for the page.
-  - **Tree expandability truth** - Collection-tree expand/collapse now keys off the structural `childrenIds` relationship rather than only currently resolved child objects, so parents with real children still expand correctly while the broader catalog is streaming.
-  - **Collection row count placement (2026-05-24)** - In the Organize tree, collection child/card counts now sit at the end of the title line as plain inline text with no badge/background treatment, so the tree reads more like content than status chrome.
-- **Collections drag-state signaling (2026-05-24)** - Active structural drags in the Organize tree now use explicit per-target cues instead of generic pane glow: row-body nest targets label **Nest inside**, between-row reorder targets label **Insert before**, and root/unparent zones surface their exact pending action while dragging. The drag ghost remains intentionally simple.
-- **Collections DnD hardening (2026-05-25)** - Embedded Studio now treats Collections as the shared structural drag runtime for `Cards`, `Compose`, and embedded `Media`, with bounded routing per drag domain instead of a separate right-column runtime. Structural paths keep root/parent/reorder targets registered continuously and apply structural moves optimistically before reconciliation so root add/remove, parent attach, detach, and reorder no longer depend on save-first snapback behavior.
-  - Current shipped paths: `Cards -> root`, `Cards -> existing parent`, top-level reorder, in-parent reorder, detach via `x`, and `Cards -> Compose/Children` attach while keeping the parent card selected in Compose.
+- **Curated tree** - Attach/detach/reorder; promote to explicit top-level roots; multi-parent with cycle blocking.
+- **Tree expandability** - Expand/collapse keyed off `childrenIds`, not only resolved child objects during catalog streaming.
+- **Structural DnD** - Explicit nest vs insert-before cues; optimistic commits before reconciliation; `Cards -> Compose/Children` attach keeps parent selected.
+- **Root model** - Top-level entries are explicit root cards (`isCollectionRoot`) ordered by `collectionRootOrder`.
 
 ⭕2 **Future**
 
-- **TOC & Ordering** - Manual sibling reordering via drag-and-drop TOC (primary mechanism for curated narrative). One tree UI for reparenting and ordering. Reconcile parent/child model after TOC exists. No cascade on parent delete - children simply lose that parent.
+- **TOC and ordering** - Manual sibling reorder as primary curated narrative mechanism.
 
-📐 **Structural Model** - Studio structure is parent-driven and multi-parent capable: `childrenIds` store ordered parent->child edges; `isCollectionRoot` marks intentional top-level roots; `collectionRootOrder` defines root order. Reader/admin collection listing should follow explicit roots, not a hidden Master Parent.
-📐 **IA vs Studio** - `**/admin/studio`** is the **Studio** shell (embedded `CollectionsAdminClient` + media + compose). Collections Management is the curated-structure subsection inside Studio **Organize**, not a separate day-to-day product surface; primary admin navigation no longer advertises standalone collections or media-triage flows.
+📐 **Decisions**
 
-❓ **Open**
+- **Structural model** - `childrenIds` store ordered edges; cards may be roots and children elsewhere.
+- **IA** - Collections live inside Studio Organize, not a separate day-to-day route.
+- **Multi-parent (v1)** - Allowed in Studio with cycle prevention.
+- **Multi-parent reader display** - In **Guided** mode, a card attached under multiple collection parents appears **once per collection path** (same card document, separate tree/feed placement under each parent)—not deduped to a single tree node.
 
-- **Multi-parent** - Deferred product decision.
+📋 **Contracts**
+
+- **Discovery vs structure** - Collections drive **Guided** reader navigation (**Navigation** 📋); they do not replace dimensional tags (**Studio Tags**).
+- **Ordering** - Sibling order under a parent is author-defined and respected in Guided feed/detail child rails.
+- **Draft visibility** - Draft subtrees hidden from viewers; admins see warning styling in Guided tree.
+- **Per-path placement** - Multi-parent cards render under each parent branch independently; opening the card from any path is the same detail document.
 
 ---
 
@@ -762,44 +780,33 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Journal-like** - Grandfather/Father journal-like questions
+- **Prompt bank** - Journal-style question prompts that seed Question cards.
 
 *Principles*
 
-- **Prompts** - Use questions as prompts for Question cards.
-- **Flexible** - Accommodate short and long answers.
-- **Dimensional** - Group questions through the existing Who / What / When / Where tag tree rather than a separate prompt taxonomy. Questions may be temporarily untagged during QA-card migration/cleanup and should surface in an explicit **Untagged** view until the author assigns generic prompt tags.
-- **Prompt tags vs answer tags** - Question tags classify the **prompt** and should generally be generic (for example `Father`, `Mother`). Card tags classify the **answer** and may be specific (for example `Robert`, `Sandra`). Question tags seed a newly created Question card only at creation time; after that, question and card tags are independent.
+- **Prompts drive cards** - Questions are prompts; answers live on linked Question cards.
+- **Dimensional grouping** - Prompts use Who/What/When/Where tag tree, not a separate taxonomy.
+- **Prompt vs answer tags** - Question tags classify the prompt (generic); card tags classify the answer (specific). Tags copy to new card at creation only, then diverge.
 
 *Features*
 ✅ **Complete**
 
-- **Data Model** - Firestore `questions` collection. Schema: `src/lib/types/question.ts`. Service: `questionService.ts`. Questions carry optional dimensional `tagIds` and `usedByCardIds`; Question cards carry `questionId`.
-- **UI** - Studio **Questions** pane is the sole question-admin surface (**Shipped 2026-06-12, slice 4a:** standalone `/admin/question-admin` retired; redirects to Studio).
-- **Studio Pane** - Studio includes a collapsible Questions pane between Compose and Media for dimensional tree browsing, **Untagged** cleanup filtering, included/not-included filtering, add/edit, and opening or creating the linked Question card in Compose.
-- **Studio authoring parity** - Studio Questions is now the practical day-to-day question-admin surface: quick-entry tag editing first, rectangular chips, explicit Save/Cancel on add/edit, in-pane Delete, and app-native confirmation/loading treatment on the migrated destructive flows.
-- **Studio Questions compact filter row** - Questions now uses the same compact filter-row vocabulary as Cards and Media: Search + inclusion mode + inline `Clear`, icon-first row actions, and the same compact tag action/button sizing used elsewhere in Studio.
-- **Questions tree + assignment terminology (2026-05-24)** - The Questions pane now defaults its tag tree to closed and uses `Assigned / Unassigned` language in place of `Included / Not included`, keeping the default view tighter and matching the broader media/relationship vocabulary.
-- **Questions tree scope toggle (2026-05-24)** - The Questions pane now includes an `Include children` toggle for the tag tree. It defaults on to preserve the existing descendant-inclusive view, and tree counts switch with the toggle so the displayed scope always matches the active filter behavior.
-- **Questions edit interaction decision (2026-05-24)** - Inline prompt editing and open-on-select were explored, then rejected for this surface. Questions keeps its earlier explicit row behavior: opening the linked Question card and editing the prompt remain separate actions, while the small tag-edit affordance stays beside `Edit tags...`.
-- **APIs** - Admin-only CRUD (`/api/admin/questions`, `/api/admin/questions/[id]`), link/unlink Question card, create Question card from prompt.
-- **Filter** - List/filter in UI: text, tags (substring), used vs unused.
-- **Create Card** - Create Question card from question prompt. Adds `questionId` to the card, copies current question dimensional tags to the card as a starting point, adds card ID to `usedByCardIds`, and updates `usageCount`. General card creation does not create new Question cards; Question-card authoring is question-backed.
-- **Link/Unlink** - Manual link/unlink between question and card IDs. Unlink converts the linked Question card to draft Story and removes `questionId`; do not leave orphan Question cards. If that card is already open in Studio Compose, the active form should reflect the conversion immediately rather than waiting for the next card selection.
-- **Bootstrap** - `npm run bootstrap:questions-from-qa` dry-runs creation of question-bank prompts from existing unlinked Question cards; `-- --apply` writes linked question records and card `questionId` values. **Run 2026-04-25:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-04-25T01-36-00-057Z`, applied 158 untagged question records; final dry run reported 202/202 Question cards linked.
-- **Story-question migration script** - `npm run bootstrap:questions-from-story-titles` converts tagged Story cards whose titles are questions into linked Question records/cards without deduping against existing prompts: creates Question-bank entries, copies direct `what` tags to the Question, links the card, changes card type to `qa`, and forces status to `draft`. **Run 2026-05-05:** after backup `C:\Users\alanb\OneDrive\Firebase Backups\run-2026-05-05T20-04-32-102Z`, applied 63 conversions; verification after the run reported `remainingStoryQuestions = 0`.
-
-⭕1 **Planned**
-
-- **Retire question-admin** - **Shipped 2026-06-12 (slice 4a):** `/admin/question-admin` redirects to `/admin/studio`; admin nav no longer links a standalone Questions route. Studio **Questions** pane is the sole question-admin surface.
+- **Studio pane** - Collapsible pane for tree browse, Untagged cleanup, Assigned/Unassigned filter, add/edit/delete, open or create linked card in Compose.
+- **Compact filters** - Search, inclusion mode, Clear, inline tag editing with Save/Cancel on destructive flows.
+- **Tree scope** - Default closed tree; `Include children` toggle with matching counts.
+- **Link lifecycle** - Create card from prompt copies tags and tracks usage; unlink converts linked card to draft Story and clears `questionId`.
+- **APIs** - Admin CRUD, link/unlink, create-from-prompt.
 
 ⭕2 **Future**
 
-- **Grouping Level** - Designate which dimensional tag levels are eligible for question grouping so prompts use the shared tree without collapsing to one-off events.
-- **Answer Workflow** - Workflow beyond cards, analytics, templates, validation, viewer feedback, auto-grouping.
-- **Auto-Clustering** - Auto-clustering/grouping of short questions.
+- **Grouping level** - Eligible tag levels for question grouping.
+- **Answer workflow** - Analytics, templates, validation beyond cards.
+- **Auto-clustering** - Group short prompts automatically.
 
-⭕1 **Planned**
+📋 **Contracts**
+
+- **Prompt vs answer** - Question document tags classify the prompt; linked **qa** card carries answer-specific **work truth** after create; copy-at-create only (**Studio Tags** 📋).
+- **Compose handoff** - Create/open from prompt selects linked card in shell; flicker/repaint on open is a defect, not accepted behavior (closed unless regresses).
 
 ---
 
@@ -807,128 +814,78 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Multi-source** - Access images from various *external sources* - local, OneDrive, Google, Apple, etc.
+- **Media bank** - Import, browse, tag, and assign media at archive scale; bridge from raw library to card relationships.
 
 *Principles*
 
-- **Imported** - Imported to db for stability
-- **Processed** - Image processed and metadata extracted. 
-- **Referenced** - Referenced in cards by id, hydrated on demand
-- **Replacement** - Facilitate simple edit and replacement of media.
-- **Derivative-aware** - The media workspace should browse and edit against fit-for-surface renditions by default while preserving access to the canonical original for recovery, export, and later higher-fidelity workflows.
-- **Phone and video ready** - Phone-origin assets, video, and richer capture metadata should be normal planning assumptions for the bank rather than later exceptions.
-- **Relationship readiness** - Media management should make it easy to move from random banked assets to structured card relationships (cover, inline, gallery, children) without unnecessary mode switching.
-- **Import trust** - Import must preserve source meaning and metadata carefully enough that the author can trust the resulting bank rather than fear hidden corruption, silent duplication, or broken references.
-- **Recoverable workflows** - Replace, delete, and assignment operations should be safe enough for a hosted product handling irreplaceable family media.
-- **Reader media discovery** - Assignment is not a visibility boundary: unassigned media can be intentionally discoverable by readers through the media browse surface.
-
-📐 **List filtering & pagination** - Same contract as **Studio Cards** -> 📐 **List filtering & pagination (cards + media)**; media additionally uses **cursor / Typesense `listPage` / seek** paths on `GET /api/media`-chunking must stay consistent with the active mode; see `docs/01-Vision-Architecture.md` -> 📐 **Filtered population & stable ordering**.
+- **Imported and referenced** - Media lives in bank; cards reference by id and hydrate on read.
+- **Derivative-aware** - Browse/edit against fit-for-surface renditions; preserve originals for recovery and export.
+- **Import trust** - Preserve source meaning and metadata; recoverable replace/delete; no silent corruption.
+- **Relationship-ready** - Move from banked assets to cover/gallery/body/children without mode switching.
+- **Suggest-and-confirm organization** - Heuristics, clusters, and future face suggestions assist the author via **Administration** 📋 **Provisional suggestions**; never silent publish or delete.
+- **Reader discovery** - Assignment is not a reader visibility boundary; unassigned media may appear in reader media browse.
 
 *Features*
 ✅ **Complete**
 
-- **Core** - Firestore `media` collection; types in `src/lib/types/photo.ts`; import/process/`replace` in `src/lib/services/images/imageImportService.ts` (and related APIs). Display: `JournalImage`, `getDisplayUrl` (`src/lib/utils/photoUtils.ts`).
-- **Search** - With Typesense configured (`TYPESENSE_HOST`, `TYPESENSE_API_KEY`): `media` index, facets, and `searchMediaTypesense` drive non-empty text search plus several filtered list paths (including `assignment=assigned|unassigned` when Typesense is used). **Without Typesense, non-empty text search on `GET /api/media` returns HTTP 503** (`SEARCH_UNAVAILABLE`); Firestore seek/pagination still serves unfiltered lists and legacy tag-dimension seek. Sync scripts: `docs/NPM-SCRIPTS.md`.
-- **Import paths** - Local drive / PhotoPicker / paste-drop via `src/lib/services/images/imageImportService.ts`; folder-as-card (`__X` marker, `IMPORT_FOLDER_MAX_IMAGES`, `ONEDRIVE_ROOT_FOLDER`) - full rules in `docs/IMPORT-REFERENCE.md` and `normalize-images-README.md`.
-- **Pre-import local workflow** - The current local-author workflow remains: organize originals/edits outside the app, mark import-ready files with `__X`, then let import normalize/upload those selected files and extract metadata into the media records.
-- **Restore-safe local-source re-import helper** - The current missing-media restore helper for local-source `__X` folders is now preflight-first: it resolves the same canonical `importSourcePath` used by the original importer before deciding `create` vs `merge`, defaults to plan-only output, writes per-folder JSONL checkpoints, requires full-folder success before mutating a card, and preserves existing gallery membership on merge unless a later explicit replace mode is introduced. Current run status (2026-05-28): the approved apply run restored `158/159` planned folders (`153` create, `5` merge). The only non-success folder was `zMomDadPics/BobSandra/Portraits/3`, where one corrupt JPEG blocked a complete-folder merge; after confirming the other four images were already imported and attached to the existing card, that bad source file was intentionally removed from the restore set, so no rerun is currently required for that folder.
-- **Card edges** - `referencedByCardIds` is **denormalized**: updated on the primary `createCard` / `updateCard` and media-delete cleanup paths, but **not a verified invariant**-drift is possible. Unassigned/assigned UX uses `referencedByCardIds` plus `mediaAssignmentSeek.ts` (and Typesense when that path is active). Diagnosis/repair: `npm run reconcile:media-cards`, other scripts and maintenance HTTP - `docs/NPM-SCRIPTS.md`.
-- **Admin** - Multi-dimensional filter, replace-in-place (`POST /api/images/{id}/replace`), per-row metadata/tags (`PATCH /api/images/{id}`), **bulk tag edits** (`POST /api/admin/media/tags` - add/replace/remove across many `mediaIds`), bulk modes, multi-select -> draft gallery card (`MediaAdminContent`).
-- **Bulk bar & list/grid multiselect** - The bulk actions strip uses the **same** single-`bulkActions` layout and min height as **card admin** (not a nested outer toolbar). Count copy: **"No media selected"** / **"N media selected"**. **Table** and **grid** use the same `**applyModifierSelection`** rules as cards (**Shift** / **Ctrl**/**Cmd** / combined); **Select all on page** applies to **visible** media on the current page.
-- **Media admin list (table) row actions** - **List** view stacks **Focal** (when a dedicated **objectPosition** column is off), **Replace**, and **Delete** in the row **actions** column for a narrower table.
-- **Bulk media tag mutation path** - `POST /api/admin/media/tags` now applies add/replace/remove through a dedicated batched service (`bulkApplyMediaTags`) that updates media tag-derived fields and tag counts in bulk transactions, then recomputes affected card media signals once per request.
-- **Media delete/referrer resolution** - media delete now resolves referrers from authoritative card surfaces (cover, gallery, `contentMedia`, inline `data-media-id`) instead of trusting `referencedByCardIds` alone, removes references across all card surfaces in one pass, and blocks delete if references remain.
-- **Media delete guard contract** - `DELETE /api/images/{id}` now returns `409` with code `MEDIA_DELETE_BLOCKED_REFERENCES` when authoritative referrer cleanup cannot fully detach the media from cards.
-- **Media API error contract (initial standardization slice)** - `GET /api/media`, `PATCH /api/images/{id}`, `DELETE /api/images/{id}`, `POST /api/admin/media/tags`, `POST /api/images/{id}/replace`, `POST /api/images/browser`, `POST /api/images/local/import`, `POST /api/import/folder`, and `POST /api/import/batch` now return domain-coded JSON errors (`code`, `message`, `severity`, `retryable`) instead of raw/opaque response text; Media admin/triage rendering now distinguishes warning vs error severity in list-level feedback.
-- **Media identity signals in admin UI** - Media admin **table** exposes canonical identity in-list (`media.docId` column and related fields). **Grid:** filename / id / source are **not** inline on the tile-hover **title** on the image shows them; triage still relies on `docId` as canonical identity.
-- **Unassigned duplicate triage sort mode** - In Media admin, when `On cards = Unassigned`, operators can switch to `Source-path first` ordering to cluster likely duplicates for faster keep/delete decisions.
-- **Per-dimension media filters** - Media admin now supports per-dimension filter modes for Who/What/When/Where (`Any`, `Has any`, `Is empty`, `Matches tag`) in both table and grid views.
-- **Grid tag editing UX** - Media grid tiles use the same `**DimensionalTagVerticalChips`** left rail as **card** grid (Who->What->When->Where; per-dimension first tag + `**+`** when more exist in that dimension; `**x` removes the first** tag in that dimension; **native `title**` on rail, rows, cell, and thumbnail) plus a `**CardDimensionalTagCommandBar**` `**searchOnly**` row under the caption (placeholder **Edit tags...**, dense suggestions, inline save)-no separate per-tile tag modal for routine edits.
-- **Admin media grid layout** - Same `**AdminGridCellChrome`** shell as card grid: **natural-aspect** thumbnails (`aspect-ratio`, `**object-fit: cover`**); **grid column** `minmax`/`gap` aligned with card admin for the same tile width and resize behavior in Studio; bottom overlay for **source** + assignment state plus the linked-card jump on the lower-right image edge; **caption** under the image; **checkbox + Studio drag handle** on the top row when Studio registers `source:{mediaId}` drops; direct tile-level delete now mirrors Cards without requiring the edit modal first.
-- **Grid tag save feedback** - Inline media retagging now surfaces per-card save confirmation and keeps the editor open with actionable error text when save fails.
-- **Admin media browsing model (2026-05-22)** - Admin Media now favors one growing working set instead of explicit Previous/Next paging: the visible list appends more results as the operator scrolls, retains a `Load more` fallback, and uses `Select visible` semantics rather than `Select all on page`. Under the hood the provider still respects the existing cursor / seek / Typesense list constraints from `GET /api/media`.
-- **Media table header attachment** - Media table headers now stay attached to the top edge of their active scroll container in both full Media Admin and compact embedded media tables.
-- **Triage** - **Removed (2026-04-22):** former `**/admin/media-triage`** page and triage-only UI; URL **redirects** to `**/admin/studio`** (embedded **Media admin**). Use **Studio** or `**/admin/media-admin`** for bank workflows.
-- **Studio** - **Primary entry:** `**/admin/studio`** (`StudioWorkspace` -> `CollectionsAdminClient` `embedded`): tag admin tree (`useTagManagement` + `TagAdminList`), collections tree + **Cards** pane + embedded `**MediaAdminContent`** (`studioSourceDraggable`) + in-shell `**CardForm**` **Compose** column, and Collections-style DnD (cover/gallery/children). Product truth is this **embedded** shell (`📐 **Studio unified shell contract`**).
-- **Studio embedded media admin** - `MediaAdminContent` in Studio uses the same `MediaProvider` + filters/table/grid/bulk/import/delete as full `/admin/media-admin`; **table** and **grid** cells expose a drag handle registering `source:{mediaId}` when `studioSourceDraggable` is on (requires `CollectionsAdminClient` `DndContext`).
-- **Studio embedded media responsiveness** - Embedded Studio media favors operator-first responsiveness over blocking totals: search/filter changes are debounced and stale requests are cancelled, recent query results and media records are cached briefly in-provider, nearby pages may prefetch opportunistically, and cross-pane media actions may resolve recent records from cache even after the visible bank page changes.
-- **Studio media assignment** - Drag `source:*` from the embedded media bank onto **Cover**, **Gallery**, or **TipTap body** (`drop:body`) on **in-shell Card Edit`**; relationship targets use` **handleStudioRelationshipDragEnd`** /` **patchSelectedCard`**; body uses` **insertImage** `on the compose editor (`**TipTap body media from bank (Studio)`**✅). **PhotoPicker** and TipTap **clipboard paste** remain until`**PhotoPicker convergence in Media admin`** per` 📐 **Studio media & body (2026-04-22)`**.
-- **Studio relationship DnD status (updated 2026-07-11)** - Day-to-day contract: `Cards -> Compose/Children` persists structural attach and keeps the parent open in Compose; `Media -> Cover / Gallery / Body` works from the embedded bank; **gallery reorder / gallery-to-cover** work on Studio shell (author verified 2026-07-11). **Reader content Compose modal** gallery reorder verified 2026-07-11 (local DnD commit path). **Reader-modal children reorder** verified 2026-07-11 (narrow `childrenIds` PATCH + local child-card cache reorder; no full-card repaint on drop). **Author reports no further DnD issues 2026-07-11** — reopen only on new defect report.
-- **Bank-only visibility model** - Imported media is in the bank whether assigned or unassigned. Assignment and unassigned filtering use `referencedByCardIds` and `GET /api/media?assignment=unassigned|assigned` (`mediaAssignmentSeek.ts`). No separate media publication status or reader-discovery visibility flag is planned for v1 unless real use shows a need.
-- **Studio media route status** - `**/admin/media-admin`** now redirects to **Studio**. Embedded Studio media is the real working surface for media administration; the legacy route remains only as a redirect.
-- **Import Metadata** - Import reads embedded metadata (caption + keyword paths from XMP/IPTC/EXIF via ExifTool) and resolves keywords to app tag IDs in the import path.
-- **Import metadata policy** - For scoped import paths, embedded captions/keywords are the app contract; JSON sidecars are out of scope (decision closeout 2026-04-20; regression via `readMetadataCaption` in integrity tests).
+- **Core bank** - Import, process, replace-in-place, dimensional tagging, bulk operations, multi-select to draft gallery card.
+- **Studio embedded media** - Same bank in Studio Media pane with drag handles to Compose targets; debounced search, caching, prefetch.
+- **Search** - Typesense when configured; non-empty text search returns 503 without Typesense; Firestore seek serves unfiltered and dimension-filter paths.
+- **Import** - Local `__X` folder workflow, PhotoPicker, paste-drop; embedded XMP/IPTC metadata at import (see `docs/IMPORT-REFERENCE.md`).
+- **Grid workspace** - Natural-aspect thumbnails, inline tag rail + search-only tag bar, growing working set with Load more, select-visible semantics.
+- **Assignment model** - Cover, gallery, inline body references; authoritative delete scan across all card surfaces; blocked delete when references remain.
+- **Per-dimension filters** - Any / Has any / Is empty / Matches tag on pane and tiles.
+- **Renditions** - Reader and studio WebP tiers for tiles; originals for lightbox/zoom.
+- **Legacy routes** - `/admin/media-admin` and media-triage redirect to Studio.
 
 ⭕1 **Planned**
 
-- **PhotoPicker convergence in Media admin** - Add operator flows in `**/admin/media-admin`** (and Studio-embedded **Media admin**) to **import local images into the bank** and to pick library media with **PhotoPicker-grade** filtering (dimensions, search), so **PhotoPicker** in card edit becomes **optional** then **eliminable** for Studio and long-term for full-page card edit (see 📐 **Studio media & body (2026-04-22)**).
-- **Manual phone aggregation** - Support the simple phone-origin authoring path: select a group of imported images, assign them to a card, then flesh out the story and tags. Phone-origin metadata can reduce `When` / `Where` and sometimes `Who` labor, leaving `What` plus aggregation as the main author step.
-- **Media-management gap (import + duplicate triage)** - Media management remains a meaningful product hole relative to Cards/Studio authoring. The missing area is broader than filename collision checks: the app still needs a real import-facing bank workflow plus a trustworthy duplicate-triage path grounded in source-aware identity signals (starting with `sourcePath` and exact-file/source overlap rather than naive filename matching). Keep duplicate review scoped as one part of the larger import/media-management problem rather than treating it like a normal tag/filter feature.
-- **Media derivative architecture** - Preserve originals for archive/export while generating and serving surface-specific derivatives for tiles, previews, reader display, and future print/export or video playback workflows; treat video and phone media as first-class inputs rather than image-only edge cases. This should support fast grid browsing, later density changes, and lightweight editing without forcing the workspace to depend on original-asset delivery. **Status:** reader feed/detail tiles use `getReaderDisplayUrl` — **9a shipped 2026-07-10:** dedicated `renditions.reader` (640px WebP) + backfill script; studio tier (960px) remains for admin/Studio surfaces. Video and full legacy backfill coverage remain follow-up.
-- **Media readiness pipeline** - Introduce explicit ingest/processing/readiness states for imported media so metadata extraction, thumbnail or poster generation, transcoding, and future identity/index work happen in background pipelines instead of interactive authoring paths. New imports should become visible quickly with truthful processing state rather than feeling absent or frozen until every derivative is finished.
-- **Media editor control stacking** - In the Studio media editor, stack the horizontal/vertical adjustment controls vertically so the edit surface stays readable and predictable at the current modal width.
-- **Grid admin ergonomics** - Filename is removed from the grid tile body, identity strings live on image hover, and the current bulk-select checkbox target sizes are accepted as sufficient for now. Further checkbox-size work is not active unless real usage shows a need.
-- **Grid tagging UX + empty-dimension filter** - **Pane-level** per-dimension modes (`Any` / `Has any` / `Is empty` / `Matches tag`) ship in Media admin and Studio-embedded media. **Done:** per-tile inline add/search parity is now in place across Cards and Media, using the shared compact suggestion treatment. No further list/table alignment work is planned while those surfaces remain on the retirement path.
-- **Infinite-scroll hardening** - Continue the append-style media working set toward a fully smooth infinite-scroll feel, with no obvious paging seams during normal admin use and no need for repetitive manual paging rituals in the normal browsing contract.
-- **Cards/media workspace parity** - Bring Media and Cards closer to one shared operator contract for layout, overlays, selection, drag affordances, and edit entry points.
-- **Media caption clamp** - Clamp media captions to two lines unless the item is in focus or explicitly opened.
-- **Inline caption editing** - Allow media captions to be edited directly from the admin working surfaces with a clear blank-vs-filled state instead of forcing the operator through the full media editor for routine caption entry.
-- **Gallery override posture** - Treat Studio Media focal/caption values as the primary defaults for gallery items. Compose Gallery may still store per-card focal/caption overrides, but those controls should read as explicit exceptions rather than equal competing sources; gallery modal editing should focus on crop override intent while caption override stays lightweight in the strip UI. Any Reader surface that crops gallery images should honor that same chosen focal source (gallery override first, then Studio Media default), while fullscreen/lightbox presentation should continue to show the whole image.
-- **External-editor replace loop** - Smooth the replace-in-place workflow for assets edited outside the app (for example GIMP) so the operator can round-trip an image back into the same media record with minimal friction.
-- **Spike** - End-to-end on a fixed folder: ingest -> embeddings -> candidate clusters -> simple review UI -> export JSON of confirmed groups and proposed tags (no production auth required) (`docs/05-Guided-Archive-Assistance.md`).
-- **Evaluation set** - Curated subset with human-labeled "true events" to score precision/recall of clustering variants (`docs/05-Guided-Archive-Assistance.md`).
-- **Heuristic pre-clustering** - Cheap, explainable first pass: time windows, folder boundaries, burst detection, optional GPS buckets—outputs **candidate segments** for ML refinement (`docs/05-Guided-Archive-Assistance.md`).
-- **Review UI** - Grid of **candidate stacks** with merge/split, keyboard-friendly for large sets (`docs/05-Guided-Archive-Assistance.md`).
+- **PhotoPicker convergence** - Bank import and library pick in Media admin so card edit PhotoPicker becomes optional.
+- **Import and duplicate triage** - Trustworthy bank workflow and source-aware duplicate review (not filename-only).
+- **Manual phone aggregation** - Select imported phone group, assign to card, flesh out story/tags.
+- **Media derivative architecture** - Surface-specific derivatives; video and phone as first-class inputs.
+- **Media readiness pipeline** - Background ingest/processing states so imports appear quickly with truthful status.
+- **Workspace parity** - Shared operator contract with Cards for layout, selection, and drag affordances.
+- **Caption workflow** - Inline caption edit and two-line clamp on grid tiles.
+- **Gallery override posture** - Studio Media defaults primary; Compose overrides explicit exceptions.
+- **External-editor replace loop** - Smooth GIMP/Topaz round-trip via replace-in-place.
+- **Guided archive spikes** - Clustering review UI per `docs/05-Guided-Archive-Assistance.md` (heuristics, evaluation set, review stacks).
 
 ⭕2 **Future**
 
-- **Studio media subject-tag workflow** - Let media mark one already-assigned tag as subject, render that subject in priority position in compact grid metadata so cases like `Siblings` can override a generic first-visible person tag, and support `All tags` vs `Subject only` filtering in Media admin and embedded Studio Media.
-- **Search without Typesense** - Today non-empty text search returns 503 when Typesense is unset; consider degraded search (capped Firestore scan / clearer admin affordance) for small corpora or dev machines.
-- **Rename types module** - `src/lib/types/photo.ts` -> `media.ts` (throughout)
-- **Append to Gallery** - Bulk add selected banked media to another **existing** card's gallery from Media admin (parked). **Today** images still reach cards after import via **Create card from selection** (draft gallery + edit), **PhotoPicker** / gallery in card edit, **inline images** in rich text, and **replace-in-place** on media rows-no need to block on this bulk-append flow.
-- **Similar-shot stacking** - Add a future bank-browsing mode that can collapse near-identical phone or burst photos into one visible representative with an expand-for-variants stack. Keep this distinct from exact-duplicate cleanup: stacks should be non-destructive, allow the author to promote a different top image, and help dense same-moment image runs take less visual space before any keep/delete decision.
-- **Video** - Support on **cover**, **inline (body)**, and **gallery** like stills-as far as product parity allows. **Size / "normalization"** (typical approach): **server-side transcoding** (e.g. FFmpeg) to a max resolution/bitrate and web-friendly format-same *class* of work as image normalization; not automatic in-app today.
-- **Browser Upload** - Replace or supplement server-side folder read (`ONEDRIVE_ROOT_FOLDER`) with browser-based upload flow. Required for hosted deployment where the server has no local filesystem access.
-- **Google Photos Adapter** - Import from Google Photos API. Most accessible cloud photo API. Requires OAuth consent, album/media listing, download-and-process flow.
-- **OneDrive Adapter** - Import from OneDrive via Microsoft Graph API. Similar shape to Google Photos adapter.
-- **Apple iCloud** - Most restricted API access. May require workaround (export from Photos app, then local/browser upload). Lowest priority.
-- **Post-Import Maintenance** - Cropping, cleanup, sharpening in GIMP/Topaz after import. Use replace-in-place in Media admin to preserve media IDs and card references.
-- **Import pipeline job** - **Async queue/worker** for large folder import (normalize + writes) complementing `IMPORT_FOLDER_MAX_IMAGES` and serverless timeouts.
-- **Import metadata precedence** - Prefer **embedded XMP/IPTC** read **at import** for captions/keywords; use **JSON sidecars** as optional/supplementary when files are authoritative on disk.
-- **Multi-Author** - Second author voice, shared media pool, intertwined feeds, cross-author comments. **Today:** one admin author + family readers; another author implies a separate instance. **Hard problems:** identity/roles, author-scoped cards vs shared media/dedup, tag "lens," merged vs parallel feeds, moderation. Stays **private / curated / archival**-not public social scale.
+- **Apple Photos adapter** - First native cloud source adapter (priority **📐**); architecture and unit economics before product promise beyond export→upload interim.
+- **Cloud source adapters (follow-on)** - Google Photos, OneDrive after Apple Photos.
+- **Video parity** - Cover, inline, gallery with server-side transcoding.
+- **Similar-shot stacking** - Non-destructive burst collapse in bank browse.
+- **Search without Typesense** - Degraded search for small corpora/dev.
+- **Subject-tag workflow on media** - Priority render and Subject-only filter.
 
-📐 **Entry Paths** - Two import paths: (1) **Import -> Card** - import from source as card + images concurrently, assign tags from folder/metadata, edit after. (2) **Import -> Bank -> Card** - bulk import images with tags into the bank unassigned, then create cards and assign from the bank.
-📐 **Source Adapter Architecture** - The existing service layer (import, process, return mediaId) is the right shape for multiple source adapters. Current: local filesystem (hard drives / OneDrive mirror). Future adapters add alongside, not replacing, the local drive path.
-📐 **Authoring Pipeline (digiKam -> mass import)** - Organize folders/tags in digiKam; one leaf folder -> one card; tags follow dimensional branches (WHO, WHAT, etc.); phased import with verification; post-import refinement via GIMP/Topaz + replace-in-place. See `IMPORT_FOLDER_MAX_IMAGES` for folder size cap.
-📐 **Commercial import bar** - Import is a core product capability, not a side utility. A commercially credible import flow must support trustworthy ingestion, understandable review/correction, and smooth progression from imported media to structured card-based storytelling.
+📋 **Contracts**
 
-📐 **Assignment Model** - References only; hydrated from media at read time. No embeds.
+- **Filtered population** - Same as **Administration** 📋; media may use cursor/seek/Typesense list modes per active query.
+- **Media bank** *(horizontal)* - Canonical row per asset (`media.docId`); originals in Storage; renditions for tile/studio/reader tiers. **Frame truth** tags on media document. **Import** preserves embedded metadata where present (`docs/IMPORT-REFERENCE.md`).
+- **Import paths (v1)** - Local folder `__X` workflow; paste/drop upload; PhotoPicker; future adapter layer for phone batches. **Interim commercial path** for cloud: honest **export from source → upload here** until native adapters ship. **First native adapter target: Apple Photos** (**📐 Decisions** below).
+- **Duplicate identity** - Triage uses `sourcePath`, content hash/size signals, and metadata—not filename alone.
+- **Assignment surfaces** - Cover (`coverImageId` + focal), gallery (`galleryMedia[]`), inline (`contentMedia[]` / `data-media-id` in HTML). Assignment does not hide media from bank browse.
+- **Delete & replace** - Delete blocked while referenced on any card surface; replace-in-place preserves `docId` where product allows; graph scan authoritative over `referencedByCardIds` alone.
+- **Captions** - Optional per-media caption field; inline edit in grid; two-line clamp on tiles.
+- **Processing & readiness** *(target)* - Each media row exposes **readiness state** (e.g. uploaded, thumbnailed, indexed, failed) so UI stays truthful during background work. Video/transcode fields deferred (**❓ Open** depth).
+- **Archive intelligence** - Heuristic clusters and review stacks land as **Provisional suggestions**; **Review** mode in this pane for accept/split/merge (**Administration** 📋). Spikes per `05` and ⭕1 **Guided archive spikes**.
+- **Review mode IA** - Toggle **Browse | Review** in Media pane: Browse = today’s grid/filter UX; Review = provisional clusters/tag suggestions queue with bulk accept.
+- **Referrer list** - `referencedByCardIds` is denormalized convenience; delete and reconcile use authoritative card-surface scan.
+- **Cross-entity sync** - Firestore authoritative; Typesense and denormalized fields follow card/media CRUD paths; drift repair via `npm run reconcile:media-cards` and related scripts (`docs/NPM-SCRIPTS.md`).
 
-- **Cover** -> `coverImageId`, `coverImageFocalPoint` (single image)
-- **Gallery** -> `galleryMedia[]` - `{ mediaId, caption, order, objectPosition }`
-- **Inline (rich text)** -> `contentMedia[]` - IDs extracted from HTML (`data-media-id`)
+📐 **Decisions**
 
-📐 `**referencedByCardIds` (referrer list)** - Denormalized convenience for assignment filters and delete orchestration. `cardService.getCardsReferencingMedia` now performs an authoritative scan across cover, gallery, `contentMedia`, and inline HTML references, then reconciles `referencedByCardIds` to that result; delete uses this same scan and fails safe when references remain.
+- **Entry paths** - Import-to-card (folder + images together) vs import-to-bank then assign.
+- **Source adapters** - Import service layer accepts future adapters alongside local filesystem. **Apple Photos first** for native cloud adapter work; Google Photos and OneDrive follow.
+- **Commercial import bar** - Trustworthy ingestion, review/correction, progression to structured storytelling.
 
-📐 **Display identity vs canonical identity** - `filename` is presentation metadata and is not unique. Canonical identity is `media.docId`; duplicate detection/triage should rely on stable source/content signals (`sourcePath`, hash/checksum, dimensions/size), not filename alone.
+❓ **Open**
 
-📐 **Cross-entity sync** - Firestore is authoritative; Typesense and denormalized fields follow these entry points:
+- **Video readiness depth** - Playback-only vs authoring parity on first video slice.
 
-
-| Relationship                           | Primary maintenance                                                                                                                                                                                                                                                  |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Card ↔ media `referencedByCardIds`     | `createCard` / `updateCard` (transaction `arrayUnion` / `arrayRemove`); **`removeMediaReferenceFromCard`** (single transaction: card surfaces + backref + media signals) + `deleteMediaWithCardCleanup`                                                                 |
-| Card ↔ Typesense                       | `syncCardToTypesense` after create/update paths; `removeCardFromTypesense` on card delete                                                                                                                                                                            |
-| Media ↔ Typesense                      | `syncMediaToTypesenseById` / `syncMediaToTypesense` on media writes; `removeMediaFromTypesense` on media delete                                                                                                                                                      |
-| Card ↔ tag `cardCount` (and ancestors) | `updateTagCountsForCard` inside card transactions (tag changes, publish state, `deleteCard`)                                                                                                                                                                         |
-| Card ↔ questions                       | `unlinkCardFromAllQuestions` after `deleteCard`; link/unlink APIs update `usedByCardIds` + `usageCount`                                                                                                                                                              |
-| Drift / bulk repair                    | Ad hoc: `npm run sync:typesense` / `sync:typesense:media`; `npm run reconcile:media-cards`; other scripts under `src/lib/scripts/`. CRUD paths are the **happy path** for consistency, not a formal proof-use scripts when drift is suspected or after bulk imports. |
-
-
-📘 `normalize-images-README.md`
-📘 `METADATA_EXTRACTION_README.md`
-📘 `docs/IMPORT-REFERENCE.md`
-📘 `docs/05-Guided-Archive-Assistance.md` - Guided archive assistance (dual intake, clustering, review stacks, promotion); sequencing in `docs/03-Implementation.md` -> 📐 **Guided archive program (2026-04-24)** and **Section  Guided archive assistance**.
+📘 **Resources** - `docs/IMPORT-REFERENCE.md` · `docs/NPM-SCRIPTS.md` · `docs/05-Guided-Archive-Assistance.md`
 
 ---
 
@@ -936,34 +893,41 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Access Control** - Control access to the app.
+- **Access control** - Manage who can read and who can administer the private archive.
 
 *Principles*
 
-- **Credential-based** - Password entry via NextAuth Credentials provider.
-- **Manual onboarding** - Send link with username and password to new users.
-- **Private by default** - Reader access is intentionally scoped and no user should see admin affordances or unrelated private content by accident.
-- **Simple roles, strict boundaries** - v1 keeps role complexity low, but the boundary between author/admin and family reader must stay clear.
+- **Credential-based auth** - NextAuth Credentials against Firestore `journal_users`.
+- **Manual onboarding** - Author creates accounts and shares credentials out of band.
+- **Private by default** - Readers never see admin affordances or unrelated private content.
+- **Simple roles, strict boundaries** - Viewer vs admin only in v1; boundary must stay clear in UI and API.
 
 *Features*
 ✅ **Complete**
 
-- **Data Model** - Firestore `journal_users` collection. Schema: `src/lib/auth/journalUsersFirestore.ts`.
-- **Authentication** - `authorize` in `authOptions.ts` validates against Firestore `journal_users` only (bcrypt). **Shipped 2026-06-12 (slice 3d):** runtime env-password fallback removed; use `npm run seed:journal-users` when the collection is empty, then manage users at `/admin/journal-users`.
-- **Env-password fallback retirement** - **Shipped 2026-06-12 (slice 3d):** NextAuth no longer accepts plain `ADMIN_EMAIL` / `ADMIN_PASSWORD` at sign-in; those env vars are bootstrap-only for `seed:journal-users`.
-- **Admin View** - Users tab at `/admin/journal-users`. APIs: `/api/admin/journal-users`, `/api/admin/journal-users/[id]`.
-- **Roles** - Viewers only from UI/API; single admin rule. Seed script: `npm run seed:journal-users`.
-- **Login Redirect** - `/?callbackUrl=/admin` supported in `Home.tsx` (wrapped in `Suspense`).
+- **Model and auth** - Firestore `journal_users` with bcrypt; seed via `npm run seed:journal-users` when empty.
+- **Admin UI** - `/admin/journal-users` for user CRUD; viewers creatable from UI/API only; single admin rule.
 
 ⭕1 **Planned**
 
-- **User surface polish** - Restore the `User Management` title, normalize `All Users` casing, and left-align the section heading beneath `Add User` so the page chrome matches the rest of the admin vocabulary.
-- **Credential-sharing policy audit** - Confirm and document whether multiple simultaneous sign-ins with the same username/password are acceptable in v1, and whether user creation/update should enforce stricter uniqueness or session expectations.
+- **User surface polish** - Page title, `All Users` casing, heading alignment with rest of admin chrome.
 
 ⭕2 **Future**
 
-- **Credential Delivery** - Send username and password to new users?
-- **Rename Collection** - Rename all uses of `journal_users` to `users`.
+- **Credential delivery** - Automated username/password delivery to new users.
+- **Rename collection** - `journal_users` -> `users`.
+
+📋 **Contracts**
+
+- **Roles** - Exactly one **admin** (author/operator); all other accounts **viewers**. Admin-only: Studio, Theme Management, User Management, import helpers, backup/restore triggers, maintenance APIs.
+- **Manual onboarding** - Author creates **one account per reader** in **User Management** or seed scripts; credentials shared out of band; no self-service signup in v1 (**Landing Page** 📐 **Invitation model**).
+- **Session** - Auth.js credentials against Firestore `journal_users`; viewers cannot invoke admin API routes (enforced server-side and audited).
+
+📐 **Decisions**
+
+- **One account per reader** - Each family reader has their own credentials; shared viewer accounts are **not** acceptable in v1.
+
+📘 **Resources** - `01` TECHNICAL auth 📐; `docs/NPM-SCRIPTS.md` seed users.
 
 ---
 
@@ -971,49 +935,53 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Custom Themes** - Allow customizable light and dark modes and, over time, **whole design packages** the author can switch between.
+- **Design packages** - Customizable light/dark modes and, over time, coherent reader design presets the author can switch between.
 
 *Principles*
 
-- **User-Controllable** - The author can adjust parameters; the implementation should converge on **presets** that stay coherent together.
-- **Reader vs admin** - Polish targets the **reader** experience first; admin uses the **same token set** where parity helps (previews, shared components), without blocking dense authoring layouts.
-- **Professional + journal** - Aim for a UI that reads as **well-crafted and mobile-centric** while still allowing a **warm, journal/history** personality-usually via tokens (color, type roles, spacing), not ad hoc CSS.
-- **Reader immersion** - Theme work exists primarily to make long-form family stories readable, aesthetically pleasing, and worth staying with-not merely to expose more admin controls.
+- **Author-controllable presets** - Parameters adjust in Theme Management; presets stay coherent as wholes.
+- **Reader-first polish** - Reader experience is the primary aesthetic target; admin shares tokens where parity helps previews.
+- **Professional and warm** - Mobile-centric craft with journal/history personality via tokens, not ad hoc module CSS.
+- **Reader immersion** - Theme serves long-form family reading, not admin control for its own sake.
 
 *Features*
 ✅ **Complete**
 
-- **Theme mode + preset controls** - `Light` / `Dark` and `Journal` / `Editorial` now live in the Theme Management toolbar above the Values pane rather than in top navigation; switching theme or mode checks for unsaved draft changes first.
-- **Theme plumbing** - Runtime theme tokens are generated from the theme model (`theme-data.json` fallback / Firestore-backed theme document) and injected into the app; static `src/app/theme.css` remains the emergency fallback and global shell stylesheet.
-- **Theme workspace** - Theme Management now functions as a live-draft editing workspace: Journal / Editorial reader preset selection, reader/admin recipe editing, and atomic token editing produce a theme document that applies to the app immediately in-session but is not permanent until **Save**. The workspace now opens as a **floating, draggable, resizable window** so the author can keep the real reader surface visible while tuning the live draft. The current workbench is still transitional, but the active structure is now clearer: the **left side** is the component-and-attribute editor, while the **right side** is the values panel organized around **Colors**, **Typography**, and **Structure**. The target author-facing model remains **Component -> Attribute -> Value** so the author edits app pieces (Foundation, Chrome, Controls, Story, Gallery, Lightbox, etc.), the attributes they need (background color, width, padding, border, text), and the valid values for those attributes rather than storage-bucket names. In that model, `Padding`, `Spacing`, `Sizing`, `Radius`, and `Border Width` remain separate concepts rather than collapsing into one generic layout bucket.
-- **Theme scope split** - Theme Management now has an explicit `Reader` / `Workbench` target toggle. Reader edits write to the saved reader scope; Workbench edits write to the saved admin scope. The live app also consumes the saved admin-scoped CSS outside the editor, so workbench surfaces can diverge meaningfully from the reader even when Theme Management is closed.
-- **Workbench component coverage** - Workbench `Header`, `Sidebar`, `Shell`, `Tabs`, `Controls`, and `Feedback` are now direct editor targets so dense admin/tooling surfaces no longer have to be styled indirectly through nearby reader-oriented buckets.
-- **Values coordination** - The Values pane now stays fully visible but is more truthful: it highlights relevant value groups for the selected attribute, shows the current binding directly, and includes stronger coverage for named colors, state colors, shadows, and layout metrics.
-- **Theme save workflow** - Theme Management now presents one active draft with straightforward document-style controls: **Save** is enabled only when the current draft differs from the saved theme, **Discard** restores the last saved theme, and **Save As** is reserved for theme-variant creation rather than exposing implementation-heavy status concepts in the primary UI.
-- **Reader live-surface coverage** - Theme work should now be judged against the actual reader surface through live draft application: closed card types, open story/gallery/question detail, sidebar/filter chrome, discovery and child rails, lightbox/state samples, and compact cards should all be reachable in the real app while Theme Management remains open.
-- **Runtime theme wiring (substantially reconciled)** - The live generator path is now largely reconciled with the editor for foundations, chrome, controls, cards, overlays, discovery, and media/lightbox surfaces. Earlier runtime bypasses and bridge-only outputs have been reduced so the editor is much closer to being the real source of truth for what the app renders.
-- **Closed-card surface controls** - Theme Management now keeps `General` as the shared closed-card baseline while also allowing per-card closed backgrounds (`Story`, `Gallery`, `Question`, `Quote`, `Callout`) to choose either `Use General` or a curated surface value. Runtime wiring now honors those card-family closed surfaces directly.
-- **Reader semantic layer (narrowed)** - Reader-facing CSS still uses a smaller semantic family (`--reader-page-`*, `--reader-chrome-`*, `--reader-solid-*`, `--reader-card-*`, `--reader-detail-*`, `--reader-body/title-*`, `--reader-meta/caption-*`, `--reader-media/lightbox-*`, `--reader-discovery-*`), but much of the earlier bridge-only layer has been collapsed in favor of concrete app-consumed variables. The remaining semantic layer exists to keep role-backed recipe resolution understandable rather than to hide actual styling decisions from the editor.
-- **Component recipe direction** - The current editing model is moving from flat role names toward **component + variant + element** recipes so Story, Gallery, Question, Quote, Callout, sidebar, discovery rails, and lightbox surfaces can diverge cleanly while still using the shared atomic token set underneath. The next editor redesign step is to expose that to the author as **Component -> Attribute -> Value** rather than mixed recipe names plus token-bucket terminology.
-- **Three-tier theme model (direction)** - Theme work is now grounded in three explicit layers: **atomic tokens** (palette, type scale, spacing, radii, shadows, raw component primitives), **semantic token classes** (tonal surface/text, contrast-on-fill, overlay/media contrast, borders, accent, focus, state families), and **recipes** (UI-job assignments such as story title, gallery lightbox caption, sidebar active tab, admin notice). App surfaces should consume recipes through semantic classes rather than binding directly to raw atomic token refs.
-- **Live draft application (direction)** - The intended loop is now **tokens -> semantic classes -> recipes -> live draft app -> Save -> applied app**. Unsaved theme edits should apply immediately to the real app for the current session, with explicit Save to persist and explicit discard/reset to restore the last saved theme.
-- **Primitives remain the base layer** - The underlying token and recipe system remains the exact value source/reference layer. The current right-side values panel is beginning to expose that layer more honestly by showing the named value behind the selected attribute and, where resolvable, the actual underlying value; broader direct system-value editing is still a later refinement rather than the current primary interaction.
-- **Reader feedback theming (partial consumer coverage)** - Reader **general feedback** and **error feedback** are now wired to real reader surfaces. Reader **success / warning / info** feedback-panel values still exist in the theme contract, but the current reader UI does not yet render matching message surfaces for them.
-📐 **Theme role** - Theme is part of the reader value proposition: clarity, tone, and immersion for family storytelling.
-📐 **AI assist role** - `AI Story Assist` is editorial and voice-preserving: improve clarity, pacing, and reader interest without inventing facts or replacing author voice. Named guides such as `Bob` and `Sandra` may influence tone, but they must not change the factual contract or become roleplay that overrides the author. Write-style modes may return a single suggested draft for selective apply, while coaching modes such as `Make this story stronger` should return structured observations, follow-up prompts, and brief example lines instead of replacing the author's story.
+- **Live-draft workspace** - Floating, draggable, resizable editor; unsaved edits apply to the real app in-session; **Save** persists, **Discard** restores last saved theme.
+- **Mode and preset controls** - Light/Dark and Journal/Editorial in workspace toolbar; switch prompts when draft is dirty.
+- **Editor model** - Left: component + attribute selection (Foundation, Chrome, Controls, Story, Gallery, Lightbox, etc.). Right: Colors, Typography, Structure values. Target contract: **Component -> Attribute -> Value**.
+- **Reader / Workbench scope** - Reader edits and Workbench (admin) edits persist separately; live app consumes both scopes appropriately.
+- **Workbench coverage** - Direct targets for Header, Sidebar, Shell, Tabs, Controls, Feedback.
+- **Runtime pipeline** - Atomic tokens -> semantic token classes -> recipes -> emitted CSS variables; `theme-data.json` / Firestore document with `theme.css` fallback.
+- **Closed-card surfaces** - Shared General baseline plus per-family overrides for Story, Gallery, Question, Quote, Callout.
+- **Reader feedback theming** - General and error feedback wired to reader surfaces; success/warning/info panel tokens exist but lack matching reader UI yet.
+- **Admin-only loading** - Theme workbench lazy-loads for admin sessions only (not in viewer bundle).
+
+📋 **Contracts**
+
+- **Live draft loop** - Edit -> live app preview -> Save (durable) or Discard (revert). No separate preview surface as source of truth.
+- **Three-tier model** - **Atomic tokens** (palette, type, spacing, radii, shadows) -> **semantic classes** (surface, text, border, accent, state) -> **recipes** (story title, sidebar tab, lightbox caption, etc.). Surfaces consume recipes, not raw token refs directly.
+- **Metric families** - Padding, Spacing, Sizing, Radius, and Border Width stay distinct in the editor contract.
+
+📐 **Decisions**
+
+- **Theme role** - Theme is part of reader value: clarity, tone, immersion for family storytelling.
+- **Reader theme surface (v1)** - Family readers switch **named presets** (Journal / Editorial) and light/dark via **Settings** / header controls. **Theme Management** workbench is admin-only deep editing—not a reader-facing product surface in v1.
+- **AI Story Assist** - Editorial, voice-preserving, suggestion-only; named guides shape tone not facts. Detail: **Studio Cards** AI Story Assist.
 
 ⭕1 **Planned**
 
-- **CSS Tokenization** - Move **design-affecting** values-colors, typography scale, spacing rhythm, radii, shadows, and key surfaces-into `theme.css` variables (and Theme Management where appropriate) so literals in modules do not block **plug-and-play designs**. Not every numeric value in the app is a "theme" concern (e.g. one-off layout math); scope is what should change when switching designs. Grow coverage incrementally toward named presets.
-- **Theme contract inventory** - Complete an inventory-driven semantic theme contract before treating Journal / Editorial as finished themes: enumerate reader/admin surfaces, visible elements, current token use, required semantic token families, and migration status.
-- **Theme schema** - Define the structured Firestore theme document shape that stores atomic tokens, semantic token-class assignments, and reader/admin recipe assignments for live draft application and saved runtime themes, with Theme Management as the editing interface; do not expose raw Firestore editing as the product workflow.
-- **Preset completion** - Expand Journal / Editorial from partial preset bundles into coherent light/dark design packages only after the semantic surface inventory and schema are defined.
-- **Theme workspace chrome simplification** - Remove unnecessary background shading from the floating Theme workspace so the editor feels lighter and keeps more attention on the actual reader/workbench surface beneath it.
-- **Theme workspace fit and height** - Fit the active editor controls within common desktop windows more cleanly and increase the effective workspace height by roughly 20% so the floating editor shows more useful content before inner scrolling.
-- **Admin-only bundle loading** - Shipped 2026-06-12 (slice 2a): Theme Management overlay loads via admin-gated lazy chunk when the workbench opens; viewer sessions no longer pull the ThemeAdmin workbench in the shared AppShell bundle. Shipped 2026-06-12 (slice 5d): feed-tile edit paths lazy-load `ReaderCardEditEntry`; full Compose modal loads only when an admin opens edit. Studio remains admin-route scoped.
-❓ **Italic** - Is there a way to right lean the ink font?
+- **CSS tokenization** - Move design-affecting literals into theme variables incrementally so presets can plug in without module rewrites.
+- **Theme contract inventory** - Enumerate reader/admin surfaces, elements, token use, and migration status before calling Journal/Editorial finished.
+- **Theme schema** - Formalize Firestore theme document shape (atomic + semantic + recipes); Theme Management remains the only product editing path.
+- **Preset completion** - Journal/Editorial as coherent light/dark packages after inventory and schema.
+- **Workspace chrome** - Lighter floating panel shading; ~20% more effective height before inner scroll on common desktop windows.
 
-📘 **Design contract** - Semantic roles, preset intent (Journal vs Editorial), and reconciliation order: `docs/04-Theme-Design-Contract.md`.
+❓ **Open**
+
+- **Italic** - Right-leaning ink font for editorial accent?
+
+📘 **Resources** - Semantic roles, preset intent, reconciliation order: `docs/04-Theme-Design-Contract.md`. Platform slice closeout: `docs/03-Implementation.md` Phase 3 Theme.
 
 ---
 
@@ -1021,14 +989,20 @@ Current implementation note (2026-04-27): shared `--state-*` success / warning /
 
 *Intent*
 
-- **Custom Styles** -  Allow customizable gallery styles
+- **Gallery layout presets** - Optional preconfigured gallery presentation styles beyond current swiper/detail patterns.
 
 *Principles*
 
-- **Tokenizable** - Provide tokenizable styles for gallery layouts
+- **Card-owned gallery** - Gallery membership and order live on the card (`galleryMedia[]`); reader/detail swiper consumes that order (**Studio Compose** 📋).
+- **Presets, not parallel model** - Layout presets change presentation only; they do not replace card gallery data.
 
-*Features*
+📋 **Contracts**
+
+- **v1 baseline** - Closed navigate tiles and open detail use existing swiper/lightbox patterns (**Content Page** 📋, **View Page** 📋); no separate Gallery Management route in v1.
+- **Future presets** - Masonry/mosaic/etc. selectable per card or theme when product warrants distinct gallery presentation modes.
+
 ⭕2 **Future**
 
-- **Gallery Styles Management** - Devise preconfigured card styles for selection - masonry, mosaic, etc.
-📐 **Improvement intake** - Capture new improvement needs as concise, structured feature bullets in the owning section (`⭕1`, `⭕2`, or `❓`) with clear title + one-line description, instead of long prose blocks.
+- **Gallery styles** - Preset layouts (masonry, mosaic, etc.) selectable where product warrants distinct gallery presentation modes.
+
+---

@@ -35,6 +35,13 @@ import {
   appendCoverOnlyFeedHydration,
   withCoverOnlyFeedHydrationQuery,
 } from '@/lib/utils/feedHydration';
+import {
+  appendReaderTagScopeParam,
+  readStoredReaderTagFilterScope,
+  type ReaderTagFilterScope,
+} from '@/lib/utils/readerTagFilterScope';
+
+export type { ReaderTagFilterScope };
 
 export type CardFilterType = 'all' | 'story' | 'qa' | 'quote' | 'callout' | 'gallery';
 export type CardStatus = 'all' | 'draft' | 'published';
@@ -113,6 +120,9 @@ export interface ICardContext {
   /** When true, dimensional tag filters include descendant sub-tags via inherited tag data. */
   includeSubTagsInFeed: boolean;
   setIncludeSubTagsInFeed: (value: boolean) => void;
+  /** Reader sidebar tag match mode: any assigned tag vs subject marker only. */
+  readerTagFilterScope: ReaderTagFilterScope;
+  setReaderTagFilterScope: (scope: ReaderTagFilterScope) => void;
   
   // Data state
   cards: Card[];
@@ -134,6 +144,7 @@ const READER_MODE_KEY = 'myjournal-reader-mode';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
+const FEED_TAG_SCOPE_KEY = 'myjournal-feed-tag-scope';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
 const BROWSE_TARGET_KEY = 'myjournal-browse-target';
 const RANDOM_FEED_SEEDS_KEY = 'myjournal-feed-random-seeds';
@@ -196,6 +207,11 @@ function readStoredFeedGroup(): FeedGroupBy {
 function readStoredIncludeSubTagsInFeed(): boolean {
   if (typeof window === 'undefined') return false;
   return readStoredValue(FEED_INCLUDE_SUBTAGS_KEY) === 'true';
+}
+
+function readPersistedReaderTagFilterScope(): ReaderTagFilterScope {
+  if (typeof window === 'undefined') return 'all';
+  return readStoredReaderTagFilterScope(readStoredValue(FEED_TAG_SCOPE_KEY));
 }
 
 function readStoredFeedCardTypes(): Set<Card['type']> {
@@ -303,6 +319,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>('random');
   const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>('none');
   const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(false);
+  const [readerTagFilterScope, setReaderTagFilterScopeState] = useState<ReaderTagFilterScope>('all');
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
     who: false,
     what: false,
@@ -321,7 +338,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window === 'undefined') return;
 
     const storedReaderMode = readStoredReaderMode();
-    const storedActiveDimension = normalizeStoredActiveDimension(readStoredValue(DIMENSION_STORAGE_KEY));
+    const storedActiveDimension =
+      storedReaderMode === 'guided'
+        ? 'collections'
+        : normalizeStoredActiveDimension(readStoredValue(DIMENSION_STORAGE_KEY));
 
     setFeedCardTypes(readStoredFeedCardTypes());
     setReaderModeState(storedReaderMode);
@@ -333,6 +353,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSortState(readStoredFeedSort());
     setFeedGroupByState(readStoredFeedGroup());
     setIncludeSubTagsInFeedState(readStoredIncludeSubTagsInFeed());
+    setReaderTagFilterScopeState(readPersistedReaderTagFilterScope());
     setHasHydratedPersistedReaderState(true);
   }, []);
 
@@ -354,21 +375,19 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }
   }, []);
 
+  const setReaderTagFilterScope = useCallback((scope: ReaderTagFilterScope) => {
+    setReaderTagFilterScopeState(scope);
+    if (typeof window === 'undefined') return;
+    if (scope === 'subject') window.localStorage.setItem(FEED_TAG_SCOPE_KEY, 'subject');
+    else window.localStorage.removeItem(FEED_TAG_SCOPE_KEY);
+  }, []);
+
   const setCardDimensionMissing = useCallback(
     (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => {
       setCardDimensionMissingState((prev) => ({ ...prev, [dimension]: value }));
     },
     []
   );
-
-  const setReaderMode = useCallback((mode: ReaderMode) => {
-    setReaderModeState(mode);
-    if (typeof window !== 'undefined') window.localStorage.setItem(READER_MODE_KEY, mode);
-    if (mode === 'guided') {
-      setBrowseTargetState('cards');
-      if (typeof window !== 'undefined') window.localStorage.setItem(BROWSE_TARGET_KEY, 'cards');
-    }
-  }, []);
 
   const setBrowseTarget = useCallback((target: BrowseTarget) => {
     const next = readerMode === 'guided' ? 'cards' : target;
@@ -400,6 +419,17 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }
   }, [activeDimension, collectionId, readerMode]);
 
+  const setReaderMode = useCallback((mode: ReaderMode) => {
+    setReaderModeState(mode);
+    if (typeof window !== 'undefined') window.localStorage.setItem(READER_MODE_KEY, mode);
+    if (mode === 'guided') {
+      setBrowseTargetState('cards');
+      if (typeof window !== 'undefined') window.localStorage.setItem(BROWSE_TARGET_KEY, 'cards');
+      setActiveDimension('collections');
+      setCollectionId(null);
+    }
+  }, [setActiveDimension, setCollectionId]);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !hasHydratedPersistedReaderState) return;
     const values = FEED_CARD_TYPES_ORDER.filter((type) => feedCardTypes.has(type));
@@ -409,6 +439,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }
     window.localStorage.setItem(FEED_CARD_TYPES_KEY, JSON.stringify(values));
   }, [feedCardTypes, hasHydratedPersistedReaderState]);
+
+  useEffect(() => {
+    if (!hasHydratedPersistedReaderState) return;
+    if (readerMode === 'guided' && activeDimension !== 'collections') {
+      setActiveDimension('collections');
+    }
+  }, [activeDimension, hasHydratedPersistedReaderState, readerMode, setActiveDimension]);
 
   const hasAppliedSessionStatusDefault = useRef(false);
   useEffect(() => {
@@ -425,7 +462,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/search'];
-  const isFetchActive = sessionStatus !== 'loading' && activePaths.some(path => pathname.startsWith(path));
+  const isFetchActive =
+    sessionStatus !== 'loading' && activePaths.some((path) => pathname?.startsWith(path));
+  const isReaderListRoute = activePaths.some((path) => pathname?.startsWith(path));
 
   // Organize selected tags by dimension
   const dimensionalTags = useMemo(() => {
@@ -467,12 +506,14 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       },
       cardDimensionMissing,
       includeSubTagsInFeed,
+      readerTagFilterScope,
     });
   }, [
     cardDimensionMissing,
     dimensionalTags,
     feedCardTypes,
     includeSubTagsInFeed,
+    readerTagFilterScope,
     selectedFilterTagIds,
     status,
   ]);
@@ -511,7 +552,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   // Keep the collections tree loaded for curated mode, even when a collection is selected.
   const shouldFetchCollections =
-    isFetchActive && activeDimension === 'collections';
+    isFetchActive && (activeDimension === 'collections' || readerMode === 'guided');
   const collectionsUrl = shouldFetchCollections
     ? withCoverOnlyFeedHydrationQuery(
         `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}`,
@@ -604,6 +645,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         params.set('types', typesList.join(','));
       }
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
+      if (isReaderListRoute) {
+        appendReaderTagScopeParam(params, readerTagFilterScope);
+      }
       appendCoverOnlyFeedHydration(params, pathname);
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
@@ -662,7 +706,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: isAdmin ? 0 : 60000, // No deduping for admin, 1 minute for others
-      focusThrottleInterval: isAdmin ? 0 : 60000 // No throttling for admin, 1 minute for others
+      focusThrottleInterval: isAdmin ? 0 : 60000, // No throttling for admin, 1 minute for others
+      errorRetryCount: 3,
+      errorRetryInterval: 750,
     }
   );
 
@@ -741,7 +787,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     isReaderRoute &&
     !isGuidedCollectionTransition &&
     !hasRenderableCards &&
-    readerBackgroundLoading &&
+    (readerBackgroundLoading || Boolean(error)) &&
     hasVisibleReaderSnapshot;
   const { visibleCards, visibleFeedSections } = useMemo(() => {
     if (isGuidedCollectionTransition) {
@@ -810,6 +856,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSort('random');
     setFeedGroupBy('none');
     setIncludeSubTagsInFeed(false);
+    setReaderTagFilterScope('all');
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
   }, [
     activeDimension,
@@ -821,6 +868,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSort,
     setFeedGroupBy,
     setIncludeSubTagsInFeed,
+    setReaderTagFilterScope,
   ]);
 
   const value = useMemo(
@@ -873,6 +921,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       isValidating,
       includeSubTagsInFeed,
       setIncludeSubTagsInFeed,
+      readerTagFilterScope,
+      setReaderTagFilterScope,
     }),
     [
       cards,
@@ -923,6 +973,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       isValidating,
       includeSubTagsInFeed,
       setIncludeSubTagsInFeed,
+      readerTagFilterScope,
+      setReaderTagFilterScope,
     ]
   );
 

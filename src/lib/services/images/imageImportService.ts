@@ -720,6 +720,10 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       tx.update(mediaRef, payload);
     });
     void syncMediaToTypesenseById(mediaId);
+    const { syncGalleryTagInheritanceForMediaId } = await import(
+      '@/lib/services/galleryTagInheritanceService'
+    );
+    await syncGalleryTagInheritanceForMediaId(mediaId);
     return;
   }
 
@@ -854,6 +858,14 @@ export async function bulkApplyMediaTags(
 
   const uniqueUpdatedIds = Array.from(new Set(updatedIds));
   uniqueUpdatedIds.forEach((id) => void syncMediaToTypesenseById(id));
+  if (uniqueUpdatedIds.length > 0) {
+    const { syncGalleryTagInheritanceForMediaId } = await import(
+      '@/lib/services/galleryTagInheritanceService'
+    );
+    for (const id of uniqueUpdatedIds) {
+      await syncGalleryTagInheritanceForMediaId(id);
+    }
+  }
   return {
     updatedIds: uniqueUpdatedIds,
     updatedMedia: uniqueUpdatedIds

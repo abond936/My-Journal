@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -100,11 +101,14 @@ const Home: React.FC = () => {
 
         {/* Welcome/Login Section */}
         <section className={styles.welcomeSection}>
-          {status === 'loading' && renderLoading()}
-          {status === 'authenticated' && renderLoading()}
-          {status === 'unauthenticated' && (
+          {status === 'authenticated' ? (
+            renderLoading()
+          ) : (
             <>
               {renderLoginForm()}
+              <p className={styles.welcomeText}>
+                <Link href="/">Learn about My Stories</Link>
+              </p>
             </>
           )}
         </section>

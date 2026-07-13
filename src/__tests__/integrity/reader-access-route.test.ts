@@ -143,7 +143,7 @@ describe('reader access boundary', () => {
 
     expect(res).toMatchObject({
       type: 'redirect',
-      url: 'https://example.test/?callbackUrl=%2Fview%2Fcard-1%3Fx%3D1',
+      url: 'https://example.test/login?callbackUrl=%2Fview%2Fcard-1%3Fx%3D1',
     });
   });
 
@@ -228,11 +228,11 @@ describe('reader access boundary', () => {
 
     expect(mockedRedirect).toHaveBeenNthCalledWith(
       1,
-      '/?callbackUrl=%2Fview%3FfocusCardId%3Dcard-1'
+      '/login?callbackUrl=%2Fview%3FfocusCardId%3Dcard-1'
     );
     expect(mockedRedirect).toHaveBeenNthCalledWith(
       2,
-      '/?callbackUrl=%2Fsearch%3Fq%3Dfamily%2Bstory'
+      '/login?callbackUrl=%2Fsearch%3Fq%3Dfamily%2Bstory'
     );
   });
 

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
 import GlobalSidebar from '@/components/common/GlobalSidebar';
 import LazyThemeAdminOverlay from '@/components/common/LazyThemeAdminOverlay';
+import { isMarketingRoute } from '@/lib/utils/marketingRoutes';
 import styles from './AppShell.module.css';
 
 interface AppShellProps {
@@ -19,7 +20,7 @@ const MOBILE_SWIPE_MIN_DISTANCE_PX = 54;
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
   const pathname = usePathname();
-  const isHomeRoute = pathname === '/';
+  const isMarketingSurface = isMarketingRoute(pathname);
   const isReaderProtectedRoute =
     pathname === '/view' ||
     pathname === '/search' ||
@@ -27,7 +28,8 @@ export default function AppShell({ children }: AppShellProps) {
     Boolean(pathname?.startsWith('/search/'));
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
   const shouldRenderShell =
-    !isHomeRoute && (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
+    !isMarketingSurface &&
+    (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
   // SSR and first client render must match (false); desktop open state syncs in useLayoutEffect.
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -40,7 +42,7 @@ export default function AppShell({ children }: AppShellProps) {
     const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
 
     const syncSidebarForViewport = (isMobile: boolean, forceDesktopDefault = false) => {
-      if (pathname === '/' || pathname?.startsWith('/admin/studio')) {
+      if (isMarketingRoute(pathname) || pathname?.startsWith('/admin/studio')) {
         return;
       }
 
@@ -67,7 +69,7 @@ export default function AppShell({ children }: AppShellProps) {
 
   // Update sidebar state when route changes
   useEffect(() => {
-    if (pathname === '/') {
+    if (isMarketingRoute(pathname)) {
       setSidebarOpen(false);
       return;
     }
@@ -81,7 +83,7 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   const canUseMobileSwipe =
-    isMobileViewport && pathname !== '/' && !pathname?.startsWith('/admin/studio');
+    isMobileViewport && !isMarketingRoute(pathname) && !pathname?.startsWith('/admin/studio');
 
   const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>, forceTrack = false) => {
     if (!canUseMobileSwipe) return;
@@ -157,7 +159,7 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className={styles.appShell}>
       <div className={styles.header}>
-        {pathname !== '/' && (
+        {!isMarketingSurface && (
           <button
             className={styles.sidebarToggle}
             onClick={toggleSidebar}
@@ -187,7 +189,7 @@ export default function AppShell({ children }: AppShellProps) {
             aria-hidden="true"
           />
         ) : null}
-        {pathname !== '/' && (
+        {!isMarketingSurface && (
           <>
             <div
               className={`${styles.sidebarBackdrop} ${isSidebarOpen ? styles.sidebarBackdropOpen : ''}`}

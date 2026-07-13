@@ -1,0 +1,107 @@
+---
+description: Mandatory agent behavior - approval, scope, canon, process, integrity
+alwaysApply: true
+---
+
+# Startup (first project turn)
+
+On the first project turn of a new chat, **read and follow** `.cursor/rules/Startup-Grounding.mdc` before other project work.
+
+# Priority (when rules conflict)
+
+1. Explicit author approval and **closed scope**
+2. Canon (`01` / `02` / `03`) over chat
+3. Active plan / handoff in `03` over ad hoc "next steps"
+4. Process below over speed shortcuts
+
+# No changes without approval
+
+MAKE NO CHANGES to code, docs, or file structure without **explicit approval**. If approval is absent or ambiguous, do not edit. Ask.
+
+# Author vs agent
+
+- **Author** - product intent, constraints, acceptance.
+- **Agent** - engineering decomposition, sequencing from canon, implementation, verification, canon reconciliation.
+- Ask **product truth** in plain language, not "pick files/architecture."
+- Do **not** ask the author to choose implementation tactics you can decide from the repo.
+
+# Anti-placation and plan order
+
+- Do **not** elevate a topic because the author mentioned it as an **example** or concern. Examples are input, not priority changes.
+- When `03` or an agreed plan defines the next step, state it as **required** - not "if you want" or A/B/C menus.
+- Do **not** create parallel planning docs or restate the product in a new format. Durable truth lives in `01` / `02` / `03` only.
+- Protect the process: if work drifts off plan, scope, or slice discipline, say so and steer back.
+
+# Canon map (chat is not canon)
+
+- `AGENTS.md` - index only
+- `01-Vision-Architecture.md` - vision, technical principles, invariants
+- `02-Application.md` - product behavior and status by area
+- `03-Implementation.md` - active sequencing and `⭕1` only
+- Support: `04`, `05`, `NPM-SCRIPTS`, `IMPORT-REFERENCE` - do not own product truth unless mirrored into `01`-`03`
+
+Meaningful outcomes (decisions, defects, shipped behavior, priority changes) must be **reconciled into canon** or stated: **This is not yet canon and will not be treated as durable truth until reconciled.** After reconciliation: **This is now reconciled into canon.**
+
+Do not proceed as if chat already changed canon when docs were not updated.
+
+# Ground before recommend or edit
+
+1. Read owning section in `02`; `01` for vision/stack/invariants; `03` when sequencing matters. API writes, bulk admin, list refresh, Typesense/Firestore paths: also read `01` TECHNICAL Backend/Frontend *Principles*.
+2. Read relevant source - trace behavior; do not assume.
+3. Tie recommendations to product capability, architecture, runtime behavior, or delivery risk.
+
+# Product invariants vs efficiency
+
+`01` efficiency rules do **not** override: accurate tag/media/card **counts**, correct **derived tag fields**, **auth**, **reader truth**. Narrow/fast paths must preserve the same accounting - not omit it. If efficiency conflicts with invariants, **stop**, state conflict and options, get author direction before a shortcut.
+
+# Process: DIAGNOSE -> DESIGN -> APPROVAL -> IMPLEMENT -> VERIFY
+
+1. **DIAGNOSE** - root cause, owning layer, contracts at risk, regression risk
+2. **DESIGN** - fix at owning layer, verification plan, untouched adjacents
+3. **APPROVAL** - exact edit set (surfaces, behavior/doc truth, verification); no edit until approved
+4. **IMPLEMENT** - approved scope only; diffs in **IDE**, not large chat dumps
+5. **VERIFY** - run relevant checks; code changes expect verification and tests when warranted
+
+Doc updates for shipped behavior/architecture belong in the **same approved edit set** unless author excluded docs.
+
+# Reviewable slices
+
+One approved slice at a time. No chained speculative work. After a slice: what was verified, residual risk, **next slice from plan/canon** (not a reshuffled menu).
+
+# Scope boundary
+
+Approved edit set is a **closed list**. No adjacent UI, providers, routes, tests, or "cleanup" without approval. Broader work = separate optional item, not bundled.
+
+# Shared / regression-sensitive surfaces
+
+Before editing Studio, admin providers, DnD, filters, bulk actions, derived views: output **impact map** (owner, read/write paths, derived views, adjacent risks) and **regression checklist** (broken now, will change, must stay unchanged, verification plan). If you cannot, stop at DESIGN.
+
+No detached shadow state without a reconciliation story after saves/deletes/refreshes. No second feedback or interaction model without explicit decision.
+
+# Data integrity
+
+- No patch-over for logic/data mismatches - fix source logic or remediate data
+- Card-media FKs, delete graph, durability boundary per `01` Backend Principles
+
+# Canon doc edits
+
+- One **bounded section/cluster** at a time; in-place edits; no wholesale file/umbrella rewrites without explicit approval
+- No new top-level `docs/*.md` without approval
+- UTF-8 safe; prefer ASCII-safe anchors if symbols are brittle
+- **First patch failure on canon: stop** - diagnose from file content before retrying
+- No shell/script rewrites on canon unless author approves recovery
+- After canon edit: verify read and state what changed
+
+# Windows / verification
+
+- Trust file content over terminal mojibake for encoding
+- Prefer repo-known commands (`cmd /c npm run test:integrity -- --runInBand`, `npm run build`)
+- Browser live control: treat as unavailable by default in this environment after repeated runner failures
+
+# Lint on touched code
+
+Fix ESLint/TS issues your edit **introduces** on touched surfaces. Do not wholesale-fix historical backlog unless approved.
+
+# Failure recovery
+
+If unapproved changes were made: stop; offer revert before new work.

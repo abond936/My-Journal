@@ -1,27 +1,24 @@
 ---
-description: First-turn grounding for my-journal (index, execution contract, vision backend, then trace code)
-alwaysApply: true
+description: First-turn canon read for my-journal (apply at start of every new project chat)
+alwaysApply: false
 ---
 
-# Startup grounding (my-journal)
+# Startup grounding (first project turn only)
 
-On the **first assistant turn of every new chat in this repo**, before answering any project-related question or making any claim of readiness, status awareness, continuity, recommendation, design, diagnosis, or implementation:
+On the **first assistant turn of a new project chat**, before readiness claims, recommendations, design, diagnosis, or implementation:
 
-1. **Read** `AGENTS.md` (index to all canon).
-2. **Read** `.cursor/rules/Execution-Discipline.mdc` (approval, scope, **EXECUTE** = in-editor diff for review, not chat-side diff dumps, no patch-overs, invariants vs efficiency).
-3. **Read** `docs/01-Vision-Architecture.md` at minimum **TECHNICAL -> Backend** through *Principles* (including **Card-media integrity**, **Delete graph**, **Durability boundary**). If the task is feature-specific, read the matching area in `docs/02-Application.md`. If sequencing or phase scope matters, read the active lines in `docs/03-Implementation.md`.
-4. **Do not** claim or assume a full-repo mental model. After the doc pass, use **grep / semantic search / read** only on paths the task implies.
-5. In the **first project-substantive reply of that chat**, output **one line**: **Doc anchors:** which files/sections you read (for example `AGENTS`, `01 TECHNICAL Backend Principles`, `02 Card Management`). If a required file is unreadable, say so and stop.
-6. **Startup output contract** - Treat the startup read as **preparation**, not as a default request for recap. If the user's startup request is only to **get up to speed**, **load context**, **ground yourself**, or equivalent, the reply after reading should be **only** the single `Doc anchors:` line unless the user explicitly asks for a summary, findings, recommendations, or status brief.
+1. **Read** `AGENTS.md`
+2. **Read** `.cursor/rules/Agent-Discipline.mdc`
+3. **Read** `docs/01-Vision-Architecture.md` -> **TECHNICAL -> Backend** *Principles* (through **Durability boundary**). If task-specific: matching `02` section; if sequencing: active lines in `03`
+4. Do **not** claim full-repo mental model. After reads, use grep/read only on paths the task implies
+5. First project-substantive reply: one line **Doc anchors:** files/sections read. If a required file is unreadable, say so and stop
 
-**Canon read rule:** When reading canon docs/rules, treat UTF-8-safe file content as authoritative. Do not report encoding damage from terminal mojibake alone; verify suspected corruption with raw bytes or another UTF-8-safe read path first.
+**Startup output contract** - Grounding is preparation, not a recap. If the user only asked to get up to speed / load context, reply with **only** `Doc anchors:` unless they asked for summary, findings, or recommendations.
 
-**Readiness rule:** Do **not** say you are "up to speed," "ready to continue," aware of current project status, or equivalent until this startup read is complete and the `Doc anchors:` line has been emitted.
+**Readiness** - Do not claim "up to speed" or project status awareness until startup read is complete and `Doc anchors:` is emitted.
 
-**No startup summary by default:** Do **not** add a project summary, status recap, risk list, or next-step recommendation to a pure startup-grounding request unless the user explicitly asks for one.
+**Canon boundary** - Repo canon only; prior chat is not authoritative unless reconciled into `01` / `02` / `03`.
 
-**Canon boundary reminder:** This startup read grounds the agent in **repo canon only**. Prior chat memory is not authoritative unless its durable outcomes were reconciled into `00` / `01` / `02` / `03`.
+**Secrets** - Never print or commit `.env` / `.env.local`.
 
-**Secrets:** Never print or commit `.env` / `.env.local` contents.
-
-**Conflicts:** If `01` efficiency guidance appears to conflict with product invariants for the task, follow `Execution-Discipline.mdc` -> **Product invariants vs efficiency** and state the conflict and options before a shortcut.
+**Conflicts** - If `01` efficiency conflicts with product invariants, follow `Agent-Discipline.mdc` -> **Product invariants vs efficiency**.
