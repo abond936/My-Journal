@@ -38,6 +38,23 @@ jest.mock('@/components/providers/CardFormProvider', () => ({
   }),
 }));
 
+jest.mock('@/components/providers/MediaProvider', () => ({
+  useMedia: () => ({ registerCreatedMedia: jest.fn() }),
+}));
+
+jest.mock('@/components/admin/studio/cards/PhotoPicker', () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
+jest.mock('react-dropzone', () => ({
+  useDropzone: () => ({
+    getRootProps: () => ({}),
+    getInputProps: () => ({}),
+    isDragActive: false,
+  }),
+}));
+
 jest.mock('@/components/admin/studio/studioRelationshipDndPrimitives', () => ({
   StudioDropZone: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   StudioGalleryEndDropZone: () => null,
@@ -65,6 +82,18 @@ jest.mock('@/components/common/JournalImage', () => ({
 describe('StudioCardFormGallery modal contract', () => {
   beforeEach(() => {
     mockSetField.mockClear();
+  });
+
+  it('shows Add from library for gallery assignment', () => {
+    render(
+      <StudioCardFormGallery
+        disabled={false}
+        onSetAsCover={jest.fn()}
+        currentCoverMediaId={null}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Add from library' })).toBeInTheDocument();
   });
 
   it('uses the shared crop-override editor and not a caption modal', async () => {

@@ -29,6 +29,18 @@ jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({ tags: [] }),
 }));
 
+jest.mock('@/components/providers/MediaProvider', () => ({
+  useMedia: () => ({ registerCreatedMedia: jest.fn() }),
+}));
+
+jest.mock('react-dropzone', () => ({
+  useDropzone: () => ({
+    getRootProps: () => ({}),
+    getInputProps: () => ({}),
+    isDragActive: false,
+  }),
+}));
+
 jest.mock('@/lib/hooks/useDefaultDndSensors', () => ({
   useDefaultDndSensors: () => [],
 }));

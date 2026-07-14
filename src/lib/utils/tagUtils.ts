@@ -268,6 +268,7 @@ export function mergeDimensionalTagMaps(
   for (const key of DIMENSION_KEYS) {
     const set = new Set<string>();
     for (const m of maps) {
+      if (!m) continue;
       for (const id of m[key] ?? []) set.add(id);
     }
     if (set.size) out[key] = [...set];

@@ -41,7 +41,7 @@ Legend:
 - **Release readiness** - Commercial release requires documented deploy, backup, restore, admin recovery, and rollback/incident procedures.
 - **Reviewable slices** - One approved slice at a time; do not chain dependent work before author review.
 
-📐 **Current program stance** - Storytelling surfaces (reader, Studio runtime) are largely credible for family demo; **v1 is not strategically complete** until organize-at-scale, tag authority, commercial entry, and operator trust are productized. **Phase 1.a closed 2026-07-12** (spec + author decisions reconciled in `02` / `01`). **Active build:** Phase 2 slice **Tag inheritance** — Settings toggles (default off) + gallery→card sync per `02` **Studio Tags** 📋. Studio runtime **author-verified 2026-07-11**; no new demo blocker unless a defect appears.
+📐 **Current program stance** - Storytelling surfaces (reader, Studio runtime) are largely credible for family demo; **v1 is not strategically complete** until organize-at-scale, tag authority, commercial entry, and operator trust are productized. **Phase 1.a closed 2026-07-12** (spec + author decisions reconciled in `02` / `01`). **Active build:** *(none — re-sequence from Phase 2 inventory below)*. **Insert-image workflow v1 shipped 2026-07-14** (tests verified). Studio runtime **author-verified 2026-07-11**; no new demo blocker unless a defect appears.
 
 📐 **Canonical task intake** - Chat is intake and approval only. Spec outcomes land in owning `02` 📋 / 📐 (or `01` TECHNICAL for platform rules); build items stay as `⭕1` in `02` / `01` and appear in phases after **1.a** exit.
 
@@ -67,7 +67,7 @@ Legend:
 - **Card model** — **📋 drafted** (`02` **Studio Cards**).
 - **Collections & structure** — **📋 spec'd** (`02` **Collections Management**, **Studio Organize**). Multi-parent: **per-path** in Guided reader.
 - **Card–media integrity** — **📋 verify** (`01` Backend 📐 set; product cross-refs in **Administration**, **Studio Media**).
-- **Archive intelligence** — **📋 spec'd** (provisional + Review mode IA); **Review v1 shell shipped** (heuristic piles, Suggested lens); **manual media stacks v1 shipped** (collapsed browse, bulk create/unstack); auto burst / merge / adapter spikes remain ⭕1 build.
+- **Archive intelligence** — **📋 spec'd**; **Review v1 shell shipped** then **superseded 2026-07-14**; **Story piles organize v2 shipped** (slices 1–5; slice 6 deep link dropped); **manual media stacks v1 shipped**; auto burst / merge / adapter spikes remain ⭕1 build.
 - **Person & face identity** — **📋 drafted** (📐 in **Studio Tags** + `05`; faces ⭕2).
 - **Filters & populations** — **📋 drafted** (`02` **Administration**, **Application**, **Navigation**, `01` 📐).
 - **Search & index** — **📋 drafted** (admin in **Administration**; platform in `01`).
@@ -118,7 +118,7 @@ Legend:
 
 ### Phase 2 — Admin Productivity *(active)*
 
-📐 **Active build** - **Media stacks (manual v1)** shipped **2026-07-13** (collapsed browse, expand/unstack, Show all, bulk Create stack, gallery stackId on create-card). Prior: **Organize import-tag reconciliation v2** **2026-07-13**. **Next candidate:** Review merge + auto burst stacks, subset-only map workflows, Settings theme reader prefs, or Top Nav Help.
+📐 **Active build** - *(none — author to re-sequence from Phase 2 inventory below)*. Prior slice **Insert-image workflow v1** **shipped 2026-07-14** (library-only PhotoPicker; bank import only via Media **Import**; paste/drop + **Add from library** on cover, content, gallery in Studio + View; no metadata prompt on paste; tests verified).
 
 *Remaining Phase 2 inventory follows; order is guidance after the active slice completes.*
 
@@ -158,7 +158,8 @@ Legend:
 
 **§ Studio Media (`02`)**
 
-- **PhotoPicker convergence** - Bank import and library pick in Media admin so card edit PhotoPicker becomes optional.
+- **Media piles organize v2** — **Closed 2026-07-14** (slices **(1)–(5) shipped**): Organize strip, overlay sections, membership edit, **Browse | Review** retired. Slice **(6) Organize in Media deep link** **dropped** (author decision — not in scope). Touchpoints: `MediaAdminContent.tsx`, `MediaOrganizeStrip.tsx`, `MediaStoryPilesOverlayView.tsx`, `studioPileMembershipDnd.tsx`, `reviewClusterImport.ts`, provisional cluster APIs. **Follow-up shipped 2026-07-14:** legacy **`importBatchId`** backfill (`batch-legacy`), **Apply tags to photos**, import feedback, Organize UX (batch filter + strip without Import scope row). **Deferred:** auto burst stacks, Review burst lens, merge piles; tag-filter modal polish.
+- **PhotoPicker convergence** — **Shipped 2026-07-14** (**insert-image workflow v1**): library-only PhotoPicker; paste/drop + **Add from library** on gallery (Studio + View compose); bank import only via Media **Import**. Touchpoints: `PhotoPicker.tsx`, `StudioCardFormGallery.tsx`, `GalleryManager.tsx`, `CardForm.tsx`.
 - **Import and duplicate triage** - Trustworthy bank workflow and source-aware duplicate review (not filename-only).
 - **Manual phone aggregation** - Select imported phone group, assign to card, flesh out story/tags.
 - **Media derivative architecture** - Surface-specific derivatives; video and phone as first-class inputs.
@@ -251,11 +252,20 @@ Legend:
 - **Quality** - QA app.
 - **Security hardening** - Threat model, authorization, secrets, hosted deployment hardening beyond current baseline.
 - **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths; contract-level browser smoke where unit/API tests are insufficient.
+- **Authorization consistency** - Centralize reader/admin route and mutation classification so access rules do not diverge across individual handlers.
+- **Service boundaries** - Decompose responsibility-heavy services, beginning with `cardService` and `themeService`, into explicit domain operations without splitting shared integrity rules across competing paths.
 - **Access and privacy gate** - Re-verify hosted boundaries as deployment or auth config changes.
 - **Operational recovery gate** - Remaining before commercial release: rollback/incident-response drills, disposable-target Typesense rebuild with isolated config, hosted-runtime proof on recovered data. Operator path: `docs/NPM-SCRIPTS.md` -> **Restore drill**.
 - **Workflow quality gate** - Full visual mobile/desktop usability proof for family-demo and hosted-alpha criteria.
 
-📐 **Phase 4 incremental backlog (partial closeout)** - Broader `withApiRouteHandler` migration, per-directory TS strict rollout, `cardService` facade split, unused-deps cleanup — ship opportunistically, not as demo blockers.
+**§ Frontend (`01`)**
+
+- **Component boundaries** - Reduce responsibility-heavy UI modules, beginning with `StudioWorkspace`, `MediaAdminContent`, and `CardForm`; separate state coordination, domain operations, and presentation without creating shadow state.
+- **Reader edit boundary** - Extract reusable focused-edit capabilities so reader-context editing does not depend on the full Studio form architecture.
+- **Theme boundaries** - Separate Theme Management workspace composition from theme schema, transformation, and persistence responsibilities.
+- **Legacy surface retirement** - Remove redirect-only admin routes, duplicate loaders, and compatibility paths after callers and navigation are verified; determine whether `CollectionsAdminClient` should be retired before refactoring it.
+
+📐 **Phase 4 incremental backlog (partial closeout)** - Broader `withApiRouteHandler` migration, per-directory TS strict rollout, unused-deps cleanup — ship opportunistically, not as demo blockers.
 
 ---
 
@@ -279,4 +289,4 @@ Legend:
 
 - **Deferrable product** - Left Nav Group by / Created sort / messy-archive Studio entry; landing brand assets; Theme italic accent; video readiness depth on first video slice.
 - **Build-slice detail** - Provisional suggestions Firestore schema when organize spine slice opens.
-- **Engineering hygiene inventory** - Module boundary map (`cardService`, `StudioWorkspace`, `CollectionsAdminClient`, `CardForm`, `themeService`); dead table-era code; ESLint/API envelope/TS strict ratchet — track under Phase 4 incremental backlog until **1.a** spawns explicit **📋** or a later hygiene phase.
+- **Engineering hygiene inventory** - Dead table-era code; ESLint/API envelope/TS strict ratchet — track under Phase 4 incremental backlog until **1.a** spawns explicit **📋** or a later hygiene phase.

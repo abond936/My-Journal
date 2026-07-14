@@ -71,6 +71,8 @@ export type StudioShellContextValue = {
   clearOrganizeReconcile: () => void;
   /** Expand Media pane when Organize reconciliation selects an import tag. */
   openMediaPane: () => void;
+  /** Story piles overlay registers refresh after membership DnD / context-menu moves. */
+  registerStoryPileMembershipChanged: (fn: (() => void | Promise<void>) | null) => void;
 };
 
 const StudioShellContext = createContext<StudioShellContextValue | null>(null);

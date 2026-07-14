@@ -1,0 +1,245 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.section {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface1-color, var(--bg-color));
+  overflow: hidden;
+}
+
+.sectionUnsorted {
+  border-style: dashed;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  background: color-mix(in srgb, var(--accent1-color) 8%, var(--surface1-color, var(--bg-color)));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sectionHeaderDropZone:global(.story-pile-header-drop-active) {
+  outline: 2px solid var(--admin-chrome-active-control-background-color);
+  outline-offset: -2px;
+  background: color-mix(
+    in srgb,
+    var(--admin-chrome-active-control-background-color) 16%,
+    var(--surface1-color, var(--bg-color))
+  );
+}
+
+.sectionHeaderInteract {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.sectionHeaderStatic.sectionHeaderDropZone,
+.sectionHeaderStatic .sectionHeaderInteract {
+  cursor: default;
+}
+
+.sectionHeaderStatic {
+  cursor: default;
+}
+
+.sectionHeaderMain {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.sectionTitleBlock {
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.sectionSubtitle {
+  margin: 0.1rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.sectionCount {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  flex-shrink: 0;
+}
+
+.sectionChevron {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  flex-shrink: 0;
+}
+
+.sectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.sectionActionButton {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface1-color, var(--bg-color));
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  padding: 0.22rem 0.5rem;
+  cursor: pointer;
+}
+
+.sectionActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sectionActionButtonPrimary {
+  border-color: var(--admin-support-control-strong-border-color);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+}
+
+.sectionActionButtonDanger {
+  border-color: color-mix(in srgb, var(--error-color, #c0392b) 45%, var(--border1-color));
+  color: var(--error-color, #c0392b);
+}
+
+.tagChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.55rem 0.35rem;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid transparent;
+}
+
+.tagChipWho {
+  background: color-mix(in srgb, var(--who-color, #4a90d9) 18%, transparent);
+}
+
+.tagChipWhat {
+  background: color-mix(in srgb, var(--what-color, #6a9f4f) 18%, transparent);
+}
+
+.tagChipWhen {
+  background: color-mix(in srgb, var(--when-color, #c9a227) 18%, transparent);
+}
+
+.tagChipWhere {
+  background: color-mix(in srgb, var(--where-color, #9b6bb8) 18%, transparent);
+}
+
+.sectionBody {
+  padding: 0.35rem 0.45rem 0.55rem;
+}
+
+.oversizedNote {
+  margin: 0 0.55rem 0.35rem;
+  font-size: var(--font-size-xs);
+  color: var(--error-color, #c0392b);
+}
+
+.emptySection {
+  margin: 0;
+  padding: 0.35rem 0.55rem 0.55rem;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.contextMenu {
+  position: fixed;
+  z-index: 1200;
+  min-width: 12rem;
+  max-width: 16rem;
+  padding: 0.25rem 0;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface1-color, var(--bg-color));
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--admin-chrome-text-color) 16%, transparent);
+}
+
+.contextMenuItem {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text1-color);
+  font-size: var(--font-size-xs);
+  text-align: left;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.contextMenuItem:hover,
+.contextMenuItem:focus-visible {
+  background: color-mix(in srgb, var(--accent1-color) 12%, transparent);
+  outline: none;
+}
+
+.contextSubmenu {
+  border-top: var(--border-width-thin) solid var(--border1-color);
+  padding: 0.35rem 0.45rem 0.25rem;
+}
+
+.contextSearch {
+  width: 100%;
+  margin-bottom: 0.35rem;
+  padding: 0.25rem 0.4rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.contextPileList {
+  max-height: 10rem;
+  overflow-y: auto;
+  margin-bottom: 0.15rem;
+}
+
+.contextEmpty {
+  margin: 0.25rem 0.35rem;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.pileTagEditActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}

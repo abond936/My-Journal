@@ -1130,6 +1130,7 @@ const CardForm: React.FC = () => {
                   onSetAsCover={handleSetGalleryItemAsCover}
                   currentCoverMediaId={cardData.coverImageId || null}
                   onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  filterTagIds={cardData.tags ?? []}
                 />
               </div>
 
@@ -1389,6 +1390,7 @@ const CardForm: React.FC = () => {
                 currentCoverMediaId={cardData.coverImageId || null}
                 onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
                 onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
+                filterTagIds={cardData.tags ?? []}
               />
             ) : (
               <GalleryManager

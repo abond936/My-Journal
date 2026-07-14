@@ -1,8 +1,9 @@
 import type { Collision } from '@dnd-kit/core';
+import { isStoryPileDropId } from '@/lib/dnd/studioPileDragContract';
 
 export type StudioRightColumnDragDomain = 'source' | 'gallery' | 'studioChild' | 'collectionCard' | 'other';
 
-const SOURCE_DROP_PRIORITY = ['drop:cover', 'drop:gallery', 'drop:body'] as const;
+const SOURCE_COMPOSE_DROP_PRIORITY = ['drop:cover', 'drop:gallery', 'drop:body'] as const;
 
 export function classifyStudioRightColumnDragId(activeId: string): StudioRightColumnDragDomain {
   if (activeId.startsWith('source:')) return 'source';
@@ -15,7 +16,12 @@ export function classifyStudioRightColumnDragId(activeId: string): StudioRightCo
 export function acceptsStudioRightColumnDrop(dropId: string, domain: StudioRightColumnDragDomain): boolean {
   switch (domain) {
     case 'source':
-      return dropId === 'drop:cover' || dropId === 'drop:gallery' || dropId === 'drop:body';
+      return (
+        dropId === 'drop:cover' ||
+        dropId === 'drop:gallery' ||
+        dropId === 'drop:body' ||
+        isStoryPileDropId(dropId)
+      );
     case 'gallery':
       return dropId === 'drop:cover' || dropId.startsWith('gallery:');
     case 'studioChild':
@@ -41,10 +47,12 @@ export function prioritizeStudioRightColumnHits(
   if (hits.length === 0) return hits;
 
   if (domain === 'source') {
-    for (const dropId of SOURCE_DROP_PRIORITY) {
+    for (const dropId of SOURCE_COMPOSE_DROP_PRIORITY) {
       const matches = hits.filter((collision) => String(collision.id) === dropId);
       if (matches.length > 0) return matches;
     }
+    const pileHits = hits.filter((collision) => isStoryPileDropId(String(collision.id)));
+    if (pileHits.length > 0) return pileHits;
     return hits;
   }
 

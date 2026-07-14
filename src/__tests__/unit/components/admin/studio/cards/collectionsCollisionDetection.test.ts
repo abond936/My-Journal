@@ -57,6 +57,20 @@ describe('collectionsCollisionDetection assignment safety', () => {
     expect(runCollision('source:media-1').map((hit) => String(hit.id))).toEqual(['drop:body']);
   });
 
+  it('prefers compose targets over pile headers for source-media drags', () => {
+    mockPointerWithin.mockReturnValue([{ id: 'pile:cluster-1' }, { id: 'drop:gallery' }] as Collision[]);
+    mockRectIntersection.mockReturnValue([]);
+
+    expect(runCollision('source:media-1').map((hit) => String(hit.id))).toEqual(['drop:gallery']);
+  });
+
+  it('allows pile header hits when no compose target is under the pointer', () => {
+    mockPointerWithin.mockReturnValue([{ id: 'pile:cluster-1' }] as Collision[]);
+    mockRectIntersection.mockReturnValue([]);
+
+    expect(runCollision('source:media-1').map((hit) => String(hit.id))).toEqual(['pile:cluster-1']);
+  });
+
   it('ignores rect-intersection-only cover hits for source-media drags', () => {
     mockPointerWithin.mockReturnValue([]);
     mockRectIntersection.mockReturnValue([{ id: 'drop:cover' }] as Collision[]);

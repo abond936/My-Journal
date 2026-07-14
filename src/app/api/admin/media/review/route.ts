@@ -8,7 +8,9 @@ import {
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
 import {
+  createEmptyReviewCluster,
   generateReviewClusters,
+  listAllPendingReviewClusters,
   listPendingReviewClusters,
 } from '@/lib/services/provisionalClusterService';
 
@@ -20,6 +22,12 @@ export async function GET(request: NextRequest) {
       internalError: { code: 'REVIEW_CLUSTERS_LIST_FAILED', message: 'Failed to load review clusters.' },
     },
     async ({ request }) => {
+      const allPending = request.nextUrl.searchParams.get('allPending') === 'true';
+      if (allPending) {
+        const clusters = await listAllPendingReviewClusters();
+        return apiRouteSuccess({ ok: true, clusters, lens: 'all' });
+      }
+
       const lensParam = request.nextUrl.searchParams.get('lens') ?? 'suggested';
       const lensResult = reviewLensSchema.safeParse(lensParam);
       if (!lensResult.success) {
@@ -45,7 +53,36 @@ export async function POST(request: NextRequest) {
       internalError: { code: 'REVIEW_CLUSTERS_GENERATE_FAILED', message: 'Failed to generate review clusters.' },
     },
     async ({ request }) => {
-      const body = (await request.json()) as { lens?: unknown; mediaIds?: unknown };
+      const body = (await request.json()) as {
+        mode?: unknown;
+        lens?: unknown;
+        mediaIds?: unknown;
+        title?: unknown;
+      };
+
+      if (body.mode === 'create-empty') {
+        const lensResult = reviewLensSchema.safeParse(body.lens ?? 'suggested');
+        if (!lensResult.success) {
+          return apiRouteError({
+            code: 'REVIEW_LENS_INVALID',
+            message: 'lens must be one of: suggested, when, where, who, what.',
+            status: 400,
+            retryable: false,
+          });
+        }
+        const title = typeof body.title === 'string' ? body.title.trim() : '';
+        if (!title) {
+          return apiRouteError({
+            code: 'REVIEW_TITLE_REQUIRED',
+            message: 'title is required for create-empty.',
+            status: 400,
+            retryable: false,
+          });
+        }
+        const cluster = await createEmptyReviewCluster({ title, lens: lensResult.data });
+        return apiRouteSuccess({ ok: true, mode: 'create-empty', cluster });
+      }
+
       const lensResult = reviewLensSchema.safeParse(body.lens ?? 'suggested');
       if (!lensResult.success) {
         return apiRouteError({

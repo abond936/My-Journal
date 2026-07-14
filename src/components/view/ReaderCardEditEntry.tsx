@@ -53,25 +53,21 @@ export default function ReaderCardEditEntry({
       <button type="button" className={className} onClick={handleOpenClick}>
         {children}
       </button>
-      {mobileOpen ? (
-        <ReaderMobileQuickEdit
-          open
-          onClose={() => setMobileOpen(false)}
-          cardId={cardId}
-          initial={metadata}
-          onSaved={(saved) => onCardSaved?.(saved)}
-        />
-      ) : null}
-      {desktopOpen ? (
-        <ReaderCardEditModal
-          cardId={cardId}
-          returnTo={returnTo}
-          open
-          onOpenChange={setDesktopOpen}
-          renderTrigger={false}
-          onCardSaved={onCardSaved}
-        />
-      ) : null}
+      <ReaderMobileQuickEdit
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        cardId={cardId}
+        initial={metadata}
+        onSaved={(saved) => onCardSaved?.(saved)}
+      />
+      <ReaderCardEditModal
+        cardId={cardId}
+        returnTo={returnTo}
+        open={desktopOpen}
+        onOpenChange={setDesktopOpen}
+        renderTrigger={false}
+        onCardSaved={onCardSaved}
+      />
     </>
   );
 }

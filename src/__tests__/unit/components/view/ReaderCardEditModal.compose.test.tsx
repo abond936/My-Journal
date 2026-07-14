@@ -1,15 +1,14 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import useSWR from 'swr';
 import ReaderCardEditModal from '@/components/view/ReaderCardEditModal';
-import { useMedia } from '@/components/providers/MediaProvider';
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     refresh: jest.fn(),
   }),
-  usePathname: () => '/view',
+  usePathname: () => '/view/card-1',
 }));
 
 jest.mock('swr', () => ({
@@ -37,32 +36,16 @@ jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({ tags: [] }),
 }));
 
-jest.mock('@/components/providers/CardFormProvider', () => ({
-  CardFormProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useCardForm: () => ({
-    confirmLeaveIfDirtyAsync: async () => true,
-    isDirty: false,
-    resetForm: () => undefined,
-    syncPersistableBaseline: () => undefined,
-    formState: { isSaving: false },
-  }),
-}));
-
-jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
-  StudioCardFormStudioProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-jest.mock('@/components/admin/studio/cards/CardForm', () => ({
+jest.mock('@/components/common/RichTextEditor', () => ({
   __esModule: true,
-  default: function MockCardForm() {
-    useMedia();
-    return <div>Reader compose ready</div>;
-  },
+  default: React.forwardRef(function MockRichTextEditor() {
+    return <div data-testid="mock-rich-text-editor">Editor</div>;
+  }),
 }));
 
 const mockedUseSWR = useSWR as jest.Mock;
 
-describe('ReaderCardEditModal', () => {
+describe('ReaderCardEditModal compose integration', () => {
   beforeEach(() => {
     mockedUseSWR.mockImplementation((key: string | null) => {
       if (key === '/api/cards/card-1?children=skip') {
@@ -73,7 +56,9 @@ describe('ReaderCardEditModal', () => {
             type: 'story',
             status: 'published',
             displayMode: 'navigate',
-            content: '',
+            content: '<p>Hello</p>',
+            galleryMedia: [],
+            tags: [],
             createdAt: 1,
             updatedAt: 1,
           },
@@ -95,19 +80,7 @@ describe('ReaderCardEditModal', () => {
     mockedUseSWR.mockReset();
   });
 
-  it('provides media context to the reader compose form', () => {
-    render(
-      <ReaderCardEditModal cardId="card-1" returnTo="/view/card-1">
-        Edit
-      </ReaderCardEditModal>
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
-
-    expect(screen.getByText('Reader compose ready')).toBeInTheDocument();
-  });
-
-  it('opens in controlled mode without a trigger button', async () => {
+  it('renders the real compose form in controlled mode', async () => {
     render(
       <ReaderCardEditModal
         cardId="card-1"
@@ -119,7 +92,8 @@ describe('ReaderCardEditModal', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Reader compose ready')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Card Title')).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: 'Add from library' })).toBeInTheDocument();
   });
 });

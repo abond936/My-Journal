@@ -9,7 +9,13 @@ import BulkEditMediaTagsModal from '@/components/admin/studio/media/BulkEditMedi
 import MediaAdminGrid from '@/components/admin/studio/media/MediaAdminGrid';
 import MediaBrowseGroupedView from '@/components/admin/studio/media/MediaBrowseGroupedView';
 import MediaLocalImportDialog from '@/components/admin/studio/media/MediaLocalImportDialog';
-import MediaReviewPanel, { generateReviewClustersForImport } from '@/components/admin/studio/media/MediaReviewPanel';
+import {
+  generateReviewClustersForImport,
+  MEDIA_BANK_IMPORT_PATH_LABEL,
+} from '@/lib/utils/reviewClusterImport';
+import type { MediaBankImportSummary } from '@/components/admin/studio/media/MediaLocalImportDialog';
+import MediaOrganizeStrip from '@/components/admin/studio/media/MediaOrganizeStrip';
+import MediaStoryPilesOverlayView from '@/components/admin/studio/media/MediaStoryPilesOverlayView';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -19,6 +25,7 @@ import styles from './mediaAdminShell.module.css';
 import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,
+  mergeDimensionalTagMaps,
 } from '@/lib/utils/tagUtils';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
@@ -29,6 +36,13 @@ import {
 } from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
 import type { ProvisionalCluster } from '@/lib/types/provisionalCluster';
+import {
+  buildStoryPileOverlayGroups,
+  collectImportBatchIdsFromMedia,
+  formatImportBatchLabel,
+  organizeSourceToReviewLens,
+  type OrganizeSourceMode,
+} from '@/lib/utils/mediaOrganizeUtils';
 import {
   filterMediaByImportBatch,
   filterMediaByImportFolder,
@@ -53,7 +67,6 @@ export type MediaAdminContentProps = {
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
-type MediaPaneMode = 'browse' | 'review';
 type MediaPopulation = 'bank' | 'this_card';
 type ApiErrorResponse = {
   message?: string;
@@ -110,6 +123,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setSelectedMediaIds,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
+    transientDimensionalQueryOverlay,
     setTransientDimensionalQueryOverlay,
     resolveMediaById,
   } = useMedia();
@@ -145,7 +159,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
   const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
-  const [mediaPaneMode, setMediaPaneMode] = useState<MediaPaneMode>('browse');
   const [browseGroupBy, setBrowseGroupBy] = useState(initialLocalFilterPrefsRef.current.browseGroupBy);
   const [browseImportBatchFilter, setBrowseImportBatchFilter] = useState(
     initialLocalFilterPrefsRef.current.browseImportBatchFilter
@@ -158,9 +171,24 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     initialLocalFilterPrefsRef.current.lastImportBatchId
   );
   const [showAllStacks, setShowAllStacks] = useState(initialLocalFilterPrefsRef.current.showAllStacks);
+  const [organizeSourceMode, setOrganizeSourceMode] = useState<OrganizeSourceMode>(
+    initialLocalFilterPrefsRef.current.organizeSourceMode
+  );
+  const [storyPilesOverlay, setStoryPilesOverlay] = useState(
+    initialLocalFilterPrefsRef.current.storyPilesOverlay
+  );
+  const [tagSuggestionsOnPiles, setTagSuggestionsOnPiles] = useState(
+    initialLocalFilterPrefsRef.current.tagSuggestionsOnPiles
+  );
+  const [organizeStripExpanded, setOrganizeStripExpanded] = useState(
+    initialLocalFilterPrefsRef.current.organizeStripExpanded
+  );
+  const [buildingOrganizePiles, setBuildingOrganizePiles] = useState(false);
+  const [creatingOrganizePile, setCreatingOrganizePile] = useState(false);
   const [expandedStackIds, setExpandedStackIds] = useState<Set<string>>(() => new Set());
-  const [suggestedClusters, setSuggestedClusters] = useState<ProvisionalCluster[]>([]);
-  const { stackById, createStack, dissolveStack } = useMediaStacks(mediaPaneMode === 'browse');
+  const [pendingClusters, setPendingClusters] = useState<ProvisionalCluster[]>([]);
+  const [pileSectionExpanded, setPileSectionExpanded] = useState<Record<string, boolean>>({});
+  const { stackById, createStack, dissolveStack } = useMediaStacks(true);
 
   useEffect(() => {
     writeStoredMediaAdminLocalFilterPreferences({
@@ -172,6 +200,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       gridTileMinPx,
       lastImportBatchId,
       showAllStacks,
+      organizeImportScopeMode: 'none',
+      organizeSingleBatchId: '',
+      organizeManyBatchIds: [],
+      organizeSourceMode,
+      storyPilesOverlay,
+      tagSuggestionsOnPiles,
+      organizeStripExpanded,
     });
   }, [
     browseGroupBy,
@@ -182,6 +217,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     gridTileMinPx,
     lastImportBatchId,
     showAllStacks,
+    organizeSourceMode,
+    storyPilesOverlay,
+    tagSuggestionsOnPiles,
+    organizeStripExpanded,
   ]);
 
   const handleOpenBulkTags = () => {
@@ -366,7 +405,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setClientSort('none');
   };
 
-  const handleImportedMedia = async (importedMedia: Media[]) => {
+  const handleImportedMedia = async ({
+    media: importedMedia,
+    summary,
+  }: {
+    media: Media[];
+    summary: MediaBankImportSummary;
+  }) => {
     if (importedMedia.length === 0) return;
     const importedIds = importedMedia.map((item) => item.docId).filter(Boolean);
     const nextSourceFilter = filters.source === 'paste' ? 'all' : filters.source;
@@ -375,58 +420,255 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     }
     await fetchMedia(1, nextSourceFilter !== filters.source ? { source: nextSourceFilter } : undefined);
     setSelectedMediaIds(importedIds);
-    const batchId = importedMedia.find((item) => item.importBatchId)?.importBatchId;
+    const batchId = summary.importBatchId;
     if (batchId) {
       setLastImportBatchId(batchId);
       setBrowseImportBatchFilter(batchId);
     }
+    setOrganizeStripExpanded(true);
+    setStoryPilesOverlay(true);
+    setTagSuggestionsOnPiles(true);
+
+    let pilesCreated = 0;
     try {
-      await generateReviewClustersForImport(importedIds);
+      const pileResult = await generateReviewClustersForImport(importedIds);
+      pilesCreated = pileResult.created;
+      const clusterResponse = await fetch('/api/admin/media/review?allPending=true', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const clusterPayload = (await clusterResponse.json().catch(() => ({}))) as {
+        clusters?: ProvisionalCluster[];
+      };
+      if (clusterResponse.ok) {
+        setPendingClusters(clusterPayload.clusters ?? []);
+      }
     } catch (error) {
       console.error('Review cluster generation after import failed:', error);
+      feedback.showError(
+        error instanceof Error ? error.message : 'Story pile suggestions could not be built.',
+        'Import complete'
+      );
     }
+
+    const batchLabel = formatImportBatchLabel(batchId);
+    const metadataNote = summary.readEmbeddedMetadata ? 'Metadata import on.' : 'Metadata import off.';
     feedback.showSuccess(
-      importedIds.length === 1
-        ? 'Imported 1 image into the media bank.'
-        : `Imported ${importedIds.length} images into the media bank.`,
+      `${summary.importedCount} photo${summary.importedCount === 1 ? '' : 's'} via ${MEDIA_BANK_IMPORT_PATH_LABEL} ` +
+        `(folder: ${summary.sourceFolderLabel}; batch: ${batchLabel}). ` +
+        `${metadataNote} ${pilesCreated} story pile${pilesCreated === 1 ? '' : 's'} suggested. ` +
+        'Story piles overlay is on — review piles or use Build piles for more.',
       'Import complete'
     );
   };
 
-  const handleStudioDimensionalFilterChange = (newIds: string[]) => {
-    const next = groupSelectedTagIdsByDimension(newIds, allTags);
-    setDimensionalQueryOverlay(Object.keys(next).length === 0 ? {} : next);
-    void fetchMedia(1);
-  };
+  const handleStudioDimensionalFilterChange = useCallback(
+    (newIds: string[]) => {
+      const next = groupSelectedTagIdsByDimension(newIds, allTags);
+      setDimensionalQueryOverlay(Object.keys(next).length === 0 ? {} : next);
+      setTransientDimensionalQueryOverlay({});
+      studioShell?.clearOrganizeReconcile();
+      setDimensionFilters((prev) => {
+        let changed = false;
+        const updated = { ...prev };
+        const idSet = new Set(newIds);
+        for (const dimension of ['who', 'what', 'when', 'where'] as DimensionKey[]) {
+          const state = updated[dimension];
+          if (state.mode === 'matches' && state.tagId && !idSet.has(state.tagId)) {
+            updated[dimension] = { mode: 'any', tagId: '' };
+            changed = true;
+          }
+        }
+        return changed ? updated : prev;
+      });
+      void fetchMedia(1);
+    },
+    [allTags, fetchMedia, setDimensionalQueryOverlay, setTransientDimensionalQueryOverlay, studioShell]
+  );
+
+  const studioActiveTagFilterMap = useMemo(
+    () => mergeDimensionalTagMaps(dimensionalQueryOverlay, transientDimensionalQueryOverlay),
+    [dimensionalQueryOverlay, transientDimensionalQueryOverlay]
+  );
 
   const studioSelectedFilterTags = useMemo(() => {
-    const ids = new Set(flattenDimensionalTagMapToTagIds(dimensionalQueryOverlay));
+    const ids = new Set(flattenDimensionalTagMapToTagIds(studioActiveTagFilterMap));
+    for (const dimension of ['who', 'what', 'when', 'where'] as DimensionKey[]) {
+      const state = dimensionFilters[dimension];
+      if (state.mode === 'matches' && state.tagId) {
+        ids.add(state.tagId);
+      }
+    }
     return allTags.filter((t) => t.docId && ids.has(t.docId!));
-  }, [allTags, dimensionalQueryOverlay]);
+  }, [allTags, dimensionFilters, studioActiveTagFilterMap]);
 
   useEffect(() => {
-    if (mediaPaneMode !== 'browse' || browseGroupBy !== 'suggested') {
+    const overlayActive = storyPilesOverlay && mediaPopulation === 'bank';
+    const needsSuggestedGroupBy = browseGroupBy === 'suggested' && !overlayActive;
+    if (!overlayActive && !needsSuggestedGroupBy) {
+      setPendingClusters([]);
       return;
     }
+
     let cancelled = false;
     void (async () => {
       try {
-        const response = await fetch('/api/admin/media/review?lens=suggested', {
+        const url = overlayActive
+          ? '/api/admin/media/review?allPending=true'
+          : '/api/admin/media/review?lens=suggested';
+        const response = await fetch(url, {
           cache: 'no-store',
           credentials: 'same-origin',
         });
         const payload = (await response.json().catch(() => ({}))) as { clusters?: ProvisionalCluster[] };
         if (!cancelled && response.ok) {
-          setSuggestedClusters(payload.clusters ?? []);
+          setPendingClusters(payload.clusters ?? []);
         }
       } catch {
-        if (!cancelled) setSuggestedClusters([]);
+        if (!cancelled) setPendingClusters([]);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [browseGroupBy, mediaPaneMode, media.length]);
+  }, [
+    browseGroupBy,
+    media.length,
+    mediaPopulation,
+    storyPilesOverlay,
+  ]);
+
+  const organizeStripVisible = mediaPopulation === 'bank' && !showOnlyAssigned;
+
+  const storyPilesOverlayActive = storyPilesOverlay && organizeStripVisible;
+
+  const refreshPendingClusters = useCallback(async () => {
+    const url = storyPilesOverlayActive
+      ? '/api/admin/media/review?allPending=true'
+      : '/api/admin/media/review?lens=suggested';
+    const response = await fetch(url, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    const payload = (await response.json().catch(() => ({}))) as { clusters?: ProvisionalCluster[] };
+    if (response.ok) {
+      setPendingClusters(payload.clusters ?? []);
+    }
+  }, [storyPilesOverlayActive]);
+
+  const organizeReviewLens = useMemo(
+    () => organizeSourceToReviewLens(organizeSourceMode),
+    [organizeSourceMode]
+  );
+
+  useEffect(() => {
+    if (!embedded || !storyPilesOverlayActive) {
+      studioShell?.registerStoryPileMembershipChanged?.(null);
+      return;
+    }
+    studioShell?.registerStoryPileMembershipChanged?.(refreshPendingClusters);
+    return () => studioShell?.registerStoryPileMembershipChanged?.(null);
+  }, [embedded, refreshPendingClusters, storyPilesOverlayActive, studioShell]);
+
+  const importBatchOptions = useMemo(
+    () =>
+      collectImportBatchIdsFromMedia(media).map((batchId) => ({
+        id: batchId,
+        label: formatImportBatchLabel(batchId),
+      })),
+    [media]
+  );
+
+  const organizeScopeHint = browseImportBatchFilter
+    ? formatImportBatchLabel(browseImportBatchFilter)
+    : 'All batches';
+
+  const browseScopedMedia = useMemo(() => {
+    let items = filterMediaByImportBatch(media, browseImportBatchFilter || null);
+    items = filterMediaByImportFolder(items, browseImportFolderFilter);
+    return items;
+  }, [browseImportBatchFilter, browseImportFolderFilter, media]);
+
+  const handleBuildOrganizePiles = useCallback(async () => {
+    const mediaIds = browseScopedMedia.map((item) => item.docId).filter(Boolean);
+    if (mediaIds.length === 0) {
+      feedback.showError('No media in the current browse filters.', 'Build piles');
+      return;
+    }
+    setBuildingOrganizePiles(true);
+    try {
+      const lens = organizeSourceToReviewLens(organizeSourceMode);
+      const response = await fetch('/api/admin/media/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ lens, mediaIds }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse & {
+        created?: number;
+      };
+      if (!response.ok) {
+        throw new Error(payload.message || `HTTP ${response.status}`);
+      }
+      const created = payload.created ?? 0;
+      feedback.showSuccess(
+        created === 1 ? 'Built 1 story pile.' : `Built ${created} story piles.`,
+        'Build piles'
+      );
+      setStoryPilesOverlay(true);
+      setTagSuggestionsOnPiles(true);
+      await refreshPendingClusters();
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Failed to build story piles.',
+        'Build piles'
+      );
+    } finally {
+      setBuildingOrganizePiles(false);
+    }
+  }, [
+    browseScopedMedia,
+    feedback,
+    organizeSourceMode,
+    refreshPendingClusters,
+  ]);
+
+  const handleCreateOrganizePile = useCallback(async () => {
+    const title = window.prompt('Name for the new pile');
+    if (!title?.trim()) return;
+    setCreatingOrganizePile(true);
+    try {
+      const lens = organizeSourceToReviewLens(organizeSourceMode);
+      const response = await fetch('/api/admin/media/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ mode: 'create-empty', title: title.trim(), lens }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+      if (!response.ok) {
+        throw new Error(payload.message || `HTTP ${response.status}`);
+      }
+      feedback.showSuccess(`Created pile “${title.trim()}”.`, 'New pile');
+      setStoryPilesOverlay(true);
+      setTagSuggestionsOnPiles(true);
+      await refreshPendingClusters();
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Failed to create pile.',
+        'New pile'
+      );
+    } finally {
+      setCreatingOrganizePile(false);
+    }
+  }, [feedback, organizeSourceMode, refreshPendingClusters]);
+
+  const handleStoryPilesOverlayChange = useCallback((enabled: boolean) => {
+    setStoryPilesOverlay(enabled);
+    if (enabled) {
+      setTagSuggestionsOnPiles((current) => current || true);
+    }
+  }, []);
 
   const importFolderOptions = useMemo(() => {
     const folders = new Set<string>();
@@ -436,17 +678,37 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     return Array.from(folders).sort((a, b) => a.localeCompare(b));
   }, [media]);
 
-  const browseScopedMedia = useMemo(() => {
-    let items = media;
-    items = filterMediaByImportBatch(items, browseImportBatchFilter || null);
-    items = filterMediaByImportFolder(items, browseImportFolderFilter);
-    return items;
-  }, [browseImportBatchFilter, browseImportFolderFilter, media]);
-
   const browseGroups = useMemo(
-    () => groupMediaForBrowse(browseScopedMedia, browseGroupBy, suggestedClusters),
-    [browseGroupBy, browseScopedMedia, suggestedClusters]
+    () => groupMediaForBrowse(browseScopedMedia, browseGroupBy, pendingClusters),
+    [browseGroupBy, browseScopedMedia, pendingClusters]
   );
+
+  const storyPileOverlaySections = useMemo(
+    () => buildStoryPileOverlayGroups(browseScopedMedia, pendingClusters),
+    [browseScopedMedia, pendingClusters]
+  );
+
+  const handlePileSectionExpandedChange = useCallback((sectionId: string, expanded: boolean) => {
+    setPileSectionExpanded((prev) => ({ ...prev, [sectionId]: expanded }));
+  }, []);
+
+  const handleCollapseAllPileSections = useCallback(() => {
+    const next: Record<string, boolean> = {};
+    for (const section of storyPileOverlaySections) {
+      if (!section.isUnsorted) {
+        next[section.id] = false;
+      }
+    }
+    setPileSectionExpanded((prev) => ({ ...prev, ...next }));
+  }, [storyPileOverlaySections]);
+
+  const handleExpandAllPileSections = useCallback(() => {
+    const next: Record<string, boolean> = {};
+    for (const section of storyPileOverlaySections) {
+      next[section.id] = true;
+    }
+    setPileSectionExpanded((prev) => ({ ...prev, ...next }));
+  }, [storyPileOverlaySections]);
 
   const activeStudioCard = studioShell?.selectedDetail ?? studioShell?.selectedPreview ?? null;
   const activeStudioCardId = activeStudioCard?.docId ?? null;
@@ -473,7 +735,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     if (organizeReconcileSourceTagId) {
       const filter = buildReconcileMediaFilter(organizeReconcileSourceTagId, tagByIdForReconcile);
       if (!filter) return;
-      setMediaPaneMode('browse');
       setMediaPopulation('bank');
       setTransientDimensionalQueryOverlay(filter);
       void fetchMedia(1);
@@ -687,7 +948,28 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       ) : null}
 
       {!showOnlyAssigned && (
-        browseGroupBy !== 'none' ? (
+        storyPilesOverlayActive ? (
+          <MediaStoryPilesOverlayView
+            sections={storyPileOverlaySections}
+            sectionExpanded={pileSectionExpanded}
+            onSectionExpandedChange={handlePileSectionExpandedChange}
+            showTagSuggestions={tagSuggestionsOnPiles}
+            onClustersChanged={refreshPendingClusters}
+            reviewLens={organizeReviewLens}
+            sourcePathFirst={duplicateTriageMode}
+            dimensionFilters={dimensionFilters}
+            tagFilterScope={filters.tagScope}
+            studioSourceDraggable={embedded && studioSourceDraggable}
+            inlineCaptionEditing={embedded}
+            clientSort={embedded ? clientSort : 'none'}
+            highlightedMediaIds={highlightAssigned ? activeStudioCardAssignedMediaIds : []}
+            onVisibleHighlightedCountChange={setVisibleAssignedCount}
+            gridTileMinPx={gridTileMinPx}
+            resolveMediaById={resolveMediaById}
+            allLoadedMedia={browseScopedMedia}
+            {...stackGridProps}
+          />
+        ) : browseGroupBy !== 'none' ? (
           <MediaBrowseGroupedView
             groups={browseGroups}
             sourcePathFirst={duplicateTriageMode}
@@ -776,8 +1058,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         <MediaLocalImportDialog
           isOpen={importPickerOpen}
           onClose={() => setImportPickerOpen(false)}
-          onImportComplete={(importedMedia) => {
-            void handleImportedMedia(importedMedia);
+          onImportComplete={(result) => {
+            void handleImportedMedia(result);
           }}
           title="Import Media"
         />
@@ -787,28 +1069,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           <div className={styles.studioHeaderRow}>
             <h2 className={styles.embeddedTitle}>Media</h2>
             <div className={styles.studioHeaderActions}>
-              <div className={styles.mediaModeToggle} role="group" aria-label="Media pane mode">
-                <button
-                  type="button"
-                  className={`${styles.mediaModeToggleButton} ${
-                    mediaPaneMode === 'browse' ? styles.mediaModeToggleButtonActive : ''
-                  }`}
-                  onClick={() => setMediaPaneMode('browse')}
-                  aria-pressed={mediaPaneMode === 'browse'}
-                >
-                  Browse
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.mediaModeToggleButton} ${
-                    mediaPaneMode === 'review' ? styles.mediaModeToggleButtonActive : ''
-                  }`}
-                  onClick={() => setMediaPaneMode('review')}
-                  aria-pressed={mediaPaneMode === 'review'}
-                >
-                  Review
-                </button>
-              </div>
               <button
                 type="button"
                 onClick={() => setImportPickerOpen(true)}
@@ -833,7 +1093,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               </button>
             </div>
           ) : null}
-          {mediaPaneMode === 'browse' && embedded ? (
+          {embedded ? (
             <div className={styles.studioPopulationRow}>
               <span className={styles.studioPopulationLabel}>View</span>
               <div className={styles.mediaModeToggle} role="group" aria-label="Media population">
@@ -886,7 +1146,27 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               ) : null}
             </div>
           ) : null}
-          {mediaPaneMode === 'browse' ? (
+          {organizeStripVisible ? (
+            <MediaOrganizeStrip
+              expanded={organizeStripExpanded}
+              onExpandedChange={setOrganizeStripExpanded}
+              sourceMode={organizeSourceMode}
+              onSourceModeChange={setOrganizeSourceMode}
+              storyPilesOverlay={storyPilesOverlay}
+              onStoryPilesOverlayChange={handleStoryPilesOverlayChange}
+              tagSuggestionsOnPiles={tagSuggestionsOnPiles}
+              onTagSuggestionsOnPilesChange={setTagSuggestionsOnPiles}
+              scopedMediaCount={browseScopedMedia.length}
+              scopeHint={organizeScopeHint}
+              onBuildPiles={handleBuildOrganizePiles}
+              onNewPile={handleCreateOrganizePile}
+              onCollapseAllPileSections={handleCollapseAllPileSections}
+              onExpandAllPileSections={handleExpandAllPileSections}
+              showPileSectionControls={storyPilesOverlay}
+              buildingPiles={buildingOrganizePiles}
+              creatingPile={creatingOrganizePile}
+            />
+          ) : null}
           <>
           <div className={styles.studioMediaRowOne}>
             <label
@@ -1011,6 +1291,20 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 <option value="suggested">Group by: Suggested piles</option>
               </select>
             </label>
+            <label className={styles.studioInlineLabel} aria-label="Import batch filter">
+              <select
+                className={styles.studioFilterSelect}
+                value={browseImportBatchFilter}
+                onChange={(e) => setBrowseImportBatchFilter(e.target.value)}
+              >
+                <option value="">All batches</option>
+                {importBatchOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className={styles.studioInlineLabel} aria-label="Import folder filter">
               <select
                 className={styles.studioFilterSelect}
@@ -1025,20 +1319,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 ))}
               </select>
             </label>
-            {lastImportBatchId ? (
-              <button
-                type="button"
-                className={styles.studioClearButton}
-                onClick={() =>
-                  setBrowseImportBatchFilter(
-                    browseImportBatchFilter === lastImportBatchId ? '' : lastImportBatchId
-                  )
-                }
-                aria-pressed={browseImportBatchFilter === lastImportBatchId}
-              >
-                {browseImportBatchFilter === lastImportBatchId ? 'Clear recent import' : 'Recent import'}
-              </button>
-            ) : null}
             <label className={styles.studioInlineLabel} aria-label="Tile size">
               <span className={styles.studioTagScopeLabel}>Tiles</span>
               <input
@@ -1136,9 +1416,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             />
           </div>
           </>
-          ) : null}
         </div>
-        {!loading && !error && selectedMediaIds.length > 0 && mediaPaneMode === 'browse' ? (
+        {!loading && !error && selectedMediaIds.length > 0 ? (
           <div className={cardAdminStyles.bulkActions}>
             <span>
               {selectedMediaIds.length} media selected
@@ -1229,20 +1508,23 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       <EditModal
         isOpen={tagFilterModalOpen}
         onClose={() => setTagFilterModalOpen(false)}
-        title="Media filters"
+        title="Media tag filters"
+        size="wideTall"
+        bodyClassName={styles.studioTagFilterModalBody}
       >
         <MacroTagSelector
           startExpanded
+          suppressOverlay
+          applySelectionOnChange
           selectedTags={studioSelectedFilterTags}
           allTags={allTags}
           onChange={handleStudioDimensionalFilterChange}
+          onRequestClose={() => setTagFilterModalOpen(false)}
           collapsedSummary="none"
         />
       </EditModal>
 
-      <div className={styles.embeddedMediaBody}>
-        {mediaPaneMode === 'review' ? <MediaReviewPanel embedded={embedded} /> : mainBody}
-      </div>
+      <div className={styles.embeddedMediaBody}>{mainBody}</div>
     </div>
   );
 }

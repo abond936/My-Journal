@@ -37,6 +37,7 @@ export default function EditModal({
           modalClassName
         )}
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
           <h3>{title}</h3>

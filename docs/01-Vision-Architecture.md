@@ -112,6 +112,8 @@ It is not a generic journal app, a photo manager with captions or a social media
 ⭕1 **Planned**
 
 - **Narrow mutation paths** - Extend dedicated narrow admin mutation paths wherever flows still fall back to wider card saves than the change requires; keep wide saves for structural and rich-content edits.
+- **Authorization consistency** - Centralize reader/admin route and mutation classification so access rules do not diverge across individual handlers.
+- **Service boundaries** - Decompose responsibility-heavy services, beginning with `cardService` and `themeService`, into explicit domain operations without splitting shared integrity rules across competing paths.
 - **Code** - Comment code.
 - **Directory** - Cleanup directory.
 - **Quality** - QA app.
@@ -167,6 +169,7 @@ It is not a generic journal app, a photo manager with captions or a social media
 - **Perceived speed** - Preview-then-hydrate, progressive first paint, optimistic vs confirmed state, smallest sufficient list updates, and continuous media-native browsing over stable append streams.
 - **Reader-first design** - Reader is the primary designed surface; admin reuses tokens and previews; theme evolves as named packages via tokenization (see `04-Theme-Design-Contract.md`).
 - **Runtime split** - Viewer sessions stay lean; admin and Studio load lazily; shared data and media contracts; Studio is the single day-to-day content-admin runtime with payload tiers and rendition-appropriate delivery.
+- **Shared model, tailored delivery** - Reader and Studio use the same authoritative content model while receiving surface-appropriate payloads, hydration, and presentation; do not create parallel content truth to simplify a UI.
 
 *Features*
 ✅ **Complete**
@@ -176,6 +179,13 @@ It is not a generic journal app, a photo manager with captions or a social media
 - **Theme** - CSS modules, global theme tokens, Theme Management workspace.
 - **Editing** - TipTap rich text; `@dnd-kit` drag-and-drop; SWR data fetching.
 - **Media UI** - PhotoPicker, galleries (Swiper), optimized images via `next/image`.
+
+⭕1 **Planned**
+
+- **Component boundaries** - Reduce responsibility-heavy UI modules, beginning with `StudioWorkspace`, `MediaAdminContent`, and `CardForm`; separate state coordination, domain operations, and presentation without creating shadow state.
+- **Reader edit boundary** - Extract reusable focused-edit capabilities so reader-context editing does not depend on the full Studio form architecture.
+- **Theme boundaries** - Separate Theme Management workspace composition from theme schema, transformation, and persistence responsibilities.
+- **Legacy surface retirement** - Remove redirect-only admin routes, duplicate loaders, and compatibility paths after callers and navigation are verified; determine whether `CollectionsAdminClient` should be retired before refactoring it.
 
 ⭕2 **Future**
 

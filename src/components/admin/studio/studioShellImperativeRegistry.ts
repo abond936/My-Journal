@@ -6,6 +6,7 @@ export type StudioShellImperativeHandlers = {
   bodyMediaInsert: (media: Media) => void;
   composeLeaveGuard: () => Promise<boolean>;
   questionCardDeleteSync: (cardId: string, questionId?: string | null) => void;
+  storyPileMembershipChanged: () => void | Promise<void>;
 };
 
 export type StudioShellImperativeSlot = keyof StudioShellImperativeHandlers;

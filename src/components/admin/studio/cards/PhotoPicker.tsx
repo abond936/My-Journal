@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import JournalImage from '@/components/common/JournalImage';
-import { getFolderTree, getFolderContents } from '@/lib/services/images/local/photoService';
-import { Media, PickerMedia, TreeNode } from '@/lib/types/photo';
+import { Media } from '@/lib/types/photo';
 import { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useTag } from '@/components/providers/TagProvider';
-import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import {
   appendDimensionalTagQueryParams,
   groupSelectedTagIdsByDimension,
@@ -16,13 +14,9 @@ import {
 } from '@/lib/utils/tagUtils';
 import type { Tag } from '@/lib/types/tag';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
-import { PhotoPickerFolderItem } from '@/components/admin/studio/cards/PhotoPickerFolderItem';
 import styles from './PhotoPicker.module.css';
 
-type SourceTab = 'local' | 'library';
-
 const LIBRARY_PAGE_LIMIT = 40;
-const PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY = 'myjournal-photo-picker-expanded-folders';
 
 interface PhotoPickerProps {
   isOpen: boolean;
@@ -30,7 +24,7 @@ interface PhotoPickerProps {
   onMultiSelect?: (media: HydratedGalleryMediaItem[]) => void;
   onClose: () => void;
   initialMode?: 'single' | 'multi';
-  /** When set, Library tab can narrow results to media matching these card tags (dimensional AND). */
+  /** When set, Library can narrow results to media matching these card tags (dimensional AND). */
   filterTagIds?: string[];
 }
 
@@ -54,22 +48,7 @@ export default function PhotoPicker({
   filterTagIds,
 }: PhotoPickerProps) {
   const { tags: allTags } = useTag();
-  const feedback = useAppFeedback();
-
-  const [sourceTab, setSourceTab] = useState<SourceTab>('local');
-
-  const [folderTree, setFolderTree] = useState<TreeNode[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<PickerMedia[]>([]);
-  const [selectedPhotos, setSelectedPhotos] = useState<PickerMedia[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingFolders, setIsLoadingFolders] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
-  /** Shown during local import — HTTP has no per-file progress; this at least proves the UI is alive. */
-  const [importElapsedSec, setImportElapsedSec] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [mode] = useState<'single' | 'multi'>(initialMode);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const [libraryItems, setLibraryItems] = useState<Media[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(false);
@@ -92,10 +71,6 @@ export default function PhotoPicker({
   const [libAssignment, setLibAssignment] = useState('all');
   const [matchCardTags, setMatchCardTags] = useState(false);
   const [libraryPickerTagIds, setLibraryPickerTagIds] = useState<string[]>([]);
-  /** When true, server runs ExifTool for captions/keywords (opt-in). */
-  const [readEmbeddedMetadata, setReadEmbeddedMetadata] = useState(false);
-  /** Shown after import when metadata was requested but the server reported read failures. */
-  const [importMetadataNotice, setImportMetadataNotice] = useState<string | null>(null);
 
   const cardDimensionalMapForLibrary = useMemo(() => {
     if (!matchCardTags || !filterTagIds?.length) {
@@ -116,282 +91,20 @@ export default function PhotoPicker({
 
   const libraryPickerTags = useMemo((): Tag[] => {
     return libraryPickerTagIds
-      .map(id => allTags.find(t => t.docId === id))
+      .map((id) => allTags.find((t) => t.docId === id))
       .filter((t): t is Tag => Boolean(t));
   }, [libraryPickerTagIds, allTags]);
-
-  const shouldAutoCollapse = (folderName: string) =>
-    folderName === 'xNormalized' || folderName === 'yEdited' || folderName === 'zOriginals';
-
-  const readStoredExpandedFolders = useCallback((): Set<string> | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.localStorage.getItem(PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as unknown;
-      if (!Array.isArray(parsed)) return null;
-      return new Set(
-        parsed.filter((value): value is string => typeof value === 'string' && value.length > 0)
-      );
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const collectExpandableIds = useCallback((nodes: TreeNode[]): Set<string> => {
-    const ids = new Set<string>();
-    const walk = (list: TreeNode[]) => {
-      list.forEach(node => {
-        if (!shouldAutoCollapse(node.name)) {
-          ids.add(node.id);
-        }
-        if (node.children?.length) {
-          walk(node.children);
-        }
-      });
-    };
-    walk(nodes);
-    return ids;
-  }, []);
-
-  const filterExpandedFoldersToTree = useCallback((candidateIds: Set<string>, nodes: TreeNode[]): Set<string> => {
-    const validIds = collectExpandableIds(nodes);
-    const filtered = new Set<string>();
-    candidateIds.forEach((id) => {
-      if (validIds.has(id)) {
-        filtered.add(id);
-      }
-    });
-    return filtered;
-  }, [collectExpandableIds]);
-
-  const expandAllFolders = useCallback(() => {
-    setExpandedFolders(collectExpandableIds(folderTree));
-  }, [folderTree, collectExpandableIds]);
-
-  const collapseAllFolders = useCallback(() => {
-    setExpandedFolders(new Set());
-  }, []);
-
-  const loadFolderTree = useCallback(async () => {
-    try {
-      setIsLoadingFolders(true);
-      setError(null);
-      const tree = await getFolderTree();
-      setFolderTree(tree);
-
-      // Default: only top-level folders expanded — shorter tree; use "Expand all" for full depth.
-      const storedExpandedFolders = readStoredExpandedFolders();
-      setExpandedFolders(
-        storedExpandedFolders
-          ? filterExpandedFoldersToTree(storedExpandedFolders, tree)
-          : collectExpandableIds(tree)
-      );
-
-      if (tree.length > 0) {
-        setSelectedFolder(tree[0].id);
-      }
-    } catch (err) {
-      setError('Failed to load folder structure. Please try again.');
-      console.error('Error loading folder tree:', err);
-    } finally {
-      setIsLoadingFolders(false);
-    }
-  }, [collectExpandableIds, filterExpandedFoldersToTree, readStoredExpandedFolders]);
-
-  useEffect(() => {
-    if (!isOpen || typeof window === 'undefined' || folderTree.length === 0) return;
-    window.localStorage.setItem(
-      PHOTO_PICKER_EXPANDED_FOLDERS_STORAGE_KEY,
-      JSON.stringify([...expandedFolders])
-    );
-  }, [expandedFolders, folderTree.length, isOpen]);
-
-  const loadPhotos = useCallback(async (folderId: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const contents = await getFolderContents(folderId);
-      setPhotos(contents);
-    } catch (err) {
-      setError('Failed to load photos. Please try again.');
-      console.error('Error loading photos:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const handleFolderSelect = useCallback((folderId: string) => {
-    setSelectedFolder(folderId);
-    setSelectedPhotos([]);
-    setError(null);
-  }, []);
-
-  const handleFolderToggle = useCallback((folderId: string) => {
-    setExpandedFolders(prev => {
-      const next = new Set(prev);
-      if (next.has(folderId)) {
-        next.delete(folderId);
-      } else {
-        next.add(folderId);
-      }
-      return next;
-    });
-  }, []);
-
-  const completeLocalImport = useCallback(
-    async (pickerPhotos: PickerMedia[]) => {
-      if (pickerPhotos.length === 0) return;
-
-      /** Matches server `MAX_SOURCE_PATHS_PER_REQUEST`; one tag-catalog load per batch on the API. */
-      const MAX_SOURCE_PATHS_PER_REQUEST = 40;
-
-      try {
-        setImportElapsedSec(0);
-        setIsImporting(true);
-        setError(null);
-        setImportMetadataNotice(null);
-
-        const importedResults: { mediaId: string; media: Media }[] = [];
-        const importFailures: { sourcePath: string; message: string }[] = [];
-        let anyMetadataReadIssue = false;
-
-        type BatchImportResponse = {
-          results: { sourcePath: string; mediaId: string; media: Media; skipped?: boolean }[];
-          errors: { sourcePath: string; message: string }[];
-          metadataReadIssues?: { sourcePath: string; message: string }[];
-        };
-
-        for (let i = 0; i < pickerPhotos.length; i += MAX_SOURCE_PATHS_PER_REQUEST) {
-          const slice = pickerPhotos.slice(i, i + MAX_SOURCE_PATHS_PER_REQUEST);
-          const response = await fetch('/api/images/local/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sourcePaths: slice.map(p => p.sourcePath),
-              readEmbeddedMetadata,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            const msg = errorText || `HTTP ${response.status}`;
-            for (const photo of slice) {
-              importFailures.push({ sourcePath: photo.sourcePath, message: msg });
-            }
-            continue;
-          }
-
-          const data = (await response.json()) as BatchImportResponse;
-          for (const e of data.errors ?? []) {
-            importFailures.push({ sourcePath: e.sourcePath, message: e.message });
-          }
-          const skippedCount = (data.results ?? []).filter((result) => result.skipped === true).length;
-          if (skippedCount > 0) {
-            feedback.showToast({
-              title: 'Already in library',
-              tone: 'info',
-              message:
-                skippedCount === 1
-                  ? 'That image source path already exists, so the existing media record was reused.'
-                  : `${skippedCount} image source paths already existed, so the existing media records were reused.`,
-            });
-          }
-
-          const metaIssues = data.metadataReadIssues ?? [];
-          if (readEmbeddedMetadata && metaIssues.length > 0) {
-            anyMetadataReadIssue = true;
-            const uniq = [...new Set(metaIssues.map((w) => w.message))];
-            setImportMetadataNotice(
-              `Import metadata was on, but Exif could not run for ${metaIssues.length} file(s): ${uniq.join('; ')} ` +
-                `Set EXIFTOOL_PATH to your exiftool binary if it is not in the default location.`
-            );
-          }
-
-          const chunkOk: { mediaId: string; media: Media }[] = (data.results ?? []).map(r => ({
-            mediaId: r.mediaId,
-            media: r.media,
-          }));
-          importedResults.push(...chunkOk);
-
-          if (mode === 'multi' && onMultiSelect && chunkOk.length > 0) {
-            const chunkHydrated: HydratedGalleryMediaItem[] = chunkOk.map(res => ({
-              mediaId: res.mediaId,
-              order: 0,
-              media: res.media,
-            }));
-            onMultiSelect(chunkHydrated);
-          }
-        }
-
-        if (importFailures.length > 0) {
-          const failedList = importFailures
-            .map(f => `${f.sourcePath}: ${f.message}`)
-            .join('; ');
-          if (importedResults.length === 0) {
-            setError(
-              importFailures.length === pickerPhotos.length
-                ? `Import failed (${importFailures.length} file(s)): ${failedList}`
-                : `Import failed: ${failedList}`
-            );
-          } else {
-            setError(
-              `${importFailures.length} of ${pickerPhotos.length} failed — ${failedList}. ` +
-                `${importedResults.length} added to the gallery.`
-            );
-          }
-        }
-
-        if (mode === 'single') {
-          if (importedResults.length > 0 && onSelect) {
-            onSelect(importedResults[0].media);
-            if (!anyMetadataReadIssue) {
-              onClose();
-            }
-          }
-        } else if (importedResults.length > 0 && importFailures.length === 0) {
-          if (!anyMetadataReadIssue) {
-            onClose();
-          }
-        }
-      } catch (err) {
-        console.error('Error importing photos:', err);
-        setError(err instanceof Error ? err.message : 'Failed to import photos');
-      } finally {
-        setIsImporting(false);
-        setImportElapsedSec(0);
-      }
-    },
-    [feedback, mode, onSelect, onMultiSelect, onClose, readEmbeddedMetadata]
-  );
 
   const completeLibrarySelection = useCallback(() => {
     if (selectedLibraryMedia.length === 0 || !onMultiSelect) return;
     const hydrated: HydratedGalleryMediaItem[] = selectedLibraryMedia.map((media, order) => ({
-      mediaId: media.docId,
+      mediaId: media.docId!,
       order,
       media,
     }));
     onMultiSelect(hydrated);
     onClose();
   }, [selectedLibraryMedia, onMultiSelect, onClose]);
-
-  const handleLocalPhotoSelect = useCallback(
-    (photo: PickerMedia) => {
-      if (mode === 'single') {
-        void completeLocalImport([photo]);
-        return;
-      }
-      setSelectedPhotos(prev => {
-        const isSelected = prev.some(p => p.sourcePath === photo.sourcePath);
-        if (isSelected) {
-          return prev.filter(p => p.sourcePath !== photo.sourcePath);
-        }
-        return [...prev, photo];
-      });
-    },
-    [mode, completeLocalImport]
-  );
 
   const handleLibraryMediaClick = useCallback(
     (media: Media) => {
@@ -400,26 +113,16 @@ export default function PhotoPicker({
         onClose();
         return;
       }
-      setSelectedLibraryMedia(prev => {
-        const exists = prev.some(m => m.docId === media.docId);
+      setSelectedLibraryMedia((prev) => {
+        const exists = prev.some((m) => m.docId === media.docId);
         if (exists) {
-          return prev.filter(m => m.docId !== media.docId);
+          return prev.filter((m) => m.docId !== media.docId);
         }
         return [...prev, media];
       });
     },
     [mode, onSelect, onClose]
   );
-
-  const handleDoneLocal = useCallback(() => {
-    void completeLocalImport(selectedPhotos);
-  }, [completeLocalImport, selectedPhotos]);
-
-  const switchTab = useCallback((tab: SourceTab) => {
-    setError(null);
-    setLibraryError(null);
-    setSourceTab(tab);
-  }, []);
 
   const flushLibrarySearch = useCallback(() => {
     if (librarySearchTimerRef.current) {
@@ -475,7 +178,7 @@ export default function PhotoPicker({
           : buildLibraryParams({ cursor: libraryNextCursor });
       const res = await fetch(`/api/media?${params}`);
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({})) as { message?: string; code?: string };
+        const errJson = (await res.json().catch(() => ({}))) as { message?: string; code?: string };
         if (res.status === 503 && errJson.code === 'SEARCH_UNAVAILABLE') {
           throw new Error(
             typeof errJson.message === 'string'
@@ -486,7 +189,7 @@ export default function PhotoPicker({
         throw new Error(`Failed to load media (${res.status})`);
       }
       const data = (await res.json()) as MediaListApiResponse;
-      setLibraryItems(prev => [...prev, ...data.media]);
+      setLibraryItems((prev) => [...prev, ...data.media]);
       setLibraryNextCursor(data.pagination.nextCursor ?? null);
       setLibraryNextListPage(data.pagination.nextListPage ?? null);
       setLibraryHasNext(data.pagination.hasNext);
@@ -525,8 +228,6 @@ export default function PhotoPicker({
       clearTimeout(librarySearchTimerRef.current);
       librarySearchTimerRef.current = null;
     }
-    setSourceTab('local');
-    setSelectedPhotos([]);
     setSelectedLibraryMedia([]);
     setLibraryItems([]);
     setLibraryNextCursor(null);
@@ -542,29 +243,10 @@ export default function PhotoPicker({
     setLibraryPickerTagIds([]);
     setLibraryRefreshKey(0);
     setLibraryError(null);
-        setError(null);
-        setReadEmbeddedMetadata(false);
-        setImportMetadataNotice(null);
-        void loadFolderTree();
-  }, [isOpen, loadFolderTree, filterTagIds]);
+  }, [isOpen, filterTagIds]);
 
   useEffect(() => {
-    if (selectedFolder) {
-      loadPhotos(selectedFolder);
-    }
-  }, [selectedFolder, loadPhotos]);
-
-  useEffect(() => {
-    if (!isImporting) return;
-    setImportElapsedSec(0);
-    const id = window.setInterval(() => {
-      setImportElapsedSec((s) => s + 1);
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [isImporting]);
-
-  useEffect(() => {
-    if (!isOpen || sourceTab !== 'library') return;
+    if (!isOpen) return;
 
     let cancelled = false;
 
@@ -578,7 +260,7 @@ export default function PhotoPicker({
           if (res.status === 403) {
             throw new Error('You need admin access to browse the media library.');
           }
-          const errJson = await res.json().catch(() => ({})) as { message?: string; code?: string };
+          const errJson = (await res.json().catch(() => ({}))) as { message?: string; code?: string };
           if (res.status === 503 && errJson.code === 'SEARCH_UNAVAILABLE') {
             throw new Error(
               typeof errJson.message === 'string'
@@ -603,9 +285,7 @@ export default function PhotoPicker({
           setLibraryHasNext(false);
         }
       } finally {
-        if (!cancelled) {
-          setLibraryLoading(false);
-        }
+        if (!cancelled) setLibraryLoading(false);
       }
     };
 
@@ -615,19 +295,18 @@ export default function PhotoPicker({
     };
   }, [
     isOpen,
-    sourceTab,
+    buildLibraryParams,
+    libraryRefreshKey,
     librarySearchApplied,
     libSource,
     libDimensions,
     libHasCaption,
     libAssignment,
     dimensionalMapForLibrary,
-    libraryRefreshKey,
-    buildLibraryParams,
   ]);
 
   useEffect(() => {
-    if (!isOpen || sourceTab !== 'library' || !libraryHasNext) return;
+    if (!isOpen || !libraryHasNext) return;
     const sentinel = libraryLoadMoreRef.current;
     const scrollRoot = libraryScrollRef.current;
     if (!sentinel || !scrollRoot) return;
@@ -647,19 +326,17 @@ export default function PhotoPicker({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [isOpen, sourceTab, libraryHasNext, libraryLoading, libraryLoadingMore, loadMoreLibrary]);
+  }, [isOpen, libraryHasNext, libraryLoading, libraryLoadingMore, loadMoreLibrary]);
 
   if (!isOpen) return null;
 
-  const showLocalFooter = sourceTab === 'local' && mode === 'multi';
-  const showLibraryFooter = sourceTab === 'library' && mode === 'multi';
-  const activeError = sourceTab === 'local' ? error : libraryError;
+  const showLibraryFooter = mode === 'multi';
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.container} onClick={e => e.stopPropagation()}>
+      <div className={styles.container} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>Select Photos</h2>
+          <h2 className={styles.title}>Media library</h2>
           <button
             onClick={onClose}
             className={styles.closeButton}
@@ -670,130 +347,12 @@ export default function PhotoPicker({
           </button>
         </div>
 
-        <div className={styles.sourceTabs} role="tablist" aria-label="Photo source">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sourceTab === 'local'}
-            className={`${styles.sourceTab} ${sourceTab === 'local' ? styles.sourceTabActive : ''}`}
-            onClick={() => switchTab('local')}
-          >
-            This PC
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={sourceTab === 'library'}
-            className={`${styles.sourceTab} ${sourceTab === 'library' ? styles.sourceTabActive : ''}`}
-            onClick={() => switchTab('library')}
-          >
-            Library
-          </button>
-        </div>
         <p className={styles.sourceHint}>
-          {sourceTab === 'local'
-            ? 'Import new files from your configured local folders.'
-            : 'Reuse images already in Firestore (no upload). Google Photos and other sources can plug in here later.'}
+          Pick from the media bank. Import new files from Studio Media → Import.
         </p>
 
-        {sourceTab === 'local' && (
-          <div className={styles.content}>
-            <div className={styles.albumList}>
-              <h3 className={styles.albumTitle}>Albums</h3>
-              {!isLoadingFolders && folderTree.length > 0 && (
-                <div className={styles.treeToolbar}>
-                  <button
-                    type="button"
-                    className={styles.treeToolButton}
-                    onClick={expandAllFolders}
-                    title="Open every folder branch (except processing folders)"
-                  >
-                    Expand all
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.treeToolButton}
-                    onClick={collapseAllFolders}
-                    title="Close all branches (root folders stay visible)"
-                  >
-                    Collapse all
-                  </button>
-                </div>
-              )}
-              {isLoadingFolders ? (
-                <div className={styles.loading}>
-                  <LoadingSpinner />
-                  <p>Loading folders...</p>
-                </div>
-              ) : (
-                folderTree.map(node => (
-                  <PhotoPickerFolderItem
-                    key={node.id}
-                    node={node}
-                    selectedFolder={selectedFolder}
-                    expandedFolders={expandedFolders}
-                    onSelect={handleFolderSelect}
-                    onToggle={handleFolderToggle}
-                  />
-                ))
-              )}
-            </div>
-
-            <div className={styles.photoGrid}>
-              {isLoading ? (
-                <div className={styles.loading}>
-                  <LoadingSpinner />
-                  <p>Loading photos...</p>
-                </div>
-              ) : photos.length === 0 ? (
-                <div className={styles.noContent}>No photos in this album</div>
-              ) : (
-                <div className={styles.grid}>
-                  {photos.map(photo => {
-                    const isSelected = selectedPhotos.some(p => p.sourcePath === photo.sourcePath);
-                    return (
-                      <div
-                        key={photo.id}
-                        className={`${styles.photoItem} ${isSelected ? styles.photoItemSelected : ''}`}
-                        onClick={() => !isImporting && handleLocalPhotoSelect(photo)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            if (!isImporting) handleLocalPhotoSelect(photo);
-                          }
-                        }}
-                      >
-                        <JournalImage
-                          src={getStudioDisplayUrl(photo)}
-                          alt={photo.filename}
-                          className={styles.photoImage}
-                          width={150}
-                          height={150}
-                          sizes="150px"
-                          priority={false}
-                        />
-                        <div className={styles.photoFilename} title={photo.filename}>
-                          {photo.filename}
-                        </div>
-                        {isSelected && (
-                          <div className={styles.checkmark} aria-hidden="true">
-                            ✓
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {sourceTab === 'library' && (
-          <div className={styles.libraryPanel}>
-            <div className={styles.libraryControls}>
+        <div className={styles.libraryPanel}>
+          <div className={styles.libraryControls}>
             <div className={styles.libraryTagSection}>
               <p className={styles.libraryTagSectionLabel}>Filter library by tags</p>
               <p className={styles.libraryTagSectionHint}>
@@ -816,7 +375,7 @@ export default function PhotoPicker({
                   <input
                     type="checkbox"
                     checked={matchCardTags}
-                    onChange={e => setMatchCardTags(e.target.checked)}
+                    onChange={(e) => setMatchCardTags(e.target.checked)}
                   />
                   Also match card tags
                 </label>
@@ -828,7 +387,7 @@ export default function PhotoPicker({
                 <select
                   id="lib-filter-source"
                   value={libSource}
-                  onChange={e => setLibSource(e.target.value)}
+                  onChange={(e) => setLibSource(e.target.value)}
                   className={styles.libraryFilterSelect}
                 >
                   <option value="all">All</option>
@@ -841,7 +400,7 @@ export default function PhotoPicker({
                 <select
                   id="lib-filter-dim"
                   value={libDimensions}
-                  onChange={e => setLibDimensions(e.target.value)}
+                  onChange={(e) => setLibDimensions(e.target.value)}
                   className={styles.libraryFilterSelect}
                 >
                   <option value="all">All</option>
@@ -855,12 +414,12 @@ export default function PhotoPicker({
                 <select
                   id="lib-filter-cap"
                   value={libHasCaption}
-                  onChange={e => setLibHasCaption(e.target.value)}
+                  onChange={(e) => setLibHasCaption(e.target.value)}
                   className={styles.libraryFilterSelect}
                 >
                   <option value="all">All</option>
                   <option value="with">With caption</option>
-                  <option value="without">Without</option>
+                  <option value="without">Without caption</option>
                 </select>
               </div>
               <div className={styles.libraryFilterGroup}>
@@ -868,7 +427,7 @@ export default function PhotoPicker({
                 <select
                   id="lib-filter-assign"
                   value={libAssignment}
-                  onChange={e => setLibAssignment(e.target.value)}
+                  onChange={(e) => setLibAssignment(e.target.value)}
                   className={styles.libraryFilterSelect}
                   title="Uses referencedByCardIds on each media doc"
                 >
@@ -887,8 +446,8 @@ export default function PhotoPicker({
                 className={styles.librarySearchInput}
                 placeholder="Search filename, caption, tags, path..."
                 value={librarySearchDraft}
-                onChange={e => handleLibrarySearchInputChange(e.target.value)}
-                onKeyDown={e => {
+                onChange={(e) => handleLibrarySearchInputChange(e.target.value)}
+                onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
                     flushLibrarySearch();
@@ -904,21 +463,21 @@ export default function PhotoPicker({
               Search updates as you type (short delay). Text search matches filename, caption, tags, and path.
               Dimensional tag filter and optional &quot;Match card tags&quot; are in the section above.
             </p>
-            </div>
+          </div>
 
-            {libraryLoading ? (
-              <div className={styles.loading}>
-                <LoadingSpinner />
-                <p>Loading library…</p>
-              </div>
-            ) : libraryItems.length === 0 ? (
-              <div className={styles.noContent}>No media matches the current filters.</div>
-            ) : (
-              <div className={styles.libraryResults}>
-                <div ref={libraryScrollRef} className={styles.libraryScroll}>
-                  <div className={styles.libraryGrid}>
-                  {libraryItems.map(media => {
-                    const isSelected = selectedLibraryMedia.some(m => m.docId === media.docId);
+          {libraryLoading ? (
+            <div className={styles.loading}>
+              <LoadingSpinner />
+              <p>Loading library…</p>
+            </div>
+          ) : libraryItems.length === 0 ? (
+            <div className={styles.noContent}>No media matches the current filters.</div>
+          ) : (
+            <div className={styles.libraryResults}>
+              <div ref={libraryScrollRef} className={styles.libraryScroll}>
+                <div className={styles.libraryGrid}>
+                  {libraryItems.map((media) => {
+                    const isSelected = selectedLibraryMedia.some((m) => m.docId === media.docId);
                     return (
                       <div
                         key={media.docId}
@@ -926,7 +485,7 @@ export default function PhotoPicker({
                         onClick={() => handleLibraryMediaClick(media)}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={e => {
+                        onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
                             handleLibraryMediaClick(media);
@@ -953,107 +512,50 @@ export default function PhotoPicker({
                       </div>
                     );
                   })}
-                  </div>
-                  {libraryHasNext ? <div ref={libraryLoadMoreRef} className={styles.libraryAutoLoadSentinel} aria-hidden="true" /> : null}
                 </div>
-                {libraryHasNext && (
-                  <div className={styles.libraryLoadMoreWrap}>
-                    <button
-                      type="button"
-                      className={styles.libraryLoadMore}
-                      onClick={() => void loadMoreLibrary()}
-                      disabled={libraryLoadingMore}
-                    >
-                      {libraryLoadingMore ? 'Loading…' : 'Load more'}
-                    </button>
-                  </div>
-                )}
+                {libraryHasNext ? (
+                  <div ref={libraryLoadMoreRef} className={styles.libraryAutoLoadSentinel} aria-hidden="true" />
+                ) : null}
               </div>
-            )}
-          </div>
-        )}
-
-        {(showLocalFooter || showLibraryFooter) && (
-          <div className={styles.footer}>
-            {showLocalFooter && importMetadataNotice && (
-              <div className={styles.importMetadataNotice} role="alert">
-                {importMetadataNotice}
-              </div>
-            )}
-            {showLocalFooter && (
-              <label className={styles.footerMetaToggle}>
-                <input
-                  type="checkbox"
-                  checked={readEmbeddedMetadata}
-                  onChange={e => setReadEmbeddedMetadata(e.target.checked)}
-                  disabled={isImporting}
-                />
-                <span>Import Metadata.</span>
-              </label>
-            )}
-            {showLocalFooter && isImporting && (
-              <p className={styles.importProgressHint} role="status" aria-live="polite">
-                Server import in progress ({importElapsedSec}s). The browser waits for the whole batch to finish.
-                {readEmbeddedMetadata
-                  ? ' With import metadata on, each file runs ExifTool and can take noticeably longer.'
-                  : ''}
-              </p>
-            )}
-            <div className={styles.footerRow}>
-            <button
-              type="button"
-              onClick={() => {
-                if (sourceTab === 'local') {
-                  void handleDoneLocal();
-                } else {
-                  completeLibrarySelection();
-                }
-              }}
-              className={styles.doneButton}
-              disabled={
-                sourceTab === 'local'
-                  ? selectedPhotos.length === 0 || isImporting
-                  : selectedLibraryMedia.length === 0
-              }
-            >
-              {sourceTab === 'local' ? (
-                isImporting ? (
-                  <>
-                    <LoadingSpinner />
-                    <span>
-                      Importing {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''}…
-                    </span>
-                  </>
-                ) : (
-                  `Import ${selectedPhotos.length} photo${selectedPhotos.length !== 1 ? 's' : ''}`
-                )
-              ) : (
-                `Use ${selectedLibraryMedia.length} photo${selectedLibraryMedia.length !== 1 ? 's' : ''}`
+              {libraryHasNext && (
+                <div className={styles.libraryLoadMoreWrap}>
+                  <button
+                    type="button"
+                    className={styles.libraryLoadMore}
+                    onClick={() => void loadMoreLibrary()}
+                    disabled={libraryLoadingMore}
+                  >
+                    {libraryLoadingMore ? 'Loading…' : 'Load more'}
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
+          )}
+        </div>
+
+        {showLibraryFooter && (
+          <div className={styles.footer}>
+            <div className={styles.footerRow}>
+              <button
+                type="button"
+                onClick={completeLibrarySelection}
+                className={styles.doneButton}
+                disabled={selectedLibraryMedia.length === 0}
+              >
+                {`Use ${selectedLibraryMedia.length} photo${selectedLibraryMedia.length !== 1 ? 's' : ''}`}
+              </button>
             </div>
           </div>
         )}
 
-        {activeError && (
+        {libraryError && (
           <div className={styles.error} role="alert">
-            {activeError}
+            {libraryError}
             <button
               type="button"
               onClick={() => {
-                if (sourceTab === 'local') {
-                  setError(null);
-                  if (isImporting) {
-                    setIsImporting(false);
-                  } else if (selectedFolder) {
-                    loadPhotos(selectedFolder);
-                  } else {
-                    loadFolderTree();
-                  }
-                } else {
-                  setLibraryError(null);
-                  setLibraryRefreshKey(k => k + 1);
-                }
+                setLibraryError(null);
+                setLibraryRefreshKey((k) => k + 1);
               }}
               className={styles.retryButton}
             >

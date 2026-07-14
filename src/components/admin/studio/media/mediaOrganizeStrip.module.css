@@ -1,0 +1,161 @@
+.organizeStrip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-xs);
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--accent1-color) 22%, var(--border1-color));
+  background: color-mix(in srgb, var(--accent1-color) 6%, var(--surface1-color, var(--bg-color)));
+}
+
+.organizeStripCollapsed {
+  padding-bottom: 0.35rem;
+}
+
+.organizeStripHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.organizeStripTitle {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text1-color);
+}
+
+.organizeStripMeta {
+  font-size: var(--font-size-xs);
+  color: var(--admin-support-meta-color);
+}
+
+.organizeStripToggle {
+  border: none;
+  background: transparent;
+  color: var(--admin-support-meta-color);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--border-radius-sm);
+}
+
+.organizeStripToggle:hover {
+  color: var(--text1-color);
+  background: color-mix(in srgb, var(--text1-color) 6%, transparent);
+}
+
+.organizeStripBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.organizeStripRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.organizeStripLabel {
+  font-size: var(--font-size-xs);
+  color: var(--admin-support-label-color);
+  flex-shrink: 0;
+}
+
+.sourceToggle {
+  display: inline-flex;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.sourceToggleButton {
+  border: none;
+  background: var(--surface1-color, var(--bg-color));
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+  padding: 0.28rem 0.55rem;
+  cursor: pointer;
+}
+
+.sourceToggleButtonActive {
+  background: color-mix(in srgb, var(--accent1-color) 16%, var(--surface1-color, var(--bg-color)));
+  color: var(--text1-color);
+  font-weight: 600;
+}
+
+.organizeActionButton {
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  font-size: var(--font-size-xs);
+  padding: 0.28rem 0.6rem;
+  cursor: pointer;
+}
+
+.organizeActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.organizeToggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--admin-support-label-color);
+  cursor: pointer;
+}
+
+.organizeToggleLabel input {
+  margin: 0;
+}
+
+.manyBatchFieldset {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  min-width: 12rem;
+  max-width: 100%;
+}
+
+.manyBatchLegend {
+  font-size: var(--font-size-xs);
+  color: var(--admin-support-label-color);
+  padding: 0 0.2rem;
+}
+
+.manyBatchList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  max-height: 4.5rem;
+  overflow-y: auto;
+}
+
+.manyBatchOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  cursor: pointer;
+}
+
+.manyBatchOption input {
+  margin: 0;
+}
+
+.overlayHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--admin-support-meta-color);
+  line-height: 1.35;
+}

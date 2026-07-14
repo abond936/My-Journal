@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import { useTag } from '@/components/providers/TagProvider';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
@@ -13,6 +14,10 @@ import {
 import { GalleryMediaItem, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
+import { useMedia } from '@/components/providers/MediaProvider';
+import { appendGalleryMediaItems } from '@/lib/utils/appendGalleryMediaItems';
+import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
+import { uploadImageFileToMediaBank } from '@/lib/utils/uploadImageFileToMediaBank';
 import styles from './GalleryManager.module.css';
 import { SortableItem } from './SortableItem';
 import EditModal from './EditModal';
@@ -59,16 +64,19 @@ export default function GalleryManager({
   filterTagIds,
   onPersistGalleryAfterSlotSave,
 }: GalleryManagerProps) {
+  const { registerCreatedMedia } = useMedia();
   const [editingItem, setEditingItem] = useState<HydratedGalleryMediaItem | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [persistingGallery, setPersistingGallery] = useState(false);
+  const [pasteBusy, setPasteBusy] = useState(false);
+  const [pasteError, setPasteError] = useState<string | null>(null);
+  const pasteAreaRef = useRef<HTMLDivElement>(null);
 
   const galleryRef = useRef(galleryMedia);
   useEffect(() => {
     galleryRef.current = galleryMedia;
   }, [galleryMedia]);
 
-  /** Keeps latest gallery for chunked imports; PhotoPicker closes itself after import, do not close here. */
   const handleMultiPhotoSelect = useCallback((newItems: HydratedGalleryMediaItem[]) => {
     const current = galleryRef.current;
     const base = current.length;
@@ -80,6 +88,55 @@ export default function GalleryManager({
     galleryRef.current = merged;
     onUpdate(merged);
   }, [onUpdate]);
+
+  const ingestImageFile = useCallback(
+    async (file: File) => {
+      setPasteError(null);
+      setPasteBusy(true);
+      try {
+        const media = await uploadImageFileToMediaBank(file);
+        registerCreatedMedia(media);
+        const merged = appendGalleryMediaItems(galleryRef.current, [media]);
+        galleryRef.current = merged;
+        onUpdate(merged);
+      } catch (error) {
+        setPasteError(error instanceof Error ? error.message : 'Failed to add image to gallery');
+      } finally {
+        setPasteBusy(false);
+      }
+    },
+    [onUpdate, registerCreatedMedia]
+  );
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (!file || pasteBusy || persistingGallery) return;
+      void ingestImageFile(file);
+    },
+    [ingestImageFile, pasteBusy, persistingGallery]
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': [] },
+    multiple: false,
+    noClick: true,
+    disabled: pasteBusy || persistingGallery,
+  });
+
+  useEffect(() => {
+    const el = pasteAreaRef.current;
+    if (!el) return;
+    const onPaste = (event: ClipboardEvent) => {
+      const file = getImageFileFromDataTransfer(event.clipboardData);
+      if (!file || pasteBusy || persistingGallery) return;
+      event.preventDefault();
+      void ingestImageFile(file);
+    };
+    el.addEventListener('paste', onPaste);
+    return () => el.removeEventListener('paste', onPaste);
+  }, [ingestImageFile, pasteBusy, persistingGallery]);
 
   const handleRemovePhoto = useCallback(async (mediaId: string) => {
     const previousGallery = galleryMedia;
@@ -147,12 +204,24 @@ export default function GalleryManager({
           onClick={() => setIsPickerOpen(true)}
           className={styles.addButton}
           type="button"
-          disabled={persistingGallery}
+          disabled={persistingGallery || pasteBusy}
         >
-          Add
+          Add from library
         </button>
       </div>
-
+      <p className={styles.pasteHint}>Paste or drop an image here to add to the gallery.</p>
+      {pasteError ? (
+        <p className={styles.pasteError} role="alert">
+          {pasteError}
+        </p>
+      ) : null}
+      <div
+        {...getRootProps({ ref: pasteAreaRef })}
+        tabIndex={0}
+        className={isDragActive ? styles.pasteTargetActive : styles.pasteTarget}
+        aria-label="Gallery paste and drop target"
+      >
+        <input {...getInputProps()} />
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -250,6 +319,7 @@ export default function GalleryManager({
           </div>
         </SortableContext>
       </DndContext>
+      </div>
 
       {editingItem && (
         <EditModal

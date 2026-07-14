@@ -12,7 +12,7 @@ import type { Media } from '@/lib/types/photo';
 import type { StudioSelectedDetail } from '@/components/admin/studio/studioCardTypes';
 import styles from './StudioWorkspace.module.css';
 
-function activeSourceMediaIds(activeId: string, activeData: unknown): string[] {
+export function activeSourceMediaIds(activeId: string, activeData: unknown): string[] {
   const draggedMediaId = activeId.startsWith('source:') ? activeId.slice('source:'.length) : '';
   if (!draggedMediaId) return [];
 

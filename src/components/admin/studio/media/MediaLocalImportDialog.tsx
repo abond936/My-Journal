@@ -4,13 +4,25 @@ import JournalImage from '@/components/common/JournalImage';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import type { Media, PickerMedia, TreeNode } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
+import { MEDIA_BANK_IMPORT_PATH_LABEL } from '@/lib/utils/reviewClusterImport';
+import { formatImportBatchLabel } from '@/lib/utils/mediaOrganizeUtils';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import styles from '@/components/admin/studio/cards/PhotoPicker.module.css';
+
+export type MediaBankImportSummary = {
+  importPath: 'media-bank';
+  importBatchId: string;
+  sourceFolderLabel: string;
+  importedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  readEmbeddedMetadata: boolean;
+};
 
 type MediaLocalImportDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onImportComplete?: (media: Media[]) => Promise<void> | void;
+  onImportComplete?: (result: { media: Media[]; summary: MediaBankImportSummary }) => Promise<void> | void;
   title?: string;
 };
 
@@ -132,6 +144,15 @@ function treeContainsId(nodes: TreeNode[], targetId: string): boolean {
   return nodes.some((node) => node.id === targetId || treeContainsId(node.children ?? [], targetId));
 }
 
+function findFolderName(nodes: TreeNode[], targetId: string): string | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return node.name;
+    const childName = findFolderName(node.children ?? [], targetId);
+    if (childName) return childName;
+  }
+  return null;
+}
+
 async function loadLocalFolderTree(): Promise<TreeNode[]> {
   const response = await fetch('/api/images/local/folder-tree');
   if (!response.ok) {
@@ -174,6 +195,7 @@ export default function MediaLocalImportDialog({
   const [readEmbeddedMetadata, setReadEmbeddedMetadata] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importMetadataNotice, setImportMetadataNotice] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<MediaBankImportSummary | null>(null);
   const photoLoadRequestSeqRef = useRef(0);
 
   const hasSelection = selectedPhotos.length > 0;
@@ -191,6 +213,7 @@ export default function MediaLocalImportDialog({
     setReadEmbeddedMetadata(false);
     setError(null);
     setImportMetadataNotice(null);
+    setImportSummary(null);
   }, []);
 
   const loadFolderTree = useCallback(async () => {
@@ -346,7 +369,21 @@ export default function MediaLocalImportDialog({
       }
 
       if (importedResults.length > 0) {
-        await onImportComplete?.(importedResults);
+        const sourceFolderLabel =
+          (selectedFolder ? findFolderName(folderTree, selectedFolder) : null) ??
+          selectedFolder ??
+          'Unknown folder';
+        const summary: MediaBankImportSummary = {
+          importPath: 'media-bank',
+          importBatchId,
+          sourceFolderLabel,
+          importedCount: importedResults.length,
+          skippedCount,
+          failedCount: importFailures.length,
+          readEmbeddedMetadata,
+        };
+        setImportSummary(summary);
+        await onImportComplete?.({ media: importedResults, summary });
       }
 
       if (skippedCount > 0) {
@@ -375,10 +412,6 @@ export default function MediaLocalImportDialog({
           );
         }
       }
-
-      if (importedResults.length > 0 && importFailures.length === 0 && !anyMetadataReadIssue) {
-        onClose();
-      }
     } catch (err) {
       console.error('Error importing photos:', err);
       setError(err instanceof Error ? err.message : 'Failed to import photos');
@@ -386,7 +419,7 @@ export default function MediaLocalImportDialog({
       setIsImporting(false);
       setImportElapsedSec(0);
     }
-  }, [feedback, onClose, onImportComplete, readEmbeddedMetadata, selectedPhotos]);
+  }, [feedback, folderTree, onClose, onImportComplete, readEmbeddedMetadata, selectedFolder, selectedPhotos]);
 
   const retryLocal = useCallback(() => {
     setError(null);
@@ -411,7 +444,8 @@ export default function MediaLocalImportDialog({
           </button>
         </div>
         <p className={styles.sourceHint}>
-          Import new files into the media bank from your configured local folders.
+          Import new files into the media bank from your configured local folders. Path:{' '}
+          <strong>{MEDIA_BANK_IMPORT_PATH_LABEL}</strong> (not folder-to-card CLI import).
         </p>
 
         <div className={styles.content}>
@@ -504,6 +538,40 @@ export default function MediaLocalImportDialog({
         </div>
 
         <div className={styles.footer}>
+          {importSummary ? (
+            <div className={styles.importSummaryPanel} role="status" aria-live="polite">
+              <h3 className={styles.importSummaryTitle}>Import complete</h3>
+              <ul className={styles.importSummaryList}>
+                <li>
+                  <strong>Path:</strong> {MEDIA_BANK_IMPORT_PATH_LABEL}
+                </li>
+                <li>
+                  <strong>Batch:</strong> {formatImportBatchLabel(importSummary.importBatchId)}
+                </li>
+                <li>
+                  <strong>Folder:</strong> {importSummary.sourceFolderLabel}
+                </li>
+                <li>
+                  <strong>Imported:</strong> {importSummary.importedCount} photo
+                  {importSummary.importedCount === 1 ? '' : 's'}
+                  {importSummary.skippedCount > 0
+                    ? ` (${importSummary.skippedCount} already in library)`
+                    : ''}
+                </li>
+                <li>
+                  <strong>Metadata:</strong>{' '}
+                  {importSummary.readEmbeddedMetadata ? 'On (ExifTool when available)' : 'Off'}
+                </li>
+              </ul>
+              <p className={styles.importSummaryHint}>
+                Story pile suggestions are building in the Media pane. Review them in the Organize strip
+                with Story piles overlay on.
+              </p>
+              <button type="button" className={styles.doneButton} onClick={onClose}>
+                Continue in Media
+              </button>
+            </div>
+          ) : null}
           {importMetadataNotice ? (
             <div className={styles.importMetadataNotice} role="alert">
               {importMetadataNotice}
@@ -520,31 +588,34 @@ export default function MediaLocalImportDialog({
           </label>
           {isImporting ? (
             <p className={styles.importProgressHint} role="status" aria-live="polite">
-              Server import in progress ({importElapsedSec}s). The browser waits for the whole batch to finish.
+              {MEDIA_BANK_IMPORT_PATH_LABEL} in progress ({importElapsedSec}s). The browser waits for
+              the whole batch to finish.
               {readEmbeddedMetadata
                 ? ' With import metadata on, each file runs ExifTool and can take noticeably longer.'
                 : ''}
             </p>
           ) : null}
-          <div className={styles.footerRow}>
-            <button
-              type="button"
-              onClick={() => void handleImport()}
-              className={styles.doneButton}
-              disabled={!hasSelection || isImporting}
-            >
-              {isImporting ? (
-                <>
-                  <LoadingSpinner />
-                  <span>
-                    Importing {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''}...
-                  </span>
-                </>
-              ) : (
-                `Import ${selectedPhotos.length} photo${selectedPhotos.length !== 1 ? 's' : ''}`
-              )}
-            </button>
-          </div>
+          {!importSummary ? (
+            <div className={styles.footerRow}>
+              <button
+                type="button"
+                onClick={() => void handleImport()}
+                className={styles.doneButton}
+                disabled={!hasSelection || isImporting}
+              >
+                {isImporting ? (
+                  <>
+                    <LoadingSpinner />
+                    <span>
+                      Importing {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? 's' : ''}…
+                    </span>
+                  </>
+                ) : (
+                  `Import ${selectedPhotos.length} photo${selectedPhotos.length !== 1 ? 's' : ''}`
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {error ? (

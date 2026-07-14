@@ -11,6 +11,7 @@ import StudioCardEditPane from '@/components/admin/studio/StudioCardEditPane';
 import StudioQuestionsPane from '@/components/admin/studio/StudioQuestionsPane';
 import MediaEditModal from '@/components/admin/studio/media/MediaEditModal';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
+import { handleStudioPileMembershipDragEnd } from '@/components/admin/studio/studioPileMembershipDnd';
 import type {
   StudioActiveCardViewModel,
   StudioCardContext,
@@ -1090,6 +1091,14 @@ export default function StudioWorkspace() {
 
   const onStudioRelationshipDragEnd = useCallback(
     async (event: DragEndEvent, resolvedOverId?: string | null) => {
+      const pileHandled = await handleStudioPileMembershipDragEnd(event, resolvedOverId, {
+        onMembershipChanged: () => studioImperatives.get('storyPileMembershipChanged')?.(),
+        showToast: feedback.showToast,
+        showSuccess: feedback.showSuccess,
+        showError: feedback.showError,
+      });
+      if (pileHandled) return true;
+
       return handleStudioRelationshipDragEnd(event, resolvedOverId, {
         actionBusy,
         selectedCardDetail: selectedDetail,
@@ -1103,7 +1112,7 @@ export default function StudioWorkspace() {
         showError: feedback.showError,
       });
     },
-    [actionBusy, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById]
+    [actionBusy, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById, studioImperatives]
   );
 
   const refreshCollectionsStructure = useCallback(() => {
@@ -1202,6 +1211,13 @@ export default function StudioWorkspace() {
     );
   }, []);
 
+  const registerStoryPileMembershipChanged = useCallback(
+    (fn: (() => void | Promise<void>) | null) => {
+      studioImperatives.register('storyPileMembershipChanged', fn);
+    },
+    [studioImperatives]
+  );
+
   const studioShellValue = useMemo<StudioShellContextValue>(
     () => ({
       selectedCardId,
@@ -1241,6 +1257,7 @@ export default function StudioWorkspace() {
       setOrganizeReconcileTargetTagId,
       clearOrganizeReconcile,
       openMediaPane,
+      registerStoryPileMembershipChanged,
     }),
     [
       selectedCardId,
@@ -1278,6 +1295,7 @@ export default function StudioWorkspace() {
       organizeReconcileTargetTagId,
       clearOrganizeReconcile,
       openMediaPane,
+      registerStoryPileMembershipChanged,
     ]
   );
 

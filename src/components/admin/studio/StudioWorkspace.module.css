@@ -1733,3 +1733,36 @@
   opacity: 0.72;
 }
 
+.studioGallerySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.studioGallerySectionHeader .studioFormSectionTitle {
+  margin: 0;
+}
+
+.studioGalleryPasteTarget {
+  outline: none;
+  border-radius: var(--border-radius-sm);
+}
+
+.studioGalleryPasteTarget:focus-visible {
+  outline: 2px solid var(--admin-chrome-active-control-background-color);
+  outline-offset: 2px;
+}
+
+.studioGalleryPasteTargetActive {
+  outline: 2px dashed var(--admin-chrome-active-control-background-color);
+  outline-offset: 2px;
+}
+
+.studioGalleryPasteError {
+  margin: 0 0 var(--spacing-xs);
+  color: var(--error-color, #b42318);
+  font-size: var(--font-size-sm);
+}
+

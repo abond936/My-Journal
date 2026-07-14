@@ -269,6 +269,11 @@ export default function ReaderCardEditModal({
     };
   }, []);
 
+  const resolvedModalFrame =
+    isOpen && typeof window !== 'undefined'
+      ? modalFrame ?? buildDefaultFrame()
+      : null;
+
   const openModal = () => {
     onBeforeOpen?.();
     setActiveCardId(cardId);
@@ -498,17 +503,17 @@ export default function ReaderCardEditModal({
           {children}
         </button>
       ) : null}
-      {isOpen && modalFrame && typeof document !== 'undefined'
+      {isOpen && resolvedModalFrame && typeof document !== 'undefined'
         ? createPortal(
             <div className={styles.readerOverlay}>
               <div
                 ref={modalRef}
                 className={styles.readerModal}
                 style={{
-                  width: `${modalFrame.width}px`,
-                  height: `${modalFrame.height}px`,
-                  left: `${modalFrame.x}px`,
-                  top: `${modalFrame.y}px`,
+                  width: `${resolvedModalFrame.width}px`,
+                  height: `${resolvedModalFrame.height}px`,
+                  left: `${resolvedModalFrame.x}px`,
+                  top: `${resolvedModalFrame.y}px`,
                 }}
                 onClick={(e) => e.stopPropagation()}
               >

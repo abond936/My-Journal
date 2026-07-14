@@ -64,6 +64,15 @@ describe('studioRightColumnDragContract', () => {
       ]);
     });
 
+    it('includes story pile targets for source drags', () => {
+      expect(
+        filterStudioRightColumnHits(
+          [{ id: 'pile:cluster-1' }, { id: 'tree-root' }] as Collision[],
+          'source'
+        ).map((hit) => String(hit.id))
+      ).toEqual(['pile:cluster-1']);
+    });
+
     it('returns only reorder targets for child drags', () => {
       expect(filterStudioRightColumnHits(hits, 'studioChild').map((hit) => String(hit.id))).toEqual([
         'studioChild:child-1',
@@ -97,6 +106,24 @@ describe('studioRightColumnDragContract', () => {
       );
 
       expect(ordered.map((hit) => String(hit.id))).toEqual(['drop:gallery']);
+    });
+
+    it('prefers compose targets over pile headers for source media drags', () => {
+      const ordered = prioritizeStudioRightColumnHits(
+        [{ id: 'pile:cluster-1' }, { id: 'drop:body' }] as Collision[],
+        'source'
+      );
+
+      expect(ordered.map((hit) => String(hit.id))).toEqual(['drop:body']);
+    });
+
+    it('returns pile headers when no compose target is hit for source media drags', () => {
+      const ordered = prioritizeStudioRightColumnHits(
+        [{ id: 'pile:cluster-2' }, { id: 'pile:unsorted' }] as Collision[],
+        'source'
+      );
+
+      expect(ordered.map((hit) => String(hit.id))).toEqual(['pile:cluster-2', 'pile:unsorted']);
     });
 
     it('prefers cover over gallery rows for gallery drags', () => {

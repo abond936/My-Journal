@@ -115,7 +115,10 @@ jest.mock('@/lib/services/images/imageImportService', () => ({
 
 jest.mock('@/lib/services/provisionalClusterService', () => ({
   listPendingReviewClusters: jest.fn().mockResolvedValue([]),
+  listAllPendingReviewClusters: jest.fn().mockResolvedValue([]),
+  collectPendingReviewMemberMediaIds: jest.fn().mockResolvedValue(new Set()),
   generateReviewClusters: jest.fn().mockResolvedValue({ created: 0, clusters: [] }),
+  createEmptyReviewCluster: jest.fn(),
   updateReviewClusterSuggestedTags: jest.fn(),
   acceptReviewClusterTags: jest.fn(),
   acceptReviewClusterPile: jest.fn(),

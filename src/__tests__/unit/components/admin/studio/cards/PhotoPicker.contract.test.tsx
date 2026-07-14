@@ -120,7 +120,23 @@ describe('media picker ownership boundaries', () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              media: [],
+              media: [
+                {
+                  docId: 'media-lib-1',
+                  filename: 'library-photo.jpg',
+                  width: 100,
+                  height: 100,
+                  size: 1000,
+                  contentType: 'image/jpeg',
+                  storageUrl: 'https://example.com/library-photo.jpg',
+                  storagePath: 'images/library-photo.jpg',
+                  source: 'paste',
+                  sourcePath: 'upload://library-photo.jpg',
+                  objectPosition: '50% 50%',
+                  createdAt: 1,
+                  updatedAt: 1,
+                },
+              ],
               pagination: {
                 limit: 40,
                 hasNext: false,
@@ -142,7 +158,7 @@ describe('media picker ownership boundaries', () => {
     }) as jest.Mock;
   });
 
-  it('keeps the shared PhotoPicker on local-first open and only loads library after explicit tab switch', async () => {
+  it('loads the media library when PhotoPicker opens and does not fetch local folders', async () => {
     render(
       <PhotoPicker
         isOpen
@@ -153,32 +169,33 @@ describe('media picker ownership boundaries', () => {
     );
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/images/local/folder-tree');
-    });
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/images/local/folder-contents',
-        expect.objectContaining({ method: 'POST' })
-      );
-    });
-
-    expect(screen.getByRole('button', { name: 'Collapse Album 1' })).toBeInTheDocument();
-    expect(screen.getByText('photo-1.jpg')).toBeInTheDocument();
-
-    expect(screen.getByRole('tab', { name: 'This PC' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Library' })).toBeInTheDocument();
-    expect(
-      (global.fetch as jest.Mock).mock.calls.some((call) => String(call[0]).startsWith('/api/media?'))
-    ).toBe(false);
-
-    await userEvent.click(screen.getByRole('tab', { name: 'Library' }));
-
-    await waitFor(() => {
       expect(
         (global.fetch as jest.Mock).mock.calls.some((call) => String(call[0]).startsWith('/api/media?'))
       ).toBe(true);
     });
+
+    expect(global.fetch).not.toHaveBeenCalledWith('/api/images/local/folder-tree');
+    expect(screen.queryByRole('tab', { name: 'This PC' })).not.toBeInTheDocument();
+    expect(await screen.findByText('library-photo.jpg')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search filename, caption, tags, path...')).toBeInTheDocument();
+  });
+
+  it('selects a library item in single mode', async () => {
+    const onSelect = jest.fn();
+    render(
+      <PhotoPicker
+        isOpen
+        onClose={jest.fn()}
+        onSelect={onSelect}
+        initialMode="single"
+      />
+    );
+
+    await userEvent.click(await screen.findByText('library-photo.jpg'));
+
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ docId: 'media-lib-1', filename: 'library-photo.jpg' })
+    );
   });
 
   it('keeps the Media local import dialog source-only and never touches library fetches', async () => {
@@ -225,82 +242,6 @@ describe('media picker ownership boundaries', () => {
     expect(screen.queryByAltText('photo-1.jpg')).not.toBeInTheDocument();
   });
 
-  it('remembers the shared PhotoPicker tree expansion state across reopen', async () => {
-    const { rerender } = render(
-      <PhotoPicker
-        isOpen
-        onClose={jest.fn()}
-        onSelect={jest.fn()}
-        initialMode="single"
-      />
-    );
-
-    expect(await screen.findByText('Child A')).toBeInTheDocument();
-
-    await userEvent.dblClick(screen.getByText('Album 1'));
-
-    await waitFor(() => {
-      expect(screen.queryByText('Child A')).not.toBeInTheDocument();
-    });
-
-    rerender(
-      <PhotoPicker
-        isOpen={false}
-        onClose={jest.fn()}
-        onSelect={jest.fn()}
-        initialMode="single"
-      />
-    );
-
-    rerender(
-      <PhotoPicker
-        isOpen
-        onClose={jest.fn()}
-        onSelect={jest.fn()}
-        initialMode="single"
-      />
-    );
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/images/local/folder-tree');
-    });
-    expect(screen.queryByText('Child A')).not.toBeInTheDocument();
-  });
-
-  it('reuses an existing local-source media record in the shared picker and shows a duplicate notice', async () => {
-    const onSelect = jest.fn();
-    render(
-      <PhotoPicker
-        isOpen
-        onClose={jest.fn()}
-        onSelect={onSelect}
-        initialMode="single"
-      />
-    );
-
-    expect(await screen.findByAltText('photo-1.jpg')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByAltText('photo-1.jpg'));
-
-    await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/images/local/import',
-        expect.objectContaining({ method: 'POST' })
-      )
-    );
-    await waitFor(() =>
-      expect(onSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ docId: 'media-existing-1', sourcePath: 'folder-1/photo-1.jpg' })
-      )
-    );
-    expect(showToastMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Already in library',
-        tone: 'info',
-      })
-    );
-  });
-
   it('reuses existing local-source media in the Media import dialog and shows a duplicate notice', async () => {
     const onImportComplete = jest.fn();
     render(
@@ -317,9 +258,11 @@ describe('media picker ownership boundaries', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Import 1 photo' }));
 
     await waitFor(() =>
-      expect(onImportComplete).toHaveBeenCalledWith([
-        expect.objectContaining({ docId: 'media-existing-1', sourcePath: 'folder-1/photo-1.jpg' }),
-      ])
+      expect(onImportComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          media: [expect.objectContaining({ docId: 'media-existing-1', sourcePath: 'folder-1/photo-1.jpg' })],
+        })
+      )
     );
     expect(showToastMock).toHaveBeenCalledWith(
       expect.objectContaining({

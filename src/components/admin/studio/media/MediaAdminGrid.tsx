@@ -53,6 +53,7 @@ export interface MediaAdminGridCellProps {
   stackExpanded?: boolean;
   onToggleStackExpand?: () => void;
   onDissolveStack?: () => void;
+  onMediaContextMenu?: (event: React.MouseEvent, mediaId: string) => void;
 }
 
 export type MediaAdminGridStudioDragBind = {
@@ -102,6 +103,7 @@ function MediaAdminGridCell({
   stackExpanded = false,
   onToggleStackExpand,
   onDissolveStack,
+  onMediaContextMenu,
 }: MediaAdminGridCellProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -268,6 +270,12 @@ function MediaAdminGridCell({
         title: thumbnailTooltip,
         onClick: onCellClick,
         onKeyDown: onCellKeyDown,
+        onContextMenu: onMediaContextMenu
+          ? (event) => {
+              if (!media.docId) return;
+              onMediaContextMenu(event, media.docId);
+            }
+          : undefined,
       }}
       overlayTopStart={
         <div onClick={(e) => e.stopPropagation()}>
@@ -483,6 +491,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
+    prev.onMediaContextMenu === next.onMediaContextMenu &&
     prev.studioDragBind === next.studioDragBind &&
     prev.inlineCaptionEditing === next.inlineCaptionEditing &&
     prev.isAssignedToActiveCard === next.isAssignedToActiveCard &&
@@ -532,6 +541,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
+    prev.onMediaContextMenu === next.onMediaContextMenu &&
     prev.inlineCaptionEditing === next.inlineCaptionEditing &&
     prev.isAssignedToActiveCard === next.isAssignedToActiveCard
 );
@@ -553,6 +563,7 @@ export default function MediaAdminGrid({
   expandedStackIds,
   onToggleStackExpand,
   onDissolveStack,
+  onMediaContextMenu,
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
@@ -570,6 +581,7 @@ export default function MediaAdminGrid({
   expandedStackIds?: Set<string>;
   onToggleStackExpand?: (stackId: string) => void;
   onDissolveStack?: (stackId: string) => void;
+  onMediaContextMenu?: (event: React.MouseEvent, mediaId: string) => void;
 }) {
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
   const selectionAnchorIndexRef = useRef<number | null>(null);
@@ -776,6 +788,7 @@ export default function MediaAdminGrid({
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
+              onMediaContextMenu={onMediaContextMenu}
               {...stackProps}
             />
           ) : (
@@ -793,6 +806,7 @@ export default function MediaAdminGrid({
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
+              onMediaContextMenu={onMediaContextMenu}
               {...stackProps}
             />
           );

@@ -59,6 +59,13 @@ export type MediaAdminLocalFilterPreferences = {
   gridTileMinPx: number;
   lastImportBatchId: string;
   showAllStacks: boolean;
+  organizeImportScopeMode: 'none' | 'recent' | 'one' | 'many' | 'all';
+  organizeSingleBatchId: string;
+  organizeManyBatchIds: string[];
+  organizeSourceMode: 'raw' | 'foldered' | 'phone';
+  storyPilesOverlay: boolean;
+  tagSuggestionsOnPiles: boolean;
+  organizeStripExpanded: boolean;
 };
 
 const STUDIO_CARD_BANK_STATUS_VALUES = new Set<StudioCardBankStatusFilter>(['all', 'draft', 'published']);
@@ -126,6 +133,13 @@ export const DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES: MediaAdminLocalFilter
   gridTileMinPx: 228,
   lastImportBatchId: '',
   showAllStacks: false,
+  organizeImportScopeMode: 'none',
+  organizeSingleBatchId: '',
+  organizeManyBatchIds: [],
+  organizeSourceMode: 'foldered',
+  storyPilesOverlay: false,
+  tagSuggestionsOnPiles: true,
+  organizeStripExpanded: true,
 };
 
 function normalizeString(value: unknown, fallback = ''): string {
@@ -219,6 +233,19 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
   };
 }
 
+const ORGANIZE_IMPORT_SCOPE_VALUES = new Set<MediaAdminLocalFilterPreferences['organizeImportScopeMode']>([
+  'none',
+  'recent',
+  'one',
+  'many',
+  'all',
+]);
+const ORGANIZE_SOURCE_MODE_VALUES = new Set<MediaAdminLocalFilterPreferences['organizeSourceMode']>([
+  'raw',
+  'foldered',
+  'phone',
+]);
+
 function parseMediaAdminLocalFilterPreferences(value: unknown): MediaAdminLocalFilterPreferences | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<Record<keyof MediaAdminLocalFilterPreferences, unknown>>;
@@ -240,6 +267,21 @@ function parseMediaAdminLocalFilterPreferences(value: unknown): MediaAdminLocalF
     gridTileMinPx: tilePx,
     lastImportBatchId: normalizeString(candidate.lastImportBatchId),
     showAllStacks: candidate.showAllStacks === true,
+    organizeImportScopeMode: normalizeEnumValue(
+      candidate.organizeImportScopeMode,
+      ORGANIZE_IMPORT_SCOPE_VALUES,
+      'none'
+    ),
+    organizeSingleBatchId: normalizeString(candidate.organizeSingleBatchId),
+    organizeManyBatchIds: normalizeStringArray(candidate.organizeManyBatchIds),
+    organizeSourceMode: normalizeEnumValue(
+      candidate.organizeSourceMode,
+      ORGANIZE_SOURCE_MODE_VALUES,
+      'foldered'
+    ),
+    storyPilesOverlay: candidate.storyPilesOverlay === true,
+    tagSuggestionsOnPiles: candidate.tagSuggestionsOnPiles !== false,
+    organizeStripExpanded: candidate.organizeStripExpanded !== false,
   };
 }
 

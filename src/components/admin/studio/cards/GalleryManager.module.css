@@ -480,3 +480,30 @@
     opacity: 0.45;
     cursor: not-allowed;
 }
+
+.pasteHint {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--admin-support-meta-color);
+}
+
+.pasteError {
+    margin: 0 0 var(--spacing-sm);
+    color: var(--error-color, #b42318);
+    font-size: var(--font-size-sm);
+}
+
+.pasteTarget {
+    outline: none;
+    border-radius: var(--border-radius-sm);
+}
+
+.pasteTarget:focus-visible {
+    outline: 2px solid var(--admin-chrome-active-control-background-color);
+    outline-offset: 2px;
+}
+
+.pasteTargetActive {
+    outline: 2px dashed var(--admin-chrome-active-control-background-color);
+    outline-offset: 2px;
+}

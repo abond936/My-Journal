@@ -30,51 +30,40 @@ Legend:
 
 *Intent*
 
-- **Content Consumption** - Private, read-oriented browsing of stories, images, and related content; optimized primarily for mobile, with tablet and desktop support.
-- **Content Administration** - Authoring and organization of cards, media, tags, and relationships; optimized primarily for desktop, with only minor or supporting mobile edits.
+- **Re-experience** - Help families rediscover, enjoy, and learn from their media and the stories behind it.
+- **Create** - Help the author turn a large, disorganized media archive into organized, illustrated stories.
+- **Preserve** - Maintain those media, stories, relationships, and publishing choices as a private, durable family archive.
 
 *Principles*
 
-- **Two halves** - Reader and admin must both be strong; neither carries the product alone.
-- **Surface separation** - Consumption and administration stay distinct top-level surfaces (routes, roles, editing context), even when admin quick-edit reaches into the reader.
-- **Core model** - The product centers on cards, media, tags, and relationships—not parallel entity types or extra admin surfaces.
-- **Organize to tell** - Organization between import and story-building is core product work, not a side utility; large heterogeneous libraries are the normal case.
-- **Media-native operation** - Browsing and lightweight edits should feel like a modern media app, not a slow CRUD console.
-- **Author control** - Family-private audience; author publishes; the system may suggest but never auto-publishes or auto-deletes over author judgment.
+- **Two experiences** - A mobile-first reader for family consumption and a desktop-oriented Studio for authoring and organization are equally essential parts of the product.
+- **Organize to tell** - Media organization exists to reveal, develop, and preserve stories—not to create a generic photo manager or digital asset system.
+- **Progressive value** - The archive becomes useful incrementally; complete organization or classification is not required before the author can create and readers can enjoy.
+- **One truth** - Reader and Studio operate on the same authoritative cards, media, tags, relationships, and publication state.
+- **Author control** - The system may assist, but organization, storytelling, publishing, replacement, and deletion remain explicit author decisions.
+- **Private and effortless** - Readers receive a simple, trustworthy experience while the application absorbs the complexity required to manage the archive at scale.
 
 *Features*
 ✅ **Complete**
 
-- **Surface split** - Distinct reader and admin routes with explicit editing context.
-- **Role boundary** - Viewers consume; one primary author/admin maintains the archive; admin-only operational routes stay restricted to administrators.
-- **Reader shell stability** - Protected reader routes keep shell chrome and navigation context stable during client session hydration.
-- **Reader mobile text edit** - Card detail and feed tiles support mobile quick-edit (metadata, eligible plain-prose body, gallery captions) via narrow PATCH paths; desktop keeps lazy full Compose for deeper edits.
-- **Reader bundle separation** - Viewer sessions do not load admin authoring bundles (Theme Management, Studio, full Compose) until an admin explicitly opens an edit affordance.
+- **Reader** - Private, responsive discovery and consumption of published stories and media through Guided and Freeform experiences.
+- **Studio** - Protected author workflows for organizing media, creating stories, managing relationships, and publishing the archive.
+- **Content model** - Integrated cards, media, dimensional tags, collections, and relationships shared across reader and authoring surfaces.
+- **Administration** - Protected management of users, themes, settings, and archive operations.
 
 ⭕2 **Future**
 
-- **Reader-to-Admin Entry Points** - Add admin-only quick-edit or deep-link affordances from reader surfaces.
-- **Accessibility Hardening** - Strengthen typography, contrast, tap-target, keyboard, alt-text, and reduced-motion support for the family-reader audience.
-- **Print / Export to Book**
-
-📐 **Decisions**
-
-- **Architecture split** - Keep consumption and administration as separate top-level surfaces to preserve reader performance, reduce accidental edits, and keep role boundaries clear.
-- **Future editing path** - Keep the top-level split, but add admin-only on-the-fly editing affordances from reader surfaces as a later optimization.
-- **Mobile v1 scope** - Mobile-first launch is reader-only; Studio/admin are not a mobile target in v1.
-- **Product shape** - v1 is a **private hosted app** for one author and family/friends readers. Customer promise: **organize -> integrate stories -> deliver** for private re-experience. Not a generic journal category, photo manager with captions, or public social product.
-- **Starter taxonomy direction** - Optional **Tag Set 0 — Generic** skeleton installed from **Settings** (not forced at first run). Detail: **Studio Tags** 📐 **Tag Set 0**.
+- **Audience controls** - More granular access by audience, collection, or family group.
+- **Print and export** - Book-oriented and other durable output formats.
+- **Mobile authoring** - Additional mobile creation or organization where it provides clear value without compromising the reader experience.
 
 📋 **Contracts**
 
-- **Session & route boundary** - Authenticated app throughout. Viewers read published content only. Admins author and may access reader plus admin surfaces. Admin mutations, catalog operations, and import helpers reject viewer and anonymous callers. Operational detail: **User Management** and `01` TECHNICAL auth decisions. API route classification and automated boundary tests: **`03` Phase 4** and `src/lib/auth/apiRouteAccessAudit.ts`.
-- **Reader edit boundary** - Reader quick-edit covers narrow mobile-safe corrections; structural authoring, taxonomy, media bank work, and full Compose live in admin/Studio paths.
-- **Integrity verification** - Card-media graph, derived tag fields, and tag-count invariants are guarded by project integrity tests and CI. Operational detail: **`03` Phase 4** and `npm run test:integrity`.
-- **Shared admin feedback** - Dialogs, toasts, and loading states use one shared contract (**Administration** ✅ **Shared feedback**). No browser-native alerts on migrated surfaces; no second inline status pattern on the same action.
-- **Filters & populations (reader)** - Reader discovery filters define which cards appear; they do not mutate catalog truth. Full population and stable sort rules: **Administration** 📋 **Filtered populations**, **Navigation** 📋.
-- **AI touchpoints** *(horizontal summary)* - **Story Assist** (Compose/Cards): suggestion-only text, never auto-apply. **Tag/cluster/face proposals**: **Provisional suggestions** layer only. **Cover generation** *(future)*: suggestion or draft asset until author sets cover—never silent replace of confirmed cover. **Ingest classify** *(future)*: metadata/tag hints land provisional until accept.
-
-📘 **Platform engineering status** - Backend hardening, CI gates, monitoring, and slice closeout narration live in `docs/03-Implementation.md` and `01` TECHNICAL—not in Application *Features*.
+- **Access** - Viewers see authorized published content; drafts, provisional information, mutations, and administration remain restricted.
+- **Shared truth** - Reader and Studio may present information differently but cannot maintain competing versions of content or relationships.
+- **Publication** - Nothing provisional, suggested, or draft becomes reader-visible without explicit author confirmation.
+- **Surface roles** - Focused author corrections may begin from reader context, but structural organization and full authoring remain Studio responsibilities.
+- **Continuity** - Movement among discovery, reading, correction, and Studio preserves relevant context and does not force the user to reconstruct their place.
 
 ## **Navigation**
 
@@ -510,7 +499,7 @@ Legend:
   - **Reject / dismiss** - Drops provisional record(s) only; confirmed state unchanged.  
   - **Edit before accept** - Author may change proposed tag target, split/merge clusters, or correct Who link before accept; no confirmed write until explicit confirm.  
   - **Idempotence** - Re-running ingest or clustering may add or refresh proposals but must **not** destroy prior **confirmed** work; stale provisional may be superseded or expired by policy (implementation detail).  
-  - **Review surfaces** - Primary UX in **Studio Media** **Browse | Review** mode (**Studio Media** 📋 **Review mode IA**); card-level tag suggestions may appear in **Studio Cards** / **Compose** with the same accept contract.  
+  - **Review surfaces** - **Shipped v2 (2026-07-14):** **Story piles overlay** on browse (**Story piles organize v2 IA**); **Browse | Review** tab **retired**. Card-level tag suggestions may appear in **Studio Cards** / **Compose** with the same accept contract. *(Historical v1: separate Review mode — see **Review mode IA** 📋, superseded.)*  
   - **Storage** - Provisional records are **not** embedded as normal tag assignments on media/card docs. **Shipped v1 (Review slice 1):** Firestore collection **`provisional_clusters`** — one document per **cluster/stack** with `lens` (`suggested` | `when` | `where` | `who` | `what`), `status` (`pending` | `accepted` | `dismissed`), `title`, `reason`, optional `occasionLabel`, `memberMediaIds[]`, dimensional `suggestedTagIds` (`who`/`what`/`when`/`where` id arrays), optional `coverageNote`, timestamps. Per-media or per-card **tag suggest** rows and **face hint** payloads remain **❓ Open** for later slices. Indexes: composite on `status` + `lens` for Review queue reads.
   - **Promotion to stories** - Confirming a cluster may **offer** create/attach card, apply tags to media, and open Compose—author confirms each promotion step; no automatic card publish.
 
@@ -550,7 +539,7 @@ Legend:
 - **Multiselect and bulk** - Shift/Ctrl range/toggle selection; shared bulk bar; bulk tag apply via batched API; narrow PATCH routes for bounded edits.
 - **Media-derived tag suggestions** - Full-page card admin grid shows per-dimension suggestions from gallery/media tags with apply path (primary workflow when metadata lived on media first).
 - **AI Story Assist** - Admin-only suggestion endpoint; named guides (`Bob`, `Sandra`); modes include draft, tighten, expand, retitle, strengthen. Suggestion-only, no auto-apply.
-- **Import and discovery** - Folder-as-card import; PhotoPicker library tab mirrors media filters during card edit.
+- **Import and discovery** - Folder-as-card import (CLI); bank import via Studio Media **Import**; card assignment via **library-only** PhotoPicker and paste/drop on cover, content, gallery.
 
 📋 **Contracts**
 
@@ -834,18 +823,19 @@ Legend:
 - **Core bank** - Import, process, replace-in-place, dimensional tagging, bulk operations, multi-select to draft gallery card.
 - **Studio embedded media** - Same bank in Studio Media pane with drag handles to Compose targets; debounced search, caching, prefetch.
 - **Search** - Typesense when configured; non-empty text search returns 503 without Typesense; Firestore seek serves unfiltered and dimension-filter paths.
-- **Import** - Local `__X` folder workflow, PhotoPicker, paste-drop; embedded XMP/IPTC metadata at import (see `docs/IMPORT-REFERENCE.md`); each local batch import assigns a shared **`importBatchId`** on created/reused media rows for Browse batch filter and **Recent import**.
-- **Grid workspace** - Natural-aspect thumbnails, inline tag rail + search-only tag bar, growing working set with Load more, select-visible semantics; **Browse group-by** (none / folder / day / import batch / suggested piles), import-folder filter, **Recent import** batch shortcut, and tile-size slider (persisted in local filter prefs).
+- **Import** - Two v1 paths (no in-app import profiles): **folder → card** (CLI `import:folder`, `import:batch-cards`) and **folder → media bank** (Studio **Import** only — not PhotoPicker). Paste/drop uploads (`source: paste`) land in the bank without ingest metadata prompt. PhotoPicker is **library-only** for cover, content, and gallery assignment.
+- **Grid workspace** - Natural-aspect thumbnails, inline tag rail + search-only tag bar, growing working set with Load more, select-visible semantics; **Browse group-by** (none / folder / day / import batch / suggested piles), **Import batch** dropdown + import-folder filter, tile-size slider (persisted in local filter prefs).
 - **Assignment model** - Cover, gallery, inline body references; authoritative delete scan across all card surfaces; blocked delete when references remain.
 - **Per-dimension filters** - Any / Has any / Is empty / Matches tag on pane and tiles.
 - **Renditions** - Reader and studio WebP tiers for tiles; originals for lightbox/zoom.
 - **Legacy routes** - `/admin/media-admin` and media-triage redirect to Studio.
-- **Review mode (v1 shell)** - **Browse | Review** toggle in Studio Media; **Suggested** default lens (**day + import folder** composite grouping — pile title matches membership; When lens auto-splits oversized day groups by folder); lens dropdown for When / Where / Who / What (occasion-shaped pile names); editable suggested tag chips (remove via chip ×); **Accept tags only**, **Accept & create card** (apply tags → draft gallery card → accept pile), **Accept pile**, **Split**, **Dismiss** (Merge deferred). Large piles (>40) show an explicit warning. Import appends suggested piles for new media; full **Refresh piles** rebuilds the active lens queue. Same photo may appear in multiple piles until accept or dismiss. Coverage hints (scenery vs people) — no forced 4D completeness gate.
+- **Review mode (v1 shell)** - **Superseded 2026-07-14** (tab retired; pile work on browse **Organize strip** + **Story piles overlay**). Was: **Browse | Review** toggle; **Suggested** default lens; lens dropdown; **Accept tags only**, **Accept & create card**, **Accept pile**, **Split**, **Dismiss**.
 - **Media stacks (manual v1)** - Firestore **`media_stacks`** collection (`kind`: `manual` | `burst` | `motion_pair`; `status`; `heroMediaId`; `memberMediaIds[]`); media denorm **`stackId`** / **`stackRole`** (`hero` | `member`). Browse grid **collapsed by default** (one hero tile per stack); **+N** badge expands in place; **Show all stacks** toggle (persisted local pref); **Unstack** on expanded hero; bulk **Create stack** from 2+ unstacked selection; **Create card** resolves one gallery slot per stack (`galleryMedia[].stackId` optional). Auto burst detection, Review burst lens, reader in-stack paging, and motion pairs deferred.
+- **Media piles organize v2** - **Shipped 2026-07-14** (slices 1–5 + follow-up): **Organize strip** (always on **Whole library**), **Story piles overlay** (collapsible sections, membership DnD, **Edit pile tags**, **Apply to photos**, **Create card**, **Dismiss**), **Browse | Review** tab retired. **Import batch** filter in browse row replaces **Import scope** row. Bank import shows completion summary (path, batch, pile count). Piles = pre-card story groups in Media only; **`provisional_clusters`**; distinct from **`media_stacks`**. Slice **(6) deep link dropped**.
 
 ⭕1 **Planned**
 
-- **PhotoPicker convergence** - Bank import and library pick in Media admin so card edit PhotoPicker becomes optional.
+- **PhotoPicker convergence** — **Shipped 2026-07-14** as **insert-image workflow v1**: PhotoPicker is **library-only** (cover, content, gallery); **folder import** only via Studio Media **Import**; paste/drop on cover, content, gallery; Studio also supports drag-from-Media; pasted media lands in bank (`source: paste`) with no ingest metadata prompt — filter **Source: Paste** in Media or library picker.
 - **Import and duplicate triage** - Trustworthy bank workflow and source-aware duplicate review (not filename-only).
 - **Manual phone aggregation** - Select imported phone group, assign to card, flesh out story/tags.
 - **Media derivative architecture** - Surface-specific derivatives; video and phone as first-class inputs.
@@ -875,8 +865,9 @@ Legend:
 - **Delete & replace** - Delete blocked while referenced on any card surface; replace-in-place preserves `docId` where product allows; graph scan authoritative over `referencedByCardIds` alone.
 - **Captions** - Optional per-media caption field; inline edit in grid; two-line clamp on tiles.
 - **Processing & readiness** *(target)* - Each media row exposes **readiness state** (e.g. uploaded, thumbnailed, indexed, failed) so UI stays truthful during background work. Video/transcode fields deferred (**❓ Open** depth).
-- **Archive intelligence** - Heuristic clusters and review stacks land as **Provisional suggestions**; **Review** mode in this pane for accept/split/merge (**Administration** 📋). Spikes per `05` and ⭕1 **Guided archive spikes**.
-- **Review mode IA** - Toggle **Browse | Review** in Media pane: Browse = grid/filter UX plus **Group by** (folder, day, import batch, suggested piles), folder filter, tile size, **Show all stacks**, and **Recent import**; Review = provisional cluster queue. **Suggested** lens groups by **day + import folder** (title matches members); **When** may sub-split large same-day groups by folder. Author may switch lens via dropdown (When / Where / Who / What). **What** = author **occasion** mental model (birthday, day at the lake). Actions: **Accept tags only** (confirmed bulk tag apply, pile stays pending), **Accept & create card** (tags + draft gallery card + accept pile), **Accept pile** (apply tags + mark cluster accepted), **Split** (select members → new pending pile), **Dismiss** (provisional only). **Merge** deferred. Overlap across piles allowed until accept. Optional dimensions OK — **coverage notes** and **large pile** warnings; not completeness gates.
+- **Archive intelligence** - Heuristic clusters land as **Provisional suggestions** in **`provisional_clusters`** (**Administration** 📋). **Shipped v1:** separate **Review** mode for accept/split/dismiss. **Planned v2:** **Story piles overlay** on browse (see below); same storage and accept accounting. Spikes per `05` and ⭕1 **Guided archive spikes**.
+- **Review mode IA (shipped v1 — superseded by Story piles organize v2 when built)** - Toggle **Browse | Review** in Media pane: Browse = grid/filter UX plus **Group by** (folder, day, import batch, suggested piles), folder filter, tile size, **Show all stacks**, and **Recent import**; Review = provisional cluster queue. **Suggested** lens groups by **day + import folder** (title matches members); **When** may sub-split large same-day groups by folder. Author may switch lens via dropdown (When / Where / Who / What). **What** = author **occasion** mental model (birthday, day at the lake). Actions: **Accept tags only** (confirmed bulk tag apply, pile stays pending), **Accept & create card** (tags + draft gallery card + accept pile), **Accept pile** (apply tags + mark cluster accepted), **Split** (select members → new pending pile), **Dismiss** (provisional only). **Merge** deferred. Overlap across piles allowed until accept (**retired** when Story piles organize v2 ships — v2 **exclusive membership** per 📐 below). Optional dimensions OK — **coverage notes** and **large pile** warnings; not completeness gates.
+- **Story piles organize v2 IA (shipped 2026-07-14)** - One Media pane, no new Studio pane. **Bands:** (1) header — **Whole library | This card** population; (2) **Organize strip** on **Whole library** (may collapse) — **Source:** Raw | Foldered | Phone; **Build piles**; **+ New pile**; toggles **Story piles overlay** and **Tag suggestions on piles** (tag chips **default ON** when overlay opens; preference persisted); optional **Collapse all / Expand all**; (3) filter row — search, source, shape, tags, **Import batch** dropdown, import-folder filter, group-by, tile size; (4) main grid. **Organize lens** — same filtered population as browse (batch + folder + tag/dimension filters); no separate **Import scope** mode. **Overlay off** — normal browse. **Overlay on** — collapsible pile sections; headers show title, count, **Edit pile tags**, **Apply to photos** (bulk confirmed tags on members; pile stays pending), **Create card**, **Dismiss**; tag chips when toggle on; **Unsorted** tail (**exclusive membership**). **Edit membership** — DnD to pile/Unsorted headers; context menu **Remove** / **Move to…** / **New pile…**. **Build piles** — append-only for media not already in a pending pile within current filters. **Import hook** — bank import assigns **`importBatchId`**, sets batch filter, builds suggested piles, shows summary (**Media bank import** path). **Cards pane** — no pile editor. **Scope** — overlay on **Whole library** only. **Distinct from media stacks**. *(Slice 6 deep link dropped.)*
 - **Studio Media view layers** - Three explicit scopes: **Population** — **Whole library** (default bank) vs **This card** (selected Compose card media only); optional **Map preview** banner when Organize Map selects an import tag (transient server filter, not persisted, does not populate the tag bar). **Refinement** — search, source, shape, **tag bar**, tag scope, **any-card assignment** status (hidden in **This card** mode), browse group-by. **Card overlay** — **Highlight on this card** (Whole library only; non-destructive badge). Filter-X clears refinements and Map preview; population unchanged unless user switches view.
 - **Media stacks IA** - Canonical stacks in **`media_stacks`** (distinct from provisional **`provisional_clusters`**). Browse shows **hero-only** collapsed tiles with **+N** expand; **Show all stacks** reveals every member row; **Unstack** dissolves stack and clears media denorm. Bulk **Create stack** requires 2+ unstacked items. Gallery **Create card** emits one `galleryMedia` entry per stack (hero + optional `stackId`). Auto burst, motion pairs, and reader in-stack paging deferred.
 - **Referrer list** - `referencedByCardIds` is denormalized convenience; delete and reconcile use authoritative card-surface scan.
@@ -887,6 +878,12 @@ Legend:
 - **Entry paths** - Import-to-card (folder + images together) vs import-to-bank then assign.
 - **Source adapters** - Import service layer accepts future adapters alongside local filesystem. **Apple Photos first** for native cloud adapter work; Google Photos and OneDrive follow.
 - **Commercial import bar** - Trustworthy ingestion, review/correction, progression to structured storytelling.
+- **Piles as pre-cards** - Story piles are subject/story groups (like legacy folder-shaped cards); dimensional tags are secondary hints on piles, not the primary organize structure. Media = workshop; Cards = showroom after **Create card**.
+- **Story piles v2 — exclusive membership** - Each photo appears in **at most one** pending pile at a time—machine heuristics, author DnD, and **Move to…** all enforce exclusive membership; **Unsorted** = media in zero pending piles. V1 Review overlap **retired** when v2 ships.
+- **Story piles v2 — new empty pile** - **Both:** Organize strip **+ New pile** (name first, drag in after) and **Move to… → New pile…** from selection.
+- **Story piles v2 — Build piles** - **Incremental append only**; **Build piles** and import never delete or replace existing pending piles; only cluster media **not already** in a pending pile for the active scope.
+- **Story piles v2 — tag suggestions toggle** - Separate from overlay; **default ON** when Story piles overlay opens (persist author preference when turned off).
+- **Story piles v2 — dismiss large pile** - Piles with **>40** members require confirm before dismiss; copy states all members **return to Unsorted**; **provisional dismiss only** (no confirmed tag writes).
 
 ❓ **Open**
 

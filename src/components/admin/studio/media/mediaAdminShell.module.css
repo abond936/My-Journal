@@ -91,6 +91,27 @@
   padding: 0 2px;
 }
 
+.studioImportScopeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  margin: 0 0 var(--spacing-xs);
+  padding: 0 2px;
+}
+
+.studioImportScopeSelect {
+  min-width: 10rem;
+  max-width: 16rem;
+  font-size: var(--font-size-xs);
+  padding: 0.28rem 0.4rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
 .studioPopulationLabel {
   font-size: var(--font-size-xs);
   color: var(--admin-support-label-color);
@@ -883,4 +904,9 @@
   margin-top: var(--spacing-lg);
   display: flex;
   justify-content: flex-end;
+}
+
+.studioTagFilterModalBody {
+  overflow: visible;
+  min-height: min(72vh, 720px);
 }

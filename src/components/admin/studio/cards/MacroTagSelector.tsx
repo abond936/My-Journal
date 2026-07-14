@@ -58,6 +58,10 @@ interface MacroTagSelectorProps {
   onExpandedChange?: (open: boolean) => void;
   /** Collapsed face: full sparse trees (default) or hidden when the parent shows tags elsewhere. */
   collapsedSummary?: MacroTagCollapsedSummary;
+  /** When true, expanded picker renders inline (no fixed backdrop). Use inside EditModal. */
+  suppressOverlay?: boolean;
+  /** When true, each checkbox toggle calls onChange immediately (filter surfaces). */
+  applySelectionOnChange?: boolean;
 }
 
 export default function MacroTagSelector({
@@ -74,6 +78,8 @@ export default function MacroTagSelector({
   expanded: expandedProp,
   onExpandedChange,
   collapsedSummary = 'sparseTrees',
+  suppressOverlay = false,
+  applySelectionOnChange = false,
 }: MacroTagSelectorProps) {
   const isControlled =
     typeof expandedProp === 'boolean' && typeof onExpandedChange === 'function';
@@ -102,6 +108,7 @@ export default function MacroTagSelector({
       }
       return;
     }
+    if (applySelectionOnChange) return;
     setExpanded(false);
   };
 
@@ -114,7 +121,20 @@ export default function MacroTagSelector({
     setExpanded(false);
   };
 
-  const selectedTagIds = selectedTags.map(tag => tag.docId);
+  const selectedTagIdsKey = useMemo(
+    () =>
+      selectedTags
+        .map((tag) => tag.docId)
+        .filter((id): id is string => Boolean(id))
+        .sort()
+        .join('\u001e'),
+    [selectedTags]
+  );
+
+  const selectedTagIds = useMemo(
+    () => (selectedTagIdsKey ? selectedTagIdsKey.split('\u001e') : []),
+    [selectedTagIdsKey]
+  );
 
   // Build the sparse tree of selected tags and their ancestors
   const selectedTagTree = useMemo(() => {
@@ -141,12 +161,15 @@ export default function MacroTagSelector({
     return (
       <ExpandedView
         initialSelection={selectedTagIds}
+        initialSelectionKey={selectedTagIdsKey}
         initialSubjectTagId={subjectTagId ?? null}
         allTags={effectiveAllTags}
         onSave={handleSave}
         onSaveSubjectTagId={onSubjectTagIdChange}
         onCancel={handleCancel}
         saving={saving}
+        suppressOverlay={suppressOverlay}
+        applySelectionOnChange={applySelectionOnChange}
       />
     );
   }
@@ -213,6 +236,7 @@ function TagNode({ node }: { node: TagWithChildren }) {
 
 interface ExpandedViewProps {
   initialSelection: string[];
+  initialSelectionKey: string;
   initialSubjectTagId?: string | null;
   /** Fallback when TagProvider list is still empty; merged so trees show every tag. */
   allTags: Tag[];
@@ -221,10 +245,13 @@ interface ExpandedViewProps {
   onCancel: () => void;
   saving?: boolean;
   className?: string;
+  suppressOverlay?: boolean;
+  applySelectionOnChange?: boolean;
 }
 
 function ExpandedView({
   initialSelection,
+  initialSelectionKey,
   initialSubjectTagId = null,
   allTags,
   onSave,
@@ -232,6 +259,8 @@ function ExpandedView({
   onCancel,
   saving = false,
   className,
+  suppressOverlay = false,
+  applySelectionOnChange = false,
 }: ExpandedViewProps) {
   const { tags } = useTag();
   const tagSource = useMemo(() => {
@@ -254,8 +283,14 @@ function ExpandedView({
   const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
-    setCurrentSelection(new Set(initialSelection));
-  }, [initialSelection]);
+    setCurrentSelection((prev) => {
+      const next = new Set(initialSelection);
+      if (prev.size === next.size && [...prev].every((id) => next.has(id))) {
+        return prev;
+      }
+      return next;
+    });
+  }, [initialSelectionKey]);
 
   React.useEffect(() => {
     setCurrentSubjectTagId(initialSubjectTagId);
@@ -295,21 +330,26 @@ function ExpandedView({
   }, [dimensionalTree, currentSelection]);
 
   const handleTagChange = (tagId: string, isSelected: boolean) => {
-    setCurrentSelection(prev => {
-      const newSelection = new Set(prev);
-      if (isSelected) {
-        newSelection.add(tagId);
-      } else {
-        newSelection.delete(tagId);
-      }
-      if (!isSelected && currentSubjectTagId === tagId) {
-        setCurrentSubjectTagId(null);
-      }
-      return newSelection;
-    });
+    const newSelection = new Set(currentSelection);
+    if (isSelected) {
+      newSelection.add(tagId);
+    } else {
+      newSelection.delete(tagId);
+    }
+    if (!isSelected && currentSubjectTagId === tagId) {
+      setCurrentSubjectTagId(null);
+    }
+    setCurrentSelection(newSelection);
+    if (applySelectionOnChange) {
+      void onSave(Array.from(newSelection));
+    }
   };
 
   const handleSaveClick = async () => {
+    if (applySelectionOnChange) {
+      onCancel();
+      return;
+    }
     await onSave(Array.from(currentSelection));
     if (onSaveSubjectTagId) {
       const resolvedSubjectTagId =
@@ -334,87 +374,103 @@ function ExpandedView({
   }, [currentSelection, tagSource]);
 
   React.useEffect(() => {
+    if (suppressOverlay) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onCancel]);
+  }, [onCancel, suppressOverlay]);
+
+  const panel = (
+    <div
+      className={clsx(
+        suppressOverlay ? styles.embeddedModalContainer : styles.modalContainer,
+        className
+      )}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <h2 className={styles.modalHeader}>Edit Tags</h2>
+
+      <div className={styles.searchBar}>
+        <input
+          type="text"
+          placeholder="Edit tags…"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className={styles.searchInput}
+          autoFocus
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            className={styles.searchClear}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      {onSaveSubjectTagId ? (
+        <div className={styles.subjectPanel}>
+          <div className={styles.subjectPanelHeader}>Subject</div>
+          <div className={styles.subjectPanelHint}>Click a selected tag to toggle subject.</div>
+          <div className={styles.subjectChipRow}>
+            {selectedTagsById.length > 0 ? (
+              selectedTagsById.map((tag) => {
+                const isSubject = currentSubjectTagId === tag.docId;
+                return (
+                  <button
+                    key={tag.docId}
+                    type="button"
+                    className={clsx(
+                      styles.subjectChip,
+                      subjectChipDimensionClass(tag.dimension),
+                      isSubject && styles.subjectChipActive
+                    )}
+                    onClick={() => setCurrentSubjectTagId(isSubject ? null : tag.docId)}
+                  >
+                    <span className={styles.subjectChipText}>{tag.name}</span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className={styles.subjectPanelEmpty}>Select one or more tags to choose a subject.</span>
+            )}
+          </div>
+        </div>
+      ) : null}
+      <div className={styles.interactiveColumns}>
+        {filteredDimensionalTree.map(dimension => (
+          <TagPickerDimensionColumn
+            key={dimension.docId}
+            dimension={dimension}
+            selection={currentSelection}
+            onSelectionChange={handleTagChange}
+            expandedNodeIds={expandedNodeIds}
+            checkboxIdPrefix="tag"
+            forceExpandAll={!!searchTerm.trim()}
+          />
+        ))}
+      </div>
+      <div className={styles.actions}>
+        <button onClick={onCancel} className={styles.cancelButton} disabled={saving}>Cancel</button>
+        <button onClick={() => void handleSaveClick()} className={styles.saveButton} disabled={saving}>
+          {saving ? 'Saving…' : applySelectionOnChange ? 'Done' : 'Save'}
+        </button>
+      </div>
+    </div>
+  );
+
+  if (suppressOverlay) {
+    return panel;
+  }
 
   return (
     <div className={clsx(styles.overlay, className)} onClick={onCancel} role="presentation">
-      <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.modalHeader}>Edit Tags</h2>
-
-        <div className={styles.searchBar}>
-          <input
-            type="text"
-            placeholder="Edit tags…"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-            autoFocus
-          />
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={() => setSearchTerm('')}
-              className={styles.searchClear}
-              aria-label="Clear search"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-        {onSaveSubjectTagId ? (
-          <div className={styles.subjectPanel}>
-            <div className={styles.subjectPanelHeader}>Subject</div>
-            <div className={styles.subjectPanelHint}>Click a selected tag to toggle subject.</div>
-            <div className={styles.subjectChipRow}>
-              {selectedTagsById.length > 0 ? (
-                selectedTagsById.map((tag) => {
-                  const isSubject = currentSubjectTagId === tag.docId;
-                  return (
-                    <button
-                      key={tag.docId}
-                      type="button"
-                      className={clsx(
-                        styles.subjectChip,
-                        subjectChipDimensionClass(tag.dimension),
-                        isSubject && styles.subjectChipActive
-                      )}
-                      onClick={() => setCurrentSubjectTagId(isSubject ? null : tag.docId)}
-                    >
-                      <span className={styles.subjectChipText}>{tag.name}</span>
-                    </button>
-                  );
-                })
-              ) : (
-                <span className={styles.subjectPanelEmpty}>Select one or more tags to choose a subject.</span>
-              )}
-            </div>
-          </div>
-        ) : null}
-        <div className={styles.interactiveColumns}>
-          {filteredDimensionalTree.map(dimension => (
-            <TagPickerDimensionColumn
-              key={dimension.docId}
-              dimension={dimension}
-              selection={currentSelection}
-              onSelectionChange={handleTagChange}
-              expandedNodeIds={expandedNodeIds}
-              checkboxIdPrefix="tag"
-              forceExpandAll={!!searchTerm.trim()}
-            />
-          ))}
-        </div>
-        <div className={styles.actions}>
-          <button onClick={onCancel} className={styles.cancelButton} disabled={saving}>Cancel</button>
-          <button onClick={() => void handleSaveClick()} className={styles.saveButton} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
+      {panel}
     </div>
   );
 }

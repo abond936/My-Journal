@@ -2,9 +2,19 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MediaAdminContent from '@/components/admin/studio/media/MediaAdminContent';
+import { DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES } from '@/lib/preferences/adminFilters';
 
 const useMediaMock = jest.fn();
 const useStudioShellOptionalMock = jest.fn();
+
+jest.mock('@/lib/preferences/adminFilters', () => {
+  const actual = jest.requireActual('@/lib/preferences/adminFilters');
+  return {
+    ...actual,
+    readStoredMediaAdminLocalFilterPreferences: jest.fn(() => actual.DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES),
+    writeStoredMediaAdminLocalFilterPreferences: jest.fn(() => true),
+  };
+});
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -84,6 +94,20 @@ jest.mock('@/components/admin/common/DebouncedSearchInput', () => ({
   default: () => null,
 }));
 
+jest.mock('@/components/admin/studio/media/MediaBrowseGroupedView', () => ({
+  __esModule: true,
+  default: () => <div data-testid="media-grouped-view">grouped</div>,
+}));
+
+jest.mock('@/lib/utils/reviewClusterImport', () => ({
+  generateReviewClustersForImport: jest.fn(async () => undefined),
+}));
+
+jest.mock('@/components/admin/studio/media/MediaStoryPilesOverlayView', () => ({
+  __esModule: true,
+  default: () => <div data-testid="story-piles-overlay">overlay</div>,
+}));
+
 const baseMediaContext = {
   media: [],
   loading: false,
@@ -120,6 +144,7 @@ const baseMediaContext = {
   clearError: jest.fn(),
   setSelectedMediaIds: jest.fn(),
   dimensionalQueryOverlay: {},
+  transientDimensionalQueryOverlay: {},
   setDimensionalQueryOverlay: jest.fn(),
   setTransientDimensionalQueryOverlay: jest.fn(),
   resolveMediaById: jest.fn(),
@@ -134,6 +159,14 @@ describe('MediaAdminContent', () => {
     fetchMock.mockReset();
     useMediaMock.mockReturnValue(baseMediaContext);
     useStudioShellOptionalMock.mockReturnValue(null);
+    const { readStoredMediaAdminLocalFilterPreferences } = jest.requireMock(
+      '@/lib/preferences/adminFilters'
+    ) as {
+      readStoredMediaAdminLocalFilterPreferences: jest.Mock;
+    };
+    readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
+      DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
+    );
   });
 
   it('does not start the embedded media fetch before Studio has an active card context', () => {
@@ -275,6 +308,46 @@ describe('MediaAdminContent', () => {
     rerender(<MediaAdminContent embedded />);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('renders story piles overlay when overlay toggle is on', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ clusters: [] }),
+    } as Response);
+    useStudioShellOptionalMock.mockReturnValue({
+      selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
+      selectedDetail: null,
+    });
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      media: [{ docId: 'media-1', importBatchId: 'batch-100' }],
+    });
+
+    render(<MediaAdminContent embedded />);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Story piles overlay' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('story-piles-overlay')).toBeInTheDocument();
+    });
+  });
+
+  it('shows the organize strip on Whole library', () => {
+    useStudioShellOptionalMock.mockReturnValue({
+      selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
+      selectedDetail: null,
+    });
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      media: [{ docId: 'media-1', importBatchId: 'batch-100' }],
+    });
+
+    render(<MediaAdminContent embedded />);
+
+    expect(screen.getByRole('region', { name: 'Organize imported media' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Build piles' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '+ New pile' })).toBeInTheDocument();
   });
 
   it('does not arm the embedded load-more observer at all in Studio mode', async () => {

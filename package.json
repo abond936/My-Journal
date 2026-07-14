@@ -29,6 +29,7 @@
     "dry-run:import-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/dry-run-import-metadata.ts",
     "import:folder": "tsx -r dotenv/config src/lib/scripts/dev/import-single-folder.ts",
     "import:batch-cards": "tsx -r dotenv/config src/lib/scripts/dev/import-batch-folders-as-cards.ts",
+    "backfill:legacy-import-batch": "tsx -r dotenv/config src/lib/scripts/dev/backfill-legacy-import-batch-id.ts",
     "diagnose:tag": "tsx src/lib/scripts/dev/diagnose-tags.ts",
     "diagnose:cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/diagnose-cover-image.ts",
     "test:clear-cover": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/test-clear-cover-direct.ts",
