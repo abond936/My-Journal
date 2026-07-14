@@ -189,6 +189,8 @@ interface TagAdminListProps {
   stackDimensionColumns?: boolean;
   /** Studio embedded: hide Who/What/When/Where column titles. */
   hideDimensionColumnHeadings?: boolean;
+  /** Highlight tag rows (e.g. Organize reconcile target preview). */
+  highlightTagIds?: string[];
 }
 
 interface DimensionColumn {
@@ -213,8 +215,10 @@ function TagAdminDimensionColumn({
   onDeleteTag,
   onCreateTag,
   hideDimensionColumnHeadings,
+  highlightTagIds,
 }: {
   hideDimensionColumnHeadings?: boolean;
+  highlightTagIds?: Set<string>;
   col: DimensionColumn;
   tagMap: Map<string, TagRow>;
   isShiftPressed: boolean;
@@ -403,6 +407,7 @@ function TagAdminDimensionColumn({
                     onCreateTag={onCreateTag}
                     isCollapsed={collapsedNodes.has(tag.docId!)}
                     onToggleCollapse={onToggleCollapse}
+                    highlighted={Boolean(tag.docId && highlightTagIds?.has(tag.docId))}
                   />
                 </SortableTag>
               ))}
@@ -424,7 +429,9 @@ export function TagAdminList({
   onReparent,
   stackDimensionColumns = false,
   hideDimensionColumnHeadings = false,
+  highlightTagIds = [],
 }: TagAdminListProps) {
+  const highlightTagIdSet = useMemo(() => new Set(highlightTagIds), [highlightTagIds]);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
   const [dragState, setDragState] = useState<{
     activeId: string | null;
@@ -537,6 +544,7 @@ export function TagAdminList({
             onUpdateTag={onUpdateTag}
             onDeleteTag={onDeleteTag}
             onCreateTag={onCreateTag}
+            highlightTagIds={highlightTagIdSet}
           />
         ))}
       </div>

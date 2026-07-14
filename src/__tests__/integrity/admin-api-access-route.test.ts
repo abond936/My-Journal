@@ -108,9 +108,32 @@ jest.mock('@/lib/firebase/tagService', () => ({
 jest.mock('@/lib/services/images/imageImportService', () => ({
   importFromLocalDrive: jest.fn(),
   importFromBuffer: jest.fn(),
-  bulkApplyMediaTags: jest.fn(),
+  bulkApplyMediaTags: jest.fn().mockResolvedValue({ updatedIds: [], updatedMedia: [] }),
   patchMediaDocument: jest.fn(),
   replaceMediaAssetContent: jest.fn(),
+}));
+
+jest.mock('@/lib/services/provisionalClusterService', () => ({
+  listPendingReviewClusters: jest.fn().mockResolvedValue([]),
+  generateReviewClusters: jest.fn().mockResolvedValue({ created: 0, clusters: [] }),
+  updateReviewClusterSuggestedTags: jest.fn(),
+  acceptReviewClusterTags: jest.fn(),
+  acceptReviewClusterPile: jest.fn(),
+  dismissReviewCluster: jest.fn(),
+  splitReviewCluster: jest.fn(),
+}));
+
+jest.mock('@/lib/services/backupStatusService', () => ({
+  getBackupOperationsStatus: jest.fn().mockResolvedValue({}),
+  getBackupTriggerPolicy: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('@/lib/scripts/firebase/backup-run', () => ({
+  runPairedBackup: jest.fn(),
+}));
+
+jest.mock('@/lib/services/typesenseReconciliation', () => ({
+  diagnoseTypesenseProjection: jest.fn().mockResolvedValue({}),
 }));
 
 jest.mock('@/lib/services/importFolderAsCard', () => ({

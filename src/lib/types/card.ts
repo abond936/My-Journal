@@ -11,6 +11,8 @@ const galleryMediaItemSchema = z.object({
   order: z.number(),
   objectPosition: z.string().optional(),
   media: mediaSchema.optional(),
+  /** When set, this gallery slot represents a collapsed media stack (hero + alternates). */
+  stackId: z.string().optional(),
 });
 
 /**

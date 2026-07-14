@@ -67,7 +67,7 @@ Legend:
 - **Card model** — **📋 drafted** (`02` **Studio Cards**).
 - **Collections & structure** — **📋 spec'd** (`02` **Collections Management**, **Studio Organize**). Multi-parent: **per-path** in Guided reader.
 - **Card–media integrity** — **📋 verify** (`01` Backend 📐 set; product cross-refs in **Administration**, **Studio Media**).
-- **Archive intelligence** — **📋 drafted** (provisional + Review mode IA; spikes remain ⭕1 build).
+- **Archive intelligence** — **📋 spec'd** (provisional + Review mode IA); **Review v1 shell shipped** (heuristic piles, Suggested lens); **manual media stacks v1 shipped** (collapsed browse, bulk create/unstack); auto burst / merge / adapter spikes remain ⭕1 build.
 - **Person & face identity** — **📋 drafted** (📐 in **Studio Tags** + `05`; faces ⭕2).
 - **Filters & populations** — **📋 drafted** (`02` **Administration**, **Application**, **Navigation**, `01` 📐).
 - **Search & index** — **📋 drafted** (admin in **Administration**; platform in `01`).
@@ -102,7 +102,7 @@ Legend:
 - **Studio Tags** — **📋 spec'd** (tag authority, inheritance defaults off; reader filter scope UI shipped).
 - **Collections Management** — **📋 spec'd** (multi-parent **per-path** in Guided reader).
 - **Studio Questions** — **📋 spec'd**.
-- **Studio Media** — **📋 spec'd** (bank, import interim, Review mode, Apple Photos first); video depth **❓**.
+- **Studio Media** — **📋 spec'd** (bank, import interim, **Review mode shipped v1**); video depth **❓**.
 - **User Management** — **📋 spec'd** (one account per reader).
 - **Theme Management** — **📋 spec'd** (presets-only for readers; workbench admin-only); italic **❓**.
 - **Gallery Management** — **📋 spec'd** (future presets; v1 defers to card gallery).
@@ -118,7 +118,7 @@ Legend:
 
 ### Phase 2 — Admin Productivity *(active)*
 
-📐 **Active build** - **Reader filter scope** shipped **2026-07-13** (sidebar **Tag match** control; `tagScope=subject` on card and media list APIs when user selects **Subject only**). Prior: **Tag inheritance slice** **2026-07-12**. **Next candidate:** Settings Tag Set 0, inheritance backfill, or organize spine (provisional + Review mode).
+📐 **Active build** - **Media stacks (manual v1)** shipped **2026-07-13** (collapsed browse, expand/unstack, Show all, bulk Create stack, gallery stackId on create-card). Prior: **Organize import-tag reconciliation v2** **2026-07-13**. **Next candidate:** Review merge + auto burst stacks, subset-only map workflows, Settings theme reader prefs, or Top Nav Help.
 
 *Remaining Phase 2 inventory follows; order is guidance after the active slice completes.*
 
@@ -154,6 +154,7 @@ Legend:
 - **Tag tree density** - Tighter vertical spacing without weakening DnD hit targets.
 - **Tag-edit iconography** - Tag-specific affordance instead of generic pencil.
 - **Media-to-card tag inheritance** - Auto gallery→card sync per `02` **Studio Tags** 📋 (**shipped 2026-07-12** — Settings toggles + sync hooks; backfill on toggle enable deferred).
+- **Tag Set 0 — Generic** - Optional starter taxonomy install/remove from Settings (**shipped 2026-07-13** — additive only; `tagSetId` marker; skips name conflicts).
 
 **§ Studio Media (`02`)**
 
@@ -203,7 +204,7 @@ Legend:
 - **Top-nav refinement** - Logo, Back clarity, chrome density.
 - **Hamburger restructure** - Home, Settings, Help, Theme row per 📋 contract.
 - **In-app Help** - Reader basics + link to landing FAQ.
-- **Settings surface** - Narrow v1 scope (design pass first).
+- **Settings surface** - **shipped** (inheritance toggles, Tag Set 0, backup status/run locally, index health, restore CLI guidance); theme reader prefs remain ⭕1.
 
 **§ Left Navigation (`02`)**
 

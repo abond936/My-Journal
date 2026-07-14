@@ -28,6 +28,17 @@ jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   }),
 }));
 
+jest.mock('@/components/admin/studio/media/useMediaStacks', () => ({
+  useMediaStacks: () => ({
+    stacks: [],
+    stackById: new Map(),
+    loading: false,
+    refreshStacks: jest.fn(),
+    createStack: jest.fn(),
+    dissolveStack: jest.fn(),
+  }),
+}));
+
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({
   useStudioShellOptional: () => useStudioShellOptionalMock(),
 }));
@@ -110,6 +121,7 @@ const baseMediaContext = {
   setSelectedMediaIds: jest.fn(),
   dimensionalQueryOverlay: {},
   setDimensionalQueryOverlay: jest.fn(),
+  setTransientDimensionalQueryOverlay: jest.fn(),
   resolveMediaById: jest.fn(),
 };
 
@@ -256,7 +268,7 @@ describe('MediaAdminContent', () => {
     });
 
     const { rerender } = render(<MediaAdminContent embedded />);
-    fireEvent.click(screen.getByLabelText('Show only assigned'));
+    fireEvent.click(screen.getByRole('button', { name: 'This card' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 

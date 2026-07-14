@@ -30,7 +30,7 @@ Legend:
 - **Reduce overwhelm** - Meet users where they are: “decades of photos in a box or on disks,” mass scans, partial metadata, and fatigue before they reach storytelling.
 - **Preserve authorship** - The family’s **memory and naming** remain authoritative; machine output is **suggestion**, not silent truth.
 - **Dimensional clarity** - Reduce paralysis about **Who / What / When / Where** by **ordering attention** (what to answer first, what can be inferred, what must be human).
-- **Event-first grouping** - Help users see **plausible “piles”** (same afternoon, same venue, same occasion) before asking for fine-grained tags on every single frame.
+- **Event-first grouping** - Help users see **plausible “piles”** (same afternoon, same venue, same occasion) before asking for fine-grained tags on every single frame. **Shipped alignment (Review v1):** default **Suggested** lens fuses capture-day + import-folder signals into **What-shaped occasion titles**; author may switch When / Where / Who / What lenses without treating all four dimensions as equal homework.
 - **Story-forward** - Turn confirmed structure into **draft captions and narratives** through **guided conversation**, minimizing typing and blank-page anxiety.
 
 *Principles*

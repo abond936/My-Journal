@@ -237,6 +237,8 @@ export default function StudioWorkspace() {
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
+  const [organizeReconcileSourceTagId, setOrganizeReconcileSourceTagId] = useState<string | null>(null);
+  const [organizeReconcileTargetTagId, setOrganizeReconcileTargetTagId] = useState<string | null>(null);
   const selectedCardIdRef = useRef<string | null>(requestedCardId);
   const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
@@ -398,6 +400,8 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     selectNoneMedia();
+    setOrganizeReconcileSourceTagId(null);
+    setOrganizeReconcileTargetTagId(null);
   }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
@@ -1187,6 +1191,17 @@ export default function StudioWorkspace() {
     [selectedDetail, selectedPreview]
   );
 
+  const clearOrganizeReconcile = useCallback(() => {
+    setOrganizeReconcileSourceTagId(null);
+    setOrganizeReconcileTargetTagId(null);
+  }, []);
+
+  const openMediaPane = useCallback(() => {
+    setPaneVisibility((prev) =>
+      prev.mediaCollapsed ? { ...prev, mediaCollapsed: false } : prev
+    );
+  }, []);
+
   const studioShellValue = useMemo<StudioShellContextValue>(
     () => ({
       selectedCardId,
@@ -1220,6 +1235,12 @@ export default function StudioWorkspace() {
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
       bodyMediaInsertRef,
+      organizeReconcileSourceTagId,
+      organizeReconcileTargetTagId,
+      setOrganizeReconcileSourceTagId,
+      setOrganizeReconcileTargetTagId,
+      clearOrganizeReconcile,
+      openMediaPane,
     }),
     [
       selectedCardId,
@@ -1253,6 +1274,10 @@ export default function StudioWorkspace() {
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
       bodyMediaInsertRef,
+      organizeReconcileSourceTagId,
+      organizeReconcileTargetTagId,
+      clearOrganizeReconcile,
+      openMediaPane,
     ]
   );
 

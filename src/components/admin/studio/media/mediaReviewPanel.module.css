@@ -1,0 +1,280 @@
+.reviewPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-height: 0;
+  flex: 1;
+}
+
+.reviewToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.reviewToolbarGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.modeToggle {
+  display: inline-flex;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.modeToggleButton {
+  border: none;
+  background: var(--surface1-color);
+  color: var(--text2-color);
+  padding: 0.28rem 0.55rem;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.modeToggleButtonActive {
+  background: var(--accent1-color);
+  color: var(--text-on-accent-color, #fff);
+}
+
+.lensSelect {
+  padding: 0.28rem 0.45rem;
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.toolbarButton {
+  padding: 0.28rem 0.55rem;
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface1-color);
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+.toolbarButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.reviewHint {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  margin: 0;
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+  padding-bottom: var(--spacing-sm);
+}
+
+.pileCard {
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--surface1-color);
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.pileHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.pileTitleBlock {
+  min-width: 0;
+  flex: 1;
+}
+
+.pileTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text1-color);
+}
+
+.pileReason {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.pileCoverage {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  font-style: italic;
+}
+
+.pileOversized {
+  margin: 0.25rem 0 0;
+  font-size: var(--font-size-xs);
+  color: #b45309;
+  font-weight: 500;
+}
+
+.pileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.pileActionButton {
+  padding: 0.22rem 0.45rem;
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface2-color, var(--surface1-color));
+  color: var(--text1-color);
+  cursor: pointer;
+}
+
+.pileActionButtonPrimary {
+  background: var(--accent1-color);
+  border-color: var(--accent1-color);
+  color: var(--text-on-accent-color, #fff);
+}
+
+.pileActionButtonDanger {
+  color: var(--danger-color, #b42318);
+}
+
+.pileActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.thumbStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.thumbButton {
+  position: relative;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
+  padding: 0;
+  background: transparent;
+  cursor: default;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+}
+
+.thumbButtonSelectable {
+  cursor: pointer;
+}
+
+.thumbButtonSelected {
+  border-color: var(--accent1-color);
+  box-shadow: 0 0 0 1px var(--accent1-color);
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.splitBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0.35rem 0;
+}
+
+.tagSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tagSectionLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text2-color);
+}
+
+.tagChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--surface2-color, var(--surface1-color));
+}
+
+.tagChipWho {
+  border-color: color-mix(in srgb, var(--accent1-color) 35%, var(--border1-color));
+}
+
+.tagChipWhat {
+  border-color: color-mix(in srgb, #7c3aed 35%, var(--border1-color));
+}
+
+.tagChipWhen {
+  border-color: color-mix(in srgb, #059669 35%, var(--border1-color));
+}
+
+.tagChipWhere {
+  border-color: color-mix(in srgb, #d97706 35%, var(--border1-color));
+}
+
+.tagChipRemove {
+  border: none;
+  background: transparent;
+  color: var(--text2-color);
+  cursor: pointer;
+  padding: 0 0.15rem;
+  line-height: 1;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.addTagsSlot {
+  margin-top: 2px;
+}
+
+.emptyState {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.loadingState {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Organize spine — Studio Media wireframe</title>
+  <style>
+    :root {
+      --bg: #f7f4ef;
+      --card: #fff;
+      --border: #c9bfb0;
+      --text: #2a2420;
+      --muted: #6b6258;
+      --accent: #b85c38;
+      --accent-bg: #f3e6df;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 1.6rem; margin: 0 0 8px; }
+    h2 { font-size: 1.15rem; margin: 0 0 12px; }
+    h3 { font-size: 0.95rem; margin: 0 0 8px; }
+    .lead, .note { color: var(--muted); font-size: 0.9rem; }
+    .callout {
+      background: #ebe4da;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 16px 0 24px;
+      font-size: 0.92rem;
+    }
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .studio {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .studio-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .studio-body { padding: 12px; }
+    .nav-bar {
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 10px;
+    }
+    .box {
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      background: #faf8f5;
+      min-height: 36px;
+    }
+    .box.accent { background: var(--accent-bg); border-color: #d4a088; }
+    .box.muted { background: #eeeae4; }
+    .toggle { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+    .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .thumb { min-height: 56px; text-align: center; }
+    .review-layout {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .btn {
+      font-size: 0.75rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 24px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #eeeae4; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+    ul { margin: 0; padding-left: 18px; font-size: 0.88rem; }
+    li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Organize spine — Studio Media wireframe</h1>
+    <p class="lead">Proposed UX · Browse vs Review · same route, new mode inside Media pane · not built yet</p>
+
+    <div class="callout">
+      Physical change is localized: one <strong>Browse | Review</strong> toggle in Studio Media.
+      Organize column, Cards, Compose, and reader stay as they are. Review shows machine proposals in a queue;
+      Accept writes confirmed media tags (later: optional attach to card).
+    </div>
+
+    <div class="columns">
+      <section class="panel">
+        <h2>A — Browse (today)</h2>
+        <div class="studio">
+          <div class="studio-head">Admin Studio — Media pane <span class="pill">unchanged shell</span></div>
+          <div class="studio-body">
+            <div class="nav-bar">Top nav + hamburger</div>
+            <div class="studio-grid">
+              <div class="box muted" style="min-height:220px">Organize column<br>(tags + collections)</div>
+              <div>
+                <div class="toggle">
+                  <span class="pill on">Browse</span>
+                  <span class="pill">Review</span>
+                </div>
+                <div class="box">Filters + search + bulk bar</div>
+                <div class="thumb-grid">
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                  <div class="box thumb">thumb</div>
+                </div>
+                <p class="note">Import, filter, tag manually, assign to cards.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>B — Review (proposed)</h2>
+        <div class="studio">
+          <div class="studio-head">Admin Studio — Media pane <span class="pill">unchanged shell</span></div>
+          <div class="studio-body">
+            <div class="nav-bar">Top nav + hamburger</div>
+            <div class="studio-grid">
+              <div class="box muted" style="min-height:220px">Organize column<br>(tags + collections)</div>
+              <div>
+                <div class="toggle">
+                  <span class="pill">Browse</span>
+                  <span class="pill on">Review</span>
+                </div>
+                <div class="box accent">Queue header — pending count · source · bulk select</div>
+                <div class="review-layout">
+                  <div>
+                    <h3>Left — pile list</h3>
+                    <div class="box accent">Cluster A — 38 photos · folder</div>
+                    <div class="box">Cluster B — 12 photos · afternoon</div>
+                    <div class="box">Tag batch — Who hints (6)</div>
+                    <div class="box">Cluster C — burst stack</div>
+                    <p class="note">Provisional until Accept</p>
+                  </div>
+                  <div>
+                    <h3>Center — selected pile</h3>
+                    <div class="box accent" style="min-height:90px">Hero + filmstrip</div>
+                    <div class="box">Why grouped (folder, dates, burst rule)</div>
+                    <div class="box">Suggested tags (editable before accept)</div>
+                    <div class="actions">
+                      <span class="btn primary">Accept pile</span>
+                      <span class="btn">Accept tags</span>
+                      <span class="btn">Split</span>
+                      <span class="btn">Merge</span>
+                      <span class="btn">Dismiss</span>
+                    </div>
+                    <p class="note">Later: Attach to card / New card — confirm only, no auto-publish</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Step</th><th>What happens</th><th>Where in app</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1 Import</td><td>Folder or upload lands in media bank</td><td>Browse (today)</td></tr>
+        <tr><td>2 Propose</td><td>Heuristic creates provisional clusters</td><td>Server-side — no UI yet</td></tr>
+        <tr><td>3 Review</td><td>You work the suggestion queue</td><td>Review mode (layout B)</td></tr>
+        <tr><td>4 Accept</td><td>Confirmed tags on media</td><td>Back to Browse grid</td></tr>
+        <tr><td>5 Story</td><td>Compose card and publish</td><td>Existing Studio path</td></tr>
+      </tbody>
+    </table>
+
+    <div class="split">
+      <div class="panel">
+        <h2>Changes in app</h2>
+        <ul>
+          <li>Browse | Review toggle in Media pane</li>
+          <li>Provisional suggestion store (separate from confirmed tags)</li>
+          <li>Review queue + Accept / Dismiss / Split / Merge</li>
+          <li>Background heuristics after import</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Unchanged</h2>
+        <ul>
+          <li>Reader pages and published truth</li>
+          <li>Your existing tag tree</li>
+          <li>Inheritance toggles (off until you choose)</li>
+          <li>Restore / backup CLI guardrails</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

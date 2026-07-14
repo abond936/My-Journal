@@ -109,6 +109,10 @@ export async function POST(request: NextRequest) {
       const results: LocalImportBatchResultItem[] = [];
       const errors: LocalImportBatchErrorItem[] = [];
       const metadataReadIssues: { sourcePath: string; message: string }[] = [];
+      const importBatchId =
+        typeof body.importBatchId === 'string' && body.importBatchId.trim()
+          ? body.importBatchId.trim()
+          : `batch-${Date.now()}`;
 
       const importConcurrency = readEmbeddedMetadata ? 1 : CONCURRENT_LOCAL_IMPORTS;
 
@@ -143,6 +147,7 @@ export async function POST(request: NextRequest) {
               readMetadata: readEmbeddedMetadata,
               skipIfExists: true,
               normalizeInMemory: true,
+              importBatchId,
               collectMetadataReadIssue: (sp, message) => {
                 metadataReadIssues.push({ sourcePath: sp, message });
               },
@@ -200,6 +205,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({
+        importBatchId,
         results,
         errors,
         ...(metadataReadIssues.length > 0 ? { metadataReadIssues } : {}),

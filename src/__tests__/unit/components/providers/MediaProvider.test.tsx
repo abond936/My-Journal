@@ -552,4 +552,53 @@ describe('MediaProvider', () => {
     fireEvent.click(screen.getByText('Clear Subject'));
     await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe(''));
   });
+
+  it('merges transient dimensional overlay into Studio media fetch query params', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    const capturedUrls: string[] = [];
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      capturedUrls.push(url);
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [],
+          pagination: {
+            page: 1,
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    function StudioTransientHarness() {
+      const { setTransientDimensionalQueryOverlay, fetchMedia } = useMedia();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setTransientDimensionalQueryOverlay({ when: ['import-tag-1'] });
+            void fetchMedia(1);
+          }}
+        >
+          Load Map Preview
+        </button>
+      );
+    }
+
+    render(
+      <MediaProvider>
+        <StudioTransientHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Map Preview'));
+    await waitFor(() => expect(capturedUrls.some((url) => url.includes('when=import-tag-1'))).toBe(true));
+  });
 });

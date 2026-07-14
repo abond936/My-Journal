@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
 import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
+import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import tagAdminStyles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 import studioStyles from './StudioWorkspace.module.css';
 
@@ -11,7 +12,20 @@ import studioStyles from './StudioWorkspace.module.css';
  * The full page remains the canonical fallback—do not change its behavior when editing shared code;
  * use optional props / Studio-only wrappers so defaults match the standalone route.
  */
-export default function TagAdminStudioPane({ embeddedColumn = false }: { embeddedColumn?: boolean }) {
+export default function TagAdminStudioPane({
+  embeddedColumn = false,
+  highlightTagIds,
+}: {
+  embeddedColumn?: boolean;
+  highlightTagIds?: string[];
+}) {
+  const studioShell = useStudioShellOptional();
+  const shellHighlightId = studioShell?.organizeReconcileTargetTagId ?? null;
+  const mergedHighlightTagIds = useMemo(() => {
+    const ids = new Set(highlightTagIds ?? []);
+    if (shellHighlightId) ids.add(shellHighlightId);
+    return Array.from(ids);
+  }, [highlightTagIds, shellHighlightId]);
   const {
     tagTree,
     loading,
@@ -58,6 +72,7 @@ export default function TagAdminStudioPane({ embeddedColumn = false }: { embedde
             tagTree={tagTree}
             stackDimensionColumns
             hideDimensionColumnHeadings
+            highlightTagIds={mergedHighlightTagIds}
             onReorder={handleReorder}
             onReparent={handleReparent}
             onCreateTag={handleCreateTag}

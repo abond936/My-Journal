@@ -16,6 +16,11 @@
   background: var(--admin-chrome-control-hover-background-color);
 }
 
+.tagContentHighlighted {
+  background: color-mix(in srgb, var(--accent1-color) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent1-color) 45%, var(--border1-color));
+}
+
 .expander {
   width: var(--spacing-xs);
   flex-shrink: 0;

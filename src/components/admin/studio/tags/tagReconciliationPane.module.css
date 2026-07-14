@@ -1,0 +1,163 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  line-height: 1.45;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface1-color, var(--bg-color));
+}
+
+.rowSelected {
+  border-color: color-mix(in srgb, var(--accent1-color) 55%, var(--border1-color));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent1-color) 25%, transparent);
+}
+
+.rowSelectButton {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-xs);
+}
+
+.rowSelectButton:hover {
+  background: color-mix(in srgb, var(--accent1-color) 6%, transparent);
+}
+
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tagName {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.meta {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.bucketNote,
+.noSuggest {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+  line-height: 1.35;
+}
+
+.bucketNote {
+  color: #b45309;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.suggestLabel {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.suggestButton {
+  border: 1px solid var(--border1-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface2-color, var(--bg-color));
+  color: var(--text-color);
+  font-size: var(--font-size-xs);
+  padding: 0.15rem 0.45rem;
+  cursor: pointer;
+}
+
+.suggestButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mapAction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-xs) var(--spacing-xs);
+}
+
+.chooseButton {
+  border: 1px solid var(--border1-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface2-color, var(--bg-color));
+  color: var(--text-color);
+  font-size: var(--font-size-xs);
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.applyButton {
+  border: 1px solid var(--border1-color);
+  border-radius: var(--radius-sm);
+  background: var(--accent1-color);
+  color: var(--text-on-accent-color, #fff);
+  font-size: var(--font-size-xs);
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.applyButton:disabled,
+.chooseButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.confirmWarn {
+  margin: 0;
+  color: #b45309;
+  font-size: var(--font-size-xs);
+}
+
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+

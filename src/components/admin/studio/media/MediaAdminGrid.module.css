@@ -30,7 +30,7 @@
 .grid {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(min(228px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--media-grid-min-col, 228px), 100%), 1fr));
   gap: var(--spacing-sm);
   min-width: 0;
   overflow-x: hidden;
@@ -275,6 +275,39 @@
 
 .overlayBottomLinkButton:hover {
   background: color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-chrome-active-control-background-color) 12%);
+}
+
+.stackBadgeButton {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-accent-color) 45%, transparent);
+  background: color-mix(in srgb, var(--admin-accent-color) 12%, var(--admin-window-background-color));
+  color: var(--admin-chrome-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.stackBadgeButton:hover {
+  background: color-mix(in srgb, var(--admin-accent-color) 20%, var(--admin-window-background-color));
+}
+
+.stackDissolveButton {
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
+  color: var(--admin-chrome-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.stackDissolveButton:hover {
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, transparent);
 }
 
 .inlineActions {

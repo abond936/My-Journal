@@ -220,6 +220,11 @@ interface MediaContextType {
   setDimensionalQueryOverlay: (
     map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
   ) => void;
+  /** Studio Map preview only — merged at fetch time, never persisted to localStorage. */
+  transientDimensionalQueryOverlay: DimensionalTagIdMap;
+  setTransientDimensionalQueryOverlay: (
+    map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
+  ) => void;
   
   // Selection
   selectedMediaIds: string[];
@@ -269,6 +274,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>(
     initialMediaAdminPrefsRef.current.dimensionalQueryOverlay
   );
+  const [transientDimensionalQueryOverlay, setTransientDimensionalQueryOverlayState] =
+    useState<DimensionalTagIdMap>({});
+  const transientDimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
   const mediaRequestSeqRef = useRef(0);
   const activeMediaRequestControllerRef = useRef<AbortController | null>(null);
@@ -404,6 +412,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const setTransientDimensionalQueryOverlay = useCallback(
+    (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
+      setTransientDimensionalQueryOverlayState((prev) => {
+        const next = typeof mapOrFn === 'function' ? mapOrFn(prev) : mapOrFn;
+        transientDimensionalQueryOverlayRef.current = next;
+        return next;
+      });
+    },
+    []
+  );
+
+  const resolveDimensionalTagsForFetch = useCallback((): DimensionalTagIdMap => {
+    const isStudioPath = pathname?.startsWith('/admin/studio');
+    const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
+    return mergeDimensionalTagMaps(
+      cardDimensionalForFetch,
+      dimensionalQueryOverlayRef.current,
+      transientDimensionalQueryOverlayRef.current
+    );
+  }, [dimensionalTagMap, pathname]);
+
   useEffect(() => {
     currentPageRef.current = currentPage;
   }, [currentPage]);
@@ -486,12 +515,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const updatedFilters = { ...filtersRef.current, ...newFilters };
       const isStudioPath = pathname?.startsWith('/admin/studio');
       const allowBackgroundPrefetch = !isStudioPath;
-      /** Embedded Studio: media list uses only the overlay; full-page and PhotoPicker merge card context + overlay. */
-      const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
-      const mergedDimensional = mergeDimensionalTagMaps(
-        cardDimensionalForFetch,
-        dimensionalQueryOverlayRef.current
-      );
+      const mergedDimensional = resolveDimensionalTagsForFetch();
       const includeTotal = !isStudioPath;
       const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
@@ -678,8 +702,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, [
     cacheMediaRecords,
     buildQueryString,
-    dimensionalTagMap,
-    pathname,
+    resolveDimensionalTagsForFetch,
     prefetchMediaQuery,
     cacheMediaQueryEntryIfFresh,
     rememberMediaQueryCacheEntry,
@@ -701,10 +724,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const mediaMatchesCurrentView = useCallback(
     (item: Media, currentFilters: MediaFilters = filtersRef.current) => {
-      const currentDimensional = mergeDimensionalTagMaps(
-        pathname?.startsWith('/admin/studio') ? ({} as DimensionalTagIdMap) : dimensionalTagMap,
-        dimensionalQueryOverlayRef.current
-      );
+      const currentDimensional = resolveDimensionalTagsForFetch();
       const assignmentMatches =
         currentFilters.assignment === 'all' ||
         (currentFilters.assignment === 'assigned' && isMediaAssigned(item)) ||
@@ -719,7 +739,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         mediaMatchesDimensionalTags(item, currentDimensional, currentFilters.tagScope)
       );
     },
-    [dimensionalTagMap, pathname]
+    [resolveDimensionalTagsForFetch]
   );
 
   const updateMedia = useCallback(async (id: string, updates: Partial<Media>): Promise<Media | undefined> => {
@@ -1006,7 +1026,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;
     dimensionalQueryOverlayRef.current = {};
+    transientDimensionalQueryOverlayRef.current = {};
     setDimensionalQueryOverlayState({});
+    setTransientDimensionalQueryOverlayState({});
     setFilters(defaultFilters);
     filtersRef.current = defaultFilters;
     setCursorStack([]);
@@ -1065,6 +1087,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     clearFilters,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
+    transientDimensionalQueryOverlay,
+    setTransientDimensionalQueryOverlay,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,

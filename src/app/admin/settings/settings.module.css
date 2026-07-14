@@ -1,6 +1,6 @@
 .page {
   padding: var(--spacing-sm) var(--spacing-md);
-  max-width: 40rem;
+  max-width: 48rem;
   margin: 0;
 }
 
@@ -61,6 +61,74 @@
 
 .hint {
   margin-top: var(--spacing-sm);
+}
+
+.statusLine {
+  margin: var(--spacing-md) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
+}
+
+.statusInstalled {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color3);
+}
+
+.statusNotInstalled {
+  color: var(--text2-color);
+}
+
+.inlineActions {
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.section + .section {
+  margin-top: var(--spacing-md);
+}
+
+.detailList {
+  margin: var(--spacing-md) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text1-color);
+}
+
+.detailList li {
+  line-height: 1.45;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.restoreNote {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  background: var(--layout-background1-color);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text2-color);
+}
+
+.indexHealthy {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color3);
+}
+
+.indexDegraded {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text2-color);
 }
 
 .actions {

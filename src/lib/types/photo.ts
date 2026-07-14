@@ -76,6 +76,13 @@ export const mediaSchema = z.object({
   hasWhen: z.boolean().optional(),
   hasWhere: z.boolean().optional(),
 
+  /** Set on import batch requests so Browse can filter recent uploads. */
+  importBatchId: z.string().optional(),
+
+  /** Canonical burst/manual stack membership (hero + alternates). */
+  stackId: z.string().optional().nullable(),
+  stackRole: z.enum(['hero', 'member']).optional().nullable(),
+
 });
 
 export type Media = z.infer<typeof mediaSchema>;

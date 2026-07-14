@@ -53,6 +53,12 @@ export type MediaAdminStoredFilterPreferences = {
 export type MediaAdminLocalFilterPreferences = {
   duplicateTriageMode: boolean;
   dimensionFilters: AdminDimensionFilterState;
+  browseGroupBy: 'none' | 'folder' | 'day' | 'batch' | 'suggested';
+  browseImportBatchFilter: string;
+  browseImportFolderFilter: string;
+  gridTileMinPx: number;
+  lastImportBatchId: string;
+  showAllStacks: boolean;
 };
 
 const STUDIO_CARD_BANK_STATUS_VALUES = new Set<StudioCardBankStatusFilter>(['all', 'draft', 'published']);
@@ -114,6 +120,12 @@ export const DEFAULT_MEDIA_ADMIN_STORED_FILTER_PREFERENCES: MediaAdminStoredFilt
 export const DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES: MediaAdminLocalFilterPreferences = {
   duplicateTriageMode: false,
   dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+  browseGroupBy: 'none',
+  browseImportBatchFilter: '',
+  browseImportFolderFilter: 'all',
+  gridTileMinPx: 228,
+  lastImportBatchId: '',
+  showAllStacks: false,
 };
 
 function normalizeString(value: unknown, fallback = ''): string {
@@ -210,9 +222,24 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
 function parseMediaAdminLocalFilterPreferences(value: unknown): MediaAdminLocalFilterPreferences | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<Record<keyof MediaAdminLocalFilterPreferences, unknown>>;
+  const groupBy = candidate.browseGroupBy;
+  const browseGroupBy =
+    groupBy === 'folder' || groupBy === 'day' || groupBy === 'batch' || groupBy === 'suggested'
+      ? groupBy
+      : 'none';
+  const tilePx =
+    typeof candidate.gridTileMinPx === 'number' && candidate.gridTileMinPx >= 120 && candidate.gridTileMinPx <= 360
+      ? candidate.gridTileMinPx
+      : DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES.gridTileMinPx;
   return {
     duplicateTriageMode: candidate.duplicateTriageMode === true,
     dimensionFilters: normalizeAdminDimensionFilters(candidate.dimensionFilters),
+    browseGroupBy,
+    browseImportBatchFilter: normalizeString(candidate.browseImportBatchFilter),
+    browseImportFolderFilter: normalizeString(candidate.browseImportFolderFilter, 'all'),
+    gridTileMinPx: tilePx,
+    lastImportBatchId: normalizeString(candidate.lastImportBatchId),
+    showAllStacks: candidate.showAllStacks === true,
   };
 }
 

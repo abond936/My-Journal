@@ -242,7 +242,8 @@ async function createMediaAsset(
   source: Media['source'],
   sourcePath: string,
   captionOverride?: string,
-  tagIds?: string[]
+  tagIds?: string[],
+  importBatchId?: string
 ): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
@@ -310,6 +311,7 @@ async function createMediaAsset(
     caption: captionOverride ?? '',
     createdAt: now,
     updatedAt: now,
+    ...(importBatchId ? { importBatchId } : {}),
   };
 
   const newMedia: Media = derived
@@ -402,6 +404,8 @@ export interface ImportFromLocalOptions {
   normalizeInMemory?: boolean;
   /** When Exif/exec fails but import continues, collect a short message per file (e.g. for API `metadataReadIssues`). */
   collectMetadataReadIssue?: (sourcePath: string, message: string) => void;
+  /** Groups media imported in the same API batch for Browse filters. */
+  importBatchId?: string;
 }
 
 export interface ImportFromLocalResult {
@@ -501,7 +505,8 @@ export async function importFromLocalDrive(
       'local',
       sourcePath,
       caption || undefined,
-      resolvedTagIds
+      resolvedTagIds,
+      options?.importBatchId
     );
     if (traceStages) {
       console.info(

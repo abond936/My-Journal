@@ -26,6 +26,7 @@ interface TagAdminRowProps {
   onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => void;
   isCollapsed: boolean; // Whether the node's children are currently hidden.
   onToggleCollapse: (tagId: string) => void;
+  highlighted?: boolean;
 }
 
 export function TagAdminRow({
@@ -36,6 +37,7 @@ export function TagAdminRow({
   onCreateTag,
   isCollapsed,
   onToggleCollapse,
+  highlighted = false,
 }: TagAdminRowProps) {
   // State for handling inline editing of the tag name.
   const [isEditing, setIsEditing] = useState(false);
@@ -83,7 +85,7 @@ export function TagAdminRow({
 
   return (
     <div className={styles.tagAdminRow}>
-      <div className={styles.tagContent}>
+      <div className={`${styles.tagContent} ${highlighted ? styles.tagContentHighlighted : ''}`}>
         {/* Expander button (for nodes with children) */}
         {hasChildren && (
           <div className={styles.expander}>

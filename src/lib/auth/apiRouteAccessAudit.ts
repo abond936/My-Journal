@@ -90,11 +90,25 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
 
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
+  { method: 'GET', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'PATCH', path: '/api/admin/media/review/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/media/review/[id]/actions', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+
+  { method: 'GET', path: '/api/admin/media/stacks', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/media/stacks', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/media/stacks/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'PATCH', path: '/api/admin/media/stacks/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'DELETE', path: '/api/admin/media/stacks/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+
   { method: 'POST', path: '/api/admin/maintenance/backfill', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/cleanup', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/diagnose-cover', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/maintenance/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'GET', path: '/api/admin/maintenance/typesense-status', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+
+  { method: 'GET', path: '/api/admin/settings/operations', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/settings/operations', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 ] as const;
 
 /** Mutation write routes receive per-actor rate limits in middleware (post-review step 8a). */
@@ -155,9 +169,23 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
 
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
 
+  { id: 'admin-media-review-get', method: 'GET', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review?lens=suggested' },
+  { id: 'admin-media-review-post', method: 'POST', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review', body: { lens: 'suggested' } },
+  { id: 'admin-media-review-patch', method: 'PATCH', path: '/api/admin/media/review/[id]', modulePath: '@/app/api/admin/media/review/[id]/route', requestUrl: 'https://example.test/api/admin/media/review/cluster-1', params: Promise.resolve({ id: 'cluster-1' }), body: { suggestedTagIds: {} } },
+  { id: 'admin-media-review-actions', method: 'POST', path: '/api/admin/media/review/[id]/actions', modulePath: '@/app/api/admin/media/review/[id]/actions/route', requestUrl: 'https://example.test/api/admin/media/review/cluster-1/actions', params: Promise.resolve({ id: 'cluster-1' }), body: { action: 'dismiss' } },
+
+  { id: 'admin-media-stacks-get', method: 'GET', path: '/api/admin/media/stacks', modulePath: '@/app/api/admin/media/stacks/route', requestUrl: 'https://example.test/api/admin/media/stacks' },
+  { id: 'admin-media-stacks-post', method: 'POST', path: '/api/admin/media/stacks', modulePath: '@/app/api/admin/media/stacks/route', requestUrl: 'https://example.test/api/admin/media/stacks', body: { mediaIds: ['m1', 'm2'], kind: 'manual' } },
+  { id: 'admin-media-stacks-get-id', method: 'GET', path: '/api/admin/media/stacks/[id]', modulePath: '@/app/api/admin/media/stacks/[id]/route', requestUrl: 'https://example.test/api/admin/media/stacks/stack-1', params: Promise.resolve({ id: 'stack-1' }) },
+  { id: 'admin-media-stacks-patch', method: 'PATCH', path: '/api/admin/media/stacks/[id]', modulePath: '@/app/api/admin/media/stacks/[id]/route', requestUrl: 'https://example.test/api/admin/media/stacks/stack-1', params: Promise.resolve({ id: 'stack-1' }), body: { heroMediaId: 'm1' } },
+  { id: 'admin-media-stacks-delete', method: 'DELETE', path: '/api/admin/media/stacks/[id]', modulePath: '@/app/api/admin/media/stacks/[id]/route', requestUrl: 'https://example.test/api/admin/media/stacks/stack-1', params: Promise.resolve({ id: 'stack-1' }) },
+
   { id: 'admin-maintenance-backfill', method: 'POST', path: '/api/admin/maintenance/backfill', modulePath: '@/app/api/admin/maintenance/backfill/route', requestUrl: 'https://example.test/api/admin/maintenance/backfill', body: { dryRun: true } },
   { id: 'admin-maintenance-cleanup', method: 'POST', path: '/api/admin/maintenance/cleanup', modulePath: '@/app/api/admin/maintenance/cleanup/route', requestUrl: 'https://example.test/api/admin/maintenance/cleanup', body: { dryRun: true } },
   { id: 'admin-maintenance-diagnose-cover', method: 'POST', path: '/api/admin/maintenance/diagnose-cover', modulePath: '@/app/api/admin/maintenance/diagnose-cover/route', requestUrl: 'https://example.test/api/admin/maintenance/diagnose-cover', body: {} },
   { id: 'admin-maintenance-reconcile', method: 'POST', path: '/api/admin/maintenance/reconcile', modulePath: '@/app/api/admin/maintenance/reconcile/route', requestUrl: 'https://example.test/api/admin/maintenance/reconcile', body: { dryRun: true } },
   { id: 'admin-maintenance-typesense-status', method: 'GET', path: '/api/admin/maintenance/typesense-status', modulePath: '@/app/api/admin/maintenance/typesense-status/route', requestUrl: 'https://example.test/api/admin/maintenance/typesense-status' },
+
+  { id: 'admin-settings-operations-get', method: 'GET', path: '/api/admin/settings/operations', modulePath: '@/app/api/admin/settings/operations/route', requestUrl: 'https://example.test/api/admin/settings/operations' },
+  { id: 'admin-settings-operations-post', method: 'POST', path: '/api/admin/settings/operations', modulePath: '@/app/api/admin/settings/operations/route', requestUrl: 'https://example.test/api/admin/settings/operations', body: { action: 'backup' } },
 ] as const;

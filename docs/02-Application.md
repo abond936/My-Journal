@@ -222,13 +222,15 @@ Legend:
 ✅ **Complete**
 
 - **Settings (inheritance)** - `/admin/settings` + hamburger **Settings** link (admin): four gallery→card inheritance toggles, default off, persisted in `app_settings/author`.
+- **Settings (Tag Set 0)** - **shipped** — optional **Tag Set 0 — Generic** install/remove from Settings; **additive only** (skips name conflicts; never replaces existing tags); marked with `tagSetId` for clean removal.
+- **Settings (operations)** - **shipped** — `/admin/settings` shows last paired backup status, **Run paired backup** when `ONEDRIVE_PATH` is set locally (not on hosted Vercel), read-only Typesense index health, and guarded restore CLI guidance.
 
 ⭕1 **Planned**
 
 - **Top-nav refinement** - Logo prominence, Back-button clarity, chrome density; minimal reader control surface unless a named reader theme becomes a real option.
 - **Hamburger restructure** - Implement target IA: Home, Settings, Help, Theme row separation, admin/content grouping per **Hamburger sections** contract.
 - **In-app Help** - First Help surface (reader basics + link to landing FAQ); admin authoring help as follow-up.
-- **Settings surface (remainder)** - Tag Set 0 install, backup/index health, theme reader prefs per **Settings v1 scope** (inheritance shipped).
+- **Settings surface (remainder)** - Theme reader prefs per **Settings v1 scope** (inheritance, Tag Set 0, backup/index health shipped).
 
 ⭕2 **Future**
 
@@ -509,7 +511,7 @@ Legend:
   - **Edit before accept** - Author may change proposed tag target, split/merge clusters, or correct Who link before accept; no confirmed write until explicit confirm.  
   - **Idempotence** - Re-running ingest or clustering may add or refresh proposals but must **not** destroy prior **confirmed** work; stale provisional may be superseded or expired by policy (implementation detail).  
   - **Review surfaces** - Primary UX in **Studio Media** **Browse | Review** mode (**Studio Media** 📋 **Review mode IA**); card-level tag suggestions may appear in **Studio Cards** / **Compose** with the same accept contract.  
-  - **Storage** - Provisional records are **not** embedded as normal tag assignments on media/card docs. Product contract: keyed by **subject** (`media` | `card`), **kind** (tag | cluster | face), **source** (heuristic | import | ai | face), payload, and status (`pending` | `accepted` | `dismissed`). Exact Firestore/collection shape: **❓ Open** — reconcile into `01` TECHNICAL when schema slice is approved.  
+  - **Storage** - Provisional records are **not** embedded as normal tag assignments on media/card docs. **Shipped v1 (Review slice 1):** Firestore collection **`provisional_clusters`** — one document per **cluster/stack** with `lens` (`suggested` | `when` | `where` | `who` | `what`), `status` (`pending` | `accepted` | `dismissed`), `title`, `reason`, optional `occasionLabel`, `memberMediaIds[]`, dimensional `suggestedTagIds` (`who`/`what`/`when`/`where` id arrays), optional `coverageNote`, timestamps. Per-media or per-card **tag suggest** rows and **face hint** payloads remain **❓ Open** for later slices. Indexes: composite on `status` + `lens` for Review queue reads.
   - **Promotion to stories** - Confirming a cluster may **offer** create/attach card, apply tags to media, and open Compose—author confirms each promotion step; no automatic card publish.
 
 📐 **Decisions**
@@ -521,7 +523,7 @@ Legend:
 
 ❓ **Open**
 
-- **Provisional schema** - Firestore collection layout, indexes, and retention for provisional records (`01` TECHNICAL owner when build slice opens).
+- **Provisional schema (follow-on)** - Per-media tag-suggest documents, face-hint payloads, retention/TTL policy, and card-level provisional rows (`01` TECHNICAL owner).
 
 📘 **Resources** - `docs/NPM-SCRIPTS.md` · `docs/IMPORT-REFERENCE.md` · `docs/05-Guided-Archive-Assistance.md` · Platform engineering status and slice closeout: `docs/03-Implementation.md` Phase 2–4.
 
@@ -641,7 +643,7 @@ Legend:
 *Features*
 ✅ **Complete**
 
-- **Organize split** - Tag rail and collections tree in same column; operations stay domain-separated.
+- **Organize split** - **Tags | Collections** tabs; when import tags need reconciliation, **Map import tags (N)** opens a second pane beside the full tag tree (not a separate tab).
 - **Subsection ownership** - Detailed behavior in **Studio Tags** and **Collections Management** below.
 
 📋 **Contracts**
@@ -675,6 +677,7 @@ Legend:
 - **Usage on cards/media** - Shared picker patterns; compact tag editor with author-facing suppression of legacy `z-*` branches.
 - **Counts** - `cardCount` and `mediaCount` on tag docs; incremental updates on mutations; full recompute via scripts. Viewer API omits operational count fields.
 - **Tag admin routes** - `/admin/tag-admin` redirects to Studio.
+- **Import tag Map (v1)** - **Map import tags** side pane (alongside tag tree) lists import/operational tags with `mediaCount > 0`; rules-aware suggestions (no dimension labels / bucket names); row select opens **Map preview** in **Media** (transient filter + banner, not the tag bar); target preview highlights in tree; **Choose target** + confirm before bulk remap.
 - **Gallery→card inheritance (v1)** - Settings toggles (default off) at `/admin/settings`; when on, gallery membership or gallery-media tag changes auto-update card **work truth** for that dimension via `updateCardTags` (counts, derived fields, index). Gallery-only input; unanimous/union rules per 📋.
 - **Reader filter scope** - Sidebar **Tag match** control on `/view` and `/search`: **Any assigned** (default, `tagScope=all`) vs **Subject only** (`tagScope=subject` on card and media list APIs). Persisted in localStorage; cleared by **Clear filters**.
 
@@ -728,7 +731,7 @@ Legend:
 - **Gallery→card inheritance** - Four independent Settings toggles (Who, What, When, Where). **Default off** at first install. When on: auto-sync from gallery media confirmed tags on gallery change; unanimous → single tag; else deduped union + optional subject; tile shows subject or **Mixed**. When off: manual only for that dimension. Author may edit card tags after inherit.
 - **Subject marker (authoring)** - **`subjectTagId`** can be set in Studio (Compose inline bar, Cards grid tag UI, Media grid) on assigned tags; not yet exposed on reader quick-edit. Required before subject-only reader filter mode is useful at scale.
 - **Reader filter scope** - Sidebar **Tag match** control: **match any assigned** by default; **Subject only** is explicit user choice (`tagScope=subject`), not a silent default (**Tag authority** 📋 **Reader dimensional filters**).
-- **Tag Set 0 — Generic** - Optional skeleton installed from **Settings** (not forced at signup): **Who** — family roles (Grandparents, Parents, Siblings, …); **What** — General → Activities, Education, …; **When** — years and months; **Where** — US states and cities (select from list).
+- **Tag Set 0 — Generic** - Optional skeleton installed from **Settings** (not forced at signup): **Who** — family roles (Grandparents, Parents, Siblings, …); **What** — General → Activities, Education, …; **When** — years and months; **Where** — US states and cities (select from list). **Install is additive** — existing tags are never replaced; conflicting names are skipped; **Remove** deletes only tags created by the install (`tagSetId`).
 - **Card↔card inheritance** - **No** parent/child tag inheritance in v1; optional parent rollup display may come later—not silent filter truth.
 - **Person model** - When faces ship: **Person entity** linked to Who tags (merge/split, aliases); Who tags alone are insufficient for face operations.
 - **Face processing** - Prefer quality **cloud API** for v1 private family use; self-host only if quality or privacy requires.
@@ -831,12 +834,14 @@ Legend:
 - **Core bank** - Import, process, replace-in-place, dimensional tagging, bulk operations, multi-select to draft gallery card.
 - **Studio embedded media** - Same bank in Studio Media pane with drag handles to Compose targets; debounced search, caching, prefetch.
 - **Search** - Typesense when configured; non-empty text search returns 503 without Typesense; Firestore seek serves unfiltered and dimension-filter paths.
-- **Import** - Local `__X` folder workflow, PhotoPicker, paste-drop; embedded XMP/IPTC metadata at import (see `docs/IMPORT-REFERENCE.md`).
-- **Grid workspace** - Natural-aspect thumbnails, inline tag rail + search-only tag bar, growing working set with Load more, select-visible semantics.
+- **Import** - Local `__X` folder workflow, PhotoPicker, paste-drop; embedded XMP/IPTC metadata at import (see `docs/IMPORT-REFERENCE.md`); each local batch import assigns a shared **`importBatchId`** on created/reused media rows for Browse batch filter and **Recent import**.
+- **Grid workspace** - Natural-aspect thumbnails, inline tag rail + search-only tag bar, growing working set with Load more, select-visible semantics; **Browse group-by** (none / folder / day / import batch / suggested piles), import-folder filter, **Recent import** batch shortcut, and tile-size slider (persisted in local filter prefs).
 - **Assignment model** - Cover, gallery, inline body references; authoritative delete scan across all card surfaces; blocked delete when references remain.
 - **Per-dimension filters** - Any / Has any / Is empty / Matches tag on pane and tiles.
 - **Renditions** - Reader and studio WebP tiers for tiles; originals for lightbox/zoom.
 - **Legacy routes** - `/admin/media-admin` and media-triage redirect to Studio.
+- **Review mode (v1 shell)** - **Browse | Review** toggle in Studio Media; **Suggested** default lens (**day + import folder** composite grouping — pile title matches membership; When lens auto-splits oversized day groups by folder); lens dropdown for When / Where / Who / What (occasion-shaped pile names); editable suggested tag chips (remove via chip ×); **Accept tags only**, **Accept & create card** (apply tags → draft gallery card → accept pile), **Accept pile**, **Split**, **Dismiss** (Merge deferred). Large piles (>40) show an explicit warning. Import appends suggested piles for new media; full **Refresh piles** rebuilds the active lens queue. Same photo may appear in multiple piles until accept or dismiss. Coverage hints (scenery vs people) — no forced 4D completeness gate.
+- **Media stacks (manual v1)** - Firestore **`media_stacks`** collection (`kind`: `manual` | `burst` | `motion_pair`; `status`; `heroMediaId`; `memberMediaIds[]`); media denorm **`stackId`** / **`stackRole`** (`hero` | `member`). Browse grid **collapsed by default** (one hero tile per stack); **+N** badge expands in place; **Show all stacks** toggle (persisted local pref); **Unstack** on expanded hero; bulk **Create stack** from 2+ unstacked selection; **Create card** resolves one gallery slot per stack (`galleryMedia[].stackId` optional). Auto burst detection, Review burst lens, reader in-stack paging, and motion pairs deferred.
 
 ⭕1 **Planned**
 
@@ -849,7 +854,7 @@ Legend:
 - **Caption workflow** - Inline caption edit and two-line clamp on grid tiles.
 - **Gallery override posture** - Studio Media defaults primary; Compose overrides explicit exceptions.
 - **External-editor replace loop** - Smooth GIMP/Topaz round-trip via replace-in-place.
-- **Guided archive spikes** - Clustering review UI per `docs/05-Guided-Archive-Assistance.md` (heuristics, evaluation set, review stacks).
+- **Guided archive spikes** - Merge piles, auto burst stacks + Review burst lens, Apple metadata adapter, evaluation set — extend Review v1 shell per `docs/05-Guided-Archive-Assistance.md`.
 
 ⭕2 **Future**
 
@@ -871,7 +876,9 @@ Legend:
 - **Captions** - Optional per-media caption field; inline edit in grid; two-line clamp on tiles.
 - **Processing & readiness** *(target)* - Each media row exposes **readiness state** (e.g. uploaded, thumbnailed, indexed, failed) so UI stays truthful during background work. Video/transcode fields deferred (**❓ Open** depth).
 - **Archive intelligence** - Heuristic clusters and review stacks land as **Provisional suggestions**; **Review** mode in this pane for accept/split/merge (**Administration** 📋). Spikes per `05` and ⭕1 **Guided archive spikes**.
-- **Review mode IA** - Toggle **Browse | Review** in Media pane: Browse = today’s grid/filter UX; Review = provisional clusters/tag suggestions queue with bulk accept.
+- **Review mode IA** - Toggle **Browse | Review** in Media pane: Browse = grid/filter UX plus **Group by** (folder, day, import batch, suggested piles), folder filter, tile size, **Show all stacks**, and **Recent import**; Review = provisional cluster queue. **Suggested** lens groups by **day + import folder** (title matches members); **When** may sub-split large same-day groups by folder. Author may switch lens via dropdown (When / Where / Who / What). **What** = author **occasion** mental model (birthday, day at the lake). Actions: **Accept tags only** (confirmed bulk tag apply, pile stays pending), **Accept & create card** (tags + draft gallery card + accept pile), **Accept pile** (apply tags + mark cluster accepted), **Split** (select members → new pending pile), **Dismiss** (provisional only). **Merge** deferred. Overlap across piles allowed until accept. Optional dimensions OK — **coverage notes** and **large pile** warnings; not completeness gates.
+- **Studio Media view layers** - Three explicit scopes: **Population** — **Whole library** (default bank) vs **This card** (selected Compose card media only); optional **Map preview** banner when Organize Map selects an import tag (transient server filter, not persisted, does not populate the tag bar). **Refinement** — search, source, shape, **tag bar**, tag scope, **any-card assignment** status (hidden in **This card** mode), browse group-by. **Card overlay** — **Highlight on this card** (Whole library only; non-destructive badge). Filter-X clears refinements and Map preview; population unchanged unless user switches view.
+- **Media stacks IA** - Canonical stacks in **`media_stacks`** (distinct from provisional **`provisional_clusters`**). Browse shows **hero-only** collapsed tiles with **+N** expand; **Show all stacks** reveals every member row; **Unstack** dissolves stack and clears media denorm. Bulk **Create stack** requires 2+ unstacked items. Gallery **Create card** emits one `galleryMedia` entry per stack (hero + optional `stackId`). Auto burst, motion pairs, and reader in-stack paging deferred.
 - **Referrer list** - `referencedByCardIds` is denormalized convenience; delete and reconcile use authoritative card-surface scan.
 - **Cross-entity sync** - Firestore authoritative; Typesense and denormalized fields follow card/media CRUD paths; drift repair via `npm run reconcile:media-cards` and related scripts (`docs/NPM-SCRIPTS.md`).
 

@@ -21,6 +21,9 @@ export const tagSchema = z.object({
 
   /** When false, this tag is collapsed by default in the Explore tag tree. When true or undefined, expanded. */
   defaultExpanded: z.boolean().optional(),
+
+  /** Marks tags created by an optional Settings taxonomy install (e.g. Tag Set 0). */
+  tagSetId: z.string().optional(),
   
   // The number of cards directly or indirectly using this tag.
   // This will be maintained by a backend process.

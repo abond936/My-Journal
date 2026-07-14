@@ -50,6 +50,10 @@ import {
   writeStoredStudioCardBankSharedFilterPreferences,
 } from '@/lib/preferences/adminFilters';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
+import TagReconciliationPane, {
+  countIncomingReconcileTags,
+} from '@/components/admin/studio/tags/TagReconciliationPane';
+import { useTag } from '@/components/providers/TagProvider';
 import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
@@ -395,8 +399,15 @@ export default function CollectionsAdminClient({
   const [embeddedTreeDescendantsLoading, setEmbeddedTreeDescendantsLoading] = useState(false);
   const [studioLeftTab, setStudioLeftTab] = useState<'tags' | 'tree'>(() => {
     if (typeof window === 'undefined') return 'tags';
-    return window.localStorage.getItem('studioLeftTab') === 'tree' ? 'tree' : 'tags';
+    const stored = window.localStorage.getItem('studioLeftTab');
+    return stored === 'tree' ? 'tree' : 'tags';
   });
+  const [reconcilePaneOpen, setReconcilePaneOpen] = useState(false);
+  const { tags: allTagsForReconcile } = useTag();
+  const incomingReconcileCount = useMemo(
+    () => countIncomingReconcileTags(allTagsForReconcile),
+    [allTagsForReconcile]
+  );
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
   /** Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
@@ -431,6 +442,12 @@ export default function CollectionsAdminClient({
       setWUnparent(stored.unparent);
     }
   }, []);
+
+  useEffect(() => {
+    if (incomingReconcileCount === 0) {
+      setReconcilePaneOpen(false);
+    }
+  }, [incomingReconcileCount]);
 
   useEffect(() => {
     try {
@@ -1384,7 +1401,7 @@ export default function CollectionsAdminClient({
               <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
                 <h2 className={styles.panelStudioColumnTitle}>Organize</h2>
                 <div className={styles.studioLeftTabToggleRow}>
-                  <div className={styles.studioLeftTabButtonGroup} role="tablist" aria-label="Tags and curated tree">
+                  <div className={styles.studioLeftTabButtonGroup} role="tablist" aria-label="Organize tags and collections">
                     <button
                       type="button"
                       role="tab"
@@ -1404,10 +1421,36 @@ export default function CollectionsAdminClient({
                       Collections
                     </button>
                   </div>
+                  {studioLeftTab === 'tags' && incomingReconcileCount > 0 ? (
+                    <button
+                      type="button"
+                      className={styles.studioReconcileToggle}
+                      aria-pressed={reconcilePaneOpen}
+                      onClick={() => setReconcilePaneOpen((open) => !open)}
+                    >
+                      {reconcilePaneOpen
+                        ? 'Hide import map'
+                        : `Map import tags (${incomingReconcileCount})`}
+                    </button>
+                  ) : null}
                 </div>
                 {studioLeftTab === 'tags' ? (
-                  <div className={styles.studioLeftTabPanel} role="tabpanel">
-                    <TagAdminStudioPane embeddedColumn />
+                  <div
+                    className={`${styles.studioLeftTabPanel} ${
+                      reconcilePaneOpen && incomingReconcileCount > 0
+                        ? styles.organizeSplitPanel
+                        : ''
+                    }`}
+                    role="tabpanel"
+                  >
+                    <div className={styles.organizeTreePane}>
+                      <TagAdminStudioPane embeddedColumn />
+                    </div>
+                    {reconcilePaneOpen && incomingReconcileCount > 0 ? (
+                      <div className={styles.organizeReconcilePane}>
+                        <TagReconciliationPane />
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className={styles.studioLeftTabPanel} role="tabpanel">

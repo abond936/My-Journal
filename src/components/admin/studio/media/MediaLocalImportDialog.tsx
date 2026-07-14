@@ -306,6 +306,7 @@ export default function MediaLocalImportDialog({
       const importFailures: { sourcePath: string; message: string }[] = [];
       let skippedCount = 0;
       let anyMetadataReadIssue = false;
+      const importBatchId = `batch-${Date.now()}`;
 
       for (let i = 0; i < selectedPhotos.length; i += maxSourcePathsPerRequest) {
         const slice = selectedPhotos.slice(i, i + maxSourcePathsPerRequest);
@@ -315,6 +316,7 @@ export default function MediaLocalImportDialog({
           body: JSON.stringify({
             sourcePaths: slice.map((photo) => photo.sourcePath),
             readEmbeddedMetadata,
+            importBatchId,
           }),
         });
 

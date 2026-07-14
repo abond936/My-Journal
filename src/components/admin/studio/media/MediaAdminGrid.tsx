@@ -17,6 +17,7 @@ import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/
 import MediaEditModal from '@/components/admin/studio/media/MediaEditModal';
 import MediaLinkedCardsModal from '@/components/admin/studio/media/MediaLinkedCardsModal';
 import useMediaReferenceSummaries from '@/components/admin/studio/media/useMediaReferenceSummaries';
+import { filterMediaForStackDisplay, getStackDisplayMeta } from '@/lib/utils/mediaStackDisplayUtils';
 import styles from './MediaAdminGrid.module.css';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
@@ -48,6 +49,10 @@ export interface MediaAdminGridCellProps {
   inlineCaptionEditing?: boolean;
   isAssignedToActiveCard?: boolean;
   authoritativeRelatedCardIds?: string[] | null;
+  stackMemberCount?: number;
+  stackExpanded?: boolean;
+  onToggleStackExpand?: () => void;
+  onDissolveStack?: () => void;
 }
 
 export type MediaAdminGridStudioDragBind = {
@@ -93,6 +98,10 @@ function MediaAdminGridCell({
   isAssignedToActiveCard = false,
   authoritativeRelatedCardIds = null,
   onSaveSubjectTag,
+  stackMemberCount = 0,
+  stackExpanded = false,
+  onToggleStackExpand,
+  onDissolveStack,
 }: MediaAdminGridCellProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -305,6 +314,31 @@ function MediaAdminGridCell({
       overlayBottom={
         <div className={styles.overlayBottomRow}>
           <div className={styles.overlayBottomStart}>
+            {stackMemberCount > 1 ? (
+              <button
+                type="button"
+                className={styles.stackBadgeButton}
+                onClick={() => onToggleStackExpand?.()}
+                aria-expanded={stackExpanded}
+                aria-label={
+                  stackExpanded
+                    ? `Collapse stack of ${stackMemberCount}`
+                    : `Expand stack of ${stackMemberCount}`
+                }
+                title={stackExpanded ? 'Collapse stack' : 'Expand stack'}
+              >
+                {stackExpanded ? 'Stack ▲' : `+${stackMemberCount - 1}`}
+              </button>
+            ) : null}
+            {stackExpanded && onDissolveStack ? (
+              <button
+                type="button"
+                className={styles.stackDissolveButton}
+                onClick={() => onDissolveStack()}
+              >
+                Unstack
+              </button>
+            ) : null}
             <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
             <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
               {assigned ? 'Assigned' : 'Unassigned'}
@@ -513,6 +547,12 @@ export default function MediaAdminGrid({
   onVisibleHighlightedCountChange,
   mediaOverride,
   emptyMessage = 'No media found matching the current filters.',
+  gridTileMinPx,
+  stackById,
+  showAllStacks = false,
+  expandedStackIds,
+  onToggleStackExpand,
+  onDissolveStack,
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
@@ -524,6 +564,12 @@ export default function MediaAdminGrid({
   onVisibleHighlightedCountChange?: (count: number) => void;
   mediaOverride?: Media[] | null;
   emptyMessage?: string;
+  gridTileMinPx?: number;
+  stackById?: Map<string, import('@/lib/types/mediaStack').MediaStack>;
+  showAllStacks?: boolean;
+  expandedStackIds?: Set<string>;
+  onToggleStackExpand?: (stackId: string) => void;
+  onDissolveStack?: (stackId: string) => void;
 }) {
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
   const selectionAnchorIndexRef = useRef<number | null>(null);
@@ -582,9 +628,16 @@ export default function MediaAdminGrid({
     });
   }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort, tagFilterScope]);
 
-  const sortedIds = useMemo(() => sortedMedia.map((m) => m.docId), [sortedMedia]);
+  const stackMap = stackById ?? new Map();
+  const expandedSet = expandedStackIds ?? new Set<string>();
+  const displayMedia = useMemo(
+    () => filterMediaForStackDisplay(sortedMedia, stackMap, showAllStacks, expandedSet),
+    [expandedSet, showAllStacks, sortedMedia, stackMap]
+  );
+
+  const sortedIds = useMemo(() => displayMedia.map((m) => m.docId), [displayMedia]);
   const highlightedIdSet = useMemo(() => new Set(highlightedMediaIds), [highlightedMediaIds]);
-  const referenceSummaries = useMediaReferenceSummaries(sortedMedia);
+  const referenceSummaries = useMediaReferenceSummaries(displayMedia);
 
   useEffect(() => {
     if (!onVisibleHighlightedCountChange) return;
@@ -673,7 +726,7 @@ export default function MediaAdminGrid({
 
   return (
     <div className={styles.container}>
-      {sortedMedia.length > 0 && (
+      {displayMedia.length > 0 && (
         <div className={styles.selectAllRow}>
           <input
             type="checkbox"
@@ -684,10 +737,30 @@ export default function MediaAdminGrid({
           <span className={styles.selectAllLabel}>Select visible</span>
         </div>
       )}
-      <div className={styles.grid}>
-        {sortedMedia.map((item, index) => {
+      <div
+        className={styles.grid}
+        style={
+          gridTileMinPx
+            ? ({ ['--media-grid-min-col' as string]: `${gridTileMinPx}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
+        {displayMedia.map((item, index) => {
           const isAssignedToActiveCard = highlightedIdSet.has(item.docId);
           const itemKey = `${item.docId}:${isAssignedToActiveCard ? 'on-card' : 'default'}`;
+          const stackMeta = getStackDisplayMeta(item, stackMap, expandedSet);
+          const stackProps = {
+            stackMemberCount: stackMeta?.memberCount ?? 0,
+            stackExpanded: stackMeta?.expanded ?? false,
+            onToggleStackExpand:
+              stackMeta?.stack.docId && onToggleStackExpand
+                ? () => onToggleStackExpand(stackMeta.stack.docId!)
+                : undefined,
+            onDissolveStack:
+              stackMeta?.isHero && stackMeta.stack.docId && onDissolveStack
+                ? () => onDissolveStack(stackMeta.stack.docId!)
+                : undefined,
+          };
           return studioSourceDraggable ? (
             <MemoizedMediaAdminGridCellStudioSource
               key={itemKey}
@@ -703,6 +776,7 @@ export default function MediaAdminGrid({
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
+              {...stackProps}
             />
           ) : (
             <MemoizedMediaAdminGridCell
@@ -719,11 +793,12 @@ export default function MediaAdminGrid({
               inlineCaptionEditing={inlineCaptionEditing}
               isAssignedToActiveCard={isAssignedToActiveCard}
               authoritativeRelatedCardIds={referenceSummaries[item.docId] ?? null}
+              {...stackProps}
             />
           );
         })}
       </div>
-      {sortedMedia.length === 0 && (
+      {displayMedia.length === 0 && (
         <div className={styles.emptyState}>
           <p>{emptyMessage}</p>
         </div>

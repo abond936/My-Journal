@@ -1,0 +1,41 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.groupSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.groupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+}
+
+.groupTitleBlock {
+  min-width: 0;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.groupSubtitle {
+  margin: 0.15rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}
+
+.groupCount {
+  font-size: var(--font-size-xs);
+  color: var(--text2-color);
+}

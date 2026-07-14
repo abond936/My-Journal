@@ -63,6 +63,14 @@ export type StudioShellContextValue = {
    * @deprecated Prefer {@link registerBodyMediaInsert}; retained for DnD bridge reads.
    */
   bodyMediaInsertRef: MutableRefObject<((media: Media) => void) | null>;
+  /** Organize: selected import tag drives Media bank filter. */
+  organizeReconcileSourceTagId: string | null;
+  organizeReconcileTargetTagId: string | null;
+  setOrganizeReconcileSourceTagId: (tagId: string | null) => void;
+  setOrganizeReconcileTargetTagId: (tagId: string | null) => void;
+  clearOrganizeReconcile: () => void;
+  /** Expand Media pane when Organize reconciliation selects an import tag. */
+  openMediaPane: () => void;
 };
 
 const StudioShellContext = createContext<StudioShellContextValue | null>(null);
