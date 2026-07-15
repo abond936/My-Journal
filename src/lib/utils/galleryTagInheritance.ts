@@ -7,6 +7,12 @@ export type GalleryMediaTagSource = {
   tags?: string[];
 };
 
+export type GalleryDimensionRollup = {
+  status: 'empty' | 'reviewed' | 'unreviewed';
+  tagIds: string[];
+  implicitSubjectTagIds: string[];
+};
+
 export function protectExistingCardInheritance(): GalleryTagInheritanceToggles {
   return { who: true, what: true, when: true, where: true };
 }
@@ -69,6 +75,25 @@ export function computeGalleryDimensionTagUnion(
     }
   }
   return Array.from(union).sort((a, b) => a.localeCompare(b));
+}
+
+export function computeGalleryDimensionRollup(
+  galleryMedia: GalleryMediaTagSource[],
+  dimension: TagDimension,
+  resolved: Map<string, TagDimension | undefined>
+): GalleryDimensionRollup {
+  if (galleryMedia.length === 0) {
+    return { status: 'empty', tagIds: [], implicitSubjectTagIds: [] };
+  }
+  if (galleryMedia.some((media) => tagsForDimension(media.tags ?? [], dimension, resolved).length === 0)) {
+    return { status: 'unreviewed', tagIds: [], implicitSubjectTagIds: [] };
+  }
+  const tagIds = computeGalleryDimensionTagUnion(galleryMedia, dimension, resolved);
+  return {
+    status: 'reviewed',
+    tagIds,
+    implicitSubjectTagIds: tagIds.length === 1 ? tagIds : [],
+  };
 }
 
 /**

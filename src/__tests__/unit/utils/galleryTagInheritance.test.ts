@@ -1,5 +1,6 @@
 import {
   computeGalleryDimensionTagUnion,
+  computeGalleryDimensionRollup,
   mergeGalleryInheritedCardTags,
   effectiveGalleryInheritanceToggles,
   newCardInheritanceOverrides,
@@ -71,6 +72,32 @@ describe('galleryTagInheritance', () => {
     );
 
     expect(next).toEqual(['what-x', 'who-a']);
+  });
+
+  it('makes any blank child unreviewed and discards a misleading partial union', () => {
+    const resolved = new Map([['who-a', 'who' as const]]);
+    expect(computeGalleryDimensionRollup([{ tags: ['who-a'] }, { tags: [] }], 'who', resolved)).toEqual({
+      status: 'unreviewed', tagIds: [], implicitSubjectTagIds: [],
+    });
+  });
+
+  it('does not invent an unreviewed rollup when a card has no Gallery children', () => {
+    expect(computeGalleryDimensionRollup([], 'who', new Map())).toEqual({
+      status: 'empty', tagIds: [], implicitSubjectTagIds: [],
+    });
+  });
+
+  it('rolls intentional N/A or Unknown tags like any other tag', () => {
+    const resolved = new Map([
+      ['who-na', 'who' as const],
+      ['who-unknown', 'who' as const],
+    ]);
+    expect(computeGalleryDimensionRollup([{ tags: ['who-na'] }, { tags: ['who-na'] }], 'who', resolved)).toEqual({
+      status: 'reviewed', tagIds: ['who-na'], implicitSubjectTagIds: ['who-na'],
+    });
+    expect(computeGalleryDimensionRollup([{ tags: ['who-na'] }, { tags: ['who-unknown'] }], 'who', resolved)).toEqual({
+      status: 'reviewed', tagIds: ['who-na', 'who-unknown'], implicitSubjectTagIds: [],
+    });
   });
 
   it('protects legacy cards and enables only explicitly selected dimensions for new cards', () => {
