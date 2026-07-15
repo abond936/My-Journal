@@ -13,6 +13,9 @@ export type GalleryDimensionRollup = {
   implicitSubjectTagIds: string[];
 };
 
+export type GalleryTagRollupStatus = GalleryDimensionRollup['status'];
+export type GalleryTagRollupStatuses = Record<TagDimension, GalleryTagRollupStatus>;
+
 export function protectExistingCardInheritance(): GalleryTagInheritanceToggles {
   return { who: true, what: true, when: true, where: true };
 }
@@ -124,6 +127,39 @@ export function mergeGalleryInheritedCardTags(
   }
 
   return Array.from(next).sort((a, b) => a.localeCompare(b));
+}
+
+export function computeGalleryInheritanceResult(
+  currentTags: string[],
+  galleryMedia: GalleryMediaTagSource[],
+  toggles: GalleryTagInheritanceToggles,
+  allTags: Tag[],
+  currentStatuses?: Partial<GalleryTagRollupStatuses>
+): { tags: string[]; statuses: GalleryTagRollupStatuses } {
+  const resolved = buildResolvedTagDimensionMap(allTags);
+  const next = new Set(currentTags);
+  const statuses: GalleryTagRollupStatuses = {
+    who: currentStatuses?.who ?? 'empty',
+    what: currentStatuses?.what ?? 'empty',
+    when: currentStatuses?.when ?? 'empty',
+    where: currentStatuses?.where ?? 'empty',
+  };
+
+  for (const dimension of DIMENSION_ORDER) {
+    if (!toggles[dimension]) continue;
+    const rollup = computeGalleryDimensionRollup(galleryMedia, dimension, resolved);
+    statuses[dimension] = rollup.status;
+
+    for (const id of currentTags) {
+      if (resolved.get(id) === dimension) next.delete(id);
+    }
+    for (const id of rollup.tagIds) next.add(id);
+  }
+
+  return {
+    tags: Array.from(next).sort((a, b) => a.localeCompare(b)),
+    statuses,
+  };
 }
 
 export function galleryInheritanceTogglesActive(toggles: GalleryTagInheritanceToggles): boolean {

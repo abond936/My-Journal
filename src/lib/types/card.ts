@@ -2,6 +2,14 @@ import { z } from 'zod';
 import { mediaSchema, Media } from './photo';
 import { galleryTagInheritanceTogglesSchema } from './authorSettings';
 
+const galleryTagRollupStatusSchema = z.enum(['empty', 'reviewed', 'unreviewed']);
+export const galleryTagRollupStatusesSchema = z.object({
+  who: galleryTagRollupStatusSchema,
+  what: galleryTagRollupStatusSchema,
+  when: galleryTagRollupStatusSchema,
+  where: galleryTagRollupStatusSchema,
+});
+
 /**
  * Schema for an item within a gallery card.
  * It references a media asset and allows for context-specific overrides.
@@ -77,6 +85,7 @@ export const cardSchema = z.object({
   // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
   galleryTagInheritanceOverrides: galleryTagInheritanceTogglesSchema.optional(),
+  galleryTagRollupStatuses: galleryTagRollupStatusesSchema.optional(),
   subjectTagId: z.string().min(1).nullable().optional(),
   subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
@@ -138,6 +147,7 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   updatedAt: true,
   filterTags: true,
   subjectFilterTags: true,
+  galleryTagRollupStatuses: true,
   who: true,
   what: true,
   when: true,

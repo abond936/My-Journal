@@ -2188,7 +2188,8 @@ export async function updateCardContent(
  */
 export async function updateCardTags(
   cardId: string,
-  updates: CardTagAssignmentUpdates
+  updates: CardTagAssignmentUpdates,
+  internal?: Pick<Card, 'galleryTagRollupStatuses'>
 ): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
 
@@ -2240,6 +2241,9 @@ export async function updateCardTags(
         whoSortKey: dimensionSortKeys.whoSortKey,
         whatSortKey: dimensionSortKeys.whatSortKey,
         whereSortKey: dimensionSortKeys.whereSortKey,
+        ...(internal?.galleryTagRollupStatuses
+          ? { galleryTagRollupStatuses: internal.galleryTagRollupStatuses }
+          : {}),
         updatedAt: Date.now(),
       };
 

@@ -1,6 +1,7 @@
 import {
   computeGalleryDimensionTagUnion,
   computeGalleryDimensionRollup,
+  computeGalleryInheritanceResult,
   mergeGalleryInheritedCardTags,
   effectiveGalleryInheritanceToggles,
   newCardInheritanceOverrides,
@@ -97,6 +98,45 @@ describe('galleryTagInheritance', () => {
     });
     expect(computeGalleryDimensionRollup([{ tags: ['who-na'] }, { tags: ['who-unknown'] }], 'who', resolved)).toEqual({
       status: 'reviewed', tagIds: ['who-na', 'who-unknown'], implicitSubjectTagIds: [],
+    });
+  });
+
+  it('stores Unreviewed precedence while preserving protected dimensions', () => {
+    const tags = [
+      { docId: 'who-a', dimension: 'who' },
+      { docId: 'what-old', dimension: 'what' },
+    ] as never[];
+    expect(computeGalleryInheritanceResult(
+      ['what-old'],
+      [{ tags: ['who-a'] }, { tags: [] }],
+      { who: true, what: false, when: false, where: false },
+      tags,
+      { who: 'reviewed', what: 'reviewed' }
+    )).toEqual({
+      tags: ['what-old'],
+      statuses: { who: 'unreviewed', what: 'reviewed', when: 'empty', where: 'empty' },
+    });
+  });
+
+  it('records a reviewed intentional-tag rollup and an empty rollup', () => {
+    const tags = [{ docId: 'who-na', dimension: 'who' }] as never[];
+    expect(computeGalleryInheritanceResult(
+      [],
+      [{ tags: ['who-na'] }],
+      { who: true, what: false, when: false, where: false },
+      tags
+    )).toEqual({
+      tags: ['who-na'],
+      statuses: { who: 'reviewed', what: 'empty', when: 'empty', where: 'empty' },
+    });
+    expect(computeGalleryInheritanceResult(
+      ['who-na'],
+      [],
+      { who: true, what: false, when: false, where: false },
+      tags
+    )).toEqual({
+      tags: [],
+      statuses: { who: 'empty', what: 'empty', when: 'empty', where: 'empty' },
     });
   });
 

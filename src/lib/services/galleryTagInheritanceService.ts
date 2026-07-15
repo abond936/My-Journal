@@ -6,9 +6,9 @@ import { updateCardTags } from '@/lib/services/cardService';
 import { getAllTags } from '@/lib/firebase/tagService';
 import {
   cardTagsEqual,
+  computeGalleryInheritanceResult,
   effectiveGalleryInheritanceToggles,
   galleryInheritanceTogglesActive,
-  mergeGalleryInheritedCardTags,
 } from '@/lib/utils/galleryTagInheritance';
 
 const CARDS_COLLECTION = 'cards';
@@ -67,18 +67,24 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
   );
   const galleryMedia = await loadGalleryMediaForCard(card);
   const allTags = await getAllTags();
-  const nextTags = mergeGalleryInheritedCardTags(
+  const result = computeGalleryInheritanceResult(
     currentTags,
     galleryMedia,
     effectiveToggles,
-    allTags
+    allTags,
+    card.galleryTagRollupStatuses
   );
 
-  if (cardTagsEqual(currentTags, nextTags)) {
+  const statusesEqual = JSON.stringify(card.galleryTagRollupStatuses ?? {}) === JSON.stringify(result.statuses);
+  if (cardTagsEqual(currentTags, result.tags) && statusesEqual) {
     return;
   }
 
-  await updateCardTags(cardId, { tags: nextTags });
+  await updateCardTags(
+    cardId,
+    { tags: result.tags },
+    { galleryTagRollupStatuses: result.statuses }
+  );
 }
 
 /**
