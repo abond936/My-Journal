@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** None. Select the next capability through its Definition Gate.
+**Current active capability:** Gallery Tag Inheritance.
 
 ---
 
@@ -99,6 +99,41 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 **Decisions needed** — None inside this completed capability. Ambiguous legacy meanings, including `Bob & Sandra`, remain decisions for a later reviewed-conversion capability.
 
 **Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
+
+---
+
+## Gallery Tag Inheritance
+
+**Definition:** Ready
+**Execution:** Active
+
+**Outcome** — The author can choose, understand, and control how confirmed Gallery-media tags and subjects become card story truth without losing existing card decisions.
+
+**Actors** — Author and system operator.
+
+**Includes** — Explained onboarding choice, durable per-dimension settings, Gallery-only aggregation, incomplete-child handling, subject rollup, existing-card protection, per-card overrides, re-inheritance, derived-field reconciliation, and verification.
+
+**Excludes** — Body-media inheritance, card-to-card inheritance, cover-only inheritance, automatic activation, AI suggestions, face recognition, and changes to the taxonomy itself.
+
+**Contracts** — Each dimension requires an explicit onboarding selection and remains inactive until selected. Existing card assignments begin protected by per-dimension overrides. New cards follow the selected settings and may override individual dimensions. Releasing an override immediately re-inherits current Gallery children. Confirmed Gallery media are the only participating children; body media do not participate. Any participating child with an unreviewed dimension keeps that card dimension unreviewed rather than presenting a complete rollup. A single rolled-up tag is the dimensional subject; multiple tags display Multiple unless the author selects one or more subjects, which display as Subjects+. Inheritance changes card work truth only and preserves source-media truth.
+
+**Current state** — Settings store four booleans and are currently all off. Runtime services can union Gallery-media tags into enabled card dimensions after card Gallery changes and media-tag changes. The delivered path does not record whether onboarding choices were made, protect existing assignments with per-card overrides, synchronize enable-time state safely, or implement the approved incomplete-child and subject rules.
+
+**Gaps / slices** —
+
+1. **State** — Record explicit settings completion and per-card, per-dimension override state without reinterpreting existing cards.
+2. **Rollup** — Derive tags, review state, and subjects from participating Gallery media.
+3. **Activation** — Explain choices in onboarding and Settings and initialize new-card behavior from the selected policy.
+4. **Reconciliation** — Recompute safely after Gallery, media-tag, override, and settings changes.
+5. **Verify** — Prove existing-card protection, new-card defaults, override release, incomplete children, subjects, counts, projections, Reader truth, retry, and rollback.
+
+**Dependencies** — Author settings, Card and Media services, Gallery membership, confirmed tag and subject fields, onboarding/help surfaces, and current hierarchy/projection utilities.
+
+**Risks** — Silent replacement of manual card truth, stale rollups, incomplete media appearing complete, subject drift, excessive fan-out after media edits, count drift, and unclear activation consequences.
+
+**Decisions needed** — None. The author selects each dimension during onboarding; implementation must not choose dimensions on the author’s behalf.
+
+**Completion evidence** — Unit and service tests for rollup and overrides; migration audit proving existing cards are protected; browser verification of onboarding, Settings, Compose overrides, re-inheritance, and Reader results; zero unexplained projection or count drift; canon reconciliation.
 
 ---
 

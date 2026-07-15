@@ -406,9 +406,9 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - `parentId` is taxonomy authority; paths, counts, dimensional fields, and search records are derived projections that must reconcile to it.
 - Existing assignments are never renamed, merged, deleted, or reinterpreted without an author-reviewed migration with affected-object counts and recovery evidence.
 - Provisional assignments do not affect counts, filtering, or presentation.
-- Gallery inheritance has independent Who, What, When, and Where controls, all off by default.
+- Gallery inheritance has independent Who, What, When, and Where controls. Onboarding explains them and requires an explicit author selection; no dimension is implicitly enabled.
 - Delivered inheritance applies the deduplicated union of confirmed Gallery-media tags to enabled card dimensions.
-- Enabling inheritance does not yet synchronize existing cards; later synchronization may replace manual edits in enabled dimensions.
+- Existing card assignments begin as per-dimension overrides and do not change when inheritance is configured. Releasing an override re-inherits current Gallery-media truth.
 - Cards do not inherit tags from parent or child cards.
 - Closed tiles show Subject, one tag, Mixed, or `-`; Mixed is presentation, not a tag.
 - Question tags classify prompts; answer-card tags copy at creation and then diverge.
