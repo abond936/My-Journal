@@ -27,6 +27,7 @@ export type TagSet0Status = z.infer<typeof tagSet0StatusSchema>;
 export const authorSettingsSchema = z.object({
   galleryTagInheritance: galleryTagInheritanceTogglesSchema,
   tagSet0: tagSet0StatusSchema.optional(),
+  archivePerspectivePersonId: z.string().min(1).optional(),
 });
 
 export type AuthorSettings = z.infer<typeof authorSettingsSchema>;

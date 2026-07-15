@@ -1,292 +1,367 @@
-﻿# IMPLEMENTATION
+# IMPLEMENTATION
 
-**See also:** `01-Vision-Architecture.md` · `02-Application.md`
+This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-Legend:
-✅`Implemented`
-⭕`Planned (1)`
-❓`Open`
-📐`Decision`
-📘`Resource`
+**Current active capability:** Tag Workflow and Identity.
 
 ---
 
-*App Status*
+## Operating model
 
-- **Architecture** - Core model (cards, media, tags) in place.
-- **v1 refinements** - Lock reader + Studio behavior; prepare content for import and family demo.
-- **Hosted reader** - Private Vercel deployment live; stabilize reader/mobile, auth boundaries, and author prep workflows.
-- **Multi-tenant** - Near-term follow-on after v1 proof; not current scope.
+### Definition Gate
 
-**Milestone path**
+A capability is **Ready** only when its implementation brief contains:
 
-- **Family demo** - Guided and Freeform reading feel smooth; hosted access correct; author prep dependable; no obvious integrity or trust failures.
-- **Hosted alpha** - Repeated family use: import, authoring, and reader workflows dependable; access boundaries trustworthy.
-- **Commercial v1** - Security reviewed; workflow- and integrity-critical testing expanded; backup/restore/release procedures realistic; no brittle shortcut in core reader/admin/import paths.
+- **Outcome** — The user result in plain language.
+- **Actors** — Reader, author, administrator, or operator.
+- **Includes** — Behavior authorized for this capability.
+- **Excludes** — Adjacent behavior intentionally outside scope.
+- **Contracts** — Consequential rules from `01` and `02`.
+- **Current state** — Verified code, data, tests, and visible behavior.
+- **Gaps** — Work remaining inside the capability.
+- **Dependencies** — Required services, data, access, and preceding capabilities.
+- **Risks** — Integrity, security, migration, cost, compatibility, and regression concerns.
+- **Decisions** — No unresolved product choice that materially changes the outcome.
+- **Evidence** — Automated, browser, data, and operational proof required for completion.
 
-📐 **Demo-first execution stance** - Until the family demo is credible, reader stability and access boundaries outrank aesthetic expansion. **Phase 1.a closed 2026-07-12**; active work is **Phase 2** build slices below (tag authority first).
+The agent prepares the brief from canon and repository inspection. The author approves consequential product choices once. File-level design and ordinary implementation tactics are not Definition Gate decisions.
 
-📐 **Review program closeout** - Engineering review program steps **1–12 closed 2026-07-10** (reader performance, backend hardening, Studio legacy retirement, mobile text edit, E2E, API hardening, security/ops baseline, operational recovery drill). Residual engineering quality items remain incremental Phase 4 backlog, not a rewrite mandate. Shipped slice detail: **📘 Review program archive** below and `docs/NPM-SCRIPTS.md`.
+### Completion Gate
+
+A capability moves to `✅ Complete` in `02` only when:
+
+- The approved outcome works for its actors.
+- Every applicable contract holds.
+- Required slices, migrations, and backfills are complete.
+- Relevant automated checks pass.
+- Required browser workflows are verified.
+- Named regression-sensitive behavior remains intact.
+- Failure, retry, and recovery behavior is truthful where applicable.
+- `01`–`03` reflect the resulting truth.
+- No work remains inside the approved definition.
+
+Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Operations · Regressions · Canon · Remaining work**.
+
+### Execution states
+
+- **Not gated** — Planned capability has not passed the Definition Gate.
+- **Ready** — Definition approved; implementation may proceed within its boundary.
+- **Active** — Current autonomous implementation capability.
+- **Blocked** — Missing decision, authority, access, or external dependency prevents progress.
+- **Verified** — Completion Gate passed; update `02` to Complete and remove its remaining slices here.
+
+### Implementation brief
+
+```md
+## [Capability]
+
+**Definition:** Not gated | Ready
+**Execution:** Pending | Active | Blocked | Verified
+
+**Outcome** —
+**Actors** —
+**Includes** —
+**Excludes** —
+**Contracts** —
+**Current state** —
+**Gaps / slices** —
+**Dependencies** —
+**Risks** —
+**Decisions needed** —
+**Completion evidence** —
+```
 
 ---
 
-## Execution Plan
+## Tag Workflow and Identity
 
-*Sequenced by dependency: personal use → family demo → hosted alpha → commercial v1. **Phase 1.a closed 2026-07-12.** **Phase 2 (active)** — build slices below; product wording lives in `02` (and Backend planned items in `01`).*
+**Definition:** Ready
+**Execution:** Active
 
-**Gates**
+**Outcome** — The author can reliably find, filter, assign, edit, and normalize tags without stale presentation, ambiguous hierarchy behavior, lost assignments, or silent reinterpretation. Who distinguishes stable human and non-human identities from names, human relationships, and groups.
 
-- **Decision reconciliation** - Outcomes that affect future work reconcile into `01` / `02` / `03` or stay explicitly non-canonical.
-- **Verification** - No code change is complete without relevant checks; add tests when behavior or integrity risk warrants.
-- **Release readiness** - Commercial release requires documented deploy, backup, restore, admin recovery, and rollback/incident procedures.
-- **Reviewable slices** - One approved slice at a time; do not chain dependent work before author review.
+**Actors** — Author, Reader, and system operator.
 
-📐 **Current program stance** - Storytelling surfaces (reader, Studio runtime) are largely credible for family demo; **v1 is not strategically complete** until organize-at-scale, tag authority, commercial entry, and operator trust are productized. **Phase 1.a closed 2026-07-12** (spec + author decisions reconciled in `02` / `01`). **Active build:** *(none — re-sequence from Phase 2 inventory below)*. **Insert-image workflow v1 shipped 2026-07-14** (tests verified). Studio runtime **author-verified 2026-07-11**; no new demo blocker unless a defect appears.
+**Includes** — Tag modal, lookup, filter ownership and scope, save reconciliation, hierarchy authority and repair, People and aliases, relationships and perspective, typed groups, reviewed migration, projection rebuild, and verification.
 
-📐 **Canonical task intake** - Chat is intake and approval only. Spec outcomes land in owning `02` 📋 / 📐 (or `01` TECHNICAL for platform rules); build items stay as `⭕1` in `02` / `01` and appear in phases after **1.a** exit.
+**Excludes** — Face recognition, a full genealogy platform or interchange standard, multi-tenant perspectives, full What/When/Where semantic redesign, automatic name-based conversion, legacy-tag deletion without verification, marketing, and Quote.
 
-### Phase 1 — Pre-Import
+**Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; aliases preserve names; human roles are perspective-relative relationships; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
 
-*Complete — integrity CI baseline and core architecture. Product truth: `02` **Application** 📋.*
+**Current state** — The archive contains 660 tags, 1,281 cards, 3,503 media, and 270 questions. Workflow implementation now has one parent-controlled filter modal, locate-only tag search, direct exact matching, shared Studio-sidebar/Card-filter ownership with separate Reader persistence, authoritative updated-card reconciliation after bulk saves, and awaited search-projection sync attempts. Identity foundation provides stable human and non-human named-subject records, aliases, human parent/spouse/partner relationships with duplicate and parent-cycle protection, typed groups, perspective-relative role resolution, a human archive perspective setting, admin-only APIs, and a separate identity surface within tag administration. A read-only Who review reports direct and subtree assignment impact without trusting stored counts or changing data. Its live run classifies 138 Who tags as 101 identity candidates, eight relationship-role candidates, 28 structural candidates, and one group candidate. The author confirmed that non-human named subjects use the identity system and approved all nine detected same-identity alias clusters; these decisions are recorded as later migration inputs, but no identity or assignment conversion has run. Repair used complete paired backup `run-2026-07-15T15-34-27-951Z` and corrected 656 paths, 117 card projections, 577 media projections, and 289 tags with count or supporting-ID drift. Fresh Typesense rebuilds removed one orphan card and 13 orphan media records. Post-repair audits report zero path, projection, scalar-count, unique-ID, and sampled search discrepancies; Typesense counts exactly match Firestore. Focused model, review, hierarchy, projection, count, authorization-boundary, lint, and production type checks pass; final browser and migration verification remain in Verify.
 
-### Phase 1.a — Specification *(closed 2026-07-12)*
+**Gaps / slices** —
 
-*Goal met: horizontal **📋** contracts and vertical section specs reconciled in `02` / `01`; author product decisions locked (inheritance defaults off, reader filter subject mode deferred to explicit menu + subject authoring, multi-parent per-path, Apple Photos first adapter, one account per reader, reader presets-only). Deferrable **❓** (Left Nav polish, landing brand assets, provisional schema at build slice) do not block build.*
+1. **Migrate** — Apply only approved conversions in bounded, recoverable batches.
+2. **Verify** — Prove Cards, Media, Questions, Reader filters, subjects, counts, refresh, relationships, and rollback.
 
-📐 **Closeout** - Exit gate satisfied. Spec inventory below retained as reference; do not treat as active work.
+**Dependencies** — Valid administrator access, paired backup capability, Firestore and Typesense access, current tag/card/media/question catalogs, and browser verification.
 
-#### Horizontal — system objects *(reference — spec'd)*
+**Risks** — Incorrect identity merges, lost historical names, perspective errors, count drift, stale search projections, partial migration, and unintended Reader-filter changes.
 
-*Status after Phase 1.a batch pass (2026-07-12): **📋 drafted** = reconciled contract in owning doc; **❓** = product contract exists but platform/schema detail open.*
+**Decisions needed** — None before Authority and Hierarchy. Ambiguous legacy meanings, including `Bob & Sandra`, remain migration-review decisions and do not block infrastructure work.
 
-- **Tag authority** — **📋 spec'd** (`02` **Studio Tags**). Toggle defaults **off**; reader filter default **any assigned**; subject-only via future menu.
-- **Provisional suggestions** — **📋 drafted** (`02` **Administration**). Firestore schema **❓** (`01` 📐).
-- **Media bank** — **📋 drafted** (`02` **Studio Media**).
-- **Media processing platform** — **📋 drafted** (product target in **Studio Media**; lifecycle 📐 in `01` Backend).
-- **Import & source adapters** — **📋 spec'd** (interim export→upload; **Apple Photos first** native adapter).
-- **Card model** — **📋 drafted** (`02` **Studio Cards**).
-- **Collections & structure** — **📋 spec'd** (`02` **Collections Management**, **Studio Organize**). Multi-parent: **per-path** in Guided reader.
-- **Card–media integrity** — **📋 verify** (`01` Backend 📐 set; product cross-refs in **Administration**, **Studio Media**).
-- **Archive intelligence** — **📋 spec'd**; **Review v1 shell shipped** then **superseded 2026-07-14**; **Story piles organize v2 shipped** (slices 1–5; slice 6 deep link dropped); **manual media stacks v1 shipped**; auto burst / merge / adapter spikes remain ⭕1 build.
-- **Person & face identity** — **📋 drafted** (📐 in **Studio Tags** + `05`; faces ⭕2).
-- **Filters & populations** — **📋 drafted** (`02` **Administration**, **Application**, **Navigation**, `01` 📐).
-- **Search & index** — **📋 drafted** (admin in **Administration**; platform in `01`).
-- **Presentation & card matrix** — **📋 drafted** (`02` **Content Page** V1 Matrix). Utility typography parity remains ⭕1 build.
-- **Dimensional chip display** — **📋 drafted** (derives from Tag authority + Content Page).
-- **Theme & design packages** — **📋 spec'd** (`02` **Theme Management** + `04`). Reader **presets-only** in v1; italic accent **❓**.
-- **DnD platform** — **📋 drafted** (`02` **Administration**).
-- **Studio state domains** — **📋 drafted** (`02` **Administration**).
-- **Session, auth & roles** — **📋 drafted** (`02` **Application**, **User Management**, **Sign-in**, `01` auth 📐).
-- **Mutations & API** — **📋 verify** (`01` Backend 📐; no new 1.a gaps identified).
-- **AI touchpoints** — **📋 drafted** (summary in **Application**; detail in **Administration** / **Studio Cards**).
-- **Operator & backup** — **📋 drafted** (**Top Navigation** Settings v1 + `01` **Backup** + scripts).
-- **Shared admin feedback** — **📋 drafted** (`02` **Application**, **Administration** ✅).
-- **Selection & bulk** — **📋 drafted** (`02` **Administration**, **Studio Cards**, **Studio Media**).
-- **Questions & prompts** — **📋 drafted** (`02` **Studio Questions**).
-
-#### Vertical — `02` sections *(specifications to complete)*
-
-*Status after Phase 1.a batch pass (2026-07-12): **📋 spec'd** = Intent/Principles + 📋 contracts drafted; **❓** = author decisions remain.*
-
-- **Application** — **📋 spec'd** (session, feedback, AI touchpoint summary).
-- **Landing Page** — **📋 spec'd**; pricing/contact **TBD** (deferred); brand/hero **❓**.
-- **Sign-in** — **📋 spec'd**; route split **shipped** (`/` landing, `/login` credential entry).
-- **Top Navigation** — **📋 spec'd** (Settings v1, Help v1, hamburger IA); build ⭕1.
-- **Left Navigation** — **📋 spec'd** (Guided/Freeform); Group by, Created sort, messy-archive entry **❓**.
-- **Content Page** — **📋 spec'd** (V1 Matrix, chips, shell); utility typography ⭕1 build.
-- **View Page** — **📋 spec'd** (detail contracts); kicker/drop-cap ⭕1.
-- **Administration** — **📋 spec'd** (shell, DnD, provisional, selection/bulk, interaction economy).
-- **Studio Cards** — **📋 spec'd** (card model horizontal, grid contracts).
-- **Studio Compose** — **📋 spec'd** (active card, gallery truth, preview parity).
-- **Studio Organize** — **📋 spec'd** (domain separation, DnD pointer).
-- **Studio Tags** — **📋 spec'd** (tag authority, inheritance defaults off; reader filter scope UI shipped).
-- **Collections Management** — **📋 spec'd** (multi-parent **per-path** in Guided reader).
-- **Studio Questions** — **📋 spec'd**.
-- **Studio Media** — **📋 spec'd** (bank, import interim, **Review mode shipped v1**); video depth **❓**.
-- **User Management** — **📋 spec'd** (one account per reader).
-- **Theme Management** — **📋 spec'd** (presets-only for readers; workbench admin-only); italic **❓**.
-- **Gallery Management** — **📋 spec'd** (future presets; v1 defers to card gallery).
-
-#### Platform — `01` sections *(re-spec or verify)*
-
-- **Product Vision** — **verify** (aligned; no 1.a gaps).
-- **TECHNICAL → Backend** — **📋 extended** (provisional storage 📐, processing lifecycle 📐); schema detail **❓** at build slice.
-- **TECHNICAL → Frontend** — **verify** (aligned with **Administration** 📋).
-- **TECHNICAL → Scripts & Backup** — **verify** (Settings v1 operator path drafted in **Top Navigation**).
-
-📐 **1.a closeout** - Author approved exit **2026-07-12**. Build resumes at **Phase 2** below.
-
-### Phase 2 — Admin Productivity *(active)*
-
-📐 **Active build** - *(none — author to re-sequence from Phase 2 inventory below)*. Prior slice **Insert-image workflow v1** **shipped 2026-07-14** (library-only PhotoPicker; bank import only via Media **Import**; paste/drop + **Add from library** on cover, content, gallery in Studio + View; no metadata prompt on paste; tests verified).
-
-*Remaining Phase 2 inventory follows; order is guidance after the active slice completes.*
-
-⭕1 **Planned**
-
-**§ Administration (`02`)**
-
-- **Interaction contract alignment** - Document and enforce user-visible latency/feedback contracts for browse, selection, DnD, and filter persistence across Studio panes.
-- **Code path simplification** - Retire deprecated surfaces, duplicate loaders, and dead compatibility paths that no longer support the Studio workflow.
-- **Operator message pruning** - Remove low-value shell noise (for example ambient `working in...` messages).
-- **Studio light-mode hierarchy** - Collapse header/workspace seam and reduce stacked pale planes without changing pane ownership or DnD structure.
-
-**§ Studio Cards (`02`)**
-
-- **Grid-first convergence** - Finish retiring table/list code paths and stale CSS where grid covers identity, tagging, selection, and relationships.
-- **Grid density** - Reduce tile footprint ~25% while preserving legibility and selection affordances.
-- **Context Assist** - Keep historical/background context a distinct output from writing rewrites in AI assist.
-- **Tag picker polish** - Keyboard-first tree interaction and search disambiguation if needed after current compact picker.
-- **Dimension filter evolution** - Searchable tree popover for single-dimension `Matches` without replacing full `MacroTagSelector` for advanced work.
-- **Narrative development backlog** - Consolidate story runs, year coverage, question-backed stories, callout/quote expansion.
-
-**§ Studio Compose (`02`)**
-
-- **Compose authoring refinement** - Excerpt guidance reacts to body changes; reader admin editing styled as Compose-grade surface where practical.
-- **Compose framing refinement** - Broader parity across Compose, reader feed, reader detail, and admin preview surfaces.
-- **Editor presentation** - Optional drop-cap styling in rich-text editor.
-
-**§ Studio Tags (`02`)**
-
-- **Tag recomp** - Queue hierarchical count recomputation when increment semantics insufficient.
-- **Node strategy** - Raw tag overlay to created aggregations.
-- **Organize shortcuts** - Direct Who/What/When/Where jump buttons in Organize tree.
-- **Tag tree density** - Tighter vertical spacing without weakening DnD hit targets.
-- **Tag-edit iconography** - Tag-specific affordance instead of generic pencil.
-- **Media-to-card tag inheritance** - Auto gallery→card sync per `02` **Studio Tags** 📋 (**shipped 2026-07-12** — Settings toggles + sync hooks; backfill on toggle enable deferred).
-- **Tag Set 0 — Generic** - Optional starter taxonomy install/remove from Settings (**shipped 2026-07-13** — additive only; `tagSetId` marker; skips name conflicts).
-
-**§ Studio Media (`02`)**
-
-- **Media piles organize v2** — **Closed 2026-07-14** (slices **(1)–(5) shipped**): Organize strip, overlay sections, membership edit, **Browse | Review** retired. Slice **(6) Organize in Media deep link** **dropped** (author decision — not in scope). Touchpoints: `MediaAdminContent.tsx`, `MediaOrganizeStrip.tsx`, `MediaStoryPilesOverlayView.tsx`, `studioPileMembershipDnd.tsx`, `reviewClusterImport.ts`, provisional cluster APIs. **Follow-up shipped 2026-07-14:** legacy **`importBatchId`** backfill (`batch-legacy`), **Apply tags to photos**, import feedback, Organize UX (batch filter + strip without Import scope row). **Deferred:** auto burst stacks, Review burst lens, merge piles; tag-filter modal polish.
-- **PhotoPicker convergence** — **Shipped 2026-07-14** (**insert-image workflow v1**): library-only PhotoPicker; paste/drop + **Add from library** on gallery (Studio + View compose); bank import only via Media **Import**. Touchpoints: `PhotoPicker.tsx`, `StudioCardFormGallery.tsx`, `GalleryManager.tsx`, `CardForm.tsx`.
-- **Import and duplicate triage** - Trustworthy bank workflow and source-aware duplicate review (not filename-only).
-- **Manual phone aggregation** - Select imported phone group, assign to card, flesh out story/tags.
-- **Media derivative architecture** - Surface-specific derivatives; video and phone as first-class inputs.
-- **Media readiness pipeline** - Background ingest/processing states so imports appear quickly with truthful status.
-- **Workspace parity** - Shared operator contract with Cards for layout, selection, and drag affordances.
-- **Caption workflow** - Inline caption edit and two-line clamp on grid tiles.
-- **Gallery override posture** - Studio Media defaults primary; Compose overrides explicit exceptions.
-- **External-editor replace loop** - Smooth GIMP/Topaz round-trip via replace-in-place.
-- **Guided archive spikes** - Clustering review UI per `docs/05-Guided-Archive-Assistance.md` (heuristics, evaluation set, review stacks).
-
-**§ User Management (`02`)**
-
-- **User surface polish** - Page title, `All Users` casing, heading alignment with rest of admin chrome.
-
-**§ Backend (`01`)**
-
-- **Narrow mutation paths** - Extend bounded-write discipline wherever admin flows still fall back to wider `updateCard`-style work than the change requires.
-
-### Phase 3 — Reader experience
-
-*Build inventory — pending **Phase 1.a** exit and re-sequence.*
-
-⭕1 **Planned**
-
-📐 **Suggested order** - **Landing & entry** (public surface) when demo needs it → **Content/View** polish → **Navigation** chrome → **Theme** preset completion. Pick one slice at a time from demo-first priorities.
-
-**§ Landing & entry (`02` Navigation — Landing Page, Sign-in)**
-
-- **Landing page program** - **shipped** (full v1 section stack; pricing/contact forms are disabled placeholders until tiers and operator channel are locked).
-- **Hero** - **shipped** — product promise and **Sign in** CTA.
-- **About** - **shipped** — audience and problem statement.
-- **Features** - **shipped** — organization, stories, private reading, publishing.
-- **How it works** - **shipped** — in-app steps + honest external pipeline.
-- **Pricing** - **placeholder shipped** — three-tier card layout (Personal / Family / Legacy); **Pricing TBD** copy; **Request access** links to contact section; numeric tiers and interest form wiring **TBD**.
-- **Resources** - **shipped** — curated external pointers (disclaimer: not endorsements).
-- **Privacy & trust** - **shipped** — family-private hosting summary.
-- **FAQ** - **shipped** — access, mobile vs admin, help pointers.
-- **Contact / access** - **placeholder shipped** — disabled request form; channel TBD.
-- **Sign-in route** - **shipped** at `/login` with landing CTAs and auth redirects.
-
-**§ Top Navigation (`02`)**
-
-- **Top-nav refinement** - Logo, Back clarity, chrome density.
-- **Hamburger restructure** - Home, Settings, Help, Theme row per 📋 contract.
-- **In-app Help** - Reader basics + link to landing FAQ.
-- **Settings surface** - **shipped** (inheritance toggles, Tag Set 0, backup status/run locally, index health, restore CLI guidance); theme reader prefs remain ⭕1.
-
-**§ Left Navigation (`02`)**
-
-- **Left-nav refinement** - Control order (`Cards | Media` above taxonomy); browse-target clarity; mobile ergonomics for Guided/Freeform.
-
-**§ Content Page (`02`)**
-
-- **Feed presentation refinement** - Enforce matrix across contexts; orientation-aware inline paths; overlay legibility.
-- **Rail variant** - Curated horizontal sequences separate from main grid.
-- **Read more** - In-feed progressive disclosure for story excerpts.
-- **Question cover cue** - Type-native cover treatment for closed Question tiles.
-- **Utility typography parity** - Rail vs grid Quote/Question scale; blocked until unified utility tokens.
-- **Trivia card** - Flip prompt/answer family evaluation.
-- **Quote attribution** - Attribution modeling (content vs subtitle/excerpt).
-- **Questions / Quotes sourcing** - Import/source material paths.
-
-📐 **Closed-tile sequencing (reference)** - Steps 1–4 largely shipped (chip row, unified shell, Studio grid, rail tokens). Open: **utility typography parity**, **tag aggregation** (Studio Tags), matrix enforcement above.
-
-**§ View Page (`02`)**
-
-- **Detail presentation refinement** - Optional kicker/subhead; discovery typography and hierarchy.
-- **Drop cap** - Long-form story openings evaluation.
-
-**§ Theme Management (`02`)**
-
-- **CSS tokenization** - Move design-affecting literals into theme variables incrementally.
-- **Theme contract inventory** - Surface/element/token migration status before Journal/Editorial are "finished."
-- **Theme schema** - Formalize Firestore theme document (atomic + semantic + recipes).
-- **Preset completion** - Journal/Editorial coherent light/dark packages after inventory and schema.
-- **Workspace chrome** - Lighter floating panel; ~20% more effective height before inner scroll.
-
-❓ **Open (`02` Theme Management)** - **Italic** — right-leaning ink font for editorial accent?
-
-### Phase 4 — Scale & polish
-
-*Build inventory — pending **Phase 1.a** exit and re-sequence.*
-
-⭕1 **Planned**
-
-**§ Backend / platform (`01`)**
-
-- **Code** - Comment code.
-- **Directory** - Cleanup directory.
-- **Quality** - QA app.
-- **Security hardening** - Threat model, authorization, secrets, hosted deployment hardening beyond current baseline.
-- **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths; contract-level browser smoke where unit/API tests are insufficient.
-- **Authorization consistency** - Centralize reader/admin route and mutation classification so access rules do not diverge across individual handlers.
-- **Service boundaries** - Decompose responsibility-heavy services, beginning with `cardService` and `themeService`, into explicit domain operations without splitting shared integrity rules across competing paths.
-- **Access and privacy gate** - Re-verify hosted boundaries as deployment or auth config changes.
-- **Operational recovery gate** - Remaining before commercial release: rollback/incident-response drills, disposable-target Typesense rebuild with isolated config, hosted-runtime proof on recovered data. Operator path: `docs/NPM-SCRIPTS.md` -> **Restore drill**.
-- **Workflow quality gate** - Full visual mobile/desktop usability proof for family-demo and hosted-alpha criteria.
-
-**§ Frontend (`01`)**
-
-- **Component boundaries** - Reduce responsibility-heavy UI modules, beginning with `StudioWorkspace`, `MediaAdminContent`, and `CardForm`; separate state coordination, domain operations, and presentation without creating shadow state.
-- **Reader edit boundary** - Extract reusable focused-edit capabilities so reader-context editing does not depend on the full Studio form architecture.
-- **Theme boundaries** - Separate Theme Management workspace composition from theme schema, transformation, and persistence responsibilities.
-- **Legacy surface retirement** - Remove redirect-only admin routes, duplicate loaders, and compatibility paths after callers and navigation are verified; determine whether `CollectionsAdminClient` should be retired before refactoring it.
-
-📐 **Phase 4 incremental backlog (partial closeout)** - Broader `withApiRouteHandler` migration, per-directory TS strict rollout, unused-deps cleanup — ship opportunistically, not as demo blockers.
+**Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
 
 ---
 
-📘 **Review program archive (shipped — reference only)**
+## Sequence
 
-*Do not treat as active sequencing. Use for slice IDs, scripts, and regression context.*
+The ordering below preserves the existing Admin → Reader → Scale progression. It is a queue, not evidence that any capability is Ready. Select one capability at a time for Definition Gate assessment.
 
-- **Step 2 Reader performance (2026-06-12)** - 2a Theme lazy chunk; 2b inline feed static HTML; 2c cover-only hydration; 2d/9a reader renditions; 2e-1 CSS containment.
-- **Step 3 Backend (2026-06-12)** - 3a storage byte backup; 3b API route audit; 3c integrity gate expansion; 3d env-password auth retirement.
-- **Step 4 Studio legacy (2026-06-12)** - 4a–4d question-admin retirement, Collections standalone removal, redirect cleanup, `studio/{cards,media,tags}` modules.
-- **Step 5 Reader mobile edit (2026-06-12)** - 5a–5d quick edit, gallery caption, plain-prose body, lazy edit bundles.
-- **Step 6 E2E (2026-06-12)** - 6a admin-save smoke; 6b PR gate Playwright.
-- **Step 7 API/service (2026-06-12)** - 7a–7e input caps, route envelope, Typesense retry/status, transaction catalog reads, atomic media-reference removal.
-- **Step 8 Security/ops (2026-06-12)** - 8a–8d rate limits, maintenance log hygiene, tag API projection, Sentry baseline.
-- **Step 9 Reader follow-ups** - 9a reader renditions backfill; 9b CSS containment retained; 9c sidebar hydration.
-- **Step 10–11 Studio/quality (partial 2026-07-10)** - Shell registry, PhotoPicker extract; strict-api typecheck baseline.
-- **Step 12 Operational recovery (2026-07-10)** - Firestore + Storage drill on `my-journal-restore-drill`; `backup:run`, `restore:storage`, `restore:run`; post-drill build + integrity pass.
-- **Studio runtime + DnD (2026-07-11 author verified)** - Cards workspace query owner, local reconciliation, Questions/Compose handoff, structure optimistic updates, gallery/children reorder, Compose scroll containment, naming cleanup, bulk bar semantics.
+## 1. Author workflow
 
-❓ **Open**
+### Administration
 
-- **Deferrable product** - Left Nav Group by / Created sort / messy-archive Studio entry; landing brand assets; Theme italic accent; video readiness depth on first video slice.
-- **Build-slice detail** - Provisional suggestions Firestore schema when organize spine slice opens.
-- **Engineering hygiene inventory** - Dead table-era code; ESLint/API envelope/TS strict ratchet — track under Phase 4 incremental backlog until **1.a** spawns explicit **📋** or a later hygiene phase.
+**Definition:** Not gated
+
+- **Consistency** — Align progress, errors, selection, filters, and drag behavior across Studio.
+- **Hierarchy** — Reduce unnecessary visual layers while preserving workspace ownership.
+- **Boundary** — Keep full taxonomy management in Studio and focused correction in Reader.
+
+### Studio Cards
+
+**Definition:** Not gated
+
+- **Density** — Reduce tile footprint while preserving legibility and selection.
+- **Tags** — Improve keyboard use, hierarchy, and disambiguation.
+- **Filters** — Provide clearer single-dimension search without removing advanced filtering.
+- **Quote** — Add Quote only with the completed Quote object.
+
+### Studio Compose
+
+**Definition:** Not gated
+
+- **Guidance** — Clarify title, subtitle, excerpt, and body roles.
+- **Alignment** — Reconcile Compose, Reader, and compact previews.
+- **Reader edit** — Align focused Reader editing with overlapping Compose fields.
+- **Editorial** — Add only approved long-form controls.
+- **Context** — Keep historical context distinct from writing rewrites.
+- **Quote** — Define fields, attribution, media, relationships, presentation, and authoring.
+
+### Studio Tags
+
+**Definition:** Not gated
+
+- **Inheritance policy** — Confirm aggregation and manual-edit persistence.
+- **Inheritance backfill** — Synchronize existing cards when a dimension is enabled.
+- **Inheritance verification** — Verify settings, gallery changes, media-tag changes, counts, projections, and Reader filters.
+- **Count repair** — Add hierarchical reconciliation where incremental counts are insufficient.
+- **Shortcuts** — Add direct dimension navigation.
+- **Density** — Tighten the taxonomy tree without weakening drag targets.
+- **Affordance** — Replace generic edit iconography.
+
+### Studio Questions
+
+**Definition:** Not gated
+
+- **Integrity** — Enforce one Question to at most one answer card transactionally in create and link paths.
+- **Regression** — Verify open, create, delete, unlink, conversion, usage, and Compose handoff.
+
+### Studio Media
+
+**Definition:** Not gated
+
+- **Duplicates** — Define identity evidence, comparison, decisions, and reconciliation.
+- **Readiness** — Add durable upload, processing, indexing, ready, and failure states.
+- **Consistency** — Align layout, selection, filters, bulk actions, and drag behavior with Cards.
+- **Pile merge** — Add bounded author-controlled pile merging.
+- **Bursts** — Propose provisional burst stacks and confirmation behavior.
+- **Derivatives** — Reconcile image and phone formats across supported surfaces.
+
+### Apple Photos
+
+**Definition:** Not gated
+
+- **Access** — Establish the supported Apple source-access and authorization model.
+- **Preview** — Let the author review selectable photos and videos before import.
+- **Identity** — Preserve source identity and metadata for repeat-import reconciliation.
+- **Ingestion** — Import selected assets into the canonical media bank.
+- **Progress** — Report batch progress, partial failure, retry, and completion.
+- **Duplicates** — Use source and content evidence rather than filename alone.
+- **Verification** — Prove representative photo/video import and downstream Media behavior.
+
+### Video
+
+**Definition:** Not gated
+
+- **Model** — Reuse image identity, tagging, assignment, reference, and deletion rules.
+- **Processing** — Produce playable rendition, poster, duration, readiness, and failure state.
+- **Media** — Browse, preview, tag, filter, select, replace, and delete safely.
+- **Compose** — Assign and preview Cover, Gallery, and body video.
+- **Reader** — Play video in assigned placements without autoplaying sound.
+- **Cards** — Use a poster or compact indicator; grid playback is not required.
+
+### User Management
+
+**Definition:** Not gated
+
+- **Revocation** — Reject or invalidate existing sessions after disablement.
+- **Consistency** — Align titles, tables, feedback, and spacing with Administration.
+
+### Settings
+
+**Definition:** Not gated
+
+- **Organization** — Separate Reader preferences, author configuration, and operations.
+- **Appearance** — Expose Journal/Editorial and Light/Dark Reader choices.
+- **Persistence** — Store each reader's selection independently.
+- **Account** — Add appropriate signed-in account entry points.
+- **Activation** — Explain inheritance consequences and invoke approved enable-time synchronization.
+
+---
+
+## 2. Reader experience
+
+### Landing Page
+
+**Definition:** Not gated
+
+- **Messaging** — Reconcile purpose, audience, and value.
+- **Brand** — Complete approved identity assets.
+- **Packaging** — Present the hosted offer when settled.
+- **Access** — Explain invitation and sign-in expectations.
+
+### Top Navigation
+
+**Definition:** Not gated
+
+- **Hierarchy** — Finalize destinations and remove development or migration entries.
+- **History** — Correct mobile Back and edge-swipe behavior.
+- **Return** — Establish safe contextual return routing.
+- **Appearance** — Integrate per-reader theme and mode controls.
+
+### Left Navigation
+
+**Definition:** Not gated
+
+- **Hierarchy** — Clarify mode, filter, collection, and administrative controls.
+- **Mobile** — Improve the drawer without breaking browser gestures.
+- **Editing** — Preserve focused correction and Studio taxonomy ownership.
+
+### Content Page
+
+**Definition:** Not gated
+
+- **Alignment** — Reconcile feed, detail, Compose, and compact previews.
+- **Quote** — Complete the Quote product and presentation, not only renderer scaffolding.
+- **Question** — Refine its visual cue and typography.
+- **Typography** — Standardize Question, Quote, and Callout hierarchy.
+- **Legibility** — Protect overlays and controls across variable images.
+- **Discovery** — Complete related and broader Freeform rails.
+- **Disclosure** — Improve Inline continuation.
+
+### View Page
+
+**Definition:** Not gated
+
+- **Presentation** — Reconcile hierarchy and spacing across forms.
+- **Quote** — Complete open quotation behavior.
+- **Typography** — Validate approved long-form treatments.
+- **Continuation** — Distinguish Guided children from Freeform discovery.
+
+### Theme Standardization
+
+**Definition:** Not gated
+
+- **Inventory** — Map every Reader and Administration surface to its owned roles.
+- **Standardization** — Re-establish one values → semantics → recipes → surfaces path.
+- **Enforcement** — Remove bypasses, duplicated variables, competing aliases, and component-local design systems.
+- **Boundaries** — Separate workspace composition from schema, compilation, and persistence.
+- **States** — Standardize feedback, focus, disabled, selected, and destructive states.
+- **Administration** — Establish one coherent v1 authoring presentation.
+- **Workbench** — Improve usability only after the contract is stable.
+
+### Journal
+
+**Definition:** Not gated
+
+- **Light** — Complete the Journal Light package.
+- **Dark** — Complete the Journal Dark package.
+- **Coverage** — Validate all representative Reader surfaces and states on mobile and desktop.
+
+### Editorial
+
+**Definition:** Not gated
+
+- **Light** — Complete the Editorial Light package.
+- **Dark** — Complete the Editorial Dark package.
+- **Coverage** — Validate all representative Reader surfaces and states on mobile and desktop.
+
+---
+
+## 3. Platform and commercial readiness
+
+### Service Boundaries
+
+**Definition:** Not gated
+
+- **Cards** — Split `cardService` into explicit domain operations without duplicating integrity rules.
+- **Themes** — Split `themeService` by schema, transformation, compilation, and persistence.
+
+### Component Boundaries
+
+**Definition:** Not gated
+
+- **Studio** — Split `StudioWorkspace` coordination from domain and presentation work.
+- **Media** — Split `MediaAdminContent` population, operations, and presentation responsibilities.
+- **Forms** — Split `CardForm` by content, relationships, and presentation responsibilities.
+- **Reader edit** — Extract reusable focused editing without depending on the full Studio form.
+
+### Authorization
+
+**Definition:** Not gated
+
+- **Classification** — Centralize Reader and administrator route and mutation policy.
+- **Sign-in** — Make `/login` the single authentication entry.
+- **Callbacks** — Preserve safe return destinations and reject unsafe ones.
+- **Revocation** — End authorization after account disablement.
+
+### Legacy Retirement
+
+**Definition:** Not gated
+
+- **Routes** — Remove redirect-only administrative and compatibility routes after caller verification.
+- **Loaders** — Remove duplicate data paths only after canonical ownership is proven.
+- **Collections** — Determine whether `CollectionsAdminClient` remains required before refactoring or retirement.
+
+### Search and Lists
+
+**Definition:** Not gated
+
+- **Fallback** — Define truthful degraded search behavior without Typesense.
+- **Ordering** — Verify stable full-population filtering and chunk ordering.
+- **Refresh** — Replace unnecessary full-catalog reloads with targeted reconciliation.
+
+### Operations
+
+**Definition:** Not gated
+
+- **Backup** — Prove complete paired backup operation.
+- **Restore** — Repeat restore drill against a disposable target.
+- **Accounts** — Prove administrator and reader recovery procedures.
+- **Release** — Establish release and rollback readiness.
+- **Incident** — Prove incident-response and recovery steps.
+
+### Engineering Quality
+
+**Definition:** Not gated
+
+- **Security** — Threat-model authorization, secrets, and hosted deployment.
+- **Testing** — Expand workflow, integrity, commercial, and browser contract coverage.
+- **Quality** — Perform application QA against selected capability gates.
+- **Directory** — Remove obsolete structure only when ownership is proven.
+- **Comments** — Add documentation only where code intent is not evident from names, types, tests, or contracts.
+- **Strictness** — Continue bounded TypeScript, lint, API-envelope, and unused-dependency cleanup.
+
+---
+
+## Open questions
+
+- **Landing audience** — Final public language for the initial customer.
+- **Card suggestions** — Remaining role, if any, of the former Media-derived suggestion workflow.
+- **Suggestion storage** — Per-media tag suggestions, face payloads, and retention beyond provisional clusters.
+- **Left navigation** — Whether Group by, Created sort, or a messy-archive Studio entry are still desired.
+- **Brand assets** — Final Landing identity assets.
+
+These questions remain open; they do not authorize implementation or imply priority.

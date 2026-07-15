@@ -5,6 +5,7 @@ import useSWR, { type KeyedMutator } from 'swr';
 import { useSession } from 'next-auth/react';
 import { Tag } from '@/lib/types/tag';
 import { buildTagTree, normalizeTagDimensionKey } from '@/lib/utils/tagUtils';
+import { readStoredStudioCardBankLocalFilterPreferences } from '@/lib/preferences/adminFilters';
 
 const READER_FILTER_TAGS_KEY = 'myjournal-reader-filter-tags';
 
@@ -47,6 +48,9 @@ export interface TagContextType {
   error: Error | null;
   selectedFilterTagIds: string[];
   setFilterTags: (tagIds: string[]) => void;
+  studioCardFilterTagIds: string[];
+  setStudioCardFilterTagIds: (tagIds: string[]) => void;
+  studioCardFiltersHydrated: boolean;
   createTag: (tagData: Omit<Tag, 'docId'>) => Promise<Tag | undefined>;
   updateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;
   deleteTag: (id: string) => Promise<void>;
@@ -78,11 +82,18 @@ export function TagProvider({ children }: { children: ReactNode }) {
 
   // State for the global tag filter
   const [selectedFilterTagIds, setFilterTags] = useState<string[]>([]);
+  const [studioCardFilterTagIds, setStudioCardFilterTagIds] = useState<string[]>([]);
+  const [studioCardFiltersHydrated, setStudioCardFiltersHydrated] = useState(false);
   const [hasHydratedStoredFilterTags, setHasHydratedStoredFilterTags] = useState(false);
 
   React.useEffect(() => {
     setFilterTags(readStoredFilterTagIds());
     setHasHydratedStoredFilterTags(true);
+  }, []);
+
+  React.useEffect(() => {
+    setStudioCardFilterTagIds(readStoredStudioCardBankLocalFilterPreferences().filterTagIds);
+    setStudioCardFiltersHydrated(true);
   }, []);
 
   React.useEffect(() => {
@@ -212,6 +223,9 @@ export function TagProvider({ children }: { children: ReactNode }) {
     error: error || null,
     selectedFilterTagIds,
     setFilterTags,
+    studioCardFilterTagIds,
+    setStudioCardFilterTagIds,
+    studioCardFiltersHydrated,
     createTag,
     updateTag,
     deleteTag,
@@ -226,6 +240,8 @@ export function TagProvider({ children }: { children: ReactNode }) {
     isLoading, 
     error,
     selectedFilterTagIds,
+    studioCardFilterTagIds,
+    studioCardFiltersHydrated,
     createTag, 
     updateTag, 
     deleteTag, 

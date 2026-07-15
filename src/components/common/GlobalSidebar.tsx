@@ -55,8 +55,10 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const {
     tags,
     loading: tagsLoading,
-    selectedFilterTagIds,
-    setFilterTags,
+    selectedFilterTagIds: readerFilterTagIds,
+    setFilterTags: setReaderFilterTagIds,
+    studioCardFilterTagIds,
+    setStudioCardFilterTagIds,
     dimensionTree,
     updateTag,
   } = useTag();
@@ -92,6 +94,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
   const router = useRouter();
+  const isStudioRoute = pathname?.startsWith('/admin/studio') ?? false;
+  const selectedFilterTagIds = isStudioRoute ? studioCardFilterTagIds : readerFilterTagIds;
+  const setFilterTags = isStudioRoute ? setStudioCardFilterTagIds : setReaderFilterTagIds;
   const isViewRoute = pathname === '/view' || (pathname?.startsWith('/view/') ?? false);
   const isSearchRoute = pathname === '/search' || (pathname?.startsWith('/search/') ?? false);
   const isReaderFilterRoute = isViewRoute || isSearchRoute;
@@ -258,11 +263,12 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   );
 
   const handleClearFiltersClick = useCallback(() => {
-    if (readerMode === 'guided') return;
-    clearFilters();
+    if (!isStudioRoute && readerMode === 'guided') return;
+    if (isStudioRoute) setFilterTags([]);
+    else clearFilters();
     setTagSearch('');
     returnToFeedIfViewingDetail();
-  }, [clearFilters, readerMode, returnToFeedIfViewingDetail]);
+  }, [clearFilters, isStudioRoute, readerMode, returnToFeedIfViewingDetail, setFilterTags]);
 
   const handleSetBrowseMode = useCallback(
     (nextMode: 'freeform' | 'guided') => {
@@ -450,8 +456,8 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 onClick={handleClearFiltersClick}
                 className={styles.clearButtonCompact}
                 aria-label="Clear filters"
-                title={readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
-                disabled={readerMode === 'guided'}
+                title={!isStudioRoute && readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
+                disabled={!isStudioRoute && readerMode === 'guided'}
               >
                 <FunnelX strokeWidth={2} />
                 <span className={styles.srOnly}>Clear filters</span>

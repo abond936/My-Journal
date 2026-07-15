@@ -2818,14 +2818,15 @@ async function deriveBulkTagFieldsForTags(
  * @param tags - The new array of tag IDs to set for all cards.
  * @returns A promise that resolves when the batch update is complete.
  */
-export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise<void> {
+export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise<Card[]> {
   if (!cardIds || cardIds.length === 0) {
-    return;
+    return [];
   }
 
   const allTags = await getAllTags();
   const tagLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
   const derived = await deriveBulkTagFieldsForTags(tags, allTags);
+  const updatedCards: Card[] = [];
 
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
@@ -2886,19 +2887,19 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
     // post-commit Typesense sync per card. Fire-and-forget — same pattern as
     // single-card paths. See docs/01-Vision-Architecture.md → Backend Principles
     // **Mutation scope** (sync indexed-field changes).
-    for (const updatedCard of pendingSyncs) {
-      void syncCardToTypesense(updatedCard);
-    }
+    await Promise.all(pendingSyncs.map((updatedCard) => syncCardToTypesense(updatedCard)));
+    updatedCards.push(...pendingSyncs);
   }
+  return updatedCards;
 }
 
 export async function bulkApplyTagDelta(
   cardIds: string[],
   addTagIds: string[],
   removeTagIds: string[]
-): Promise<void> {
+): Promise<Card[]> {
   if (!cardIds || cardIds.length === 0) {
-    return;
+    return [];
   }
 
   const addSet = new Set(
@@ -2909,12 +2910,13 @@ export async function bulkApplyTagDelta(
   );
 
   if (addSet.size === 0 && removeSet.size === 0) {
-    return;
+    return [];
   }
 
   const allTags = await getAllTags();
   const tagLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
   const derivedCache = new Map<string, BulkTagDerived>();
+  const updatedCards: Card[] = [];
 
   for (let i = 0; i < cardIds.length; i += BULK_UPDATE_TAGS_CHUNK_SIZE) {
     const chunk = cardIds.slice(i, i + BULK_UPDATE_TAGS_CHUNK_SIZE);
@@ -2987,10 +2989,10 @@ export async function bulkApplyTagDelta(
       }
     });
 
-    for (const updatedCard of pendingSyncs) {
-      void syncCardToTypesense(updatedCard);
-    }
+    await Promise.all(pendingSyncs.map((updatedCard) => syncCardToTypesense(updatedCard)));
+    updatedCards.push(...pendingSyncs);
   }
+  return updatedCards;
 }
 
 /**

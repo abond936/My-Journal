@@ -14,7 +14,7 @@ interface BulkEditTagsModalProps {
   cardIds: string[];
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payload: { cardIds: string[]; addTagIds: string[]; removeTagIds: string[] }) => Promise<void>;
+  onSave: (payload: { cardIds: string[]; addTagIds: string[]; removeTagIds: string[]; cards: Card[] }) => Promise<void>;
 }
 
 export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: BulkEditTagsModalProps) {
@@ -142,7 +142,13 @@ export default function BulkEditTagsModal({ cardIds, isOpen, onClose, onSave }: 
         body: JSON.stringify({ cardIds, addTagIds, removeTagIds }),
       });
       if (!response.ok) throw new Error('Failed to save tags.');
-      await onSave({ cardIds, addTagIds, removeTagIds });
+      const payload = (await response.json().catch(() => ({}))) as { cards?: Card[] };
+      await onSave({
+        cardIds,
+        addTagIds,
+        removeTagIds,
+        cards: Array.isArray(payload.cards) ? payload.cards : [],
+      });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');

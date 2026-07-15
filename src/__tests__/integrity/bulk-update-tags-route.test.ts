@@ -51,6 +51,7 @@ describe('POST /api/cards/bulk-update-tags', () => {
 
   it('uses replacement mode when tags[] is provided', async () => {
     mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkUpdateTags.mockResolvedValueOnce([{ docId: 'c1' }] as never);
 
     const req = {
       json: async () => ({ cardIds: ['c1', 'c2'], tags: ['tA', 'tB'] }),
@@ -63,10 +64,12 @@ describe('POST /api/cards/bulk-update-tags', () => {
     expect(mockedBulkUpdateTags).toHaveBeenCalledWith(['c1', 'c2'], ['tA', 'tB']);
     expect(mockedBulkApplyTagDelta).not.toHaveBeenCalled();
     expect(payload.mode).toBe('replace');
+    expect(payload.cards).toEqual([{ docId: 'c1' }]);
   });
 
   it('uses narrow add/remove bulk delta path when addTagIds/removeTagIds are provided', async () => {
     mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyTagDelta.mockResolvedValueOnce([{ docId: 'c2' }] as never);
 
     const req = {
       json: async () => ({
@@ -87,6 +90,7 @@ describe('POST /api/cards/bulk-update-tags', () => {
     );
     expect(mockedBulkUpdateTags).not.toHaveBeenCalled();
     expect(payload.mode).toBe('add-remove');
+    expect(payload.cards).toEqual([{ docId: 'c2' }]);
   });
 
   it('returns 400 when cardIds exceeds the bulk cap', async () => {

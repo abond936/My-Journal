@@ -80,6 +80,13 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/journal-users', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'PATCH', path: '/api/admin/journal-users/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
+  { method: 'GET', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'PATCH', path: '/api/admin/archive-identity/[entity]/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'DELETE', path: '/api/admin/archive-identity/[entity]/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'PATCH', path: '/api/admin/archive-identity/perspective', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/archive-identity/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+
   { method: 'GET', path: '/api/admin/questions', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/questions', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'PATCH', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -158,6 +165,13 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-journal-users-get', method: 'GET', path: '/api/admin/journal-users', modulePath: '@/app/api/admin/journal-users/route', requestUrl: 'https://example.test/api/admin/journal-users' },
   { id: 'admin-journal-users-post', method: 'POST', path: '/api/admin/journal-users', modulePath: '@/app/api/admin/journal-users/route', requestUrl: 'https://example.test/api/admin/journal-users', body: { email: 'viewer@example.com', role: 'viewer' } },
   { id: 'admin-journal-users-patch', method: 'PATCH', path: '/api/admin/journal-users/[id]', modulePath: '@/app/api/admin/journal-users/[id]/route', requestUrl: 'https://example.test/api/admin/journal-users/user-1', params: Promise.resolve({ id: 'user-1' }), body: { disabled: true } },
+
+  { id: 'admin-archive-identity-get', method: 'GET', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity' },
+  { id: 'admin-archive-identity-post', method: 'POST', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity', body: { entity: 'person', data: { canonicalName: 'Test Person' } } },
+  { id: 'admin-archive-identity-person-patch', method: 'PATCH', path: '/api/admin/archive-identity/[entity]/[id]', modulePath: '@/app/api/admin/archive-identity/[entity]/[id]/route', requestUrl: 'https://example.test/api/admin/archive-identity/person/person-1', params: Promise.resolve({ entity: 'person', id: 'person-1' }) as Promise<{ id: string }>, body: { canonicalName: 'Updated Person' } },
+  { id: 'admin-archive-identity-group-delete', method: 'DELETE', path: '/api/admin/archive-identity/[entity]/[id]', modulePath: '@/app/api/admin/archive-identity/[entity]/[id]/route', requestUrl: 'https://example.test/api/admin/archive-identity/group/group-1', params: Promise.resolve({ entity: 'group', id: 'group-1' }) as Promise<{ id: string }> },
+  { id: 'admin-archive-identity-perspective', method: 'PATCH', path: '/api/admin/archive-identity/perspective', modulePath: '@/app/api/admin/archive-identity/perspective/route', requestUrl: 'https://example.test/api/admin/archive-identity/perspective', body: { personId: null } },
+  { id: 'admin-archive-identity-review', method: 'GET', path: '/api/admin/archive-identity/review', modulePath: '@/app/api/admin/archive-identity/review/route', requestUrl: 'https://example.test/api/admin/archive-identity/review' },
 
   { id: 'admin-questions-get', method: 'GET', path: '/api/admin/questions', modulePath: '@/app/api/admin/questions/route', requestUrl: 'https://example.test/api/admin/questions' },
   { id: 'admin-questions-post', method: 'POST', path: '/api/admin/questions', modulePath: '@/app/api/admin/questions/route', requestUrl: 'https://example.test/api/admin/questions', body: { prompt: 'Why?' } },

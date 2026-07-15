@@ -66,3 +66,27 @@ export function assertCompleteTagTraversal<T extends TagTreeNode>(tags: T[], ord
     throw new Error(`Tag traversal mismatch: processed ${order.length} of ${expected} tags`);
   }
 }
+
+export function computeHierarchicalUniqueIds<T extends TagTreeNode>(
+  tags: T[],
+  assignments: Array<{ objectId: string; tagIds: string[] }>
+): Map<string, Set<string>> {
+  const direct = new Map<string, Set<string>>();
+  for (const assignment of assignments) {
+    for (const tagId of new Set(assignment.tagIds.filter(Boolean))) {
+      const ids = direct.get(tagId) ?? new Set<string>();
+      ids.add(assignment.objectId);
+      direct.set(tagId, ids);
+    }
+  }
+  const children = buildTagChildrenByParent(tags);
+  const result = new Map<string, Set<string>>();
+  for (const tagId of getTagPostOrder(tags)) {
+    const ids = new Set(direct.get(tagId) ?? []);
+    for (const childId of children.get(tagId) ?? []) {
+      for (const objectId of result.get(childId) ?? []) ids.add(objectId);
+    }
+    result.set(tagId, ids);
+  }
+  return result;
+}

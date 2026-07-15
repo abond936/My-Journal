@@ -158,9 +158,9 @@ export const filterTreeBySearch = (
   const searchLower = search?.trim().toLowerCase() ?? '';
   const selfMatches =
     !searchLower || (node.name?.toLowerCase().includes(searchLower) ?? false);
-  // When this node matches, keep the full subtree so descendants (e.g. Bond under Ancestry) stay visible.
+  // A direct match is a locate result, not permission to expose every descendant as another match.
   if (selfMatches) {
-    return { ...node, children: node.children };
+    return { ...node, children: [] };
   }
   const childResults = node.children
     .map((c) => filterTreeBySearch(c, search))

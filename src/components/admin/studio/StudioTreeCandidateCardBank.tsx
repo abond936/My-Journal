@@ -149,7 +149,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const { selectedLoadState, notifyQuestionCardDeleted, removeCollectionsCardStructure } = useStudioShell();
   const { active } = useDndContext();
   const feedback = useAppFeedback();
-  const { tags: allTags } = useTag();
+  const {
+    tags: allTags,
+    studioCardFilterTagIds: filterTagIds,
+    setStudioCardFilterTagIds: setFilterTagIds,
+    studioCardFiltersHydrated,
+  } = useTag();
   const initialLocalFilterPrefsRef = useRef(readStoredStudioCardBankLocalFilterPreferences());
   const [workspaceCards, setWorkspaceCards] = useState<Card[]>([]);
   const [catalogOverrides, setCatalogOverrides] = useState<CatalogOverrideMap>({});
@@ -159,7 +164,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const selectionAnchorIndexRef = useRef<number | null>(null);
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
   const [sortMode, setSortMode] = useState<CandidateSort>('titleAsc');
-  const [filterTagIds, setFilterTagIds] = useState<string[]>(initialLocalFilterPrefsRef.current.filterTagIds);
   const [tagFilterScope, setTagFilterScope] = useState<AdminTagFilterScope>(
     initialLocalFilterPrefsRef.current.tagFilterScope
   );
@@ -199,6 +203,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [active]);
 
   useEffect(() => {
+    if (!studioCardFiltersHydrated) return;
     writeStoredStudioCardBankLocalFilterPreferences({
       typeFilter,
       displayModeFilter,
@@ -206,7 +211,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       tagFilterScope,
       dimensionFilters,
     });
-  }, [dimensionFilters, displayModeFilter, filterTagIds, tagFilterScope, typeFilter]);
+  }, [dimensionFilters, displayModeFilter, filterTagIds, studioCardFiltersHydrated, tagFilterScope, typeFilter]);
 
   // Workspace query owner: the Studio card bank owns a server-shaped card query
   // rather than filtering a large local mega-catalog. Results still append in
@@ -513,7 +518,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     setTagFilterScope('all');
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setBulkSelectedCardIds(new Set());
-  }, [setSearch, setStatusFilter]);
+  }, [setFilterTagIds, setSearch, setStatusFilter]);
 
   const updateDimensionFilter = useCallback(
     (dimension: DimensionKey, patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>) => {
@@ -1237,7 +1242,11 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         cardIds={Array.from(bulkSelectedCardIds)}
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}
-        onSave={async () => {
+        onSave={async ({ cards }) => {
+          cards.forEach((card) => {
+            upsertCatalogCard(card);
+            upsertCard(card);
+          });
           setWorkspaceQueryRefreshTick((t) => t + 1);
           setBulkSelectedCardIds(new Set());
         }}
@@ -1246,13 +1255,16 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         isOpen={tagFilterModalOpen}
         onClose={() => setTagFilterModalOpen(false)}
         title="Card filters"
+        size="wide"
       >
         <MacroTagSelector
-          startExpanded
+          expanded={tagFilterModalOpen}
+          onExpandedChange={setTagFilterModalOpen}
           selectedTags={selectedFilterTags}
           allTags={allTags || []}
           onChange={setFilterTagIds}
           collapsedSummary="none"
+          suppressOverlay
         />
       </EditModal>
     </div>

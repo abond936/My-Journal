@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
+import PeopleAdminPanel from '@/components/admin/studio/people/PeopleAdminPanel';
 import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import tagAdminStyles from '@/components/admin/studio/tags/tagAdminShell.module.css';
@@ -19,6 +20,7 @@ export default function TagAdminStudioPane({
   embeddedColumn?: boolean;
   highlightTagIds?: string[];
 }) {
+  const [section, setSection] = useState<'tags' | 'people'>('tags');
   const studioShell = useStudioShellOptional();
   const shellHighlightId = studioShell?.organizeReconcileTargetTagId ?? null;
   const mergedHighlightTagIds = useMemo(() => {
@@ -61,13 +63,18 @@ export default function TagAdminStudioPane({
         className={`${embeddedColumn ? '' : tagAdminStyles.stickyTop} ${studioStyles.tagPaneHeader}`}
         ref={stickyTopRef}
       >
-        {embeddedColumn ? null : <h2 className={studioStyles.tagPaneTitle}>Tags</h2>}
+        {embeddedColumn ? null : <h2 className={studioStyles.tagPaneTitle}>{section === 'tags' ? 'Tags' : 'People'}</h2>}
+        <div role="tablist" aria-label="Tag administration sections" style={{ display: 'flex', gap: '0.35rem', padding: '0.4rem' }}>
+          <button type="button" role="tab" aria-selected={section === 'tags'} onClick={() => setSection('tags')}>Tags</button>
+          <button type="button" role="tab" aria-selected={section === 'people'} onClick={() => setSection('people')}>People</button>
+        </div>
       </div>
+      {section === 'people' ? <PeopleAdminPanel /> : <div className={studioStyles.tagPaneScroll}>
       {loading && <p className={studioStyles.tagPaneBody}>Loading tags…</p>}
       {error && <p className={tagAdminStyles.error}>{error.toString()}</p>}
       {isSaving && <p className={studioStyles.tagPaneBody}>Saving…</p>}
       {!loading && !error && (
-        <div className={studioStyles.tagPaneScroll}>
+        <div>
           <TagAdminList
             tagTree={tagTree}
             stackDimensionColumns
@@ -81,6 +88,7 @@ export default function TagAdminStudioPane({
           />
         </div>
       )}
+      </div>}
     </div>
   );
 }

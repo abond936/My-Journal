@@ -4,6 +4,7 @@ import type { Media } from '@/lib/types/photo';
 import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { assertCompleteTagTraversal, getTagPostOrder } from '@/lib/scripts/tags/tag-count-utils';
+import { buildCanonicalTagPaths, buildReparentedTagPaths } from '@/lib/utils/tagHierarchy';
 
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
@@ -613,7 +614,8 @@ export async function deleteTag(docId: string): Promise<void> {
  */
 export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt' | 'path'>): Promise<Tag> {
   try {
-    const newPath: string[] = [];
+    const allTags = await getAllTags();
+    let newPath: string[] = [];
 
     if (tagData.parentId) {
       const parentDoc = await firestore.collection(TAGS_COLLECTION).doc(tagData.parentId).get();
@@ -630,15 +632,11 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
         throw new Error('Child tag dimension must match parent dimension');
       }
       tagData.dimension = parentDimension;
-      if (parentData.path) {
-        newPath.push(...parentData.path);
-      }
-      newPath.push(parentDoc.id);
+      const canonicalPaths = buildCanonicalTagPaths(allTags);
+      newPath = [...(canonicalPaths.get(parentDoc.id) ?? []), parentDoc.id];
     } else if (!normalizeDimension(tagData.dimension)) {
       throw new Error('Root tags require a dimension');
     }
-
-    const allTags = await getAllTags();
 
     if (
       isTagNameTakenBySiblingOrRootDimension(allTags, {
@@ -1056,8 +1054,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   const movedTagData = movedTagDoc.data() as Tag;
   const oldParentId = movedTagData.parentId;
   
-  // 2. Get the new parent's data (if reparenting to a parent)
-  let newBasePath: string[] = [];
+  // 2. Validate the new parent (if reparenting to a parent).
   if (newParentId) {
     const newParentRef = tagsCollection.doc(newParentId);
     const newParentDoc = await transaction.get(newParentRef);
@@ -1065,12 +1062,16 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
       throw new Error(`Cannot move tag to non-existent parent: ${newParentId}`);
     }
     const newParentData = newParentDoc.data() as Tag;
-    newBasePath = [...(newParentData.path || []), newParentDoc.id];
+    if (normalizeDimension(newParentData.dimension) !== normalizeDimension(movedTagData.dimension)) {
+      throw new Error('Cannot move a tag beneath a different dimension');
+    }
   }
   
   // 3. Get all tags to find descendants
   const allTags = await getAllTags();
   const tagMap = new Map(allTags.map(tag => [tag.docId!, tag]));
+  const currentPaths = buildCanonicalTagPaths(allTags);
+  const prospectivePaths = buildReparentedTagPaths(allTags, tagId, newParentId);
   const descendants = new Set<string>();
   
   const findDescendants = (tagId: string) => {
@@ -1112,9 +1113,7 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     const oldParentRef = tagsCollection.doc(oldParentId);
     const oldParentDoc = await transaction.get(oldParentRef);
     if (oldParentDoc.exists) {
-      const oldParentData = oldParentDoc.data() as Tag;
-      const oldAncestorIds = oldParentData.path || [];
-      oldHierarchyIds = [oldParentId, ...oldAncestorIds];
+      oldHierarchyIds = [...(currentPaths.get(oldParentId) ?? []), oldParentId];
     }
   }
   
@@ -1124,39 +1123,16 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
     const newParentRef = tagsCollection.doc(newParentId);
     const newParentDoc = await transaction.get(newParentRef);
     if (newParentDoc.exists) {
-      const newParentData = newParentDoc.data() as Tag;
-      const newAncestorIds = newParentData.path || [];
-      newHierarchyIds = [newParentId, ...newAncestorIds];
+      newHierarchyIds = [...(prospectivePaths.get(newParentId) ?? []), newParentId];
     }
   }
   
-  // 8. Build the complete tree structure for all descendants
-  const buildUpdatePlan = (currentTagId: string, parentPath: string[], isRootTag: boolean = false): Array<{tagId: string, path: string[], parentId: string | undefined}> => {
-    const updates = [];
-    const newPath = [...parentPath, currentTagId];
-    
-    // Get the current tag's data to preserve its parent relationship
-    const currentTag = allTags.find(t => t.docId === currentTagId);
-    
-    // Add this tag to the update plan
-    updates.push({
-      tagId: currentTagId,
-      path: newPath,
-      // Only change parentId for the root tag being moved, preserve existing parentId for descendants
-      parentId: isRootTag ? newParentId : currentTag?.parentId
-    });
-    
-    // Find all direct children and add them to the plan
-    allTags.forEach(tag => {
-      if (tag.parentId === currentTagId) {
-        updates.push(...buildUpdatePlan(tag.docId!, newPath, false)); // false = not the root tag
-      }
-    });
-    
-    return updates;
-  };
-  
-  const updatePlan = buildUpdatePlan(tagId, newBasePath, true); // true = this is the root tag being moved
+  // 8. Build canonical ancestor-only paths for the moved subtree.
+  const updatePlan = tagsBeingMoved.map((currentTagId) => ({
+    tagId: currentTagId,
+    path: prospectivePaths.get(currentTagId) ?? [],
+    parentId: currentTagId === tagId ? newParentId : tagMap.get(currentTagId)?.parentId,
+  }));
   
   // 9. Get all children data BEFORE any writes (to comply with Firestore transaction rules)
   // First, determine which tags need count updates

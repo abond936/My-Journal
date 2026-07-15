@@ -228,6 +228,12 @@ function TagPickerInteractiveTagNode({
   const forceExpandedBySelection = expandedNodeIds?.has(node.docId) ?? false;
   const effectiveCollapsed = forceExpandAll || forceExpandedBySelection ? false : isCollapsed;
 
+  useEffect(() => {
+    if (forceExpandedBySelection) {
+      setIsCollapsed(false);
+    }
+  }, [forceExpandedBySelection]);
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onToggleTag) {
       onToggleTag(node.docId, selectionState);

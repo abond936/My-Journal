@@ -1,86 +1,49 @@
 import 'dotenv/config';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Tag } from '@/lib/types/tag';
+import type { Tag } from '@/lib/types/tag';
+import { auditCanonicalTagPaths, buildCanonicalTagPaths } from '@/lib/utils/tagHierarchy';
 
-const adminApp = getAdminApp();
-const db = adminApp.firestore();
+const APPLY = process.argv.includes('--apply');
+const BATCH_SIZE = 400;
 
-async function backfillTagPaths() {
-  console.log('--- Starting Robust Tag Path Backfill ---');
-  
-  const tagsCollection = db.collection('tags');
-  const snapshot = await tagsCollection.get();
+async function run() {
+  const db = getAdminApp().firestore();
+  const collection = db.collection('tags');
+  const snapshot = await collection.get();
+  const tags = snapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() }) as Tag);
+  const expectedPaths = buildCanonicalTagPaths(tags);
+  const mismatches = auditCanonicalTagPaths(tags);
 
-  if (snapshot.empty) {
-    console.log('No tags found. Exiting.');
+  console.log(`Tags: ${tags.length}`);
+  console.log(`Path mismatches: ${mismatches.length}`);
+  for (const mismatch of mismatches.slice(0, 25)) {
+    const tag = tags.find((candidate) => candidate.docId === mismatch.tagId);
+    console.log(`- ${tag?.name ?? mismatch.tagId} (${mismatch.tagId})`);
+  }
+  if (mismatches.length > 25) console.log(`...and ${mismatches.length - 25} more`);
+
+  if (!APPLY) {
+    console.log('Audit only. No writes performed. Use --apply only inside the approved repair slice.');
     return;
   }
 
-  const allTags = new Map<string, Tag>();
-  snapshot.docs.forEach(doc => {
-    allTags.set(doc.id, { docId: doc.id, ...doc.data() } as Tag);
-  });
-  
-  console.log(`Found ${allTags.size} total tags.`);
-
-  // Create a map of children for each parent
-  const childrenByParentId = new Map<string, string[]>();
-  const rootTags: string[] = [];
-
-  allTags.forEach((tag, id) => {
-    if (tag.parentId) {
-      if (!childrenByParentId.has(tag.parentId)) {
-        childrenByParentId.set(tag.parentId, []);
-      }
-      childrenByParentId.get(tag.parentId)!.push(id);
-    } else {
-      rootTags.push(id);
+  for (let start = 0; start < mismatches.length; start += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const mismatch of mismatches.slice(start, start + BATCH_SIZE)) {
+      batch.update(collection.doc(mismatch.tagId), {
+        path: expectedPaths.get(mismatch.tagId) ?? [],
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     }
-  });
-
-  console.log(`Found ${rootTags.length} root-level tags.`);
-  
-  const batch = db.batch();
-  let updatedCount = 0;
-
-  // Recursive function to build paths and update documents
-  function buildPath(tagId: string, currentPath: string[]) {
-    const newPath = [...currentPath, tagId];
-    const tagRef = tagsCollection.doc(tagId);
-    
-    // Check if the path needs updating to avoid unnecessary writes
-    const existingTag = allTags.get(tagId);
-    if (JSON.stringify(existingTag?.path) !== JSON.stringify(newPath)) {
-        batch.update(tagRef, { path: newPath, updatedAt: Date.now() });
-        updatedCount++;
-        console.log(`  [UPDATE] Tag: ${existingTag?.name} -> New Path: [${newPath.join(', ')}]`);
-    }
-
-    const children = childrenByParentId.get(tagId);
-    if (children) {
-      children.forEach(childId => buildPath(childId, newPath));
-    }
-  }
-
-  // Start the process from the root tags
-  rootTags.forEach(tagId => buildPath(tagId, []));
-
-  if (updatedCount > 0) {
-    console.log(`\nCommitting ${updatedCount} updates to Firestore...`);
     await batch.commit();
-    console.log(`✅ Successfully updated paths for ${updatedCount} tags.`);
-  } else {
-    console.log('\n✅ All tag paths are already correct. No updates needed.');
   }
+
+  console.log(`Updated ${mismatches.length} tag paths.`);
+  console.log('Derived fields, counts, subjects, and search projections still require reconciliation.');
 }
 
-backfillTagPaths()
-  .then(() => {
-    console.log('\n--- Backfill Complete ---');
-    process.exit(0);
-  })
-  .catch(error => {
-    console.error('\n--- SCRIPT FAILED ---');
-    console.error('An error occurred during the backfill process:', error);
-    process.exit(1);
-  }); 
+run().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

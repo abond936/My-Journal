@@ -1,246 +1,165 @@
 # VISION & ARCHITECTURE
 
-**See also:** `02-Application.md` · `03-Implementation.md` · `04-Theme-Design-Contract.md` (theme semantics, presets, reader shell & responsive layout §9)
+**See also:** `02-Application.md` for product capabilities and contracts; `03-Implementation.md` for readiness, sequence, and implementation slices.
 
-Legend:
-✅`Implemented`
-⭕`Planned (1/2)`
-❓`Open`
-📐`Decision`
-📘`Resource`
+## Document model
 
----
+- **01 — Vision & Architecture** owns enduring intent, principles, technical boundaries, and project-specific constraints.
+- **02 — Application** owns user capabilities, their status, and only the consequential contracts that could reasonably be implemented differently.
+- **03 — Implementation** owns active sequence, Definition Gates, implementation slices, and Completion Gates.
+- Support documents provide detail but do not change product truth unless reconciled into `01`–`03`.
+- Agent behavior belongs in `AGENTS.md` and `.cursor/rules/`, not in product canon.
 
-## Document Governance
+### Nomenclature
 
-- **Three-Document Model** - Core project documentation is split across three files in `docs/`:
-  - `01-Vision-Architecture.md` — Product vision, principles, technical stack, data models, decisions. Stable; changes rarely.
-  - `02-Application.md` — Each app area: *Features* grouped under `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open` (plus standalone 📐 / 📘). Changes when features ship or are planned.
-  - `03-Implementation.md` — Execution plan and phased sequencing (`⭕1` only). Changes when priorities shift. Each listed item must repeat the **same bold title and trailing text** as its source line in `02-Application.md` or (for Backend items) in this file—verbatim, including punctuation and counts. Only **phase assignment and ordering** may differ.
-- **Supplementary specs** - Focused references (e.g. `04-Theme-Design-Contract.md` for semantic tokens, presets, reader responsive/nav contract §9, and design-led reconciliation) extend the core trio; they do not replace `02`/`03` for feature inventory or phased backlog.
-- **AI Behavior** - Agent process, approval, scope, and execution rules live in `.cursor/rules/Agent-Discipline.mdc` and first-turn grounding in `.cursor/rules/Startup-Grounding.mdc`.
-- **Decision hierarchy** - `01` is the canonical source for platform invariants, data authority, mutation rules, and integrity boundaries. Product or workflow simplification is encouraged, but it must preserve tagging truth, relationship truth, and reader truth.
+- **Capability** — What a reader or author can accomplish. Capabilities are `✅ Complete`, `⭕1 Planned`, or `⭕2 Future` in `02`.
+- **Contract** — A consequential product or integrity rule that implementation must preserve.
+- **Constraint** — A project-specific technical boundary owned by `01`.
+- **Implementation slice** — A bounded unit of work required to deliver a capability; owned by `03`.
+- **Ready** — The capability has passed the Definition Gate in `03`.
+- **Complete** — The agreed outcome and contracts have passed the Completion Gate; code presence alone is insufficient.
 
-### Document Structure
+### Placement
 
-- **Heading Lock** - All ATX headings are fixed. Do not add new headings.
-- **Subheading Lock** - Subheadings are *Intent*, *Principles*, and *Features*. Do not add new subheadings.
-- **Formatting**
-  - Headings are **bold**. Subheadings are *italic*.
-  - Intent/Principles bullets start with a **bold** 1–2 word subject, then short descriptive text.
-  - Under each *Features* block, organize status items into these buckets in order as plain status headings (no list bullet): `✅ Complete`, `⭕1 Planned`, `⭕2 Future`, `❓ Open`.
-  - Items under each status heading are plain bullets (`-`) beginning with a **bold** 1–2 word title + " - " + short descriptive text, using the same flush-left layout as `02-Application.md`.
-  - Keep `📐` and `📘` as standalone feature bullets outside status buckets.
-
-### Content Placement
-
-- **Placement Discipline** - Record each subject in its owning section. Everything about Story cards belongs under Story card features, not mentioned in Tags or Navigation. Everything about tags belongs under **Studio Tags**, not mentioned in Navigation. Centralizes subjects for clarity and prevents drift.
-- **One Fact, One Home** - Each fact lives in exactly one document. `02-Application.md` describes *what exists today* and *what's planned per area*. `03-Implementation.md` describes *when to do it* (sequencing). When a planned item ships, update its status in `02-Application.md` and remove it from `03-Implementation.md`.
-- **Implementation wording** - Do not paraphrase `⭕1` bullets when copying them into `03-Implementation.md`. Paste the **bold label** and the description after `-` exactly as in the source doc (`02-Application.md` or, for Backend planned work, `01-Vision-Architecture.md`). If the product text changes, change it in the source doc first, then mirror the update in `03-Implementation.md`.
-- **Execution scope** - `03-Implementation.md` is the active milestone plan, not a historical log. It should carry only the current milestone, the next milestones, their gating criteria, and the active `⭕1` items required to advance them. Dated closeout notes and shipped status narration belong in `02` only if they define current product behavior; otherwise they should be removed from canon.
-- **Backend status** - Shipped backend hardening, commercial gates, and slice narration live in `03-Implementation.md`. This file's Backend *Features* carries stack anchors, architectural `📐` contracts, and summary `⭕1` / `⭕2` intent only—not file paths, env wiring, or dated closeout detail.
+- Record a fact once in its owning document; cross-reference instead of repeating detail.
+- Do not document ordinary engineering competence or code facts that are cheap to inspect unless they protect a project-specific decision.
+- Move a capability to Complete only from verified evidence, never inference.
+- Preserve unresolved product questions explicitly; do not convert ambiguity into implementation policy.
 
 ---
 
-## **Product Vision**
+## Product vision
 
-*Intent*
+Digitized family media is often disorganized, disconnected from its stories, and difficult to enjoy or share. My Stories solves the parts that digitization alone does not:
 
-People have masses (boxes, drives, phones) of disorganized media (photos and videos). They want to flexibly and easily enjoy and share them with others, and, in some cases, they want to integrate the stories they contain. But until now no integrated tools provide this. The challenges are the following:
+- **Organize** — Make large personal archives understandable with author-controlled structure and assistance.
+- **Integrate** — Connect media with the stories, questions, people, places, and moments behind it.
+- **Deliver** — Let family and friends relive, enjoy, and learn from those moments through a private, mobile reading experience.
 
-- often images are still in hard copy and difficult to repurpose.
-- even if digitized, they lack useful organization.
-- even if organized, they lack the integration their stories.
-- even if integrated with stories, they lack the flexible, friction-less vehicle to consume and share them.
+It is not a generic journal, a photo manager with captions, or public social media.
 
-The easiest part is digitizing the media--many services exist for this. Once the media is digitized, this product solves the remaining three difficult problems. It:
+### Product principles
 
-- **organizes** digitized media with the help of AI.
-- **integrates** the organized media with the stories behind them, and
-- **delivers** the media-illustrated stories in a mobile, private social-media-like feed.
+- **Two halves** — Administration and Reader must both be strong; neither carries the product alone.
+- **Story purpose** — Import and organization exist to help create and preserve stories, not to become a digital asset manager.
+- **Archive scale** — Large archives should feel manageable through clear workflows, immediate feedback, and honest background progress.
+- **Private** — The archive is family-private and author-controlled.
+- **Mobile reading** — Reader is mobile-first; Administration may remain desktop-primary.
+- **Author control** — Assistance may suggest; it never silently publishes, deletes, tags, or replaces author judgment.
+- **Durability** — Backup, restore, and integrity are product requirements.
 
-It is not a generic journal app, a photo manager with captions or a social media app.
+### Product shape
 
-- **Primary customer** - v1 is for one author first, then for others with similar archive/storytelling needs.
-- **Commercial shape** - The initial commercial shape is a **private hosted app** for one author and family/friends audience.
-- **Primary roles** - v1 has one author/admin creating and maintaining the archive experience, with family/friends as the primary readers.
-- **Tenant path** - v1 is intentionally **single-tenant**; near-term commercial follow-up should support **multi-tenant** isolation without weakening current integrity guarantees.
+- **Customer** — v1 serves one author first, then others with similar archive and storytelling needs.
+- **Roles** — One author-administrator; individual reader accounts for family and friends.
+- **Hosting** — Initial commercial shape is a private hosted application.
+- **Tenancy** — v1 is single-tenant; multi-tenant isolation is Future.
 
-*Principles*
+---
 
-- **Two halves** - Administration and reader experience must both be strong; neither carries the product alone.
-- **Organize to tell** - Import and organization exist so authors can attach and preserve stories at scale; not a DAM and not a side utility.
-- **Effortless at scale** - Large archives should feel manageable: intuitive workflows, modern media-app clarity, immediate feedback, and honest progress when work continues in the background.
-- **Private and durable** - Family-private, author-controlled, backed up and restorable; not public social.
-- **Mobile family reading** - Primary delivery is re-experiencing stories on mobile; administration may remain desktop-heavier.
-- **Author shapes the story** - The author decides structure and meaning; the system assists with suggestions but never auto-publishes, auto-deletes, or replaces author judgment.
+## Architecture
 
+### Platform
 
-
-## **TECHNICAL**
-
-### **Backend**
-
-*Intent*
-
-- **Reliable** - Provide reliable core platform capability
-- **Efficient** - Operational and cost awareness.
-- **Practical** - Practical for solo-author throughput and family consumption.
-
-*Principles*
-
-- **Server authority** - Server-side validation and authorization; private-by-default; secrets out of source control; type-safe contracts. Managed stack: Next.js, Firebase, Auth.js.
-- **Authoritative data planes** - Firestore and Storage are truth; Typesense and other indices are projections. Derived card/tag fields are computed in explicit service rules, not re-derived in UI.
-- **Bounded writes & reads** - Classify narrow vs wide mutations; keep transactions and catalog reads minimal; prefer bounded work and deferred secondary sync for authoring responsiveness.
-- **Honest denormalization** - Counts and derived tag projections stay correct on every assignment change; faster paths re-home the same accounting rules—never omit them for convenience.
-- **Media platform** - Canonical originals plus surface-appropriate renditions; expensive ingest work through background readiness states; preserve metadata for future organization modes without premature UI commitment.
-- **Integrity graph** - Card-media references, delete/replace order, and upload durability are first-class; classify drift vs logic bugs and repair at the service layer, not in UI workarounds.
-- **Recoverable operation** - Backup, export, and restore are part of platform architecture, not optional maintenance extras.
-- **Unit economics** - Track per-archive operational cost drivers (Firestore, Storage, Typesense, paid AI, restoration, faces, video) as platform features ship; informs adapter, processing, and face/API choices before commercial promises.
-
-*Features*
 ✅ **Complete**
 
-- **App platform** - Next.js App Router, React, TypeScript; API routes secured at the edge.
-- **Firebase** - Firestore authoritative data, Storage for media binaries, firebase-admin for server operations.
-- **Auth** - Auth.js with Firestore-backed users, admin vs viewer roles, session persistence.
-- **Search** - Typesense full-text search for cards and media with CRUD sync and Firestore fallback.
-- **Validation** - Zod and explicit service-layer schema validation.
-- **Structure** - Layered codebase: routes, components, and shared lib (types, services, hooks, utilities).
-- **Data models** - Typed card, media, and tag contracts in shared types.
+- **Application** — Next.js App Router, React, and TypeScript.
+- **Data** — Firestore is authoritative structured data; Firebase Storage is authoritative media storage.
+- **Identity** — Auth.js with Firestore-backed administrator and reader accounts.
+- **Search** — Typesense indexes cards and media; Firestore remains authoritative.
+- **Validation** — Shared TypeScript and Zod contracts with service-layer validation.
+- **Reader** — Mobile-first delivery using surface-appropriate payloads and renditions.
+- **Studio** — Desktop-primary authoring for Cards, Compose, Media, Questions, Tags, and Collections.
+- **Theme** — Structured theme data, semantic recipes, generated variables, and live author preview.
+- **Operations** — Reconciliation, import, seed, backup, and restore tooling indexed in `docs/NPM-SCRIPTS.md`.
+
+⭕2 **Future**
+
+- **Tenancy** — Isolate multiple customer archives without weakening current integrity guarantees.
+- **Sharing** — Expand access models beyond private named readers.
+- **History** — Add content versioning and recovery beyond operational backups.
+- **Observability** — Add tracing and operational dashboards beyond baseline monitoring.
+- **Storage** — Abstract storage operations when migration or multi-provider needs justify it.
+
+### Authority and integrity
+
+- **Authority** — Firestore and Storage are truth; Typesense, counts, and derived fields are projections.
+- **Server rules** — Authorization, validation, counts, tag derivation, and relationship integrity are enforced server-side.
+- **Narrow writes** — Tag, status, and single-field changes use bounded paths; rich content, gallery, cover, and structure use wide paths.
+- **No shortcuts** — Efficiency never permits inaccurate counts, tags, publication state, authorization, or reader truth.
+- **Stable lists** — Filters apply to the full server-side population; chunked results preserve filters and deterministic ordering.
+- **Bulk work** — Bulk mutations use bounded batch work rather than repeated full-card saves.
+- **Targeted refresh** — Patch or invalidate the affected query when possible; do not reload full catalogs by default.
+- **Hydration** — Parent reads include relationship identifiers; full child hydration is optional and skipped when unnecessary.
+- **Search limits** — Typesense requests respect its 250-hit page limit and page or chunk larger populations.
+
+### Media integrity
+
+- **Identity** — Each media asset has one canonical record and stable identifier.
+- **References** — Cover, gallery, and body media references are foreign keys to canonical media and Storage objects.
+- **Delete** — Delete either reconciles every reference and projection or refuses with explicit blockers.
+- **Replace** — Replace preserves identity and relationships unless the product explicitly says otherwise.
+- **Durability** — Success is not reported until required Storage, media, and same-operation card writes are durable or safely recoverable.
+- **Readiness** — Upload, rendition, metadata, indexing, and video processing expose truthful ready, pending, and failed states.
+- **Renditions** — Preserve originals and generate surface-appropriate Reader and Studio derivatives.
+
+### Tags and suggestions
+
+- **Confirmed truth** — Confirmed tags drive counts, filters, presentation, and derived fields.
+- **Provisional truth** — Machine suggestions remain separate until accepted; dismissing them never removes confirmed data.
+- **Acceptance** — Accepted suggestions use the same accounting path as manual assignment.
+- **Hierarchy authority** — `parentId` owns taxonomy structure; stored paths, counts, dimensional fields, and search data are projections that must agree with it.
+- **Identity** — Each named Who subject, human or non-human, has one stable identity; names and aliases describe that identity rather than creating duplicates.
+- **Relationships** — Family roles between people are relationships interpreted from an explicit human perspective, not substitutes for stable identities.
+- **Migration** — Existing assignments remain authoritative until an author-approved, auditable migration replaces them.
+- **Subject** — Subject is metadata on an assigned tag, not a fifth dimension or separate count source.
+- **Subject removal** — Removing the assigned subject tag clears the subject in the same authoritative write.
+- **Inheritance** — Gallery-to-card inheritance updates card work truth only through the explicit per-dimension policy in `02`.
+
+❓ **Open**
+
+- **Suggestion storage** — Per-media tag suggestions, face payloads, and retention remain undefined beyond the delivered provisional cluster model.
+
+### Authentication
+
+- **Bootstrap** — Environment administrator credentials seed the first account only; they are not runtime login credentials.
+- **Roles** — One administrator; all other accounts are readers.
+- **Rollout** — At least one enabled administrator must exist before go-live.
+- **Revocation** — Disabling an account must end existing authorization, not merely prevent the next sign-in.
+- **Helpers** — Local import helpers are administrator-only operational surfaces.
+
+### Theme boundary
+
+- **One system** — Approved values flow through semantic roles and recipes to application surfaces.
+- **No parallel CSS** — Design-affecting component CSS consumes an existing role or recipe.
+- **New roles** — Adding a role requires coordinated contract, schema, editor, generator, runtime, and surface updates.
+- **Scopes** — Reader and Administration share architecture but retain distinct presentation needs.
+- **Packages** — Journal Light, Journal Dark, Editorial Light, and Editorial Dark are the required Reader outcomes.
+
+### Structural boundaries
 
 ⭕1 **Planned**
 
-- **Narrow mutation paths** - Extend dedicated narrow admin mutation paths wherever flows still fall back to wider card saves than the change requires; keep wide saves for structural and rich-content edits.
-- **Authorization consistency** - Centralize reader/admin route and mutation classification so access rules do not diverge across individual handlers.
-- **Service boundaries** - Decompose responsibility-heavy services, beginning with `cardService` and `themeService`, into explicit domain operations without splitting shared integrity rules across competing paths.
-- **Code** - Comment code.
-- **Directory** - Cleanup directory.
-- **Quality** - QA app.
-- **Security Hardening** - Threat-model, authorization, secret-handling, and hosted deployment hardening for commercial readiness.
-- **Testing** - Expand automated coverage on workflow-critical, integrity-critical, and commercially sensitive paths, including contract-level browser smoke where unit/API tests are insufficient.
+- **Services** — Split responsibility-heavy `cardService` and `themeService` into explicit domain operations without duplicating integrity rules.
+- **Components** — Split `StudioWorkspace`, `MediaAdminContent`, and `CardForm` by coordination, domain operation, and presentation responsibilities.
+- **Reader edit** — Reuse focused editing capabilities without loading the full Studio form architecture.
+- **Theme service** — Separate Theme workspace composition from schema, transformation, compilation, and persistence.
+- **Legacy routes** — Retire redirect-only and compatibility paths after callers are verified.
 
-⭕2 **Future**
+### Operations
 
-- **Performance** - Possibilities captured from engineering review.
-- **Tenant ID** - Multi-tenant isolation when commercial shape expands beyond single-tenant v1.
-- **Storage Abstraction** - Centralize storage upload/delete/URL operations to reduce migration scope.
-- **Advanced observability** - Tracing, log pipelines, and dashboards beyond baseline error monitoring.
-- **Caching Strategy**
-- **Sharing**
-- **Content Versioning / History**
-- **Hosting**
-- **Commercial evolution** - Coordinated pass for tenancy, auth expansion, source adapters, and packaging—not piecemeal drift.
-
-📐 **Provisional storage (product contract)** - Machine proposals (tag suggest, cluster/stack, face hint) live **outside** confirmed tag assignments on media/card documents until author accept (see `02` **Administration** 📋 **Provisional suggestions**). Accept paths must invoke the same assignment/mutation accounting as manual tag apply (counts, derived fields, index sync). Dismiss removes provisional only. **Shipped v1:** cluster/stack records in Firestore **`provisional_clusters`** (see `02` **Provisional suggestions** → **Storage**). Per-media tag-suggest rows, face payloads, retention/TTL: **❓ Open** follow-on slices.
-📐 **Media processing lifecycle** - Imports and replacements progress through explicit **readiness states** on the media row (uploaded → thumbnailed/indexed → ready, with failure/retry visible). UI must not imply full readiness before states say so. Background jobs may defer expensive work; **Durability boundary** still governs when client success is reported for new/replaced assets. Video/transcode depth: product **❓ Open** in **Studio Media**.
-📐 **Typesense paging** - Typesense allows at most **250 hits per page** (`per_page`). List paths must page or chunk—not pass larger client limits as `per_page`. Exceeding the cap yields **422**, fallback, and masked index health. This is a **transport** limit, not a population cap; larger filtered sets require multiple ordered chunks.
-📐 **Card detail hydration** - Single-card reads return native `childrenIds` with the parent; hydrated child documents are optional, paginated sidecar data. Callers that need only parent fields—including child count—must skip child hydration. Studio selection and admin pre-save snapshots use the skip path.
-📐 **Mutation scope** - Classify **narrow** writes (tag-only, status-only, single-field metadata) vs **wide** writes (body, gallery, cover, structural children). Narrow paths must stay bounded—no N× full-card-save pipelines, no default full-catalog reload, no redundant index sync when indexed fields unchanged. Never skip denormalized count or derived-field maintenance to look narrow; re-home the same accounting rules instead.
-📐 **Card-media integrity** - Cover, gallery, contentMedia, and inline content media ids are foreign keys to media documents and Storage objects. Missing peers are integrity incidents with a service-layer repair path—not UI workarounds or raw transport errors to the client.
-📐 **Delete graph** - Media delete/replace is a graph update across every card edge, both card and media sides, denormalized fields, and indices—or an explicit refuse with blockers. Shared media ids require first-class sharing semantics.
-📐 **Durability boundary** - Do not report client success for a new or replaced asset until Storage, the media row, and any same-operation card pointer updates are all durable—or failure is detectable, retryable, and compensatable.
-📐 **Subject-tag invariants** - If Subject is enabled, it is metadata on assigned tags—not a separate taxonomy or count source. Subject-only query support requires explicit server-maintained projections, not UI inference.
-📐 **Denormalized Read** - Keep denormalized read patterns where Firestore query limits demand it.
-📐 **List refresh** - After a successful mutation, prefer **patching** the current list or **invalidating a targeted query** over reloading entire admin catalogs; use full reload only when list membership or ordering cannot be derived locally.
-📐 **Filtered population & stable ordering** - A filter defines the **full server-side universe** for that query (all matching cards or media), not “whatever rows were fetched first.” **Chunked** delivery—infinite scroll, Load more, or discrete pages—must walk **one deterministic ordered stream**: each chunk uses the **same filter parameters and the same declared sort** as the prior chunk, and ordering must be **stable** across chunks (include a **tie-break**, e.g. `docId`, wherever ties are possible). **Do not** re-sort only the client-held subset across fetches in a way that reorders relative to rows not yet loaded. **Seek-only** modes (e.g. some `GET /api/media` assignment/dimension paths) are **exceptions**: they may be **forward-biased** without stable random access; product copy and controls should reflect that, not imply a fixed numbered book over the whole corpus. **Reader vs admin:** the **reader** may use **infinite-style** loading for consumption UX; **admin** may use **pages** or **append** patterns as long as the **same** stability rules apply to the **active** query. Speed goals still favor **small payloads** and **targeted invalidation** (see 📐 **List refresh** and Frontend **Perceived speed**).
-📐 **Bulk writes** - Bulk tag and similar operations must be **O(batch)** bounded work (batched reads/writes, shared tag maps), not **O(cards × full-card-save)** unless explicitly accepted and measured.
-📐 **Contract vs product** - Efficiency and pipeline-shape rules in this document are **constraints on how** work is done, not permission to break **what** the product must preserve (accurate counts, derived dimensions, published/draft behavior, auth). If the leanest design appears to conflict with an invariant, **raise the conflict explicitly** (tradeoffs, risks, options)—do not implement a shortcut and later justify regressions by citing “architecture.” Author decides when to accept risk or spend complexity.
-📐 **Subject-tag mutation contract** - Subject truth must reconcile anywhere tag assignments reconcile: card/media tag-only edits, bulk tag edits, import/create flows that assign tags, duplicate/clone paths, and delete/merge/removal paths that can drop an assigned tag. If the assigned subject tag is removed, the subject marker clears in the same authoritative write path; do not leave detached subject state for the UI to guess around later.
-📐 **Script-Heavy** - Keep script-heavy maintenance available while admin UX matures.
-📐 **Auth bootstrap** - Seed Firestore users once when the collection is empty; env admin credentials are **seed-only**, not runtime login. Operational detail: `docs/NPM-SCRIPTS.md`.
-📐 **Auth at Rollout** - Sign-in is Firestore-backed users only; ensure at least one enabled admin exists before go-live.
-📐 **One Admin** - One admin (author), all other accounts are viewers.
-📐 **Local source helpers** - Local/OneDrive import helper routes are admin-only operational surfaces; they are not part of the reader trust boundary.
-
-📘 **Backend status** - Shipped hardening slices, commercial gates, and execution detail: `docs/03-Implementation.md` **§ Backend**.
-
-### **Frontend**
-
-*Intent*
-
-- **Consumption** - Mobile-first, responsive content consumption experience.
-- **Administration** - Desktop-primary admin interface for content authoring and management.
-
-*Principles*
-
-- **Server contracts first** - UI aligns with validated server contracts; business rules stay in services and API layers, not client overrides.
-- **Studio state domains** - Separate global structural truth (tags, collections) from pane-local working sets and the active editing context; one pane's filter must not silently redefine another pane's universe.
-- **Perceived speed** - Preview-then-hydrate, progressive first paint, optimistic vs confirmed state, smallest sufficient list updates, and continuous media-native browsing over stable append streams.
-- **Reader-first design** - Reader is the primary designed surface; admin reuses tokens and previews; theme evolves as named packages via tokenization (see `04-Theme-Design-Contract.md`).
-- **Runtime split** - Viewer sessions stay lean; admin and Studio load lazily; shared data and media contracts; Studio is the single day-to-day content-admin runtime with payload tiers and rendition-appropriate delivery.
-- **Shared model, tailored delivery** - Reader and Studio use the same authoritative content model while receiving surface-appropriate payloads, hydration, and presentation; do not create parallel content truth to simplify a UI.
-
-*Features*
 ✅ **Complete**
 
-- **Reader shell** - Mobile-first `/view` consumption with responsive layout contract in `04` §9.
-- **Studio** - Unified admin shell for organize, cards, compose, questions, and media.
-- **Theme** - CSS modules, global theme tokens, Theme Management workspace.
-- **Editing** - TipTap rich text; `@dnd-kit` drag-and-drop; SWR data fetching.
-- **Media UI** - PhotoPicker, galleries (Swiper), optimized images via `next/image`.
+- **Backups** — Paired Firestore and Storage backups with manifests and status.
+- **Source** — Remote Git is the code source of truth; secrets are backed up outside Git.
+- **Recovery** — Restore procedures and drills are documented in `docs/NPM-SCRIPTS.md`.
 
 ⭕1 **Planned**
 
-- **Component boundaries** - Reduce responsibility-heavy UI modules, beginning with `StudioWorkspace`, `MediaAdminContent`, and `CardForm`; separate state coordination, domain operations, and presentation without creating shadow state.
-- **Reader edit boundary** - Extract reusable focused-edit capabilities so reader-context editing does not depend on the full Studio form architecture.
-- **Theme boundaries** - Separate Theme Management workspace composition from theme schema, transformation, and persistence responsibilities.
-- **Legacy surface retirement** - Remove redirect-only admin routes, duplicate loaders, and compatibility paths after callers and navigation are verified; determine whether `CollectionsAdminClient` should be retired before refactoring it.
+- **Closeout** — Prove backup, restore, account recovery, release readiness, and incident response before commercial release.
 
 ⭕2 **Future**
 
-- **Dependency cleanup** - Remove unused packages after evaluation.
-- **Visual direction** - Archival yet professional consumer feel through theme presets and type roles, not scattered one-off styles.
-- **Studio convergence** - Relationship editing and library-first media picking fully inside Studio-owned workflows.
+- **Hosted operations** — Adapt backup and recovery to hosted deployment without weakening safeguards.
 
-📘 **Frontend status** - Surface behavior, shipped reader/Studio detail, and theme work: `docs/02-Application.md` and `docs/03-Implementation.md`.
-
-### **Scripts**
-
-*Intent*
-
-- **Ex-App Manipulation** - Provide ex-app manipulation of data as needed.
-
-*Principles*
-
-- **Reuse** - Develop and organize for reuse.
-
-*Features*
-✅ **Complete**
-
-- **Invocation** - TypeScript scripts via ts-node/tsx with path registration; credentials from `.env`.
-- **Env footgun** - Load `.env` **before** any static import of Firebase Admin—imports run first. See `docs/NPM-SCRIPTS.md` **Firebase Admin CLI (dotenv)**.
-- **Maintenance** - Reconciliation, backup, backfill, and seed scripts wired through `package.json`; index in `docs/NPM-SCRIPTS.md`.
-
-⭕2 **Future**
-
-- **Script Cleanup** - Continue pruning ad hoc helpers not wired into `package.json`, canon, or live maintenance flows.
-📘 **Script Index** - `docs/NPM-SCRIPTS.md`.
-📘 **Import Reference** - `docs/IMPORT-REFERENCE.md`.
-
-### **Backup**
-
-*Intent*
-
-- **Protection** - Provide protection against irrecoverable damage to the code repo and the database.
-
-*Principles*
-
-- **Automated** - Backups run without manual intervention.
-- **Verified** - Backup integrity is confirmed after each run.
-- **Recoverable** - Restore steps are known, tested, and realistic for hosted operation.
-
-*Features*
-✅ **Complete**
-
-- **Database backup** - Scheduled Firestore export to off-device storage; details in `docs/NPM-SCRIPTS.md`.
-- **Storage backup** - Firebase Storage byte backup with manifest and verification.
-- **Source control** - Remote Git is code source of truth; commit and push to main.
-- **Secrets backup** - Repo-root env and credential files backed up separately from Git.
-- **Recovery playbook** - Restore drill, release checklist, and incident baseline in `docs/NPM-SCRIPTS.md`.
-
-⭕1 **Planned**
-
-- **Operational closeout** - End-to-end backup verification, restore drill, release readiness, account recovery, and incident-response proof before commercial release. Status: `docs/03-Implementation.md` **§ Backup** and step **12**.
-
-⭕2 **Future**
+📘 **Resources** — `docs/NPM-SCRIPTS.md` · `docs/IMPORT-REFERENCE.md` · `docs/04-Theme-Design-Contract.md`

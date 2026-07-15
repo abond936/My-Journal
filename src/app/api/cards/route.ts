@@ -22,6 +22,7 @@ import {
   apiRouteListLimitError,
   requireApiSession,
 } from '@/lib/api/routeEnvelope';
+import { cardMatchesExactTagScope } from '@/lib/utils/cardTagFilter';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'who' | 'what' | 'when' | 'where'>,
@@ -343,10 +344,10 @@ export async function GET(request: Request) {
           if (!cardMatchesDimensionTagScope(card, 'what', dimensionalTags.what, tagScope)) return false;
           if (!cardMatchesDimensionTagScope(card, 'when', dimensionalTags.when, tagScope)) return false;
           if (!cardMatchesDimensionTagScope(card, 'where', dimensionalTags.where, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'who', exactDimensionalTags.who, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'what', exactDimensionalTags.what, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'when', exactDimensionalTags.when, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'where', exactDimensionalTags.where, tagScope)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.who, tagScope)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.what, tagScope)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.when, tagScope)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.where, tagScope)) return false;
           if (dimensionMissing.who && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'who') : !cardDimEmpty(card.who))) return false;
           if (dimensionMissing.what && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'what') : !cardDimEmpty(card.what))) return false;
           if (dimensionMissing.when && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'when') : !cardDimEmpty(card.when))) return false;

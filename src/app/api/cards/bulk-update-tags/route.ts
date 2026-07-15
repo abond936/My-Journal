@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         });
       }
 
-      await bulkUpdateTags(boundedCardIds, tagsResult.ids);
+      const cards = await bulkUpdateTags(boundedCardIds, tagsResult.ids);
       const elapsedMs = Date.now() - startMs;
       console.log('[bulk-update-tags] Completed replacement mode', {
         cardCount: boundedCardIds.length,
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         updatedCount: boundedCardIds.length,
         elapsedMs,
         mode: 'replace',
+        cards,
       });
     }
 
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
       });
     }
 
-    await bulkApplyTagDelta(boundedCardIds, addTagsResult.ids, removeTagsResult.ids);
+    const cards = await bulkApplyTagDelta(boundedCardIds, addTagsResult.ids, removeTagsResult.ids);
 
     const elapsedMs = Date.now() - startMs;
     console.log('[bulk-update-tags] Completed add/remove mode', {
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
       updatedCount: boundedCardIds.length,
       elapsedMs,
       mode: 'add-remove',
+      cards,
     });
     }
   );

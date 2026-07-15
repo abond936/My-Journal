@@ -3,6 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import { redirect } from 'next/navigation';
 import { getCardById, getCards, getPaginatedCardsByIds } from '@/lib/services/cardService';
 import { GET as listCards } from '@/app/api/cards/route';
+import { cardMatchesExactTagScope } from '@/lib/utils/cardTagFilter';
 import { GET as getCard } from '@/app/api/cards/[id]/route';
 import { GET as searchCards } from '@/app/api/cards/search/route';
 import { GET as randomCards } from '@/app/api/cards/random/route';
@@ -212,6 +213,23 @@ describe('reader access boundary', () => {
     expect(payload.items[0].docId).toBe('card-2');
     expect(payload.lastDocId).toBe('card-2');
     expect(payload.hasMore).toBe(false);
+  });
+
+  it('treats exact dimensional filters as direct assignments rather than ancestor matches', () => {
+    expect(
+      cardMatchesExactTagScope(
+        { tags: ['robert'], subjectTagId: null },
+        ['father'],
+        'all'
+      )
+    ).toBe(false);
+    expect(
+      cardMatchesExactTagScope(
+        { tags: ['father'], subjectTagId: 'father' },
+        ['father'],
+        'all'
+      )
+    ).toBe(true);
   });
 
   it('redirects anonymous root reader pages server-side with callbackUrl intact', async () => {

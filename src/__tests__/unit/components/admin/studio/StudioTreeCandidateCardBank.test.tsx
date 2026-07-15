@@ -4,7 +4,12 @@ import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCan
 import type { Card } from '@/lib/types/card';
 
 const mockCardAdminGrid = jest.fn(() => <div data-testid="mock-card-grid" />);
-const mockTagContext = { tags: [] };
+const mockTagContext = {
+  tags: [],
+  studioCardFilterTagIds: [],
+  setStudioCardFilterTagIds: jest.fn(),
+  studioCardFiltersHydrated: true,
+};
 
 jest.mock('@dnd-kit/core', () => ({
   useDndContext: () => ({ active: null }),
