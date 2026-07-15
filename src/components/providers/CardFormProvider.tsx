@@ -606,6 +606,17 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           keysToSync.add('type');
           keysToSync.add('displayMode');
         }
+        if (keysToSync.has('galleryTagInheritanceOverrides')) {
+          (
+            [
+              'tags', 'subjectTagId', 'subjectFilterTags', 'filterTags',
+              'who', 'what', 'when', 'where',
+              'journalWhenSortAsc', 'journalWhenSortDesc',
+              'whoSortKey', 'whatSortKey', 'whereSortKey',
+              'galleryTagRollupStatuses',
+            ] as Array<keyof CardUpdate>
+          ).forEach((key) => keysToSync.add(key));
+        }
 
         setFormState((prev) => {
           const nextCardData = { ...prev.cardData } as CardUpdate;

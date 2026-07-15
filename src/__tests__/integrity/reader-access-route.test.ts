@@ -68,6 +68,8 @@ jest.mock('@/lib/services/cardService', () => ({
   isChildrenReorderOnlyPayload: jest.fn(),
   isCollectionRootOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
+  isGalleryInheritanceOverridesOnlyPayload: jest.fn(),
+  updateCardGalleryInheritanceOverrides: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
   getCards: jest.fn(),
   getCardsByCollectionId: jest.fn(),

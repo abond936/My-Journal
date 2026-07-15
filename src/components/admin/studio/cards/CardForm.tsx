@@ -35,6 +35,9 @@ import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGalle
 import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChildren';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
+import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
+import { protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 
 type CardDraftOption = {
   title: string;
@@ -153,8 +156,25 @@ const CardForm: React.FC = () => {
   const studioShellDnd = Boolean(studioFormCtx?.enableStudioShellDnd);
   const studioShell = useStudioShellOptional();
   const feedback = useAppFeedback();
+  const [galleryInheritanceSettings, setGalleryInheritanceSettings] = useState<GalleryTagInheritanceToggles | null>(null);
 
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/admin/author-settings')
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json() as Promise<{ settings?: { galleryTagInheritance?: GalleryTagInheritanceToggles } }>;
+      })
+      .then((data) => {
+        if (!cancelled) setGalleryInheritanceSettings(data?.settings?.galleryTagInheritance ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setGalleryInheritanceSettings(null);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!studioShellDnd || !studioShell) return;
@@ -316,6 +336,42 @@ const CardForm: React.FC = () => {
     }
     void persistFieldPatch({ subjectTagId: nextSubjectTagId });
   }, [lastSavedState.cardData.subjectTagId, persistFieldPatch, setField]);
+
+  const handleGalleryInheritanceChange = useCallback((dimension: TagDimension, inherit: boolean) => {
+    const current = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    const next = { ...current, [dimension]: !inherit };
+    setField('galleryTagInheritanceOverrides', next);
+    void persistFieldPatch({ galleryTagInheritanceOverrides: next });
+  }, [cardData.galleryTagInheritanceOverrides, persistFieldPatch, setField]);
+
+  const galleryInheritanceControls = useMemo(() => {
+    const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    return (
+      <fieldset className={styles.galleryInheritanceControls}>
+        <legend>Gallery inheritance</legend>
+        <div className={styles.galleryInheritanceOptions}>
+          {DIMENSION_ORDER.map((dimension) => {
+            const available = galleryInheritanceSettings?.[dimension] === true;
+            return (
+              <label
+                key={dimension}
+                className={styles.galleryInheritanceOption}
+                title={available ? `Inherit ${DIMENSION_LABEL[dimension]} from Gallery items` : `Enable ${DIMENSION_LABEL[dimension]} Gallery inheritance in Settings first`}
+              >
+                <input
+                  type="checkbox"
+                  checked={available && !overrides[dimension]}
+                  disabled={isSaving || !available}
+                  onChange={(event) => handleGalleryInheritanceChange(dimension, event.target.checked)}
+                />
+                {DIMENSION_LABEL[dimension]}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }, [cardData.galleryTagInheritanceOverrides, galleryInheritanceSettings, handleGalleryInheritanceChange, isSaving]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     if (newCoverImage && newPosition !== undefined) {
@@ -1114,6 +1170,7 @@ const CardForm: React.FC = () => {
                   tagError={errors.tags}
                   className={styles.tagCommandBar}
                   trailingSlot={null}
+                  footerContent={galleryInheritanceControls}
                 />
               </div>
 
@@ -1334,6 +1391,7 @@ const CardForm: React.FC = () => {
               stackTagsWithinDimension
               onUpdateTags={handleTagsChange}
               onUpdateSubjectTagId={handleSubjectTagChange}
+              footerContent={galleryInheritanceControls}
               tagError={errors.tags}
               className={styles.tagCommandBar}
               trailingSlot={

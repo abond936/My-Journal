@@ -20,6 +20,8 @@ import {
   isCollectionRootOnlyPayload,
   isContentOnlyPayload,
   isTagsOnlyPayload,
+  isGalleryInheritanceOverridesOnlyPayload,
+  updateCardGalleryInheritanceOverrides,
   isStatusOnlyPayload,
 } from '@/lib/services/cardService';
 import { getAdminApp } from '@/lib/config/firebase/admin';
@@ -65,6 +67,8 @@ jest.mock('@/lib/services/cardService', () => ({
   isCollectionRootOnlyPayload: jest.fn(),
   isContentOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
+  isGalleryInheritanceOverridesOnlyPayload: jest.fn(),
+  updateCardGalleryInheritanceOverrides: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
   deleteCard: jest.fn(),
   getPaginatedCardsByIds: jest.fn(),
@@ -97,6 +101,8 @@ const mockedIsChildrenReorderOnlyPayload = isChildrenReorderOnlyPayload as jest.
 const mockedIsCollectionRootOnlyPayload = isCollectionRootOnlyPayload as jest.MockedFunction<typeof isCollectionRootOnlyPayload>;
 const mockedIsContentOnlyPayload = isContentOnlyPayload as jest.MockedFunction<typeof isContentOnlyPayload>;
 const mockedIsTagsOnlyPayload = isTagsOnlyPayload as jest.MockedFunction<typeof isTagsOnlyPayload>;
+const mockedIsGalleryInheritanceOverridesOnlyPayload = isGalleryInheritanceOverridesOnlyPayload as jest.MockedFunction<typeof isGalleryInheritanceOverridesOnlyPayload>;
+const mockedUpdateCardGalleryInheritanceOverrides = updateCardGalleryInheritanceOverrides as jest.MockedFunction<typeof updateCardGalleryInheritanceOverrides>;
 const mockedIsStatusOnlyPayload = isStatusOnlyPayload as jest.MockedFunction<typeof isStatusOnlyPayload>;
 const mockedGetAdminApp = getAdminApp as jest.MockedFunction<typeof getAdminApp>;
 const cardDocGetMock = jest.fn();
@@ -120,6 +126,7 @@ function makeRequest(body: unknown) {
 
 describe('PATCH /api/cards/[id] cover fast path', () => {
   beforeEach(() => {
+    mockedIsGalleryInheritanceOverridesOnlyPayload.mockReturnValue(false);
     jest.clearAllMocks();
     mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
     mockedGetCardById.mockResolvedValue({ docId: 'card-1', title: 'Test', createdAt: 1, updatedAt: 1, content: '' } as never);
@@ -372,5 +379,22 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     });
     expect(mockedUpdateCard).not.toHaveBeenCalled();
     expect(payload.subjectTagId).toBe('siblings');
+  });
+
+  it('routes Gallery inheritance controls through the narrow override path', async () => {
+    const overrides = { who: false, what: true, when: true, where: true };
+    mockedIsGalleryInheritanceOverridesOnlyPayload.mockReturnValue(true);
+    mockedUpdateCardGalleryInheritanceOverrides.mockResolvedValue({
+      docId: 'card-1', title: 'Test', content: '', createdAt: 1, updatedAt: 2,
+      galleryTagInheritanceOverrides: overrides,
+    } as never);
+
+    const res = await PATCH(makeRequest({ galleryTagInheritanceOverrides: overrides }) as never, {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardGalleryInheritanceOverrides).toHaveBeenCalledWith('card-1', overrides);
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
   });
 });

@@ -27,7 +27,7 @@ import {
 import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
-import { newCardInheritanceOverrides } from '@/lib/utils/galleryTagInheritance';
+import { newCardInheritanceOverrides, protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -1610,6 +1610,43 @@ export function isTagsOnlyPayload(
     return false;
   }
   return true;
+}
+
+export function isGalleryInheritanceOverridesOnlyPayload(
+  updates: Partial<Pick<Card, 'galleryTagInheritanceOverrides'>>
+): boolean {
+  const keys = Object.keys(updates as Record<string, unknown>);
+  return keys.length === 1 && keys[0] === 'galleryTagInheritanceOverrides'
+    && updates.galleryTagInheritanceOverrides !== undefined;
+}
+
+export async function updateCardGalleryInheritanceOverrides(
+  cardId: string,
+  overrides: NonNullable<Card['galleryTagInheritanceOverrides']>
+): Promise<Card> {
+  const parsed = cardSchema.shape.galleryTagInheritanceOverrides.unwrap().parse(overrides);
+  const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
+  const beforeSnap = await docRef.get();
+  if (!beforeSnap.exists) throw new Error(`Card with ID ${cardId} not found.`);
+  const before = beforeSnap.data() as Card;
+  const previous = before.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+
+  await docRef.update({ galleryTagInheritanceOverrides: parsed, updatedAt: Date.now() });
+
+  const releasedProtection = (['who', 'what', 'when', 'where'] as const).some(
+    (dimension) => previous[dimension] && !parsed[dimension]
+  );
+  if (releasedProtection) {
+    const { syncGalleryTagInheritanceForCard } = await import(
+      '@/lib/services/galleryTagInheritanceService'
+    );
+    await syncGalleryTagInheritanceForCard(cardId);
+  }
+
+  const updated = await getCardById(cardId);
+  if (!updated) throw new Error(`Failed to fetch updated card with ID ${cardId}`);
+  void syncCardToTypesense(updated);
+  return updated;
 }
 
 export function isStatusOnlyPayload(

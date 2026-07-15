@@ -745,3 +745,38 @@
 .compactShellForm .statusToggleLabel {
   font-size: var(--font-size-xs);
 }
+
+.galleryInheritanceControls {
+  min-width: 0;
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  color: var(--admin-support-label-color);
+}
+
+.galleryInheritanceControls legend {
+  padding: 0 4px;
+  font: var(--admin-grid-overlay-font);
+  color: var(--admin-support-meta-color);
+}
+
+.galleryInheritanceOptions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.galleryInheritanceOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font: var(--admin-grid-overlay-font);
+  cursor: pointer;
+}
+
+.galleryInheritanceOption:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
