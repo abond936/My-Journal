@@ -5,6 +5,7 @@ import { useTag } from '@/components/providers/TagProvider';
 import type { Person, PersonGroup, PersonRelationship } from '@/lib/types/archiveIdentity';
 import { normalizeTagDimensionKey } from '@/lib/utils/tagUtils';
 import type { ArchiveIdentityReviewReport } from '@/lib/utils/archiveIdentityReview';
+import IdentityEditModal from './IdentityEditModal';
 import styles from './PeopleAdminPanel.module.css';
 
 type Snapshot = { people: Person[]; relationships: PersonRelationship[]; groups: PersonGroup[]; archivePerspectivePersonId?: string };
@@ -25,6 +26,7 @@ export default function PeopleAdminPanel() {
   const [relation, setRelation] = useState({ fromPersonId: '', type: 'parent' as PersonRelationship['type'], toPersonId: '' });
   const [group, setGroup] = useState({ name: '', type: 'family' as PersonGroup['type'], memberPersonIds: [] as string[] });
   const [review, setReview] = useState<ArchiveIdentityReviewReport>();
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
   const load = useCallback(async () => {
     try { setData(await api<Snapshot>('/api/admin/archive-identity')); setError(''); }
@@ -65,7 +67,7 @@ export default function PeopleAdminPanel() {
       <input placeholder="Aliases, separated by commas" value={person.aliases} onChange={(e) => setPerson({ ...person, aliases: e.target.value })} />
       <select value={person.linkedWhoTagId} onChange={(e) => setPerson({ ...person, linkedWhoTagId: e.target.value })}><option value="">No linked Who tag</option>{whoTags.map((tag) => <option key={tag.docId} value={tag.docId}>{tag.name}</option>)}</select>
       <button disabled={saving || !person.canonicalName.trim()} onClick={() => change(async () => { await post('person', { kind: person.kind, canonicalName: person.canonicalName, aliases: person.aliases.split(',').map((name) => name.trim()).filter(Boolean).map((name) => ({ name })), ...(person.linkedWhoTagId ? { linkedWhoTagId: person.linkedWhoTagId } : {}) }); setPerson({ kind: 'human', canonicalName: '', aliases: '', linkedWhoTagId: '' }); })}>Add identity</button>
-    </div><div className={styles.rows}>{data?.people.map((item) => <div className={styles.row} key={item.docId}><span><strong>{item.canonicalName}</strong> · {item.kind === 'nonhuman' ? 'non-human' : 'person'}{item.aliases.length ? ` · ${item.aliases.map((a) => a.name).join(', ')}` : ''}</span><button disabled={saving || item.kind === 'nonhuman' || data.archivePerspectivePersonId === item.docId} onClick={() => change(() => api('/api/admin/archive-identity/perspective', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archivePerspectivePersonId: item.docId }) }))}>{data.archivePerspectivePersonId === item.docId ? 'Perspective' : 'Set perspective'}</button></div>)}</div></section>
+    </div><div className={styles.rows}>{data?.people.map((item) => <div className={styles.row} key={item.docId}><span><strong>{item.canonicalName}</strong> · {item.kind === 'nonhuman' ? 'non-human' : 'person'}{item.aliases.length ? ` · ${item.aliases.map((a) => a.name).join(', ')}` : ''}</span><span className={styles.rowActions}><button onClick={() => setEditingPerson(item)}>Edit</button><button disabled={saving || item.kind === 'nonhuman' || data.archivePerspectivePersonId === item.docId} onClick={() => change(() => api('/api/admin/archive-identity/perspective', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archivePerspectivePersonId: item.docId }) }))}>{data.archivePerspectivePersonId === item.docId ? 'Perspective' : 'Set perspective'}</button></span></div>)}</div></section>
     <section className={styles.section}><h3>Relationships</h3><div className={styles.form}>
       <select value={relation.fromPersonId} onChange={(e) => setRelation({ ...relation, fromPersonId: e.target.value })}><option value="">First person</option>{data?.people.map((p) => <option key={p.docId} value={p.docId}>{p.canonicalName}</option>)}</select>
       <select value={relation.type} onChange={(e) => setRelation({ ...relation, type: e.target.value as PersonRelationship['type'] })}><option value="parent">is parent of</option><option value="spouse">is spouse of</option><option value="partner">is partner of</option></select>
@@ -78,5 +80,19 @@ export default function PeopleAdminPanel() {
       <div className={styles.members}>{data?.people.map((p) => <label key={p.docId}><input type="checkbox" checked={group.memberPersonIds.includes(p.docId!)} onChange={(e) => setGroup({ ...group, memberPersonIds: e.target.checked ? [...group.memberPersonIds, p.docId!] : group.memberPersonIds.filter((id) => id !== p.docId) })} />{p.canonicalName}</label>)}</div>
       <button disabled={saving || !group.name.trim() || group.memberPersonIds.length < 2 || (group.type === 'couple' && group.memberPersonIds.length !== 2)} onClick={() => change(async () => { await post('group', group); setGroup({ ...group, name: '', memberPersonIds: [] }); })}>Add group</button>
     </div><div className={styles.rows}>{data?.groups.map((g) => <div className={styles.row} key={g.docId}><span><strong>{g.name}</strong> · {g.type} · {g.memberPersonIds.map((id) => names.get(id) ?? id).join(', ')}</span><button onClick={() => change(() => api(`/api/admin/archive-identity/group/${g.docId}`, { method: 'DELETE' }))}>Remove</button></div>)}</div></section>
+    <IdentityEditModal
+      key={editingPerson?.docId ?? 'closed'}
+      person={editingPerson}
+      whoTags={whoTags}
+      saving={saving}
+      onClose={() => setEditingPerson(null)}
+      onSave={async (update) => {
+        if (!editingPerson?.docId) return;
+        await change(() => api(`/api/admin/archive-identity/person/${editingPerson.docId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(update),
+        }));
+        setEditingPerson(null);
+      }}
+    />
   </div>;
 }
