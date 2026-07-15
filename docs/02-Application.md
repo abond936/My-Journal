@@ -374,15 +374,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Mapping** — Import-tag preview and confirmed remapping.
 - **Starter set** — Optional additive Tag Set 0.
 - **Reader filters** — Any assigned and Subject only.
+- **Reliability** — Shared modal ownership, exact lookup, scoped filters, and post-save reconciliation.
+- **Integrity** — Canonical hierarchy with reconciled paths, counts, derived fields, and search projections.
+- **Identities** — Stable human and non-human subjects with canonical names, aliases, details, and editing.
+- **Relationships** — Parent, spouse, and partner records with archive perspective and contextual role resolution.
+- **Groups** — Typed couples, families, and households without duplicate people.
+- **Migration** — Manifested, reviewed identity conversion with audit and rollback evidence.
 
 ⭕1 **Planned**
 
-- **Reliability** — Correct modal ownership, exact tag lookup, filter ownership, matching scope, and post-save reconciliation.
-- **Integrity** — Establish one hierarchy authority and reconcile paths, counts, derived fields, and search projections.
-- **Identities** — Manage stable human and non-human Who subjects, canonical names, searchable aliases, merges, and splits.
-- **Relationships** — Manage family relationships, archive perspective, and contextual roles.
-- **Groups** — Represent meaningful couples, families, and households without inventing duplicate people.
-- **Migration** — Review and apply identity conversions without silently changing existing assignments.
+- **Merge/split** — Define and implement recoverable identity correction without silently changing assignments.
 - **Inheritance** — Complete enable-time synchronization, settle aggregation and manual-edit behavior, and verify the workflow.
 - **Shortcuts** — Direct Who, What, When, and Where navigation.
 - **Density** — Tighten the tree without weakening drag targets.

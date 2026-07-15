@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** Tag Workflow and Identity.
+**Current active capability:** None. Select the next capability through its Definition Gate.
 
 ---
 
@@ -76,7 +76,7 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 ## Tag Workflow and Identity
 
 **Definition:** Ready
-**Execution:** Active
+**Execution:** Verified
 
 **Outcome** — The author can reliably find, filter, assign, edit, and normalize tags without stale presentation, ambiguous hierarchy behavior, lost assignments, or silent reinterpretation. Who distinguishes stable human and non-human identities from names, human relationships, and groups.
 
@@ -88,17 +88,15 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 **Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; aliases preserve names; human roles are perspective-relative relationships; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
 
-**Current state** — The archive contains 660 tags, 1,281 cards, 3,503 media, and 270 questions. Workflow implementation now has one parent-controlled filter modal, locate-only tag search, direct exact matching, shared Studio-sidebar/Card-filter ownership with separate Reader persistence, authoritative updated-card reconciliation after bulk saves, and awaited search-projection sync attempts. Identity foundation provides stable human and non-human named-subject records, aliases, human parent/spouse/partner relationships with duplicate and parent-cycle protection, typed groups, perspective-relative role resolution, a human archive perspective setting, admin-only APIs, and a separate identity surface within tag administration. A read-only Who review reports direct and subtree assignment impact without trusting stored counts or changing data. Its live run now confirms ten people, 100 remaining person candidates, eight relationship-role candidates, 19 structural candidates, one group candidate, and zero remaining alias clusters. The nine author-approved same-identity alias clusters have stable human identity records linked to their canonical Who nodes, with historical names retained as aliases and legacy tag links. Alan Bond is separately linked to the existing Alan Bond Who tag and owns the archive perspective used to resolve contextual human roles. Both manifested migrations have live rollback-and-reapply proof and changed no Tags, Cards, Media, or Questions. Repair used complete paired backup `run-2026-07-15T15-34-27-951Z` and corrected 656 paths, 117 card projections, 577 media projections, and 289 tags with count or supporting-ID drift. Fresh Typesense rebuilds removed one orphan card and 13 orphan media records. Current audits report zero path, projection, scalar-count, and unique-ID discrepancies; Typesense counts exactly match Firestore. Focused model, review, migration, rollback, hierarchy, projection, count, authorization-boundary, lint, and production type checks pass; final browser verification remains in Verify.
+**Current state** — The archive contains 660 tags, 1,281 cards, 3,503 media, and 270 questions. Tag workflows use shared modal ownership, exact lookup, scoped filters, separate Reader and Studio persistence, authoritative save reconciliation, and consistent Card, Media, and Question filter presentation. Identity administration provides stable human and non-human subjects, canonical names, aliases, details and editing, human parent/spouse/partner relationships with duplicate and parent-cycle protection, typed groups, and an explicit archive perspective. Live review confirms ten people, 100 remaining person candidates, eight relationship-role candidates, 19 structural candidates, one group candidate, and zero remaining alias clusters. Nine approved alias clusters and Alan Bond have stable identity records; Alan owns the archive perspective. Manifested migrations have live rollback-and-reapply proof and changed no Tags, Cards, Media, or Questions. Repair used complete paired backup `run-2026-07-15T15-34-27-951Z` and corrected 656 paths, 117 card projections, 577 media projections, and 289 tags with count or supporting-ID drift. Fresh Typesense rebuilds removed one orphan card and 13 orphan media records. Current audits report zero path, projection, scalar-count, and unique-ID discrepancies; Typesense counts exactly match Firestore. Automated and browser verification cover tag editing, subject handling, Card, Media, Question, and Reader filters, filter isolation, refresh, identity details, perspective, migration, and rollback.
 
-**Gaps / slices** —
-
-1. **Verify** — Prove Cards, Media, Questions, Reader filters, subjects, counts, refresh, relationships, and rollback.
+**Gaps / slices** — None inside this capability. Merge/split, additional reviewed conversions, inheritance, and taxonomy refinements remain separate Planned work in `02` and the sequence below.
 
 **Dependencies** — Valid administrator access, paired backup capability, Firestore and Typesense access, current tag/card/media/question catalogs, and browser verification.
 
 **Risks** — Incorrect identity merges, lost historical names, perspective errors, count drift, stale search projections, partial migration, and unintended Reader-filter changes.
 
-**Decisions needed** — None before Authority and Hierarchy. Ambiguous legacy meanings, including `Bob & Sandra`, remain migration-review decisions and do not block infrastructure work.
+**Decisions needed** — None inside this completed capability. Ambiguous legacy meanings, including `Bob & Sandra`, remain decisions for a later reviewed-conversion capability.
 
 **Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
 
