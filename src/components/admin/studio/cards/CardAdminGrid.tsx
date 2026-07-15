@@ -82,6 +82,9 @@ function renderCardOverlayBottom(
   card: Card,
   secondaryMeta?: { label: string; title?: string } | null
 ): React.ReactNode {
+  const unreviewedDimensions = (['who', 'what', 'when', 'where'] as const).filter(
+    (dimension) => card.galleryTagRollupStatuses?.[dimension] === 'unreviewed'
+  );
   return (
     <div className={styles.overlayBottomRow}>
       <div className={styles.overlayBottomStart}>
@@ -93,6 +96,14 @@ function renderCardOverlayBottom(
         >
           {card.status}
         </span>
+        {unreviewedDimensions.length > 0 ? (
+          <span
+            className={chromeStyles.metaBadgeDraft}
+            title={`Gallery rollup requires review: ${unreviewedDimensions.join(', ')}`}
+          >
+            Unreviewed
+          </span>
+        ) : null}
       </div>
       {secondaryMeta ? (
         <div className={styles.overlayBottomEnd}>

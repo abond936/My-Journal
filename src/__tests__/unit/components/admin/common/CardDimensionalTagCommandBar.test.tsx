@@ -80,4 +80,25 @@ describe('CardDimensionalTagCommandBar', () => {
 
     expect(bob.compareDocumentPosition(alan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('shows an inherited Unreviewed dimension instead of an ordinary blank', () => {
+    render(
+      <CardDimensionalTagCommandBar
+        card={{
+          tags: ['party'],
+          subjectTagId: null,
+          galleryTagRollupStatuses: {
+            who: 'unreviewed', what: 'reviewed', when: 'empty', where: 'empty',
+          },
+        }}
+        allTags={tags}
+        onUpdateTags={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Unreviewed')).toHaveAttribute(
+      'title',
+      'Who requires review because at least one Gallery item is blank.'
+    );
+  });
 });

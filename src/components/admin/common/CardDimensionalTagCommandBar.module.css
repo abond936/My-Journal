@@ -138,6 +138,12 @@
   backdrop-filter: blur(4px);
 }
 
+.chipUnreviewed {
+  border-color: var(--admin-feedback-warning-border-color, var(--admin-support-control-strong-border-color));
+  color: var(--admin-feedback-warning-color, var(--admin-support-control-strong-text-color));
+  font-weight: var(--font-weight-semibold, 600);
+}
+
 .actionMenu {
   position: fixed;
   z-index: 1500;

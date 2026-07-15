@@ -69,7 +69,7 @@ function orderDimensionTagIds(tagIds: string[], subjectTagId: string | null): st
 
 export interface CardDimensionalTagCommandBarProps {
   /** Tag assignment only; full `Card` is accepted at call sites. */
-  card: Pick<Card, 'tags' | 'subjectTagId'>;
+  card: Pick<Card, 'tags' | 'subjectTagId' | 'galleryTagRollupStatuses'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
@@ -412,7 +412,16 @@ export default function CardDimensionalTagCommandBar({
                 {hideDimensionRowLabels ? null : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
                 <div className={styles.chipStrip}>
                   {core[dim].length === 0 ? (
-                    <span className={styles.chipEmpty}>-</span>
+                    card.galleryTagRollupStatuses?.[dim] === 'unreviewed' ? (
+                      <span
+                        className={clsx(styles.chipEmpty, styles.chipUnreviewed)}
+                        title={`${DIMENSION_LABEL[dim]} requires review because at least one Gallery item is blank.`}
+                      >
+                        Unreviewed
+                      </span>
+                    ) : (
+                      <span className={styles.chipEmpty}>-</span>
+                    )
                   ) : (
                     orderedCore[dim].map((id) => renderChip(dim, id))
                   )}
