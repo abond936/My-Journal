@@ -117,15 +117,14 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 **Contracts** — Each dimension requires an explicit onboarding selection and remains inactive until selected. Existing card assignments begin protected by per-dimension overrides. New cards follow the selected settings and may override individual dimensions. Releasing an override immediately re-inherits current Gallery children. Confirmed Gallery media are the only participating children; body media do not participate. Any participating child with an unreviewed dimension keeps that card dimension unreviewed rather than presenting a complete rollup. A single rolled-up tag is the dimensional subject; multiple tags display Multiple unless the author selects one or more subjects, which display as Subjects+. Inheritance changes card work truth only and preserves source-media truth.
 
-**Current state** — Settings store four booleans and are currently all off. Runtime services can union Gallery-media tags into enabled card dimensions after card Gallery changes and media-tag changes. The delivered path does not record whether onboarding choices were made, protect existing assignments with per-card overrides, synchronize enable-time state safely, or implement the approved incomplete-child and subject rules.
+**Current state** — Settings store four booleans plus whether the author explicitly configured them; they remain unconfigured and all off. Cards store per-dimension overrides. Missing legacy state is interpreted as fully protected, and a manifested backfill explicitly protected all 1,281 existing cards with zero conflicts while changing no tags, subjects, Gallery membership, counts, or projections. New cards protect every dimension until settings are configured; afterward they inherit only dimensions the author enabled and retain overrides for disabled dimensions. Runtime synchronization masks global settings through each card's overrides. The delivered rollup still lacks the approved incomplete-child and subject rules, onboarding explanation, override controls, and safe reconciliation when settings change.
 
 **Gaps / slices** —
 
-1. **State** — Record explicit settings completion and per-card, per-dimension override state without reinterpreting existing cards.
-2. **Rollup** — Derive tags, review state, and subjects from participating Gallery media.
-3. **Activation** — Explain choices in onboarding and Settings and initialize new-card behavior from the selected policy.
-4. **Reconciliation** — Recompute safely after Gallery, media-tag, override, and settings changes.
-5. **Verify** — Prove existing-card protection, new-card defaults, override release, incomplete children, subjects, counts, projections, Reader truth, retry, and rollback.
+1. **Rollup** — Derive tags, review state, and subjects from participating Gallery media.
+2. **Activation** — Explain choices in onboarding and Settings and initialize new-card behavior from the selected policy.
+3. **Reconciliation** — Recompute safely after Gallery, media-tag, override, and settings changes.
+4. **Verify** — Prove existing-card protection, new-card defaults, override release, incomplete children, subjects, counts, projections, Reader truth, retry, and rollback.
 
 **Dependencies** — Author settings, Card and Media services, Gallery membership, confirmed tag and subject fields, onboarding/help surfaces, and current hierarchy/projection utilities.
 

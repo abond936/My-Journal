@@ -6,6 +6,7 @@ import { updateCardTags } from '@/lib/services/cardService';
 import { getAllTags } from '@/lib/firebase/tagService';
 import {
   cardTagsEqual,
+  effectiveGalleryInheritanceToggles,
   galleryInheritanceTogglesActive,
   mergeGalleryInheritedCardTags,
 } from '@/lib/utils/galleryTagInheritance';
@@ -56,6 +57,11 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
   }
 
   const card = cardSnap.data() as Card;
+  const effectiveToggles = effectiveGalleryInheritanceToggles(
+    settings.galleryTagInheritance,
+    card.galleryTagInheritanceOverrides
+  );
+  if (!galleryInheritanceTogglesActive(effectiveToggles)) return;
   const currentTags = (card.tags ?? []).filter(
     (id): id is string => typeof id === 'string' && id.length > 0
   );
@@ -64,7 +70,7 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
   const nextTags = mergeGalleryInheritedCardTags(
     currentTags,
     galleryMedia,
-    settings.galleryTagInheritance,
+    effectiveToggles,
     allTags
   );
 

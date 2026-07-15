@@ -26,6 +26,8 @@ import {
 } from '@/lib/utils/curatedCollectionTree';
 import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { getAuthorSettings } from '@/lib/services/authorSettingsService';
+import { newCardInheritanceOverrides } from '@/lib/utils/galleryTagInheritance';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -840,6 +842,7 @@ export async function createCard(
   });
   contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
   const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
+  const inheritanceOverrides = newCardInheritanceOverrides(await getAuthorSettings());
 
   const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
@@ -854,6 +857,7 @@ export async function createCard(
     content: cleanedContent,
     ...(validatedData.excerptAuto ? { excerpt: autoExcerpt || null } : {}),
     tags: selectedTags,
+    galleryTagInheritanceOverrides: inheritanceOverrides,
     ...(subjectState.subjectTagId
       ? {
           subjectTagId: subjectState.subjectTagId,
@@ -958,6 +962,7 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
     buildTagMap(allTagsForJournal)
   );
   const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
+  const inheritanceOverrides = newCardInheritanceOverrides(await getAuthorSettings());
 
   const newCard: Card = {
     docId: docRef.id,
@@ -969,6 +974,7 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
     status: 'draft',
     displayMode: 'navigate',
     tags: selectedTags,
+    galleryTagInheritanceOverrides: inheritanceOverrides,
     childrenIds: normalizedChildren,
     contentMedia: [],
     galleryMedia: [],
@@ -1069,7 +1075,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
     preNewContentMedia.forEach((id) => preNewMediaIds.add(id));
     
     let isClearingCover = false;
-    let responseMediaMap = await loadMediaMapByIds(preNewMediaIds);
+    const responseMediaMap = await loadMediaMapByIds(preNewMediaIds);
     const precomputedMediaSignals = computeCardMediaSignalsFromMediaMap(
       responseMediaMap,
       allTagsForJournal

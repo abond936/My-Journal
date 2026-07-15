@@ -1,6 +1,9 @@
 import {
   computeGalleryDimensionTagUnion,
   mergeGalleryInheritedCardTags,
+  effectiveGalleryInheritanceToggles,
+  newCardInheritanceOverrides,
+  protectExistingCardInheritance,
 } from '@/lib/utils/galleryTagInheritance';
 import type { Tag } from '@/lib/types/tag';
 import { DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES } from '@/lib/types/authorSettings';
@@ -68,5 +71,27 @@ describe('galleryTagInheritance', () => {
     );
 
     expect(next).toEqual(['what-x', 'who-a']);
+  });
+
+  it('protects legacy cards and enables only explicitly selected dimensions for new cards', () => {
+    expect(protectExistingCardInheritance()).toEqual({ who: true, what: true, when: true, where: true });
+    expect(newCardInheritanceOverrides({
+      galleryTagInheritanceConfigured: false,
+      galleryTagInheritance: { who: true, what: true, when: true, where: true },
+    })).toEqual({ who: true, what: true, when: true, where: true });
+    expect(newCardInheritanceOverrides({
+      galleryTagInheritanceConfigured: true,
+      galleryTagInheritance: { who: true, what: false, when: true, where: false },
+    })).toEqual({ who: false, what: true, when: false, where: true });
+  });
+
+  it('treats missing overrides as protected and masks enabled settings per dimension', () => {
+    const settings = { who: true, what: true, when: false, where: false };
+    expect(effectiveGalleryInheritanceToggles(settings, undefined)).toEqual({
+      who: false, what: false, when: false, where: false,
+    });
+    expect(effectiveGalleryInheritanceToggles(settings, { who: false, what: true, when: true, where: true })).toEqual({
+      who: true, what: false, when: false, where: false,
+    });
   });
 });

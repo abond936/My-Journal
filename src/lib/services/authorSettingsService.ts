@@ -31,6 +31,7 @@ export async function updateGalleryTagInheritanceToggles(
   const next: AuthorSettings = {
     ...current,
     galleryTagInheritance: parsed,
+    galleryTagInheritanceConfigured: true,
   };
   await ref.set(next, { merge: true });
   return next;
@@ -71,6 +72,7 @@ export async function updateArchivePerspectivePersonId(
   await ref.set(
     {
       galleryTagInheritance: next.galleryTagInheritance,
+      galleryTagInheritanceConfigured: next.galleryTagInheritanceConfigured,
       ...(next.tagSet0 ? { tagSet0: next.tagSet0 } : {}),
       archivePerspectivePersonId: archivePerspectivePersonId ?? FieldValue.delete(),
     },

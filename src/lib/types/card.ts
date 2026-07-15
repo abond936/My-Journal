@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { mediaSchema, Media } from './photo';
+import { galleryTagInheritanceTogglesSchema } from './authorSettings';
 
 /**
  * Schema for an item within a gallery card.
@@ -75,6 +76,7 @@ export const cardSchema = z.object({
 
   // Direct tag assignments and optimized query structure
   tags: z.array(z.string()).optional(),
+  galleryTagInheritanceOverrides: galleryTagInheritanceTogglesSchema.optional(),
   subjectTagId: z.string().min(1).nullable().optional(),
   subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),

@@ -7,6 +7,37 @@ export type GalleryMediaTagSource = {
   tags?: string[];
 };
 
+export function protectExistingCardInheritance(): GalleryTagInheritanceToggles {
+  return { who: true, what: true, when: true, where: true };
+}
+
+export function newCardInheritanceOverrides(settings: {
+  galleryTagInheritance?: GalleryTagInheritanceToggles;
+  galleryTagInheritanceConfigured?: boolean;
+}): GalleryTagInheritanceToggles {
+  if (!settings.galleryTagInheritanceConfigured) return protectExistingCardInheritance();
+  const toggles = { who: false, what: false, when: false, where: false, ...settings.galleryTagInheritance };
+  return {
+    who: !toggles.who,
+    what: !toggles.what,
+    when: !toggles.when,
+    where: !toggles.where,
+  };
+}
+
+export function effectiveGalleryInheritanceToggles(
+  settings: GalleryTagInheritanceToggles,
+  overrides: GalleryTagInheritanceToggles | undefined
+): GalleryTagInheritanceToggles {
+  const protectedDimensions = overrides ?? protectExistingCardInheritance();
+  return {
+    who: settings.who && !protectedDimensions.who,
+    what: settings.what && !protectedDimensions.what,
+    when: settings.when && !protectedDimensions.when,
+    where: settings.where && !protectedDimensions.where,
+  };
+}
+
 function tagsForDimension(
   tagIds: string[],
   dimension: TagDimension,

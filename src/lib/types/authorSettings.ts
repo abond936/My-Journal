@@ -26,6 +26,7 @@ export type TagSet0Status = z.infer<typeof tagSet0StatusSchema>;
 
 export const authorSettingsSchema = z.object({
   galleryTagInheritance: galleryTagInheritanceTogglesSchema,
+  galleryTagInheritanceConfigured: z.boolean().default(false),
   tagSet0: tagSet0StatusSchema.optional(),
   archivePerspectivePersonId: z.string().min(1).optional(),
 });
@@ -34,6 +35,7 @@ export type AuthorSettings = z.infer<typeof authorSettingsSchema>;
 
 export const DEFAULT_AUTHOR_SETTINGS: AuthorSettings = {
   galleryTagInheritance: { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
+  galleryTagInheritanceConfigured: false,
 };
 
 export const DEFAULT_TAG_SET_0_STATUS: TagSet0Status = {
@@ -46,10 +48,12 @@ export function normalizeAuthorSettings(raw: unknown): AuthorSettings {
   const gallery = galleryTagInheritanceTogglesSchema.safeParse(source.galleryTagInheritance);
   const tagSet = tagSet0StatusSchema.safeParse(source.tagSet0);
   const perspective = z.string().min(1).safeParse(source.archivePerspectivePersonId);
+  const configured = z.boolean().safeParse(source.galleryTagInheritanceConfigured);
   return {
     galleryTagInheritance: gallery.success
       ? gallery.data
       : { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
+    galleryTagInheritanceConfigured: configured.success ? configured.data : false,
     ...(tagSet.success ? { tagSet0: tagSet.data } : {}),
     ...(perspective.success ? { archivePerspectivePersonId: perspective.data } : {}),
   };
