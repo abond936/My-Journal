@@ -27,6 +27,7 @@
     "repair:tag-projections": "tsx -r dotenv/config src/lib/scripts/tags/repair-derived-tag-projections.ts",
     "repair:tag-counts": "tsx -r dotenv/config src/lib/scripts/tags/repair-tag-counts.ts",
     "migrate:approved-identities": "tsx -r dotenv/config src/lib/scripts/tags/migrate-approved-identities.ts",
+    "migrate:archive-perspective": "tsx -r dotenv/config src/lib/scripts/tags/migrate-archive-perspective.ts",
     "export:tags": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/export-tags.ts",
     "compare:digikam-tags": "npx tsx src/lib/scripts/tags/compare-digikam-to-tags-export.ts",
     "dry-run:import-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/dry-run-import-metadata.ts",

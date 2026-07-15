@@ -10,3 +10,9 @@ export const APPROVED_ALIAS_CLUSTERS: Readonly<Record<string, readonly string[]>
   Nell: ['Nell Bond', 'Nell Hammond'],
   Sandra: ['Sandra Bond', 'Sandra Davis'],
 };
+
+/** The author is the archive perspective for resolving contextual human relationships. */
+export const APPROVED_ARCHIVE_PERSPECTIVE = {
+  canonicalName: 'Alan Bond',
+  whoTagName: 'Alan Bond',
+} as const;
