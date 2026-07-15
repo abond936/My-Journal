@@ -905,8 +905,3 @@
   display: flex;
   justify-content: flex-end;
 }
-
-.studioTagFilterModalBody {
-  overflow: visible;
-  min-height: min(72vh, 720px);
-}
