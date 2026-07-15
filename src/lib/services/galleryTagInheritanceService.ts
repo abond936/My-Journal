@@ -119,3 +119,40 @@ export async function syncGalleryTagInheritanceForMediaId(mediaId: string): Prom
     await syncGalleryTagInheritanceForCard(snap.id);
   }
 }
+
+export async function reconcileGalleryInheritanceForNewlyEnabledDimensions(
+  previous: import('@/lib/types/authorSettings').GalleryTagInheritanceToggles,
+  next: import('@/lib/types/authorSettings').GalleryTagInheritanceToggles
+): Promise<{ candidateCount: number; reconciledCardCount: number; failedCardCount: number }> {
+  const newlyEnabled = (['who', 'what', 'when', 'where'] as const).filter(
+    (dimension) => !previous[dimension] && next[dimension]
+  );
+  if (newlyEnabled.length === 0) {
+    return { candidateCount: 0, reconciledCardCount: 0, failedCardCount: 0 };
+  }
+
+  const firestore = getAdminApp().firestore();
+  const cardIds = new Set<string>();
+  const snapshots = await Promise.all(
+    newlyEnabled.map((dimension) =>
+      firestore
+        .collection(CARDS_COLLECTION)
+        .where(`galleryTagInheritanceOverrides.${dimension}`, '==', false)
+        .get()
+    )
+  );
+  snapshots.forEach((snapshot) => snapshot.docs.forEach((doc) => cardIds.add(doc.id)));
+
+  let reconciledCardCount = 0;
+  let failedCardCount = 0;
+  for (const cardId of cardIds) {
+    try {
+      await syncGalleryTagInheritanceForCard(cardId);
+      reconciledCardCount += 1;
+    } catch (error) {
+      failedCardCount += 1;
+      console.error('[gallery inheritance reconciliation]', { cardId, error });
+    }
+  }
+  return { candidateCount: cardIds.size, reconciledCardCount, failedCardCount };
+}

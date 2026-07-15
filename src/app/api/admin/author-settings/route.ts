@@ -103,8 +103,25 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
+    const previous = await getAuthorSettings();
     const settings = await updateGalleryTagInheritanceToggles(parsed.data.galleryTagInheritance);
-    return NextResponse.json({ ok: true, settings });
+    const { reconcileGalleryInheritanceForNewlyEnabledDimensions } = await import(
+      '@/lib/services/galleryTagInheritanceService'
+    );
+    try {
+      const reconciliation = await reconcileGalleryInheritanceForNewlyEnabledDimensions(
+        previous.galleryTagInheritance,
+        settings.galleryTagInheritance
+      );
+      return NextResponse.json({ ok: true, settings, reconciliation });
+    } catch (error) {
+      console.error('[/api/admin/author-settings PATCH reconciliation]', error);
+      return NextResponse.json({
+        ok: true,
+        settings,
+        reconciliationError: 'Settings were saved, but opted-in cards could not be reconciled.',
+      });
+    }
   } catch (error) {
     console.error('[/api/admin/author-settings PATCH]', error);
     return errorResponse(

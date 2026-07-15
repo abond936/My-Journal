@@ -16,6 +16,12 @@ import styles from './settings.module.css';
 type SettingsResponse = {
   ok: boolean;
   settings?: { galleryTagInheritance: GalleryTagInheritanceToggles };
+  reconciliation?: {
+    candidateCount: number;
+    reconciledCardCount: number;
+    failedCardCount: number;
+  };
+  reconciliationError?: string;
   message?: string;
 };
 
@@ -152,6 +158,18 @@ export default function AdminSettingsPage() {
   }, [savedToggles]);
 
   const save = useCallback(async () => {
+    const newlyEnabled = DIMENSION_ORDER.filter(
+      (dimension) => !savedToggles[dimension] && toggles[dimension]
+    );
+    if (newlyEnabled.length > 0) {
+      const confirmed = await feedback.confirm({
+        title: 'Enable Gallery inheritance?',
+        message: `This enables ${newlyEnabled.map((dimension) => DIMENSION_LABEL[dimension]).join(', ')} for new cards. Existing cards remain protected unless you previously opted them into those dimensions; opted-in cards will be recalculated now.`,
+        confirmLabel: 'Enable and reconcile',
+        cancelLabel: 'Cancel',
+      });
+      if (!confirmed) return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/admin/author-settings', {
@@ -167,13 +185,32 @@ export default function AdminSettingsPage() {
         setSavedToggles(data.settings.galleryTagInheritance);
         setToggles(data.settings.galleryTagInheritance);
       }
-      feedback.showSuccess('Settings saved.');
+      if (data.reconciliationError) {
+        feedback.showToast({
+          tone: 'warning',
+          title: 'Settings saved; reconciliation failed',
+          message: data.reconciliationError,
+        });
+      } else if (data.reconciliation?.failedCardCount) {
+        feedback.showToast({
+          tone: 'warning',
+          title: 'Settings saved; some cards need retry',
+          message: `Recalculated ${data.reconciliation.reconciledCardCount} of ${data.reconciliation.candidateCount} opted-in cards. ${data.reconciliation.failedCardCount} failed.`,
+        });
+      } else {
+        const count = data.reconciliation?.reconciledCardCount ?? 0;
+        feedback.showSuccess(
+          count
+            ? `Settings saved. Recalculated ${count} opted-in card${count === 1 ? '' : 's'}.`
+            : 'Settings saved. No existing protected cards were changed.'
+        );
+      }
     } catch (error) {
       feedback.showError(error instanceof Error ? error.message : 'Failed to save settings');
     } finally {
       setSaving(false);
     }
-  }, [feedback, toggles]);
+  }, [feedback, savedToggles, toggles]);
 
   const installTagSet0 = useCallback(async () => {
     setTagSetBusy(true);
@@ -347,9 +384,10 @@ export default function AdminSettingsPage() {
           Tag inheritance
         </h2>
         <p className={styles.hint}>
-          Leave these off until you understand the difference between media tags (what is in the photo)
-          and card tags (what the story is about). When on, gallery media tags can overwrite card tags
-          for that dimension.
+          Choose which dimensions new cards may inherit from their Gallery items. Existing cards remain
+          protected until you release a dimension on that card. A released dimension follows the Gallery:
+          blank child assignments make it Unreviewed; N/A and Unknown remain intentional tags. Protecting
+          it again preserves its current assignments and stops future Gallery changes.
         </p>
         <ul className={styles.toggleList}>
           {DIMENSION_ORDER.map((dimension) => (
