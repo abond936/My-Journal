@@ -1509,7 +1509,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         isOpen={tagFilterModalOpen}
         onClose={() => setTagFilterModalOpen(false)}
         title="Media tag filters"
-        size="wideTall"
+        size="wide"
         bodyClassName={styles.studioTagFilterModalBody}
       >
         <MacroTagSelector

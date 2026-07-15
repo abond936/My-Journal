@@ -654,16 +654,22 @@ export default function StudioQuestionsPane() {
             </button>
           }
         />
-        {tagFilterModalOpen ? (
+        <EditModal
+          isOpen={tagFilterModalOpen}
+          onClose={() => setTagFilterModalOpen(false)}
+          title="Question tag filters"
+          size="wide"
+        >
           <MacroTagSelector
             selectedTags={allTags.filter(tag => tag.docId && filterTagIds.includes(tag.docId))}
             allTags={allTags}
             onChange={setFilterTagIds}
-            expanded
+            expanded={tagFilterModalOpen}
             onExpandedChange={setTagFilterModalOpen}
             collapsedSummary="none"
+            suppressOverlay
           />
-        ) : null}
+        </EditModal>
       </div>
 
       <div className={styles.studioQuestionTreeSection}>
