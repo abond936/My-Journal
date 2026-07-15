@@ -4,6 +4,7 @@ import { dirname, resolve } from 'path';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { APPROVED_ARCHIVE_PERSPECTIVE } from '@/lib/data/approvedIdentityReview';
+import { DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES } from '@/lib/types/authorSettings';
 import { personSchema } from '@/lib/types/archiveIdentity';
 import { sameMigrationIdentity, type IdentityMigrationRecord } from '@/lib/utils/archiveIdentityMigration';
 
@@ -99,6 +100,7 @@ async function apply() {
     });
   }
   batch.set(state.firestore.collection('app_settings').doc('author'), {
+    galleryTagInheritance: { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
     archivePerspectivePersonId: manifest.person.docId,
   }, { merge: true });
   await batch.commit();

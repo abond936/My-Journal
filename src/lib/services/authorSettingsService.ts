@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import {
   authorSettingsSchema,
   DEFAULT_AUTHOR_SETTINGS,
+  normalizeAuthorSettings,
   type AuthorSettings,
   type GalleryTagInheritanceToggles,
   type TagSet0Status,
@@ -11,21 +12,13 @@ import {
 const COLLECTION = 'app_settings';
 const DOC_ID = 'author';
 
-function normalizeSettings(raw: unknown): AuthorSettings {
-  const parsed = authorSettingsSchema.safeParse(raw);
-  if (parsed.success) {
-    return parsed.data;
-  }
-  return { ...DEFAULT_AUTHOR_SETTINGS };
-}
-
 export async function getAuthorSettings(): Promise<AuthorSettings> {
   const firestore = getAdminApp().firestore();
   const snap = await firestore.collection(COLLECTION).doc(DOC_ID).get();
   if (!snap.exists) {
     return { ...DEFAULT_AUTHOR_SETTINGS };
   }
-  return normalizeSettings(snap.data());
+  return normalizeAuthorSettings(snap.data());
 }
 
 export async function updateGalleryTagInheritanceToggles(
@@ -77,6 +70,8 @@ export async function updateArchivePerspectivePersonId(
   }
   await ref.set(
     {
+      galleryTagInheritance: next.galleryTagInheritance,
+      ...(next.tagSet0 ? { tagSet0: next.tagSet0 } : {}),
       archivePerspectivePersonId: archivePerspectivePersonId ?? FieldValue.delete(),
     },
     { merge: true }

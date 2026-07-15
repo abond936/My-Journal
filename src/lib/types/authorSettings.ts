@@ -40,3 +40,17 @@ export const DEFAULT_TAG_SET_0_STATUS: TagSet0Status = {
   installed: false,
   tagCount: 0,
 };
+
+export function normalizeAuthorSettings(raw: unknown): AuthorSettings {
+  const source = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
+  const gallery = galleryTagInheritanceTogglesSchema.safeParse(source.galleryTagInheritance);
+  const tagSet = tagSet0StatusSchema.safeParse(source.tagSet0);
+  const perspective = z.string().min(1).safeParse(source.archivePerspectivePersonId);
+  return {
+    galleryTagInheritance: gallery.success
+      ? gallery.data
+      : { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
+    ...(tagSet.success ? { tagSet0: tagSet.data } : {}),
+    ...(perspective.success ? { archivePerspectivePersonId: perspective.data } : {}),
+  };
+}
