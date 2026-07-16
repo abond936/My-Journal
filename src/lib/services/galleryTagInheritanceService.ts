@@ -10,6 +10,11 @@ import {
   effectiveGalleryInheritanceToggles,
   galleryInheritanceTogglesActive,
 } from '@/lib/utils/galleryTagInheritance';
+import {
+  buildSubjectFilterTags,
+  normalizeSubjectTagId,
+  normalizeSubjectTagIds,
+} from '@/lib/utils/subjectTag';
 
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
@@ -80,7 +85,26 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
     card.galleryImplicitSubjectTagIds ?? [],
     result.implicitSubjectTagIds
   );
-  if (cardTagsEqual(currentTags, result.tags) && statusesEqual && implicitSubjectsEqual) {
+  const explicitSubjectTagIds = normalizeSubjectTagIds(card.subjectTagIds);
+  const legacySubjectTagId = normalizeSubjectTagId(card.subjectTagId);
+  const effectiveSubjectTagIds = [
+    ...(explicitSubjectTagIds.length > 0
+      ? explicitSubjectTagIds
+      : legacySubjectTagId ? [legacySubjectTagId] : []),
+    ...result.implicitSubjectTagIds,
+  ];
+  const expectedSubjectFilterTags = await buildSubjectFilterTags(effectiveSubjectTagIds, allTags);
+  const storedSubjectFilterTagIds = Object.entries(card.subjectFilterTags ?? {})
+    .filter(([, enabled]) => enabled === true)
+    .map(([tagId]) => tagId);
+  const expectedSubjectFilterTagIds = Object.keys(expectedSubjectFilterTags);
+  const subjectFiltersEqual = cardTagsEqual(storedSubjectFilterTagIds, expectedSubjectFilterTagIds);
+  if (
+    cardTagsEqual(currentTags, result.tags) &&
+    statusesEqual &&
+    implicitSubjectsEqual &&
+    subjectFiltersEqual
+  ) {
     return;
   }
 

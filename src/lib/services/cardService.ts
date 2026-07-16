@@ -1260,7 +1260,14 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       cleanedUpdate.filterTags = filterTags;
       cleanedUpdate.subjectTagId = subjectState.subjectTagId;
       cleanedUpdate.subjectTagIds = subjectState.subjectTagIds;
-      cleanedUpdate.subjectFilterTags = subjectState.subjectFilterTags;
+      const retainedImplicitSubjectTagIds = (existingData.galleryImplicitSubjectTagIds ?? [])
+        .filter((tagId) => (finalTags ?? []).includes(tagId));
+      cleanedUpdate.subjectFilterTags = retainedImplicitSubjectTagIds.length > 0
+        ? await buildSubjectFilterTags(
+            [...subjectState.subjectTagIds, ...retainedImplicitSubjectTagIds],
+            allTagsForJournal
+          )
+        : subjectState.subjectFilterTags;
       cleanedUpdate.who = dimensionalTags.who || [];
       cleanedUpdate.what = dimensionalTags.what || [];
       cleanedUpdate.when = dimensionalTags.when || [];
