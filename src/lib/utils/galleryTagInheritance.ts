@@ -34,6 +34,24 @@ export function newCardInheritanceOverrides(settings: {
   };
 }
 
+export function resolveNewCardInheritanceOverrides(
+  settings: {
+    galleryTagInheritance?: GalleryTagInheritanceToggles;
+    galleryTagInheritanceConfigured?: boolean;
+  },
+  requestedOverrides?: GalleryTagInheritanceToggles
+): GalleryTagInheritanceToggles {
+  const defaults = newCardInheritanceOverrides(settings);
+  if (!requestedOverrides || !settings.galleryTagInheritanceConfigured) return defaults;
+
+  return {
+    who: defaults.who || requestedOverrides.who,
+    what: defaults.what || requestedOverrides.what,
+    when: defaults.when || requestedOverrides.when,
+    where: defaults.where || requestedOverrides.where,
+  };
+}
+
 export function effectiveGalleryInheritanceToggles(
   settings: GalleryTagInheritanceToggles,
   overrides: GalleryTagInheritanceToggles | undefined

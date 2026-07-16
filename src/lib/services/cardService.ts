@@ -27,7 +27,7 @@ import {
 import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
 import { buildSubjectFilterTags, resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
-import { newCardInheritanceOverrides, protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
+import { protectExistingCardInheritance, resolveNewCardInheritanceOverrides } from '@/lib/utils/galleryTagInheritance';
 
 /**
  * Retry utility with exponential backoff for critical operations.
@@ -845,7 +845,10 @@ export async function createCard(
   });
   contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
   const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
-  const inheritanceOverrides = newCardInheritanceOverrides(await getAuthorSettings());
+  const inheritanceOverrides = resolveNewCardInheritanceOverrides(
+    await getAuthorSettings(),
+    validatedData.galleryTagInheritanceOverrides
+  );
 
   const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
@@ -966,7 +969,7 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
     buildTagMap(allTagsForJournal)
   );
   const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
-  const inheritanceOverrides = newCardInheritanceOverrides(await getAuthorSettings());
+  const inheritanceOverrides = resolveNewCardInheritanceOverrides(await getAuthorSettings());
   const subjectState = await resolveSubjectTagState({
     assignedTagIds: selectedTags,
     existingSubjectTagId: question.subjectTagId,
@@ -1405,8 +1408,22 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       if (!postSnap.exists) {
         throw new Error(`Failed to fetch updated card with ID ${cardId}`);
       }
+
+      // A broad form save can contain the tag snapshot that existed before the
+      // author released a Gallery-inheritance override. Reconcile after that
+      // write so the stale form payload cannot restore protected-era tags.
+      // The service is a no-op when inheritance is disabled or fully protected.
+      const { syncGalleryTagInheritanceForCard } = await import(
+        '@/lib/services/galleryTagInheritanceService'
+      );
+      await syncGalleryTagInheritanceForCard(cardId);
+
+      const reconciledSnap = await docRef.get();
+      if (!reconciledSnap.exists) {
+        throw new Error(`Failed to fetch reconciled card with ID ${cardId}`);
+      }
       const updatedCard = hydrateCardFromMediaMap(
-        { ...(postSnap.data() as Card), docId: postSnap.id },
+        { ...(reconciledSnap.data() as Card), docId: reconciledSnap.id },
         responseMediaMap
       );
 

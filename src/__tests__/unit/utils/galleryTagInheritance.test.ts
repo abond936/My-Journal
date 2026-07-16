@@ -6,6 +6,7 @@ import {
   effectiveGalleryInheritanceToggles,
   newCardInheritanceOverrides,
   protectExistingCardInheritance,
+  resolveNewCardInheritanceOverrides,
 } from '@/lib/utils/galleryTagInheritance';
 import type { Tag } from '@/lib/types/tag';
 import { DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES } from '@/lib/types/authorSettings';
@@ -153,6 +154,24 @@ describe('galleryTagInheritance', () => {
       galleryTagInheritanceConfigured: true,
       galleryTagInheritance: { who: true, what: false, when: true, where: false },
     })).toEqual({ who: false, what: true, when: false, where: true });
+  });
+
+  it('honors per-card protection for enabled new-card dimensions', () => {
+    expect(resolveNewCardInheritanceOverrides({
+      galleryTagInheritanceConfigured: true,
+      galleryTagInheritance: { who: true, what: true, when: true, where: true },
+    }, {
+      who: false, what: true, when: false, where: true,
+    })).toEqual({ who: false, what: true, when: false, where: true });
+  });
+
+  it('does not release new-card dimensions disabled in author settings', () => {
+    expect(resolveNewCardInheritanceOverrides({
+      galleryTagInheritanceConfigured: true,
+      galleryTagInheritance: { who: false, what: false, when: false, where: false },
+    }, {
+      who: false, what: false, when: false, where: false,
+    })).toEqual({ who: true, what: true, when: true, where: true });
   });
 
   it('treats missing overrides as protected and masks enabled settings per dimension', () => {

@@ -36,7 +36,7 @@ import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChil
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
-import { protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
+import { newCardInheritanceOverrides, protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 
 type CardDraftOption = {
@@ -179,6 +179,29 @@ const CardForm: React.FC = () => {
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (
+      cardData.docId ||
+      cardData.galleryTagInheritanceOverrides ||
+      galleryInheritanceConfigured !== true ||
+      !galleryInheritanceSettings
+    ) return;
+
+    setField(
+      'galleryTagInheritanceOverrides',
+      newCardInheritanceOverrides({
+        galleryTagInheritance: galleryInheritanceSettings,
+        galleryTagInheritanceConfigured: galleryInheritanceConfigured,
+      })
+    );
+  }, [
+    cardData.docId,
+    cardData.galleryTagInheritanceOverrides,
+    galleryInheritanceConfigured,
+    galleryInheritanceSettings,
+    setField,
+  ]);
 
   useEffect(() => {
     if (!studioShellDnd || !studioShell) return;
