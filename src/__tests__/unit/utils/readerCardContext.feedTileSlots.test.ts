@@ -29,11 +29,34 @@ describe('buildFeedTileDimensionSlots', () => {
   it('fills dimensions with resolved labels and leaves others empty', () => {
     const slots = buildFeedTileDimensionSlots({ tags: ['who-1', 'what-1'] }, allTags);
     expect(slots).toEqual([
-      { dimension: 'who', label: 'Ed Davis' },
-      { dimension: 'what', label: 'Portraits' },
-      { dimension: 'when', label: null },
-      { dimension: 'where', label: null },
+      { dimension: 'who', label: 'Ed Davis', tooltip: 'Ed Davis' },
+      { dimension: 'what', label: 'Portraits', tooltip: 'Portraits' },
+      { dimension: 'when', label: null, tooltip: null },
+      { dimension: 'where', label: null, tooltip: null },
     ]);
+  });
+
+  it('shows Multiple for several assignments without an explicit subject', () => {
+    const tags = [...allTags, { docId: 'who-2', name: 'Mildred Davis', dimension: 'who', path: ['who-2'] } as Tag];
+    const who = buildFeedTileDimensionSlots({ tags: ['who-1', 'who-2'] }, tags)[0];
+    expect(who).toEqual({
+      dimension: 'who',
+      label: 'Multiple',
+      tooltip: 'Ed Davis, Mildred Davis',
+    });
+  });
+
+  it('shows Subjects+ and discloses selected subjects for several assignments', () => {
+    const tags = [...allTags, { docId: 'who-2', name: 'Mildred Davis', dimension: 'who', path: ['who-2'] } as Tag];
+    const who = buildFeedTileDimensionSlots({
+      tags: ['who-1', 'who-2'],
+      subjectTagIds: ['who-2'],
+    }, tags)[0];
+    expect(who).toEqual({
+      dimension: 'who',
+      label: 'Subjects+',
+      tooltip: 'Subjects: Mildred Davis\nAll: Ed Davis, Mildred Davis',
+    });
   });
 
   it('does not surface operational sentinel tags on tiles', () => {

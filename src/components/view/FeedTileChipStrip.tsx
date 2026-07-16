@@ -28,7 +28,11 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, clas
       return buildFeedTileDimensionSlots({ tags: [] }, []);
     }
     return buildFeedTileDimensionSlots(
-      { tags: resolveFeedTileDirectTagIds(card) },
+      {
+        tags: resolveFeedTileDirectTagIds(card),
+        subjectTagId: card.subjectTagId,
+        subjectTagIds: card.subjectTagIds,
+      },
       allTags
     );
   }, [allTags, card, tagsLoadingEffective]);
@@ -47,7 +51,7 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, clas
               className={clsx(styles.slot, empty && styles.slotEmpty)}
               data-dimension={slot.dimension}
               aria-label={ariaLabel}
-              title={empty ? undefined : slot.label}
+              title={empty ? undefined : slot.tooltip ?? slot.label}
             >
               {empty ? '-' : slot.label}
             </span>

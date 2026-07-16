@@ -410,7 +410,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Delivered inheritance applies the deduplicated union of confirmed Gallery-media tags to enabled card dimensions.
 - Existing card assignments begin as per-dimension overrides and do not change when inheritance is configured. Releasing an override re-inherits current Gallery-media truth.
 - Cards do not inherit tags from parent or child cards.
-- Closed tiles show Subject, one tag, Mixed, or `-`; Mixed is presentation, not a tag.
+- Closed tiles show the exact tag for a single assignment, `Multiple` for several assignments without an explicit subject, `Subjects+` when one or more subjects are selected, or `-` when empty; tooltips disclose the assigned tags and selected subjects, and presentation labels are not tags.
 - Question tags classify prompts; answer-card tags copy at creation and then diverge.
 - Future face processing prefers a quality cloud service for the initial private-family use case unless privacy or quality requires another model.
 

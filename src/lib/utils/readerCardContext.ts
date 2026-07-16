@@ -2,6 +2,7 @@ import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import { DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap, buildTagByIdMap } from '@/lib/utils/tagDimensionResolve';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
 
 export interface ReaderCardContextChip {
   dimension: TagDimension;
@@ -12,6 +13,8 @@ export interface FeedTileDimensionSlot {
   dimension: TagDimension;
   /** `null` = empty placeholder (`-` on tile). */
   label: string | null;
+  /** Exact assignments and explicit subjects for compact-tile disclosure. */
+  tooltip: string | null;
 }
 
 export interface ReaderCardPresentation {
@@ -222,11 +225,11 @@ export function buildReaderCardPresentation(card: Pick<Card, 'type' | 'tags'>, a
 
 /** Fixed Who / What / When / Where slots for closed feed tile chip rows. */
 export function buildFeedTileDimensionSlots(
-  card: Pick<Card, 'tags'>,
+  card: Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds'>,
   allTags: Tag[]
 ): FeedTileDimensionSlot[] {
   if (!allTags.length) {
-    return DIMENSION_ORDER.map((dimension) => ({ dimension, label: null }));
+    return DIMENSION_ORDER.map((dimension) => ({ dimension, label: null, tooltip: null }));
   }
 
   const tagById = buildTagByIdMap(allTags);
@@ -235,24 +238,38 @@ export function buildFeedTileDimensionSlots(
     .map((id) => tagById.get(id))
     .filter((tag): tag is Tag => Boolean(tag?.docId))
     .filter((tag) => !isOperationalSentinelTagName(tag.name));
+  const explicitSubjectTagIds = Array.from(new Set([
+    ...(card.subjectTagIds ?? []),
+    ...(card.subjectTagId ? [card.subjectTagId] : []),
+  ]));
 
   return DIMENSION_ORDER.map((dimension) => {
     const dimensionalDirectTags = directTags.filter(
       (tag) => resolvedDimensionById.get(tag.docId!) === dimension
     );
     if (dimensionalDirectTags.length === 0) {
-      return { dimension, label: null };
+      return { dimension, label: null, tooltip: null };
     }
-    const displayTag = getDisplayTagForDimension(
-      dimension,
-      dimensionalDirectTags,
-      tagById,
-      resolvedDimensionById
-    );
-    const label = displayTag?.name?.trim();
-    if (!label || isOperationalSentinelTagName(displayTag.name)) {
-      return { dimension, label: null };
+    const assigned = [...dimensionalDirectTags].sort((a, b) => a.name.localeCompare(b.name));
+    const assignedIds = assigned.map((tag) => tag.docId!);
+    const presentation = getDimensionSubjectPresentation(assignedIds, explicitSubjectTagIds);
+    if (presentation === 'implicit') {
+      const label = assigned[0]?.name.trim() || null;
+      return { dimension, label, tooltip: label };
     }
-    return { dimension, label };
+    const assignedNames = assigned.map((tag) => tag.name.trim()).filter(Boolean);
+    if (presentation === 'subjects') {
+      const assignedIdSet = new Set(assignedIds);
+      const subjectNames = explicitSubjectTagIds
+        .filter((id) => assignedIdSet.has(id))
+        .map((id) => tagById.get(id)?.name.trim())
+        .filter((name): name is string => Boolean(name));
+      return {
+        dimension,
+        label: 'Subjects+',
+        tooltip: `Subjects: ${subjectNames.join(', ')}\nAll: ${assignedNames.join(', ')}`,
+      };
+    }
+    return { dimension, label: 'Multiple', tooltip: assignedNames.join(', ') };
   });
 }

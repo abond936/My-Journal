@@ -6,6 +6,7 @@ import type { Tag } from '@/lib/types/tag';
 
 const mockTags: Tag[] = [
   { docId: 'who-1', name: 'Alan', dimension: 'who', path: ['who-1'] },
+  { docId: 'who-2', name: 'Sandra', dimension: 'who', path: ['who-2'] },
   { docId: 'what-1', name: 'Travel', dimension: 'what', path: ['what-1'] },
 ];
 
@@ -49,5 +50,26 @@ describe('FeedTileChipStrip', () => {
     expect(screen.getByLabelText('What: empty')).toHaveTextContent('-');
     expect(screen.getByLabelText('When: empty')).toHaveTextContent('-');
     expect(screen.getByLabelText('Where: empty')).toHaveTextContent('-');
+  });
+
+  it('renders Multiple or Subjects+ from direct assignments and explicit subjects', () => {
+    const { rerender } = render(
+      <FeedTileChipStrip card={baseCard({ tags: ['who-1', 'who-2'], who: ['who-1', 'who-2'] })} />
+    );
+    expect(screen.getByLabelText('Who: Multiple')).toHaveAttribute('title', 'Alan, Sandra');
+
+    rerender(
+      <FeedTileChipStrip
+        card={baseCard({
+          tags: ['who-1', 'who-2'],
+          who: ['who-1', 'who-2'],
+          subjectTagIds: ['who-2'],
+        })}
+      />
+    );
+    expect(screen.getByLabelText('Who: Subjects+')).toHaveAttribute(
+      'title',
+      'Subjects: Sandra\nAll: Alan, Sandra'
+    );
   });
 });
