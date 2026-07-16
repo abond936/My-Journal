@@ -2,9 +2,7 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
 import styles from './AdminLayout.module.css';
-import AdminFAB from './studio/cards/AdminFAB';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AdminPageWrapperProps {
@@ -13,7 +11,6 @@ interface AdminPageWrapperProps {
 
 export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   const { data: session, status } = useSession();
-  const pathname = usePathname();
 
   // Client session hydrates after first paint; `session` is undefined while `loading` — do not treat as denied.
   if (status === 'loading') {
@@ -43,7 +40,6 @@ export default function AdminPageWrapper({ children }: AdminPageWrapperProps) {
   return (
     <div className={styles.pageShell}>
       <div className={styles.pageContent}>{children}</div>
-      {pathname === '/admin/studio' ? null : <AdminFAB />}
     </div>
   );
 }

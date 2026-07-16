@@ -27,6 +27,8 @@ export default function AppShell({ children }: AppShellProps) {
     Boolean(pathname?.startsWith('/view/')) ||
     Boolean(pathname?.startsWith('/search/'));
   const isAdminRoute = Boolean(pathname?.startsWith('/admin'));
+  const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
+  const isSpecialistAdminRoute = isAdminRoute && !isStudioRoute;
   const shouldRenderShell =
     !isMarketingSurface &&
     (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
@@ -42,7 +44,7 @@ export default function AppShell({ children }: AppShellProps) {
     const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT_QUERY);
 
     const syncSidebarForViewport = (isMobile: boolean, forceDesktopDefault = false) => {
-      if (isMarketingRoute(pathname) || pathname?.startsWith('/admin/studio')) {
+      if (isMarketingRoute(pathname) || pathname?.startsWith('/admin')) {
         return;
       }
 
@@ -73,7 +75,7 @@ export default function AppShell({ children }: AppShellProps) {
       setSidebarOpen(false);
       return;
     }
-    if (pathname?.startsWith('/admin/studio')) {
+    if (pathname?.startsWith('/admin')) {
       setSidebarOpen(false);
     }
   }, [pathname]);
@@ -83,7 +85,7 @@ export default function AppShell({ children }: AppShellProps) {
   };
 
   const canUseMobileSwipe =
-    isMobileViewport && !isMarketingRoute(pathname) && !pathname?.startsWith('/admin/studio');
+    isMobileViewport && !isMarketingRoute(pathname) && !isAdminRoute;
 
   const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>, forceTrack = false) => {
     if (!canUseMobileSwipe) return;
@@ -159,7 +161,7 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className={styles.appShell}>
       <div className={styles.header}>
-        {!isMarketingSurface && (
+        {!isMarketingSurface && !isSpecialistAdminRoute && (
           <button
             className={styles.sidebarToggle}
             onClick={toggleSidebar}
@@ -189,7 +191,7 @@ export default function AppShell({ children }: AppShellProps) {
             aria-hidden="true"
           />
         ) : null}
-        {!isMarketingSurface && (
+        {!isMarketingSurface && !isSpecialistAdminRoute && (
           <>
             <div
               className={`${styles.sidebarBackdrop} ${isSidebarOpen ? styles.sidebarBackdropOpen : ''}`}

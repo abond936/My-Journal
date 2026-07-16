@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** None; Administration Definition Gate assessment is next.
+**Current active capability:** None; Interaction Feedback Definition Gate assessment is next.
 
 ---
 
@@ -75,7 +75,7 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 ## Tag Workflow and Identity
 
-**Definition:** Ready
+**Definition:** Not gated
 **Execution:** Verified
 
 **Outcome** — The author can reliably find, filter, assign, edit, and normalize tags without stale presentation, ambiguous hierarchy behavior, lost assignments, or silent reinterpretation. Who distinguishes stable human and non-human identities from names, human relationships, and groups.
@@ -139,13 +139,49 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 ## 1. Author workflow
 
-### Administration
+### Admin Shell
+
+**Definition:** Ready
+**Execution:** Verified
+
+**Outcome** — The author can enter Administration, identify the current workspace, and move coherently among Studio, Users, Settings, and Theme without competing navigation or unnecessary shell layers.
+
+**Actors** — Author and administrator.
+
+**Includes** — Administration entry and redirect, shared primary navigation, active-destination state, Theme entry behavior, desktop-only gate, shared page shell, specialist-page return to Studio, and removal of unused competing shell structures.
+
+**Excludes** — Cards, Compose, Media, Questions, Tags, or Collections feature behavior; specialist content inside Users, Settings, or Theme; cross-application feedback and messaging; Reader taxonomy correction; mobile authoring; theme-system redesign; and module reduction.
+
+**Contracts** — Studio remains the daily workspace for Cards, Compose, Media, Questions, Tags, and Collections. Users, Theme, and Settings remain specialist administrative destinations. Administration is desktop-primary. Reader and Administration share architecture but retain distinct presentation. This capability owns navigation and shell hierarchy only; interaction behavior remains with the surface that performs it. Theme retains its current governed overlay entry unless the Theme capability later changes that contract.
+
+**Current state** — `/admin` redirects to Studio. The global Navigation is the sole primary destination menu and exposes Studio, Users, Settings, and Theme with active states. Studio retains its sidebar and pane state. Users and Settings are clean specialist pages without the Reader/Studio sidebar or floating create-card action. Theme opens its governed overlay over the originating surface, uses the existing Administration desktop gate on admin routes, and retains its own gate when opened from Reader. The obsolete unused admin-tab component and styles are removed. Server authorization and the existing client session guard remain unchanged.
+
+**Gaps / slices** — None. Completion Gate passed.
+
+**Dependencies** — Existing authenticated administrator session, global Navigation, Admin layout and viewport gate, Theme provider and overlay, Studio route, and Users and Settings routes.
+
+**Risks** — Breaking authenticated entry, opening two Theme surfaces, losing the prior route when Theme closes, hiding Settings, duplicating navigation, introducing session-loading flashes, changing Studio pane state, or weakening the desktop boundary.
+
+**Decisions needed** — None. Users and Settings are clean specialist pages without the Reader/Studio sidebar or floating create-card action; primary navigation remains the route back to Studio.
+
+**Completion evidence** — Focused AppShell and Theme overlay tests pass with lint. Browser verification confirmed `/admin` entry, Studio sidebar retention, clean Users and Settings shells, primary-menu return to Studio, Theme overlay entry, and one desktop-only blocker at narrow viewport. Destination content, authentication, Reader behavior, and Studio feature behavior were not changed. Completion Gate passed and canon is reconciled.
+
+### Interaction Feedback
 
 **Definition:** Not gated
 
-- **Consistency** — Align progress, errors, selection, filters, and drag behavior across Studio.
-- **Hierarchy** — Reduce unnecessary visual layers while preserving workspace ownership.
-- **Boundary** — Keep full taxonomy management in Studio and focused correction in Reader.
+- **States** — Define success, error, warning, progress, confirmation, and blocking behavior.
+- **Duration** — Standardize what disappears, persists, blocks, or permits continued work.
+- **System** — Reconcile shared feedback with remaining browser-native and surface-local dialogs.
+- **Scope** — Apply one contract across Administration and Reader without rewriting surface-specific instructions as generic messages.
+
+### Reader Boundary
+
+**Definition:** Not gated
+
+- **Taxonomy** — Keep creation, deletion, hierarchy, and library reorganization in Studio.
+- **Correction** — Retain focused assignment and correction while editing Reader content.
+- **Conflict** — Remove the current full Studio tag-library editor from the Reader sidebar without weakening Reader filtering.
 
 ### Studio Cards
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import AdminDesktopOnlyGate from '@/components/admin/AdminDesktopOnlyGate';
 import ThemeAdminPage from '@/components/admin/theme-admin/ThemeAdminPage';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -75,6 +76,7 @@ function constrainOverlayRect(rect: OverlayRect): OverlayRect {
 
 export default function ThemeAdminOverlay() {
   const { isThemeAdminOpen, closeThemeAdmin } = useTheme();
+  const pathname = usePathname();
   const interactionRef = useRef<InteractionState>(null);
   const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
 
@@ -234,9 +236,8 @@ export default function ThemeAdminOverlay() {
     return null;
   }
 
-  return (
-    <AdminDesktopOnlyGate>
-      <div className="themeDraftAdminScope">
+  const overlay = (
+    <div className="themeDraftAdminScope">
         <div
           className={styles.scrim}
         >
@@ -282,7 +283,10 @@ export default function ThemeAdminOverlay() {
             </div>
           </aside>
         </div>
-      </div>
-    </AdminDesktopOnlyGate>
+    </div>
   );
+
+  return pathname?.startsWith('/admin')
+    ? overlay
+    : <AdminDesktopOnlyGate>{overlay}</AdminDesktopOnlyGate>;
 }

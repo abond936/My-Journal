@@ -255,11 +255,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Themes** — Governed theme authoring workspace.
 - **Settings** — Archive preferences and operations.
 - **Suggestions** — Provisional grouping and tag assistance separated from confirmed truth.
+- **Shell** — Coherent entry and primary navigation for Studio, Users, Settings, and Theme; specialist pages exclude Reader/Studio chrome.
 
 ⭕1 **Planned**
 
-- **Consistency** — Align progress, errors, selection, filters, and drag behavior across Studio.
-- **Hierarchy** — Reduce unnecessary visual layers while preserving workspace ownership.
+- **Feedback** — Standardize success, error, warning, progress, confirmation, and blocking behavior across the application.
 - **Boundary** — Keep full taxonomy management in Studio and focused correction in Reader.
 
 ⭕2 **Future**

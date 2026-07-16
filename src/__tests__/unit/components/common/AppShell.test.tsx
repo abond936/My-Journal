@@ -154,4 +154,35 @@ describe('AppShell mobile sidebar drawer', () => {
     expect(screen.getByTestId('navigation')).toBeInTheDocument();
     expect(screen.getByTestId('global-sidebar')).toBeInTheDocument();
   });
+
+  it('keeps the Studio sidebar available but removes Reader chrome from specialist admin pages', async () => {
+    mockMatchMedia(false);
+    mockedUseSession.mockReturnValue({
+      status: 'authenticated',
+      data: { user: { role: 'admin' } },
+      update: jest.fn(),
+    } as never);
+    mockedUsePathname.mockReturnValue('/admin/studio');
+
+    const { rerender } = render(
+      <AppShell>
+        <div>Admin content</div>
+      </AppShell>
+    );
+
+    expect(screen.getByRole('button', { name: 'Toggle sidebar' })).toBeTruthy();
+    expect(screen.getByTestId('global-sidebar')).toBeTruthy();
+
+    mockedUsePathname.mockReturnValue('/admin/settings');
+    rerender(
+      <AppShell>
+        <div>Admin content</div>
+      </AppShell>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Toggle sidebar' })).toBeNull();
+      expect(screen.queryByTestId('global-sidebar')).toBeNull();
+    });
+  });
 });
