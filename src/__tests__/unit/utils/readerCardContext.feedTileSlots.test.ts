@@ -46,7 +46,7 @@ describe('buildFeedTileDimensionSlots', () => {
     });
   });
 
-  it('shows Subjects+ and discloses selected subjects for several assignments', () => {
+  it('shows one selected subject by name and discloses all assignments', () => {
     const tags = [...allTags, { docId: 'who-2', name: 'Mildred Davis', dimension: 'who', path: ['who-2'] } as Tag];
     const who = buildFeedTileDimensionSlots({
       tags: ['who-1', 'who-2'],
@@ -54,8 +54,21 @@ describe('buildFeedTileDimensionSlots', () => {
     }, tags)[0];
     expect(who).toEqual({
       dimension: 'who',
-      label: 'Subjects+',
+      label: 'Mildred Davis',
       tooltip: 'Subjects: Mildred Davis\nAll: Ed Davis, Mildred Davis',
+    });
+  });
+
+  it('shows Subjects+ when several subjects are selected', () => {
+    const tags = [...allTags, { docId: 'who-2', name: 'Mildred Davis', dimension: 'who', path: ['who-2'] } as Tag];
+    const who = buildFeedTileDimensionSlots({
+      tags: ['who-1', 'who-2'],
+      subjectTagIds: ['who-1', 'who-2'],
+    }, tags)[0];
+    expect(who).toEqual({
+      dimension: 'who',
+      label: 'Subjects+',
+      tooltip: 'Subjects: Ed Davis, Mildred Davis\nAll: Ed Davis, Mildred Davis',
     });
   });
 

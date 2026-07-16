@@ -247,15 +247,17 @@ export default function DimensionalTagVerticalChips({
         const firstName = tagById.get(firstId)?.name ?? firstId;
         const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
         const presentation = getDimensionSubjectPresentation(ids, currentSubjectTagIds);
-        const displayName = presentation === 'multiple'
-          ? 'Multiple'
-          : presentation === 'subjects'
-            ? 'Subjects+'
-            : firstName;
         const selectedSubjectNames = currentSubjectTagIds
           .filter((id) => ids.includes(id))
           .map((id) => tagById.get(id)?.name ?? id);
-        const isSubject = presentation === 'implicit' || presentation === 'subjects';
+        const displayName = presentation === 'multiple'
+          ? 'Multiple'
+          : presentation === 'subject'
+            ? selectedSubjectNames[0] ?? firstName
+          : presentation === 'subjects'
+            ? 'Subjects+'
+            : firstName;
+        const isSubject = presentation === 'implicit' || presentation === 'subject' || presentation === 'subjects';
         const rowTitle = `${label}: ${displayName}\nTags: ${allNames}${selectedSubjectNames.length ? `\nSelected subjects: ${selectedSubjectNames.join(', ')}` : ''}`;
 
         return (

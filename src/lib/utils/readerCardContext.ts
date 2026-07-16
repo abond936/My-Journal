@@ -258,7 +258,7 @@ export function buildFeedTileDimensionSlots(
       return { dimension, label, tooltip: label };
     }
     const assignedNames = assigned.map((tag) => tag.name.trim()).filter(Boolean);
-    if (presentation === 'subjects') {
+    if (presentation === 'subject' || presentation === 'subjects') {
       const assignedIdSet = new Set(assignedIds);
       const subjectNames = explicitSubjectTagIds
         .filter((id) => assignedIdSet.has(id))
@@ -266,7 +266,7 @@ export function buildFeedTileDimensionSlots(
         .filter((name): name is string => Boolean(name));
       return {
         dimension,
-        label: 'Subjects+',
+        label: presentation === 'subject' ? subjectNames[0] ?? 'Multiple' : 'Subjects+',
         tooltip: `Subjects: ${subjectNames.join(', ')}\nAll: ${assignedNames.join(', ')}`,
       };
     }

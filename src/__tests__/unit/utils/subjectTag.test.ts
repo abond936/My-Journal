@@ -13,7 +13,8 @@ describe('subjectTag contract', () => {
   it('distinguishes implicit, Multiple, and Subjects+ presentation', () => {
     expect(getDimensionSubjectPresentation(['chicago'], [])).toBe('implicit');
     expect(getDimensionSubjectPresentation(['chicago', 'evanston'], [])).toBe('multiple');
-    expect(getDimensionSubjectPresentation(['chicago', 'evanston'], ['chicago'])).toBe('subjects');
+    expect(getDimensionSubjectPresentation(['chicago', 'evanston'], ['chicago'])).toBe('subject');
+    expect(getDimensionSubjectPresentation(['chicago', 'evanston'], ['chicago', 'evanston'])).toBe('subjects');
   });
   it('accepts an explicit assigned subject and derives ancestor filter tags', async () => {
     const result = await resolveSubjectTagState({

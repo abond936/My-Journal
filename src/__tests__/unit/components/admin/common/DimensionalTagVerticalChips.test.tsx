@@ -26,7 +26,7 @@ describe('DimensionalTagVerticalChips', () => {
       />
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /subjects\+/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Bob' }));
 
     const dialog = screen.getByRole('dialog', { name: 'Who tags' });
     expect(within(dialog).getByRole('button', { name: 'Alan' })).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('DimensionalTagVerticalChips', () => {
       />
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /subjects\+/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Alan' }));
     const dialog = screen.getByRole('dialog', { name: 'Who tags' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Bob' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Subject' }));
@@ -115,6 +115,6 @@ describe('DimensionalTagVerticalChips', () => {
         onUpdateTags={jest.fn()}
       />
     );
-    expect(screen.getByRole('button', { name: 'Subjects+' })).toHaveAttribute('title', expect.stringContaining('Selected subjects: Alan'));
+    expect(screen.getByRole('button', { name: 'Alan' })).toHaveAttribute('title', expect.stringContaining('Selected subjects: Alan'));
   });
 });

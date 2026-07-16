@@ -139,6 +139,8 @@ function buildCardThumbnailTooltip(card: Card, allTags: Tag[]): string {
       const presentation = getDimensionSubjectPresentation(core[dimension], explicitSubjects);
       const value = presentation === 'multiple'
         ? 'Multiple'
+        : presentation === 'subject'
+          ? tagById.get(explicitSubjects.find((id) => core[dimension].includes(id)) ?? '')?.name ?? 'Multiple'
         : presentation === 'subjects'
           ? 'Subjects+'
           : tagById.get(core[dimension][0])?.name ?? core[dimension][0];

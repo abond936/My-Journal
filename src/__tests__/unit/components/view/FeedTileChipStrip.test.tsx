@@ -67,7 +67,7 @@ describe('FeedTileChipStrip', () => {
         })}
       />
     );
-    expect(screen.getByLabelText('Who: Subjects+')).toHaveAttribute(
+    expect(screen.getByLabelText('Who: Sandra')).toHaveAttribute(
       'title',
       'Subjects: Sandra\nAll: Alan, Sandra'
     );
