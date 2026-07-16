@@ -162,13 +162,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const hasObjectPosition = 'objectPosition' in body && body.objectPosition !== undefined;
     const hasTags = 'tags' in body && body.tags !== undefined;
     const hasSubjectTagId = 'subjectTagId' in body;
+    const hasSubjectTagIds = 'subjectTagIds' in body;
 
-    if (!hasCaption && !hasObjectPosition && !hasTags && !hasSubjectTagId) {
+    if (!hasCaption && !hasObjectPosition && !hasTags && !hasSubjectTagId && !hasSubjectTagIds) {
       return errorResponse(
         {
           ok: false,
           code: 'MEDIA_PATCH_FIELDS_REQUIRED',
-          message: 'Provide at least one of: caption, objectPosition, tags, subjectTagId.',
+          message: 'Provide at least one of: caption, objectPosition, tags, subjectTagId, subjectTagIds.',
           severity: 'error',
           retryable: false,
         },
@@ -181,6 +182,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       objectPosition?: string;
       tags?: string[];
       subjectTagId?: string | null;
+      subjectTagIds?: string[];
     } = {};
 
     if (hasCaption) {
@@ -233,6 +235,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         );
       }
       patch.subjectTagId = typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null;
+    }
+
+    if (hasSubjectTagIds) {
+      if (!Array.isArray(body.subjectTagIds) || body.subjectTagIds.some((id) => typeof id !== 'string')) {
+        return errorResponse(
+          {
+            ok: false,
+            code: 'MEDIA_SUBJECT_TAGS_INVALID',
+            message: 'subjectTagIds must be an array of strings.',
+            severity: 'error',
+            retryable: false,
+          },
+          400
+        );
+      }
+      patch.subjectTagIds = Array.from(new Set(body.subjectTagIds.map((id) => (id as string).trim()).filter(Boolean)));
     }
 
     await patchMediaDocument(mediaId, patch);

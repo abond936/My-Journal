@@ -135,7 +135,7 @@ export function computeGalleryInheritanceResult(
   toggles: GalleryTagInheritanceToggles,
   allTags: Tag[],
   currentStatuses?: Partial<GalleryTagRollupStatuses>
-): { tags: string[]; statuses: GalleryTagRollupStatuses } {
+): { tags: string[]; statuses: GalleryTagRollupStatuses; implicitSubjectTagIds: string[] } {
   const resolved = buildResolvedTagDimensionMap(allTags);
   const next = new Set(currentTags);
   const statuses: GalleryTagRollupStatuses = {
@@ -144,11 +144,13 @@ export function computeGalleryInheritanceResult(
     when: currentStatuses?.when ?? 'empty',
     where: currentStatuses?.where ?? 'empty',
   };
+  const implicitSubjectTagIds: string[] = [];
 
   for (const dimension of DIMENSION_ORDER) {
     if (!toggles[dimension]) continue;
     const rollup = computeGalleryDimensionRollup(galleryMedia, dimension, resolved);
     statuses[dimension] = rollup.status;
+    implicitSubjectTagIds.push(...rollup.implicitSubjectTagIds);
 
     for (const id of currentTags) {
       if (resolved.get(id) === dimension) next.delete(id);
@@ -159,6 +161,7 @@ export function computeGalleryInheritanceResult(
   return {
     tags: Array.from(next).sort((a, b) => a.localeCompare(b)),
     statuses,
+    implicitSubjectTagIds,
   };
 }
 

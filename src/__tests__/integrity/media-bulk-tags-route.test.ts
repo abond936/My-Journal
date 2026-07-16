@@ -127,6 +127,21 @@ describe('POST /api/admin/media/tags', () => {
     expect(mockedRecomputeCardsMediaSignalsForMediaIds).toHaveBeenCalledWith(['m1']);
     expect(payload).toMatchObject({ ok: true, updated: 1 });
   });
+
+  it('accepts multiple subjects in a bulk media update', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1'] });
+    const req = {
+      json: async () => ({ mediaIds: ['m1'], subjectTagIds: ['alan', 'bob'] }),
+    } as NextRequest;
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1'], {
+      subjectTagIds: ['alan', 'bob'],
+      subjectTagIdsProvided: true,
+    });
+  });
 });
 
 describe('DELETE /api/images/[id]', () => {

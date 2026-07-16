@@ -34,6 +34,7 @@ export interface MediaAdminGridCellProps {
   allTags: ReturnType<typeof useTag>['tags'];
   onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
   onSaveSubjectTag: (mediaId: string, nextSubjectTagId: string | null) => Promise<void>;
+  onSaveSubjectTags: (mediaId: string, nextSubjectTagIds: string[]) => Promise<void>;
   onSaveMediaFields: (
     mediaId: string,
     updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>
@@ -99,6 +100,7 @@ function MediaAdminGridCell({
   isAssignedToActiveCard = false,
   authoritativeRelatedCardIds = null,
   onSaveSubjectTag,
+  onSaveSubjectTags,
   stackMemberCount = 0,
   stackExpanded = false,
   onToggleStackExpand,
@@ -163,6 +165,13 @@ function MediaAdminGridCell({
       setSaveNotice('Subject saved');
     },
     [media.docId, onSaveSubjectTag]
+  );
+  const handleSubjectsUpdate = useCallback(
+    async (nextSubjectTagIds: string[]) => {
+      await onSaveSubjectTags(media.docId!, nextSubjectTagIds);
+      setSaveNotice('Subjects saved');
+    },
+    [media.docId, onSaveSubjectTags]
   );
 
   const handleSelectionClick = useCallback(
@@ -443,12 +452,13 @@ function MediaAdminGridCell({
             />
           <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
             <CardDimensionalTagCommandBar
-              card={{ tags: media.tags ?? [], subjectTagId: media.subjectTagId ?? null }}
+              card={{ tags: media.tags ?? [], subjectTagId: media.subjectTagId ?? null, subjectTagIds: media.subjectTagIds ?? [] }}
               allTags={allTags ?? []}
               variant="searchOnly"
               suggestionsDensity="dense"
               onUpdateTags={handleTagUpdate}
               onUpdateSubjectTagId={handleSubjectUpdate}
+              onUpdateSubjectTagIds={handleSubjectsUpdate}
             />
           </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
@@ -488,6 +498,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
     prev.onSaveSubjectTag === next.onSaveSubjectTag &&
+    prev.onSaveSubjectTags === next.onSaveSubjectTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -538,6 +549,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.allTags === next.allTags &&
     prev.onSaveTags === next.onSaveTags &&
     prev.onSaveSubjectTag === next.onSaveSubjectTag &&
+    prev.onSaveSubjectTags === next.onSaveSubjectTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -713,6 +725,13 @@ export default function MediaAdminGrid({
     },
     [updateMedia]
   );
+  const handleSaveSubjectTags = useCallback(
+    async (mediaId: string, nextSubjectTagIds: string[]) => {
+      const updated = await updateMedia(mediaId, { subjectTagIds: nextSubjectTagIds });
+      if (!updated) throw new Error('Subjects update failed. Please retry.');
+    },
+    [updateMedia]
+  );
 
   const handleSelectAllOnPage = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -782,6 +801,7 @@ export default function MediaAdminGrid({
               allTags={tags}
               onSaveTags={handleSaveTags}
               onSaveSubjectTag={handleSaveSubjectTag}
+              onSaveSubjectTags={handleSaveSubjectTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}
@@ -800,6 +820,7 @@ export default function MediaAdminGrid({
               allTags={tags}
               onSaveTags={handleSaveTags}
               onSaveSubjectTag={handleSaveSubjectTag}
+              onSaveSubjectTags={handleSaveSubjectTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}

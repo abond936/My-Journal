@@ -337,6 +337,12 @@ const CardForm: React.FC = () => {
     void persistFieldPatch({ subjectTagId: nextSubjectTagId });
   }, [lastSavedState.cardData.subjectTagId, persistFieldPatch, setField]);
 
+  const handleSubjectTagIdsChange = useCallback((nextSubjectTagIds: string[]) => {
+    setField('subjectTagIds', nextSubjectTagIds);
+    setField('subjectTagId', nextSubjectTagIds[0] ?? null);
+    void persistFieldPatch({ subjectTagIds: nextSubjectTagIds });
+  }, [persistFieldPatch, setField]);
+
   const handleGalleryInheritanceChange = useCallback((dimension: TagDimension, inherit: boolean) => {
     const current = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
     const next = { ...current, [dimension]: !inherit };
@@ -1167,6 +1173,7 @@ const CardForm: React.FC = () => {
                   stackTagsWithinDimension
                   onUpdateTags={handleTagsChange}
                   onUpdateSubjectTagId={handleSubjectTagChange}
+                  onUpdateSubjectTagIds={handleSubjectTagIdsChange}
                   tagError={errors.tags}
                   className={styles.tagCommandBar}
                   trailingSlot={null}
@@ -1391,6 +1398,7 @@ const CardForm: React.FC = () => {
               stackTagsWithinDimension
               onUpdateTags={handleTagsChange}
               onUpdateSubjectTagId={handleSubjectTagChange}
+              onUpdateSubjectTagIds={handleSubjectTagIdsChange}
               footerContent={galleryInheritanceControls}
               tagError={errors.tags}
               className={styles.tagCommandBar}

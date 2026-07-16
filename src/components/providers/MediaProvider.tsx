@@ -70,6 +70,8 @@ export type MediaBulkTagUpdateRequest = {
   mode?: 'add' | 'replace' | 'remove';
   subjectTagId?: string | null;
   subjectTagIdProvided?: boolean;
+  subjectTagIds?: string[];
+  subjectTagIdsProvided?: boolean;
 };
 
 function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
@@ -885,6 +887,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           tags?: string[];
           mode?: 'add' | 'replace' | 'remove';
           subjectTagId?: string | null;
+          subjectTagIds?: string[];
         } = { mediaIds };
 
         if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) {
@@ -893,6 +896,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         if (updates.subjectTagIdProvided) {
           payload.subjectTagId = updates.subjectTagId ?? null;
+        }
+        if (updates.subjectTagIdsProvided) {
+          payload.subjectTagIds = updates.subjectTagIds ?? [];
         }
 
         const response = await fetch('/api/admin/media/tags', {

@@ -64,6 +64,7 @@ export const mediaSchema = z.object({
    */
   tags: z.array(z.string()).optional(),
   subjectTagId: z.string().min(1).nullable().optional(),
+  subjectTagIds: z.array(z.string().min(1)).optional(),
   subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   who: z.array(z.string()).optional(),

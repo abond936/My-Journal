@@ -13,7 +13,7 @@ import {
   syncMediaToTypesenseById,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
-import { normalizeSubjectTagId, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { normalizeSubjectTagId, normalizeSubjectTagIds, resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { normalizeBufferToWebp, isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 import {
   readEmbeddedCaptionAndKeywords,
@@ -570,7 +570,7 @@ export async function importFromBuffer(
   }
 }
 
-type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagId'>>;
+type MediaPatchFields = Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagId' | 'subjectTagIds'>>;
 
 const BULK_MEDIA_TAGS_CHUNK_SIZE = 400;
 
@@ -641,13 +641,14 @@ async function deriveMediaTagFields(
 async function applyTagFieldsToPayload(
   payload: Record<string, unknown>,
   tagIds: string[],
-  subjectState: Pick<Media, 'subjectTagId' | 'subjectFilterTags'>,
+  subjectState: Pick<Media, 'subjectTagId' | 'subjectTagIds' | 'subjectFilterTags'>,
   allTags?: Tag[]
 ): Promise<void> {
   const raw = tagIds.filter((id): id is string => typeof id === 'string');
   const { filterTags, dimensionalTags } = await calculateDerivedTagData(raw, allTags);
   payload.tags = raw;
   payload.subjectTagId = subjectState.subjectTagId;
+  payload.subjectTagIds = subjectState.subjectTagIds;
   payload.subjectFilterTags = subjectState.subjectFilterTags;
   payload.filterTags = filterTags;
   payload.who = dimensionalTags.who ?? [];
@@ -678,12 +679,13 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
     updates.caption !== undefined ||
     updates.objectPosition !== undefined ||
     updates.tags !== undefined ||
-    updates.subjectTagId !== undefined;
+    updates.subjectTagId !== undefined ||
+    updates.subjectTagIds !== undefined;
   if (!hasField) {
     throw new Error('No valid fields to update.');
   }
 
-  if (updates.tags !== undefined || updates.subjectTagId !== undefined) {
+  if (updates.tags !== undefined || updates.subjectTagId !== undefined || updates.subjectTagIds !== undefined) {
     if (updates.tags !== undefined && !Array.isArray(updates.tags)) {
       throw new Error('tags must be an array of tag IDs.');
     }
@@ -704,8 +706,11 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
       const subjectState = await resolveSubjectTagState({
         assignedTagIds: newTags,
         existingSubjectTagId: existingMedia.subjectTagId,
+        existingSubjectTagIds: existingMedia.subjectTagIds,
         requestedSubjectTagId: updates.subjectTagId,
+        requestedSubjectTagIds: updates.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
+        subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagIds'),
         allTags,
       });
       await updateTagCountsForMedia(oldTags, newTags, tx, tagPathLookup);
@@ -755,7 +760,9 @@ export async function bulkApplyMediaTags(
     tagIds?: string[];
     mode?: 'add' | 'replace' | 'remove';
     subjectTagId?: string | null;
+    subjectTagIds?: string[];
     subjectTagIdProvided?: boolean;
+    subjectTagIdsProvided?: boolean;
   }
 ): Promise<{ updatedIds: string[]; updatedMedia: Media[] }> {
   const ids = Array.from(
@@ -764,7 +771,7 @@ export async function bulkApplyMediaTags(
   if (!ids.length) return { updatedIds: [], updatedMedia: [] };
 
   const hasTagMutation = Object.prototype.hasOwnProperty.call(updates, 'tagIds');
-  const hasSubjectMutation = updates.subjectTagIdProvided === true;
+  const hasSubjectMutation = updates.subjectTagIdProvided === true || updates.subjectTagIdsProvided === true;
   if (!hasTagMutation && !hasSubjectMutation) {
     return { updatedIds: [], updatedMedia: [] };
   }
@@ -815,12 +822,16 @@ export async function bulkApplyMediaTags(
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: nextTags,
           existingSubjectTagId: media.subjectTagId,
+          existingSubjectTagIds: media.subjectTagIds,
           requestedSubjectTagId: updates.subjectTagId,
+          requestedSubjectTagIds: updates.subjectTagIds,
           subjectTagIdProvided: hasSubjectMutation,
+          subjectTagIdsProvided: updates.subjectTagIdsProvided === true,
           allTags,
         });
         const subjectUnchanged =
-          normalizeSubjectTagId(media.subjectTagId) === subjectState.subjectTagId;
+          normalizeSubjectTagId(media.subjectTagId) === subjectState.subjectTagId &&
+          JSON.stringify(normalizeSubjectTagIds(media.subjectTagIds)) === JSON.stringify(subjectState.subjectTagIds);
         if (tagsUnchanged && subjectUnchanged) continue;
 
         const payload: Record<string, unknown> = { updatedAt: Date.now() };
@@ -847,6 +858,7 @@ export async function bulkApplyMediaTags(
         }
         if (hasTagMutation || hasSubjectMutation) {
           payload.subjectTagId = subjectState.subjectTagId;
+          payload.subjectTagIds = subjectState.subjectTagIds;
           payload.subjectFilterTags = subjectState.subjectFilterTags;
         }
 

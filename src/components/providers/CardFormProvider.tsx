@@ -606,14 +606,19 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           keysToSync.add('type');
           keysToSync.add('displayMode');
         }
+        if (keysToSync.has('subjectTagIds')) {
+          keysToSync.add('subjectTagId');
+          keysToSync.add('subjectFilterTags');
+        }
         if (keysToSync.has('galleryTagInheritanceOverrides')) {
           (
             [
-              'tags', 'subjectTagId', 'subjectFilterTags', 'filterTags',
+              'tags', 'subjectTagId', 'subjectTagIds', 'subjectFilterTags', 'filterTags',
               'who', 'what', 'when', 'where',
               'journalWhenSortAsc', 'journalWhenSortDesc',
               'whoSortKey', 'whatSortKey', 'whereSortKey',
               'galleryTagRollupStatuses',
+              'galleryImplicitSubjectTagIds',
             ] as Array<keyof CardUpdate>
           ).forEach((key) => keysToSync.add(key));
         }

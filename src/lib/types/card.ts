@@ -86,7 +86,9 @@ export const cardSchema = z.object({
   tags: z.array(z.string()).optional(),
   galleryTagInheritanceOverrides: galleryTagInheritanceTogglesSchema.optional(),
   galleryTagRollupStatuses: galleryTagRollupStatusesSchema.optional(),
+  galleryImplicitSubjectTagIds: z.array(z.string().min(1)).optional(),
   subjectTagId: z.string().min(1).nullable().optional(),
+  subjectTagIds: z.array(z.string().min(1)).optional(),
   subjectFilterTags: z.record(z.boolean()).optional(),
   filterTags: z.record(z.boolean()).optional(),
   
@@ -148,6 +150,7 @@ export const cardUpdateValidationSchema = cardSchema.partial().omit({
   filterTags: true,
   subjectFilterTags: true,
   galleryTagRollupStatuses: true,
+  galleryImplicitSubjectTagIds: true,
   who: true,
   what: true,
   when: true,

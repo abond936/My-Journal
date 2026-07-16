@@ -29,12 +29,14 @@ export async function POST(request: NextRequest) {
         tags?: unknown;
         mode?: unknown;
         subjectTagId?: unknown;
+        subjectTagIds?: unknown;
       };
       const mediaIds = body.mediaIds;
       const tagsProvided = Object.prototype.hasOwnProperty.call(body, 'tags');
       const tags = body.tags;
       const mode = body.mode;
       const subjectTagIdProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagId');
+      const subjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagIds');
 
       const mediaIdsResult = validateStringIdArray(mediaIds, {
         field: 'mediaIds',
@@ -51,10 +53,10 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (!tagsProvided && !subjectTagIdProvided) {
+      if (!tagsProvided && !subjectTagIdProvided && !subjectTagIdsProvided) {
         return apiRouteError({
           code: 'MEDIA_TAGS_UPDATES_REQUIRED',
-          message: 'Provide tags and/or subjectTagId.',
+          message: 'Provide tags, subjectTagId, and/or subjectTagIds.',
           status: 400,
           retryable: false,
         });
@@ -98,6 +100,17 @@ export async function POST(request: NextRequest) {
           retryable: false,
         });
       }
+      let validatedSubjectTagIds: string[] | undefined;
+      if (subjectTagIdsProvided) {
+        const result = validateStringIdArray(body.subjectTagIds, {
+          field: 'subjectTagIds',
+          max: API_INPUT_CAPS.bulkTagIdsMax,
+        });
+        if (isInputCapFailure(result)) {
+          return apiRouteInputCapError(result.error, { code: 'MEDIA_TAGS_SUBJECTS_INVALID' });
+        }
+        validatedSubjectTagIds = result.ids;
+      }
 
       const ids = mediaIdsResult.ids;
       const effectiveMode = mode === 'replace' || mode === 'remove' || mode === 'add' ? mode : 'add';
@@ -117,6 +130,9 @@ export async function POST(request: NextRequest) {
               subjectTagId: typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null,
               subjectTagIdProvided: true,
             }
+          : {}),
+        ...(subjectTagIdsProvided
+          ? { subjectTagIds: validatedSubjectTagIds ?? [], subjectTagIdsProvided: true }
           : {}),
       });
       if (updatedIds.length) {

@@ -101,4 +101,20 @@ describe('CardDimensionalTagCommandBar', () => {
       'Who requires review because at least one Gallery item is blank.'
     );
   });
+
+  it('adds and removes subjects without replacing the other selected subjects', async () => {
+    const onUpdateSubjectTagIds = jest.fn(async () => undefined);
+    render(
+      <CardDimensionalTagCommandBar
+        card={{ tags: ['alan', 'bob', 'party'], subjectTagId: 'alan', subjectTagIds: ['alan'] }}
+        allTags={tags}
+        onUpdateTags={jest.fn()}
+        onUpdateSubjectTagIds={onUpdateSubjectTagIds}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Bob' }));
+    await userEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Subject' }));
+    expect(onUpdateSubjectTagIds).toHaveBeenCalledWith(['alan', 'bob']);
+  });
 });

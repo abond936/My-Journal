@@ -115,6 +115,7 @@ describe('galleryTagInheritance', () => {
     )).toEqual({
       tags: ['what-old'],
       statuses: { who: 'unreviewed', what: 'reviewed', when: 'empty', where: 'empty' },
+      implicitSubjectTagIds: [],
     });
   });
 
@@ -128,6 +129,7 @@ describe('galleryTagInheritance', () => {
     )).toEqual({
       tags: ['who-na'],
       statuses: { who: 'reviewed', what: 'empty', when: 'empty', where: 'empty' },
+      implicitSubjectTagIds: ['who-na'],
     });
     expect(computeGalleryInheritanceResult(
       ['who-na'],
@@ -137,6 +139,7 @@ describe('galleryTagInheritance', () => {
     )).toEqual({
       tags: [],
       statuses: { who: 'empty', what: 'empty', when: 'empty', where: 'empty' },
+      implicitSubjectTagIds: [],
     });
   });
 

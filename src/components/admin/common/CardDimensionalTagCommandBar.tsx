@@ -60,19 +60,20 @@ function dimensionChipClassName(dimension: TagDimension): string {
   }
 }
 
-function orderDimensionTagIds(tagIds: string[], subjectTagId: string | null): string[] {
-  if (!subjectTagId || !tagIds.includes(subjectTagId)) {
-    return tagIds;
-  }
-  return [subjectTagId, ...tagIds.filter((tagId) => tagId !== subjectTagId)];
+function orderDimensionTagIds(tagIds: string[], subjectTagIds: string[]): string[] {
+  const subjects = subjectTagIds.filter((tagId) => tagIds.includes(tagId));
+  if (subjects.length === 0) return tagIds;
+  const subjectSet = new Set(subjects);
+  return [...subjects, ...tagIds.filter((tagId) => !subjectSet.has(tagId))];
 }
 
 export interface CardDimensionalTagCommandBarProps {
   /** Tag assignment only; full `Card` is accepted at call sites. */
-  card: Pick<Card, 'tags' | 'subjectTagId' | 'galleryTagRollupStatuses'>;
+  card: Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryTagRollupStatuses' | 'galleryImplicitSubjectTagIds'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
+  onUpdateSubjectTagIds?: (nextSubjectTagIds: string[]) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
   variant?: 'default' | 'compact' | 'searchOnly';
@@ -99,6 +100,7 @@ export default function CardDimensionalTagCommandBar({
   allTags,
   onUpdateTags,
   onUpdateSubjectTagId,
+  onUpdateSubjectTagIds,
   disabled = false,
   className,
   variant = 'default',
@@ -147,15 +149,19 @@ export default function CardDimensionalTagCommandBar({
     [card.tags, resolvedDimension]
   );
   const subjectTagId = card.subjectTagId ?? null;
+  const subjectTagIds = useMemo(
+    () => card.subjectTagIds?.length ? card.subjectTagIds : subjectTagId ? [subjectTagId] : [],
+    [card.subjectTagIds, subjectTagId]
+  );
   const orderedCore = useMemo(
     () =>
       Object.fromEntries(
         DIMENSION_ORDER.map((dimension) => [
           dimension,
-          orderDimensionTagIds(core[dimension], subjectTagId),
+          orderDimensionTagIds(core[dimension], subjectTagIds),
         ])
       ) as Record<TagDimension, string[]>,
-    [core, subjectTagId]
+    [core, subjectTagIds]
   );
 
   const suggestions = useMemo(() => {
@@ -259,10 +265,25 @@ export default function CardDimensionalTagCommandBar({
 
   const toggleSubject = useCallback(
     async (tagId: string) => {
+      if (onUpdateSubjectTagIds) {
+        const next = subjectTagIds.includes(tagId)
+          ? subjectTagIds.filter((id) => id !== tagId)
+          : [...subjectTagIds, tagId];
+        setSaving(true);
+        setSaveError(null);
+        try {
+          await onUpdateSubjectTagIds(next);
+        } catch (e) {
+          setSaveError(e instanceof Error ? e.message : 'Failed to update subjects');
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
       if (!onUpdateSubjectTagId) return;
       await persistSubjectTag(subjectTagId === tagId ? null : tagId);
     },
-    [onUpdateSubjectTagId, persistSubjectTag, subjectTagId]
+    [onUpdateSubjectTagId, onUpdateSubjectTagIds, persistSubjectTag, subjectTagId, subjectTagIds]
   );
 
   const openTagMenu = useCallback((tagId: string, anchor: HTMLElement) => {
@@ -332,7 +353,7 @@ export default function CardDimensionalTagCommandBar({
   const renderChip = useCallback(
     (dimension: TagDimension, id: string) => {
       const tagName = tagById.get(id)?.name ?? id;
-      const isSubject = subjectTagId === id;
+      const isSubject = subjectTagIds.includes(id) || (card.galleryImplicitSubjectTagIds ?? []).includes(id);
       return (
         <button
           key={id}
@@ -382,7 +403,8 @@ export default function CardDimensionalTagCommandBar({
       disabled,
       openTagMenu,
       saving,
-      subjectTagId,
+      subjectTagIds,
+      card.galleryImplicitSubjectTagIds,
       tagById,
     ]
   );
@@ -478,14 +500,14 @@ export default function CardDimensionalTagCommandBar({
           aria-label={`${tagById.get(activeTagMenu.tagId)?.name ?? activeTagMenu.tagId} actions`}
           style={{ left: activeTagMenu.left, top: activeTagMenu.top }}
         >
-          {onUpdateSubjectTagId ? (
+          {onUpdateSubjectTagId || onUpdateSubjectTagIds ? (
             <button
               type="button"
               role="menuitemcheckbox"
-              aria-checked={subjectTagId === activeTagMenu.tagId}
+              aria-checked={subjectTagIds.includes(activeTagMenu.tagId)}
               className={clsx(
                 styles.actionMenuItem,
-                subjectTagId === activeTagMenu.tagId && styles.actionMenuItemActive
+                subjectTagIds.includes(activeTagMenu.tagId) && styles.actionMenuItemActive
               )}
               disabled={disabled || saving}
               onClick={() => void runSubjectAction(activeTagMenu.tagId)}

@@ -18,6 +18,7 @@ const mediaSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     { name: 'has_caption', type: 'bool', facet: true },
     { name: 'assigned', type: 'bool', facet: true },
     { name: 'subject_tag_id', type: 'string', facet: true, optional: true },
+    { name: 'subject_tag_ids', type: 'string[]', facet: true, optional: true },
     { name: 'subject_filter_tag_ids', type: 'string[]', facet: true, optional: true },
     { name: 'who_ids', type: 'string[]', facet: true, optional: true },
     { name: 'what_ids', type: 'string[]', facet: true, optional: true },
@@ -40,6 +41,7 @@ export interface TypesenseMediaDocument {
   has_caption: boolean;
   assigned: boolean;
   subject_tag_id?: string;
+  subject_tag_ids?: string[];
   subject_filter_tag_ids?: string[];
   who_ids?: string[];
   what_ids?: string[];
@@ -117,6 +119,7 @@ export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, stri
     has_caption: Boolean(media.caption && media.caption.trim()),
     assigned: isAssigned(media),
     subject_tag_id: media.subjectTagId || undefined,
+    subject_tag_ids: media.subjectTagIds?.length ? [...media.subjectTagIds] : media.subjectTagId ? [media.subjectTagId] : undefined,
     subject_filter_tag_ids: subjectFilterTagIds.length ? subjectFilterTagIds : undefined,
     who_ids: media.who?.length ? [...media.who] : undefined,
     what_ids: media.what?.length ? [...media.what] : undefined,
@@ -136,6 +139,9 @@ export async function ensureMediaCollection(): Promise<void> {
     const patchFields: CollectionFieldSchema[] = [];
     if (!fields.find((field) => field.name === 'subject_tag_id')) {
       patchFields.push({ name: 'subject_tag_id', type: 'string', optional: true, facet: true });
+    }
+    if (!fields.find((field) => field.name === 'subject_tag_ids')) {
+      patchFields.push({ name: 'subject_tag_ids', type: 'string[]', optional: true, facet: true });
     }
     if (!fields.find((field) => field.name === 'subject_filter_tag_ids')) {
       patchFields.push({ name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true });

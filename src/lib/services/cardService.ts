@@ -25,7 +25,7 @@ import {
   nextCollectionRootOrderForAppend,
 } from '@/lib/utils/curatedCollectionTree';
 import { orderIdsBySeed } from '@/lib/utils/seededRandomOrder';
-import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { buildSubjectFilterTags, resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
 import { newCardInheritanceOverrides, protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
 
@@ -826,8 +826,11 @@ export async function createCard(
   const subjectState = await resolveSubjectTagState({
     assignedTagIds: selectedTags,
     existingSubjectTagId: null,
+    existingSubjectTagIds: [],
     requestedSubjectTagId: validatedData.subjectTagId,
+    requestedSubjectTagIds: validatedData.subjectTagIds,
     subjectTagIdProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagId'),
+    subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagIds'),
     allTags: allTagsForJournal,
   });
   const journalWhenSort = computeJournalWhenSortKeys(
@@ -861,6 +864,7 @@ export async function createCard(
     ...(subjectState.subjectTagId
       ? {
           subjectTagId: subjectState.subjectTagId,
+          subjectTagIds: subjectState.subjectTagIds,
           subjectFilterTags: subjectState.subjectFilterTags,
         }
       : {}),
@@ -1232,13 +1236,17 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const subjectState = await resolveSubjectTagState({
         assignedTagIds: finalTags || [],
         existingSubjectTagId: existingData.subjectTagId,
+        existingSubjectTagIds: existingData.subjectTagIds,
         requestedSubjectTagId: cleanedUpdate.subjectTagId,
+        requestedSubjectTagIds: cleanedUpdate.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(cleanedUpdate, 'subjectTagId'),
+        subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(cleanedUpdate, 'subjectTagIds'),
         allTags: allTagsForJournal,
       });
 
       cleanedUpdate.filterTags = filterTags;
       cleanedUpdate.subjectTagId = subjectState.subjectTagId;
+      cleanedUpdate.subjectTagIds = subjectState.subjectTagIds;
       cleanedUpdate.subjectFilterTags = subjectState.subjectFilterTags;
       cleanedUpdate.who = dimensionalTags.who || [];
       cleanedUpdate.what = dimensionalTags.what || [];
@@ -1592,14 +1600,14 @@ export function isGalleryOnlyPayload(
   return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
 }
 
-type CardTagAssignmentUpdates = Partial<Pick<Card, 'tags' | 'subjectTagId'>>;
+type CardTagAssignmentUpdates = Partial<Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds'>>;
 
 export function isTagsOnlyPayload(
   updates: CardTagAssignmentUpdates
 ): updates is CardTagAssignmentUpdates {
   const keys = Object.keys(updates as Record<string, unknown>);
   if (keys.length === 0) return false;
-  if (!keys.every((key) => key === 'tags' || key === 'subjectTagId')) return false;
+  if (!keys.every((key) => key === 'tags' || key === 'subjectTagId' || key === 'subjectTagIds')) return false;
   if ('tags' in updates && updates.tags !== undefined && !Array.isArray(updates.tags)) return false;
   if (
     'subjectTagId' in updates &&
@@ -1607,6 +1615,9 @@ export function isTagsOnlyPayload(
     updates.subjectTagId !== null &&
     typeof updates.subjectTagId !== 'string'
   ) {
+    return false;
+  }
+  if ('subjectTagIds' in updates && updates.subjectTagIds !== undefined && !Array.isArray(updates.subjectTagIds)) {
     return false;
   }
   return true;
@@ -2226,7 +2237,10 @@ export async function updateCardContent(
 export async function updateCardTags(
   cardId: string,
   updates: CardTagAssignmentUpdates,
-  internal?: Pick<Card, 'galleryTagRollupStatuses'>
+  internal?: {
+    galleryTagRollupStatuses?: Card['galleryTagRollupStatuses'];
+    implicitSubjectTagIds?: string[];
+  }
 ): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
 
@@ -2254,8 +2268,11 @@ export async function updateCardTags(
       const subjectState = await resolveSubjectTagState({
         assignedTagIds: cleanedTags,
         existingSubjectTagId: existingData.subjectTagId,
+        existingSubjectTagIds: existingData.subjectTagIds,
         requestedSubjectTagId: updates.subjectTagId,
+        requestedSubjectTagIds: updates.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
+        subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagIds'),
         allTags: allTagsForJournal,
       });
       const journalWhenSort = computeJournalWhenSortKeys(
@@ -2263,12 +2280,22 @@ export async function updateCardTags(
         tagPathLookup
       );
       const dimensionSortKeys = computeDimensionSortKeys(cleanedTags, allTagsForJournal);
+      const implicitSubjectTagIds = (
+        internal?.implicitSubjectTagIds ?? existingData.galleryImplicitSubjectTagIds
+      )?.filter((tagId) => cleanedTags.includes(tagId));
+      const effectiveSubjectFilterTags = implicitSubjectTagIds
+        ? await buildSubjectFilterTags(
+            [...subjectState.subjectTagIds, ...implicitSubjectTagIds],
+            allTagsForJournal
+          )
+        : subjectState.subjectFilterTags;
 
       const updatePayload: Partial<Card> = {
         tags: cleanedTags,
         filterTags,
         subjectTagId: subjectState.subjectTagId,
-        subjectFilterTags: subjectState.subjectFilterTags,
+        subjectTagIds: subjectState.subjectTagIds,
+        subjectFilterTags: effectiveSubjectFilterTags,
         who: dimensionalTags.who || [],
         what: dimensionalTags.what || [],
         when: dimensionalTags.when || [],
@@ -2280,6 +2307,9 @@ export async function updateCardTags(
         whereSortKey: dimensionSortKeys.whereSortKey,
         ...(internal?.galleryTagRollupStatuses
           ? { galleryTagRollupStatuses: internal.galleryTagRollupStatuses }
+          : {}),
+        ...(internal?.implicitSubjectTagIds
+          ? { galleryImplicitSubjectTagIds: internal.implicitSubjectTagIds }
           : {}),
         updatedAt: Date.now(),
       };
@@ -2901,6 +2931,7 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: tags,
           existingSubjectTagId: (cardDoc.data() as Card).subjectTagId,
+          existingSubjectTagIds: (cardDoc.data() as Card).subjectTagIds,
           requestedSubjectTagId: undefined,
           subjectTagIdProvided: false,
           allTags,
@@ -2909,6 +2940,7 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           tags,
           filterTags: derived.filterTags,
           subjectTagId: subjectState.subjectTagId,
+          subjectTagIds: subjectState.subjectTagIds,
           subjectFilterTags: subjectState.subjectFilterTags,
           who: derived.who,
           what: derived.what,
@@ -2999,6 +3031,7 @@ export async function bulkApplyTagDelta(
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: nextTags,
           existingSubjectTagId: cardData.subjectTagId,
+          existingSubjectTagIds: cardData.subjectTagIds,
           requestedSubjectTagId: undefined,
           subjectTagIdProvided: false,
           allTags,
@@ -3015,6 +3048,7 @@ export async function bulkApplyTagDelta(
           tags: nextTags,
           filterTags: derived.filterTags,
           subjectTagId: subjectState.subjectTagId,
+          subjectTagIds: subjectState.subjectTagIds,
           subjectFilterTags: subjectState.subjectFilterTags,
           who: derived.who,
           what: derived.what,

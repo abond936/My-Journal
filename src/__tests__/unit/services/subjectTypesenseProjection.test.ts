@@ -11,6 +11,7 @@ describe('subject-tag search projections', () => {
         tags: ['siblings'],
         filterTags: { siblings: true, family: true },
         subjectTagId: 'siblings',
+        subjectTagIds: ['siblings', 'alan'],
         subjectFilterTags: { siblings: true, family: true },
         createdAt: 10,
         updatedAt: 20,
@@ -22,6 +23,7 @@ describe('subject-tag search projections', () => {
     );
 
     expect(doc.subject_tag_id).toBe('siblings');
+    expect(doc.subject_tag_ids).toEqual(['siblings', 'alan']);
     expect(doc.subject_filter_tag_ids).toEqual(['siblings', 'family']);
   });
 
@@ -42,6 +44,7 @@ describe('subject-tag search projections', () => {
         updatedAt: 20,
         tags: ['siblings'],
         subjectTagId: 'siblings',
+        subjectTagIds: ['siblings', 'alan'],
         subjectFilterTags: { siblings: true, family: true },
       },
       new Map([
@@ -51,6 +54,7 @@ describe('subject-tag search projections', () => {
     );
 
     expect(doc.subject_tag_id).toBe('siblings');
+    expect(doc.subject_tag_ids).toEqual(['siblings', 'alan']);
     expect(doc.subject_filter_tag_ids).toEqual(['siblings', 'family']);
   });
 });

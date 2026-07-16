@@ -76,14 +76,21 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
   );
 
   const statusesEqual = JSON.stringify(card.galleryTagRollupStatuses ?? {}) === JSON.stringify(result.statuses);
-  if (cardTagsEqual(currentTags, result.tags) && statusesEqual) {
+  const implicitSubjectsEqual = cardTagsEqual(
+    card.galleryImplicitSubjectTagIds ?? [],
+    result.implicitSubjectTagIds
+  );
+  if (cardTagsEqual(currentTags, result.tags) && statusesEqual && implicitSubjectsEqual) {
     return;
   }
 
   await updateCardTags(
     cardId,
     { tags: result.tags },
-    { galleryTagRollupStatuses: result.statuses }
+    {
+      galleryTagRollupStatuses: result.statuses,
+      implicitSubjectTagIds: result.implicitSubjectTagIds,
+    }
   );
 }
 

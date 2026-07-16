@@ -27,6 +27,7 @@ const cardsSchema: BaseCollectionCreateSchema & { fields: CollectionFieldSchema[
     /** Direct + inherited tag ids (matches `filterTags` keys) for AND filtering. */
     { name: 'filter_tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'subject_tag_id', type: 'string', optional: true, facet: true },
+    { name: 'subject_tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'tag_ids', type: 'string[]', optional: true, facet: true },
     { name: 'who_ids', type: 'string[]', optional: true, facet: true },
@@ -74,6 +75,7 @@ export interface TypesenseCardDocument {
   where_names?: string[];
   filter_tag_ids?: string[];
   subject_tag_id?: string;
+  subject_tag_ids?: string[];
   subject_filter_tag_ids?: string[];
   tag_ids?: string[];
   who_ids?: string[];
@@ -154,6 +156,9 @@ async function patchCardsCollectionSubjectFields(
 
   if (!fields.find((field) => field.name === 'subject_tag_id')) {
     patchFields.push({ name: 'subject_tag_id', type: 'string', optional: true, facet: true });
+  }
+  if (!fields.find((field) => field.name === 'subject_tag_ids')) {
+    patchFields.push({ name: 'subject_tag_ids', type: 'string[]', optional: true, facet: true });
   }
   if (!fields.find((field) => field.name === 'subject_filter_tag_ids')) {
     patchFields.push({ name: 'subject_filter_tag_ids', type: 'string[]', optional: true, facet: true });
@@ -479,6 +484,7 @@ export function buildTypesenseCardDocumentFromData(
   const where = (data.where as string[] | undefined) ?? [];
   const filterTags = (data.filterTags as Record<string, boolean> | undefined) ?? {};
   const subjectTagId = (data.subjectTagId as string | null | undefined) ?? undefined;
+  const subjectTagIds = ((data.subjectTagIds as string[] | undefined) ?? (subjectTagId ? [subjectTagId] : []));
   const subjectFilterTags = (data.subjectFilterTags as Record<string, boolean> | undefined) ?? {};
   const filterTagIds = Object.keys(filterTags).filter((k) => filterTags[k]);
   const subjectFilterTagIds = Object.keys(subjectFilterTags).filter((k) => subjectFilterTags[k]);
@@ -507,6 +513,7 @@ export function buildTypesenseCardDocumentFromData(
     where_names: lookupNames(where, tagMap),
     filter_tag_ids: filterTagIds.length > 0 ? filterTagIds : undefined,
     subject_tag_id: subjectTagId || undefined,
+    subject_tag_ids: subjectTagIds.length > 0 ? subjectTagIds : undefined,
     subject_filter_tag_ids: subjectFilterTagIds.length > 0 ? subjectFilterTagIds : undefined,
     tag_ids: tags.length > 0 ? tags : undefined,
     who_ids: who.length > 0 ? who : undefined,

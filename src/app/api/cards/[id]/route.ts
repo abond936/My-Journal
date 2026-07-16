@@ -249,8 +249,12 @@ export async function PATCH(
         galleryTagInheritanceOverrides
       );
     } else if (isTagsOnlyPayload(validatedData)) {
-      const { tags, subjectTagId } = validatedData as Pick<Card, 'tags' | 'subjectTagId'>;
-      updatedCard = await updateCardTags(id, { tags, subjectTagId });
+      const { tags, subjectTagId, subjectTagIds } = validatedData as Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds'>;
+      updatedCard = await updateCardTags(id, {
+        tags,
+        subjectTagId,
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagIds') ? { subjectTagIds } : {}),
+      });
     } else if (isStatusOnlyPayload(validatedData)) {
       const { status } = validatedData as Pick<Card, 'status'>;
       updatedCard = await updateCardStatus(id, status);

@@ -25,10 +25,11 @@ import {
 import { cardMatchesExactTagScope } from '@/lib/utils/cardTagFilter';
 
 function cardHasSubjectInDimension(
-  card: Pick<Card, 'subjectTagId' | 'who' | 'what' | 'when' | 'where'>,
+  card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
   dimension: 'who' | 'what' | 'when' | 'where'
 ): boolean {
-  return Boolean(card.subjectTagId && (card[dimension] ?? []).includes(card.subjectTagId));
+  const subjects = card.subjectTagIds?.length ? card.subjectTagIds : card.subjectTagId ? [card.subjectTagId] : [];
+  return subjects.some((tagId) => (card[dimension] ?? []).includes(tagId));
 }
 
 function cardMatchesTagScope(
@@ -43,7 +44,7 @@ function cardMatchesTagScope(
 }
 
 function cardMatchesDimensionTagScope(
-  card: Pick<Card, 'filterTags' | 'subjectFilterTags' | 'who' | 'what' | 'when' | 'where' | 'subjectTagId'>,
+  card: Pick<Card, 'filterTags' | 'subjectFilterTags' | 'who' | 'what' | 'when' | 'where' | 'subjectTagId' | 'subjectTagIds'>,
   dimension: 'who' | 'what' | 'when' | 'where',
   required: string[] | undefined,
   tagScope: 'all' | 'subject'
