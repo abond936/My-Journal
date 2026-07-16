@@ -370,6 +370,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Taxonomy** — Hierarchical Who, What, When, and Where management.
 - **Assignment** — Card and media tagging across supported surfaces.
 - **Subjects** — Subject authoring and Subject-only filtering.
+- **Inheritance** — Author-controlled per-dimension Gallery-media rollup with existing-card protection, Unreviewed precedence, overrides, subjects, and reconciled projections.
 - **Counts** — Confirmed card and media usage counts.
 - **Mapping** — Import-tag preview and confirmed remapping.
 - **Starter set** — Optional additive Tag Set 0.
@@ -384,7 +385,6 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ⭕1 **Planned**
 
 - **Merge/split** — Define and implement recoverable identity correction without silently changing assignments.
-- **Inheritance** — Complete enable-time synchronization, settle aggregation and manual-edit behavior, and verify the workflow.
 - **Shortcuts** — Direct Who, What, When, and Where navigation.
 - **Density** — Tighten the tree without weakening drag targets.
 - **Affordance** — Replace generic edit iconography.
