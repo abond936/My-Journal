@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
-import { formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
+import { DIMENSION_LABEL, DIMENSION_ORDER, formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
 import {
   buildResolvedTagDimensionMap,
   buildTagByIdMap,
@@ -31,6 +31,7 @@ import {
   fetchCardDeleteParents,
 } from '@/lib/utils/cardDeleteWarnings';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectTag';
 import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
@@ -129,8 +130,23 @@ function buildCardThumbnailTooltip(card: Card, allTags: Tag[]): string {
   const core = getCoreTagsByDimensionFromTagIds(card.tags ?? [], resolvedDimension);
   const tagById = buildTagByIdMap(allTags);
   const tagLines = formatCoreTagsTooltipLines(core, (id) => tagById.get(id)?.name ?? id);
+  const explicitSubjects = card.subjectTagIds?.length
+    ? card.subjectTagIds
+    : card.subjectTagId ? [card.subjectTagId] : [];
+  const subjectLines = DIMENSION_ORDER
+    .filter((dimension) => core[dimension].length > 0)
+    .map((dimension) => {
+      const presentation = getDimensionSubjectPresentation(core[dimension], explicitSubjects);
+      const value = presentation === 'multiple'
+        ? 'Multiple'
+        : presentation === 'subjects'
+          ? 'Subjects+'
+          : tagById.get(core[dimension][0])?.name ?? core[dimension][0];
+      return `${DIMENSION_LABEL[dimension]} subject: ${value}`;
+    })
+    .join('\n');
   const captionLine = pickCaption(card);
-  return [card.title || 'Untitled', captionLine || null, tagLines].filter(Boolean).join('\n\n');
+  return [card.title || 'Untitled', captionLine || null, subjectLines, tagLines].filter(Boolean).join('\n\n');
 }
 
 function isCardGridChromeInteractiveTarget(target: EventTarget | null): boolean {

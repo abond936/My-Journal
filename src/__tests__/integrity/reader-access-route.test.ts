@@ -234,6 +234,14 @@ describe('reader access boundary', () => {
     ).toBe(true);
   });
 
+  it('treats a single Gallery rollup as an implicit exact subject', () => {
+    expect(cardMatchesExactTagScope(
+      { tags: ['chicago'], subjectTagId: null, galleryImplicitSubjectTagIds: ['chicago'] },
+      ['chicago'],
+      'subject'
+    )).toBe(true);
+  });
+
   it('redirects anonymous root reader pages server-side with callbackUrl intact', async () => {
     mockedGetServerSession.mockResolvedValue(null);
 

@@ -15,6 +15,7 @@ import {
   getCoreTagsByDimensionFromTagIds,
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './DimensionalTagVerticalChips.module.css';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectTag';
 
 const LONG_PRESS_MS = 450;
 const PANEL_WIDTH = 220;
@@ -244,13 +245,18 @@ export default function DimensionalTagVerticalChips({
 
         const firstId = currentSubjectTagIds.find((id) => ids.includes(id)) ?? ids[0];
         const firstName = tagById.get(firstId)?.name ?? firstId;
-        const restCount = ids.length - 1;
         const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
-        const isSubject = currentSubjectTagIds.includes(firstId);
-        const rowTitle =
-          restCount > 0
-            ? `${label}: ${allNames}\n"${firstName}" is shown; ${restCount} more in this dimension.${isSubject ? '\nThis tag is marked as the subject.' : ''}`
-            : `${label}: ${allNames}.${isSubject ? '\nThis tag is marked as the subject.' : ''}`;
+        const presentation = getDimensionSubjectPresentation(ids, currentSubjectTagIds);
+        const displayName = presentation === 'multiple'
+          ? 'Multiple'
+          : presentation === 'subjects'
+            ? 'Subjects+'
+            : firstName;
+        const selectedSubjectNames = currentSubjectTagIds
+          .filter((id) => ids.includes(id))
+          .map((id) => tagById.get(id)?.name ?? id);
+        const isSubject = presentation === 'implicit' || presentation === 'subjects';
+        const rowTitle = `${label}: ${displayName}\nTags: ${allNames}${selectedSubjectNames.length ? `\nSelected subjects: ${selectedSubjectNames.join(', ')}` : ''}`;
 
         return (
           <div
@@ -298,13 +304,8 @@ export default function DimensionalTagVerticalChips({
             >
               <span className={styles.tagTextBlock}>
                 <span className={styles.tagName}>
-                  <span className={styles.tagNameText}>{firstName}</span>
+                  <span className={styles.tagNameText}>{displayName}</span>
                 </span>
-                {restCount > 0 ? (
-                  <span className={styles.tagMore} aria-hidden>
-                    +{restCount}
-                  </span>
-                ) : null}
               </span>
             </button>
           </div>

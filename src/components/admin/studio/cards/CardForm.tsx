@@ -157,6 +157,7 @@ const CardForm: React.FC = () => {
   const studioShell = useStudioShellOptional();
   const feedback = useAppFeedback();
   const [galleryInheritanceSettings, setGalleryInheritanceSettings] = useState<GalleryTagInheritanceToggles | null>(null);
+  const [galleryInheritanceConfigured, setGalleryInheritanceConfigured] = useState<boolean | null>(null);
 
   const editorRef = useRef<RichTextEditorRef>(null);
 
@@ -165,10 +166,13 @@ const CardForm: React.FC = () => {
     void fetch('/api/admin/author-settings')
       .then(async (response) => {
         if (!response.ok) return null;
-        return response.json() as Promise<{ settings?: { galleryTagInheritance?: GalleryTagInheritanceToggles } }>;
+        return response.json() as Promise<{ settings?: { galleryTagInheritance?: GalleryTagInheritanceToggles; galleryTagInheritanceConfigured?: boolean } }>;
       })
       .then((data) => {
-        if (!cancelled) setGalleryInheritanceSettings(data?.settings?.galleryTagInheritance ?? null);
+        if (!cancelled) {
+          setGalleryInheritanceSettings(data?.settings?.galleryTagInheritance ?? null);
+          setGalleryInheritanceConfigured(data?.settings?.galleryTagInheritanceConfigured === true);
+        }
       })
       .catch(() => {
         if (!cancelled) setGalleryInheritanceSettings(null);
@@ -375,9 +379,15 @@ const CardForm: React.FC = () => {
             );
           })}
         </div>
+        <p className={styles.galleryInheritanceHelp}>
+          {galleryInheritanceConfigured === false
+            ? 'Choose the new-card defaults before using inheritance. '
+            : 'New-card defaults are controlled in Settings. '}
+          <a href="/admin/settings#inheritance-heading">Open Settings</a>
+        </p>
       </fieldset>
     );
-  }, [cardData.galleryTagInheritanceOverrides, galleryInheritanceSettings, handleGalleryInheritanceChange, isSaving]);
+  }, [cardData.galleryTagInheritanceOverrides, galleryInheritanceConfigured, galleryInheritanceSettings, handleGalleryInheritanceChange, isSaving]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     if (newCoverImage && newPosition !== undefined) {

@@ -29,6 +29,7 @@
     "migrate:approved-identities": "tsx -r dotenv/config src/lib/scripts/tags/migrate-approved-identities.ts",
     "migrate:archive-perspective": "tsx -r dotenv/config src/lib/scripts/tags/migrate-archive-perspective.ts",
     "backfill:gallery-inheritance-overrides": "tsx -r dotenv/config src/lib/scripts/tags/backfill-gallery-inheritance-overrides.ts",
+    "audit:subject-contract": "tsx -r dotenv/config src/lib/scripts/tags/audit-subject-contract.ts",
     "export:tags": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/tags/export-tags.ts",
     "compare:digikam-tags": "npx tsx src/lib/scripts/tags/compare-digikam-to-tags-export.ts",
     "dry-run:import-metadata": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/dev/dry-run-import-metadata.ts",

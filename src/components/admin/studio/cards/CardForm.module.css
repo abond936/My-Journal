@@ -780,3 +780,15 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.galleryInheritanceHelp {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--admin-support-meta-color);
+  font: var(--admin-grid-overlay-font);
+}
+
+.galleryInheritanceHelp a {
+  color: var(--admin-support-control-strong-text-color);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}

@@ -15,7 +15,10 @@ import styles from './settings.module.css';
 
 type SettingsResponse = {
   ok: boolean;
-  settings?: { galleryTagInheritance: GalleryTagInheritanceToggles };
+  settings?: {
+    galleryTagInheritance: GalleryTagInheritanceToggles;
+    galleryTagInheritanceConfigured?: boolean;
+  };
   reconciliation?: {
     candidateCount: number;
     reconciledCardCount: number;
@@ -74,6 +77,7 @@ export default function AdminSettingsPage() {
   const [toggles, setToggles] = useState<GalleryTagInheritanceToggles>({
     ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES,
   });
+  const [inheritanceConfigured, setInheritanceConfigured] = useState(false);
   const [tagSet0, setTagSet0] = useState<TagSet0Status>({ installed: false, tagCount: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,7 +89,10 @@ export default function AdminSettingsPage() {
   const [operationsLoading, setOperationsLoading] = useState(true);
   const [backupRunning, setBackupRunning] = useState(false);
 
-  const isDirty = useMemo(() => !togglesEqual(toggles, savedToggles), [toggles, savedToggles]);
+  const isDirty = useMemo(
+    () => !inheritanceConfigured || !togglesEqual(toggles, savedToggles),
+    [inheritanceConfigured, toggles, savedToggles]
+  );
 
   const loadOperations = useCallback(async () => {
     const res = await fetch('/api/admin/settings/operations');
@@ -136,6 +143,7 @@ export default function AdminSettingsPage() {
         if (!cancelled && data.settings?.galleryTagInheritance) {
           setSavedToggles(data.settings.galleryTagInheritance);
           setToggles(data.settings.galleryTagInheritance);
+          setInheritanceConfigured(data.settings.galleryTagInheritanceConfigured === true);
         }
       } catch (error) {
         if (!cancelled) {
@@ -184,6 +192,7 @@ export default function AdminSettingsPage() {
       if (data.settings?.galleryTagInheritance) {
         setSavedToggles(data.settings.galleryTagInheritance);
         setToggles(data.settings.galleryTagInheritance);
+        setInheritanceConfigured(data.settings.galleryTagInheritanceConfigured === true);
       }
       if (data.reconciliationError) {
         feedback.showToast({
@@ -389,6 +398,12 @@ export default function AdminSettingsPage() {
           blank child assignments make it Unreviewed; N/A and Unknown remain intentional tags. Protecting
           it again preserves its current assignments and stops future Gallery changes.
         </p>
+        {!inheritanceConfigured ? (
+          <p className={styles.statusLine} role="status">
+            <strong>Setup required.</strong> Review all four choices and save them explicitly. Leaving every
+            dimension off is valid; it means new cards begin protected from Gallery inheritance.
+          </p>
+        ) : null}
         <ul className={styles.toggleList}>
           {DIMENSION_ORDER.map((dimension) => (
             <li key={dimension}>
@@ -545,7 +560,7 @@ export default function AdminSettingsPage() {
         <button
           type="button"
           className={styles.cancelButton}
-          disabled={saving || !isDirty}
+          disabled={loading || saving || !isDirty}
           onClick={cancel}
         >
           Cancel
@@ -553,10 +568,10 @@ export default function AdminSettingsPage() {
         <button
           type="button"
           className={styles.saveButton}
-          disabled={saving || !isDirty}
+          disabled={loading || saving || !isDirty}
           onClick={() => void save()}
         >
-          {saving ? 'Saving…' : 'Save inheritance settings'}
+          {saving ? 'Saving…' : inheritanceConfigured ? 'Save inheritance settings' : 'Confirm inheritance choices'}
         </button>
       </div>
     </div>
