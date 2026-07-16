@@ -6,7 +6,8 @@ jest.mock('@/lib/firebase/tagService', () => ({
   }),
 }));
 
-import { getDimensionSubjectPresentation, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
+import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 
 describe('subjectTag contract', () => {
   it('distinguishes implicit, Multiple, and Subjects+ presentation', () => {

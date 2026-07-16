@@ -22,16 +22,6 @@ export function normalizeSubjectTagIds(values: string[] | null | undefined): str
   return Array.from(new Set((values ?? []).map(normalizeSubjectTagId).filter((id): id is string => Boolean(id))));
 }
 
-export function getDimensionSubjectPresentation(
-  dimensionTagIds: string[],
-  explicitSubjectTagIds: string[]
-): 'empty' | 'implicit' | 'multiple' | 'subjects' {
-  if (dimensionTagIds.length === 0) return 'empty';
-  if (dimensionTagIds.length === 1) return 'implicit';
-  const dimensionSet = new Set(dimensionTagIds);
-  return explicitSubjectTagIds.some((tagId) => dimensionSet.has(tagId)) ? 'subjects' : 'multiple';
-}
-
 export async function buildSubjectFilterTags(
   subjectTagIdOrIds: string | string[] | null | undefined,
   allTags?: Tag[]

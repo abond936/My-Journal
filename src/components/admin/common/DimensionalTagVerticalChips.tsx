@@ -15,7 +15,7 @@ import {
   getCoreTagsByDimensionFromTagIds,
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './DimensionalTagVerticalChips.module.css';
-import { getDimensionSubjectPresentation } from '@/lib/utils/subjectTag';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
 
 const LONG_PRESS_MS = 450;
 const PANEL_WIDTH = 220;

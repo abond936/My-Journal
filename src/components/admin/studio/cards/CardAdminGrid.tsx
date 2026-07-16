@@ -31,7 +31,7 @@ import {
   fetchCardDeleteParents,
 } from '@/lib/utils/cardDeleteWarnings';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
-import { getDimensionSubjectPresentation } from '@/lib/utils/subjectTag';
+import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
 import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
