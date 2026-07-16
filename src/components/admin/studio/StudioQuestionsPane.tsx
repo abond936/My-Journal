@@ -94,6 +94,9 @@ function buildQuestionCardPreview(question: Question, cardId: string): StudioSel
     status: 'draft',
     displayMode: 'navigate',
     tags: question.tagIds,
+    subjectTagId: question.subjectTagId,
+    subjectTagIds: question.subjectTagIds,
+    subjectFilterTags: question.subjectFilterTags,
     galleryMedia: [],
     contentMedia: [],
     childrenIds: [],
@@ -182,11 +185,13 @@ export default function StudioQuestionsPane() {
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [newPrompt, setNewPrompt] = useState('');
   const [newTagIds, setNewTagIds] = useState<string[]>([]);
+  const [newSubjectTagIds, setNewSubjectTagIds] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createAdvancedTagEditorOpen, setCreateAdvancedTagEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
+  const [editSubjectTagIds, setEditSubjectTagIds] = useState<string[]>([]);
   const [advancedTagEditorId, setAdvancedTagEditorId] = useState<string | null>(null);
   const [unlinkConfirmQuestion, setUnlinkConfirmQuestion] = useState<Question | null>(null);
   const [deleteConfirmQuestion, setDeleteConfirmQuestion] = useState<Question | null>(null);
@@ -304,7 +309,7 @@ export default function StudioQuestionsPane() {
     selectedTagId,
   ]);
 
-  const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[] }) => {
+  const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[]; subjectTagIds?: string[] }) => {
     setBusyId(questionId);
     setBusyLabel('Saving question...');
     try {
@@ -463,7 +468,7 @@ export default function StudioQuestionsPane() {
       const res = await fetch('/api/admin/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, tagIds: newTagIds }),
+        body: JSON.stringify({ prompt, tagIds: newTagIds, subjectTagIds: newSubjectTagIds }),
         cache: 'no-store',
         credentials: 'same-origin',
       });
@@ -474,6 +479,7 @@ export default function StudioQuestionsPane() {
       }
       setNewPrompt('');
       setNewTagIds([]);
+      setNewSubjectTagIds([]);
       setCreateOpen(false);
       setCreateAdvancedTagEditorOpen(false);
       feedback.showSuccess('Question added.', 'Saved');
@@ -483,7 +489,7 @@ export default function StudioQuestionsPane() {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [feedback, newPrompt, newTagIds]);
+  }, [feedback, newPrompt, newSubjectTagIds, newTagIds]);
 
   const deleteQuestion = useCallback(async (question: Question) => {
     setBusyId(question.docId);
@@ -515,6 +521,7 @@ export default function StudioQuestionsPane() {
     setCreateAdvancedTagEditorOpen(false);
     setNewPrompt('');
     setNewTagIds([]);
+    setNewSubjectTagIds([]);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -550,9 +557,10 @@ export default function StudioQuestionsPane() {
             rows={3}
           />
           <CardDimensionalTagCommandBar
-            card={{ tags: newTagIds }}
+            card={{ tags: newTagIds, subjectTagIds: newSubjectTagIds }}
             allTags={allTags}
             onUpdateTags={setNewTagIds}
+            onUpdateSubjectTagIds={setNewSubjectTagIds}
             variant="compact"
             searchPlaceholder="Edit tags..."
             trailingSlot={
@@ -738,6 +746,7 @@ export default function StudioQuestionsPane() {
                 ? busyLabel ?? 'Updating question...'
                 : null;
           const activeTagIds = editing ? editTagIds : question.tagIds;
+          const activeSubjectTagIds = editing ? editSubjectTagIds : question.subjectTagIds;
           return (
             <article
               key={question.docId}
@@ -769,6 +778,15 @@ export default function StudioQuestionsPane() {
                 <DimensionalTagVerticalChips
                   tagIds={activeTagIds}
                   allTags={allTags}
+                  subjectTagId={question.subjectTagId ?? null}
+                  subjectTagIds={activeSubjectTagIds}
+                  onUpdateSubjectTagIds={(nextSubjectTagIds) => {
+                    if (editing) {
+                      setEditSubjectTagIds(nextSubjectTagIds);
+                      return;
+                    }
+                    return saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
+                  }}
                   onUpdateTags={(nextTagIds) => {
                     if (editing) {
                       setEditTagIds(nextTagIds);
@@ -780,7 +798,7 @@ export default function StudioQuestionsPane() {
                   variant="inline"
                 />
                 <CardDimensionalTagCommandBar
-                  card={{ tags: activeTagIds }}
+                  card={{ tags: activeTagIds, subjectTagId: question.subjectTagId, subjectTagIds: activeSubjectTagIds }}
                   allTags={allTags}
                   onUpdateTags={(nextTagIds) => {
                     if (editing) {
@@ -790,6 +808,13 @@ export default function StudioQuestionsPane() {
                     return saveQuestion(question.docId, { tagIds: nextTagIds });
                   }}
                   disabled={busy}
+                  onUpdateSubjectTagIds={(nextSubjectTagIds) => {
+                    if (editing) {
+                      setEditSubjectTagIds(nextSubjectTagIds);
+                      return;
+                    }
+                    return saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
+                  }}
                   variant="searchOnly"
                   searchPlaceholder="Edit tags..."
                   trailingSlot={
@@ -805,6 +830,7 @@ export default function StudioQuestionsPane() {
                         setEditingId(question.docId);
                         setEditPrompt(question.prompt);
                         setEditTagIds(question.tagIds);
+                        setEditSubjectTagIds(question.subjectTagIds);
                         setAdvancedTagEditorId(question.docId);
                       }}
                       aria-label={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
@@ -836,7 +862,7 @@ export default function StudioQuestionsPane() {
                       type="button"
                       className={styles.studioQuestionPrimaryButton}
                       disabled={busy || !editPrompt.trim()}
-                      onClick={() => void saveQuestion(question.docId, { prompt: editPrompt, tagIds: editTagIds })}
+                      onClick={() => void saveQuestion(question.docId, { prompt: editPrompt, tagIds: editTagIds, subjectTagIds: editSubjectTagIds })}
                       aria-label="Save question"
                       title="Save question"
                     >
@@ -887,6 +913,7 @@ export default function StudioQuestionsPane() {
                         setAdvancedTagEditorId(null);
                         setEditPrompt(question.prompt);
                         setEditTagIds(question.tagIds);
+                        setEditSubjectTagIds(question.subjectTagIds);
                       }}
                       aria-label="Edit question"
                       title="Edit question"

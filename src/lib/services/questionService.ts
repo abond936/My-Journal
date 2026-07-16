@@ -10,6 +10,7 @@ import {
   createQuestionSchema,
   updateQuestionSchema,
 } from '@/lib/types/question';
+import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 
 const COLLECTION = 'questions';
 
@@ -48,6 +49,13 @@ function toQuestion(docId: string, data: FirebaseFirestore.DocumentData): Questi
     prompt: String(data.prompt ?? ''),
     prompt_lowercase: String(data.prompt_lowercase ?? '').toLowerCase(),
     tagIds: Array.isArray(data.tagIds) ? data.tagIds : [],
+    subjectTagId: typeof data.subjectTagId === 'string' ? data.subjectTagId : null,
+    subjectTagIds: Array.isArray(data.subjectTagIds)
+      ? data.subjectTagIds
+      : typeof data.subjectTagId === 'string' ? [data.subjectTagId] : [],
+    subjectFilterTags: data.subjectFilterTags && typeof data.subjectFilterTags === 'object'
+      ? data.subjectFilterTags as Record<string, boolean>
+      : {},
     tags: Array.isArray(data.tags) ? data.tags : [],
     usedByCardIds: Array.isArray(data.usedByCardIds) ? data.usedByCardIds : [],
     usageCount: typeof data.usageCount === 'number' ? data.usageCount : 0,
@@ -67,10 +75,21 @@ export async function createQuestion(input: CreateQuestionInput): Promise<Questi
   const prompt = parsed.prompt.trim();
   const tagIds = sanitizeTagIds(parsed.tagIds);
   await assertQuestionTagsAreDimensional(tagIds);
+  const allTags = await getAllTags();
+  const subjectState = await resolveSubjectTagState({
+    assignedTagIds: tagIds,
+    requestedSubjectTagIds: parsed.subjectTagIds,
+    subjectTagIdsProvided: true,
+    subjectTagIdProvided: false,
+    allTags,
+  });
   const payload: Omit<Question, 'docId'> = {
     prompt,
     prompt_lowercase: prompt.toLowerCase(),
     tagIds,
+    subjectTagId: subjectState.subjectTagId,
+    subjectTagIds: subjectState.subjectTagIds,
+    subjectFilterTags: subjectState.subjectFilterTags,
     tags: sanitizeTags(parsed.tags),
     usedByCardIds: [],
     usageCount: 0,
@@ -111,6 +130,23 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
     const tagIds = sanitizeTagIds(parsed.tagIds);
     await assertQuestionTagsAreDimensional(tagIds);
     updatePayload.tagIds = tagIds;
+  }
+  if (parsed.tagIds !== undefined || parsed.subjectTagIds !== undefined) {
+    const existing = toQuestion(snap.id, snap.data() ?? {});
+    const nextTagIds = (updatePayload.tagIds as string[] | undefined) ?? existing.tagIds;
+    const allTags = await getAllTags();
+    const subjectState = await resolveSubjectTagState({
+      assignedTagIds: nextTagIds,
+      existingSubjectTagId: existing.subjectTagId,
+      existingSubjectTagIds: existing.subjectTagIds,
+      requestedSubjectTagIds: parsed.subjectTagIds,
+      subjectTagIdsProvided: parsed.subjectTagIds !== undefined,
+      subjectTagIdProvided: false,
+      allTags,
+    });
+    updatePayload.subjectTagId = subjectState.subjectTagId;
+    updatePayload.subjectTagIds = subjectState.subjectTagIds;
+    updatePayload.subjectFilterTags = subjectState.subjectFilterTags;
   }
   await ref.update(updatePayload);
   const fresh = await ref.get();

@@ -64,4 +64,24 @@ describe('DimensionalTagVerticalChips', () => {
       expect(onUpdateTags).toHaveBeenCalledWith(['alan', 'party']);
     });
   });
+
+  it('adds a subject without replacing an existing subject', async () => {
+    const onUpdateSubjectTagIds = jest.fn(async () => undefined);
+    render(
+      <DimensionalTagVerticalChips
+        tagIds={['alan', 'bob', 'party']}
+        subjectTagIds={['alan']}
+        allTags={tags}
+        variant="inline"
+        onUpdateTags={jest.fn()}
+        onUpdateSubjectTagIds={onUpdateSubjectTagIds}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /alan/i }));
+    const dialog = screen.getByRole('dialog', { name: 'Who tags' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bob' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Subject' }));
+    expect(onUpdateSubjectTagIds).toHaveBeenCalledWith(['alan', 'bob']);
+  });
 });

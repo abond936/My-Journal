@@ -967,6 +967,13 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
   );
   const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
   const inheritanceOverrides = newCardInheritanceOverrides(await getAuthorSettings());
+  const subjectState = await resolveSubjectTagState({
+    assignedTagIds: selectedTags,
+    existingSubjectTagId: question.subjectTagId,
+    existingSubjectTagIds: question.subjectTagIds,
+    subjectTagIdProvided: false,
+    allTags: allTagsForJournal,
+  });
 
   const newCard: Card = {
     docId: docRef.id,
@@ -979,6 +986,9 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
     displayMode: 'navigate',
     tags: selectedTags,
     galleryTagInheritanceOverrides: inheritanceOverrides,
+    subjectTagId: subjectState.subjectTagId,
+    subjectTagIds: subjectState.subjectTagIds,
+    subjectFilterTags: subjectState.subjectFilterTags,
     childrenIds: normalizedChildren,
     contentMedia: [],
     galleryMedia: [],

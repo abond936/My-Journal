@@ -47,7 +47,9 @@ export interface DimensionalTagVerticalChipsProps {
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   subjectTagId?: string | null;
+  subjectTagIds?: string[];
   onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
+  onUpdateSubjectTagIds?: (nextSubjectTagIds: string[]) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
   variant?: 'rail' | 'inline';
@@ -63,7 +65,9 @@ export default function DimensionalTagVerticalChips({
   allTags,
   onUpdateTags,
   subjectTagId = null,
+  subjectTagIds,
   onUpdateSubjectTagId,
+  onUpdateSubjectTagIds,
   disabled = false,
   className,
   variant = 'rail',
@@ -73,6 +77,10 @@ export default function DimensionalTagVerticalChips({
   const tagById = useMemo(() => buildTagByIdMap(allTags), [allTags]);
   const resolvedDimension = useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
   const currentTags = tagIds;
+  const currentSubjectTagIds = useMemo(
+    () => subjectTagIds?.length ? subjectTagIds : subjectTagId ? [subjectTagId] : [],
+    [subjectTagId, subjectTagIds]
+  );
   const inline = variant === 'inline';
   const rootRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
@@ -139,6 +147,22 @@ export default function DimensionalTagVerticalChips({
     },
     [onUpdateSubjectTagId]
   );
+
+  const toggleSubject = useCallback(async (tagId: string) => {
+    if (onUpdateSubjectTagIds) {
+      const next = currentSubjectTagIds.includes(tagId)
+        ? currentSubjectTagIds.filter((id) => id !== tagId)
+        : [...currentSubjectTagIds, tagId];
+      setSaving(true);
+      try {
+        await onUpdateSubjectTagIds(next);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    await persistSubject(subjectTagId === tagId ? null : tagId);
+  }, [currentSubjectTagIds, onUpdateSubjectTagIds, persistSubject, subjectTagId]);
 
   const railSummaryTitle = useMemo(
     () =>
@@ -218,11 +242,11 @@ export default function DimensionalTagVerticalChips({
           );
         }
 
-        const firstId = subjectTagId && ids.includes(subjectTagId) ? subjectTagId : ids[0];
+        const firstId = currentSubjectTagIds.find((id) => ids.includes(id)) ?? ids[0];
         const firstName = tagById.get(firstId)?.name ?? firstId;
         const restCount = ids.length - 1;
         const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
-        const isSubject = subjectTagId === firstId;
+        const isSubject = currentSubjectTagIds.includes(firstId);
         const rowTitle =
           restCount > 0
             ? `${label}: ${allNames}\n"${firstName}" is shown; ${restCount} more in this dimension.${isSubject ? '\nThis tag is marked as the subject.' : ''}`
@@ -298,7 +322,7 @@ export default function DimensionalTagVerticalChips({
           <div className={styles.dimensionMenuList}>
             {core[activeMenu.dimension].map((id) => {
               const tagName = tagById.get(id)?.name ?? id;
-              const isSubject = subjectTagId === id;
+              const isSubject = currentSubjectTagIds.includes(id);
               const isSelected = activeMenu.selectedTagId === id;
               return (
                 <div key={id} className={styles.dimensionMenuEntry}>
@@ -327,7 +351,7 @@ export default function DimensionalTagVerticalChips({
                   </button>
                   {isSelected ? (
                     <div className={styles.dimensionMenuActions}>
-                      {onUpdateSubjectTagId ? (
+                          {onUpdateSubjectTagId || onUpdateSubjectTagIds ? (
                         <button
                           type="button"
                           className={clsx(
@@ -336,7 +360,7 @@ export default function DimensionalTagVerticalChips({
                           )}
                           disabled={disabled || saving}
                           onClick={async () => {
-                            await persistSubject(isSubject ? null : id);
+                            await toggleSubject(id);
                             setActiveMenu(null);
                           }}
                         >
