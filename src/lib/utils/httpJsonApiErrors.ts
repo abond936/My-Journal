@@ -8,9 +8,14 @@ function messageFromJsonBody(body: unknown, fallback: string): string {
   if (!body || typeof body !== 'object') return fallback;
   const data = body as JsonApiErrorBody;
   if (typeof data.message === 'string' && data.message.trim()) return data.message;
-  if (typeof data.error === 'string' && data.error.trim()) return data.error;
   return fallback;
 }
+
+export type JsonApiError = Error & {
+  apiCode?: string;
+  httpStatus: number;
+  technicalDetail?: string;
+};
 
 /**
  * Throws a descriptive `Error` when a JSON API response is not OK.
@@ -18,14 +23,12 @@ function messageFromJsonBody(body: unknown, fallback: string): string {
  */
 export function throwIfJsonApiFailed(res: Response, body: unknown, fallbackMessage: string): void {
   if (res.ok) return;
-  let msg = messageFromJsonBody(body, fallbackMessage);
-  if (msg === fallbackMessage) {
-    msg = `${fallbackMessage} (HTTP ${res.status})`;
-  }
-  const err = new Error(msg) as Error & { apiCode?: string };
+  const err = new Error(messageFromJsonBody(body, fallbackMessage)) as JsonApiError;
+  err.httpStatus = res.status;
   if (body && typeof body === 'object') {
-    const code = (body as JsonApiErrorBody).code;
+    const { code, error } = body as JsonApiErrorBody;
     if (typeof code === 'string' && code) err.apiCode = code;
+    if (typeof error === 'string' && error.trim()) err.technicalDetail = error;
   }
   throw err;
 }

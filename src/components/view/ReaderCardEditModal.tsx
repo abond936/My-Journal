@@ -417,7 +417,7 @@ export default function ReaderCardEditModal({
         credentials: 'same-origin',
       });
       const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
-      throwIfJsonApiFailed(response, data, 'Failed to delete card.');
+      throwIfJsonApiFailed(response, data, 'This card could not be deleted. Try again.');
       closeModal();
       void globalMutate((key) => typeof key === 'string' && key.startsWith('/api/cards?'), undefined, {
         revalidate: true,

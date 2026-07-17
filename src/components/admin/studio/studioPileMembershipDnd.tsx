@@ -61,7 +61,7 @@ export async function postStoryPileMembershipMove(opts: {
     }),
   });
   const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-  throwIfJsonApiFailed(response, payload, 'Failed to update pile membership.');
+  throwIfJsonApiFailed(response, payload, 'These photos could not be moved. Try again.');
 }
 
 export async function handleStudioPileMembershipDragEnd(

@@ -81,7 +81,7 @@ export default function StudioCardEditPane({
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as Card & { message?: string; error?: string };
-      throwIfJsonApiFailed(res, data, 'Failed to save card');
+      throwIfJsonApiFailed(res, data, 'This card could not be saved. Your changes are still here. Try again.');
       if (isCreate && data.docId) {
         onCardCreated?.(data.docId);
         upsertCollectionsCardList(data as StudioCardContext);

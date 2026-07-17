@@ -749,7 +749,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               body: JSON.stringify({ [field]: value }),
             });
             const data = await res.json().catch(() => ({}));
-            throwIfJsonApiFailed(res, data, `Failed to update card ${id}`);
+            throwIfJsonApiFailed(res, data, `Card ${id} could not be updated. Try again.`);
             return data as Card;
           })
         );
@@ -803,7 +803,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         idsToDelete.map(async (id) => {
           const res = await fetch(`/api/cards/${id}`, { method: 'DELETE' });
           const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
-          throwIfJsonApiFailed(res, data, `Failed to delete card ${id}`);
+          throwIfJsonApiFailed(res, data, `Card ${id} could not be deleted. Try again.`);
         })
       );
       selectedCards.forEach((card) => {
@@ -836,7 +836,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         body: JSON.stringify(updateData),
       });
       const data = await res.json().catch(() => ({}));
-      throwIfJsonApiFailed(res, data, 'Failed to update card');
+      throwIfJsonApiFailed(res, data, 'This card could not be updated. Try again.');
       upsertCatalogCard(data as Card);
       upsertCard(data as Card);
       if (shouldRefreshWorkspaceQueryAfterCardUpdate(updateData)) {
@@ -854,7 +854,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       const res = await fetch(`/api/cards/${cardId}`, { method: 'DELETE' });
       const data =
         res.status === 204 ? {} : ((await res.json().catch(() => ({}))) as unknown);
-      throwIfJsonApiFailed(res, data, 'Failed to delete card');
+      throwIfJsonApiFailed(res, data, 'This card could not be deleted. Try again.');
       removeCatalogCard(cardId);
       removeCollectionsCardStructure(cardId);
       notifyQuestionCardDeleted(cardId, questionId ?? null);

@@ -877,7 +877,7 @@ export default function CollectionsAdminClient({
       body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
-    throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+    throwIfJsonApiFailed(res, data, 'This collection could not be updated. Try again.');
   };
 
   const runCollectionsMutation = useCallback(

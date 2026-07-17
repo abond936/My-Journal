@@ -226,7 +226,7 @@ export default function StudioQuestionsPane() {
     try {
       const res = await fetch('/api/admin/questions', { cache: 'no-store', credentials: 'same-origin' });
       const data = (await res.json().catch(() => ({}))) as QuestionsResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to load questions');
+      throwIfJsonApiFailed(res, data, 'Questions could not be loaded. Try again.');
       setQuestions(data.questions || []);
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to load questions', 'Could not load questions');
@@ -321,7 +321,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to update question');
+      throwIfJsonApiFailed(res, data, 'This question could not be saved. Your changes are still here. Try again.');
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === questionId ? data.question! : q));
       }
@@ -362,7 +362,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to create Question card');
+      throwIfJsonApiFailed(res, data, 'A card could not be created for this question. Try again.');
       const cardId = data.card?.docId;
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
@@ -417,7 +417,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to unlink question');
+      throwIfJsonApiFailed(res, data, 'This question could not be unlinked from its card. Try again.');
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
       }
@@ -473,7 +473,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to create question');
+      throwIfJsonApiFailed(res, data, 'This question could not be added. Your text is still here. Try again.');
       if (data.question) {
         setQuestions(prev => [data.question!, ...prev]);
       }
@@ -501,7 +501,7 @@ export default function StudioQuestionsPane() {
         credentials: 'same-origin',
       });
       const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'Failed to delete question');
+      throwIfJsonApiFailed(res, data, 'This question could not be deleted. Try again.');
       setQuestions(prev => prev.filter(q => q.docId !== question.docId));
       if (editingId === question.docId) {
         setEditingId(null);

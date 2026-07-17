@@ -844,7 +844,7 @@ export default function StudioWorkspace() {
         message: `Could not parse API response (HTTP ${res.status}). ${raw.slice(0, 160)}${raw.length > 160 ? '…' : ''}`,
       };
     }
-    throwIfJsonApiFailed(res, data, 'Failed to load card');
+    throwIfJsonApiFailed(res, data, 'This card could not be opened. Try again.');
     const card = toStudioSelectedDetail(data as StudioCardContext);
     setSelectedDetail(card);
     setSelectedPreview((current) =>
@@ -932,7 +932,7 @@ export default function StudioWorkspace() {
           body: JSON.stringify(dehydrateCardPatchPayload(payload)),
         });
         const data = await res.json().catch(() => ({}));
-        throwIfJsonApiFailed(res, data, 'Update failed.');
+        throwIfJsonApiFailed(res, data, 'This card could not be updated. Try again.');
         const nextCard = toStudioSelectedDetail(data as StudioCardContext);
         const previousAssigned = previousDetail ? collectAssignedMediaIds(previousDetail) : [];
         const nextAssigned = collectAssignedMediaIds(nextCard);
@@ -1043,7 +1043,7 @@ export default function StudioWorkspace() {
                 body: JSON.stringify({ childrenIds: nextChildren }),
               });
               const data = await res.json().catch(() => ({}));
-              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              throwIfJsonApiFailed(res, data, 'This collection could not be updated. Try again.');
               break;
             }
             case 'append-parent': {
@@ -1055,7 +1055,7 @@ export default function StudioWorkspace() {
                 body: JSON.stringify({ childrenIds: nextChildren }),
               });
               const data = await res.json().catch(() => ({}));
-              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              throwIfJsonApiFailed(res, data, 'This collection could not be updated. Try again.');
               break;
             }
             case 'clear-root': {
@@ -1065,7 +1065,7 @@ export default function StudioWorkspace() {
                 body: JSON.stringify({ isCollectionRoot: false }),
               });
               const data = await res.json().catch(() => ({}));
-              throwIfJsonApiFailed(res, data, 'Failed to update collection membership');
+              throwIfJsonApiFailed(res, data, 'This collection could not be updated. Try again.');
               break;
             }
             case 'insert-before':
@@ -1154,7 +1154,7 @@ export default function StudioWorkspace() {
           credentials: 'same-origin',
         });
         const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
-        throwIfJsonApiFailed(res, data, 'Failed to delete card');
+        throwIfJsonApiFailed(res, data, 'This card could not be deleted. Try again.');
 
         selectedCardCacheRef.current.delete(id);
         selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
