@@ -26,6 +26,7 @@ export default function JournalUsersAdminPage() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
+  const [passwordErrorById, setPasswordErrorById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
@@ -90,7 +91,7 @@ export default function JournalUsersAdminPage() {
     }
   };
 
-  const patchUser = async (id: string, body: Record<string, unknown>) => {
+  const patchUser = async (id: string, body: Record<string, unknown>): Promise<boolean> => {
     setRowBusy(id);
     try {
       const res = await fetch(`/api/admin/journal-users/${id}`, {
@@ -101,8 +102,10 @@ export default function JournalUsersAdminPage() {
       const data = await res.json();
       throwIfJsonApiFailed(res, data, 'This user could not be updated. Try again.');
       await load();
+      return true;
     } catch (err) {
       feedback.showError(err instanceof Error ? err.message : 'This user could not be updated. Try again.', 'User not updated');
+      return false;
     } finally {
       setRowBusy(null);
     }
@@ -111,11 +114,17 @@ export default function JournalUsersAdminPage() {
   const handleSetPassword = async (id: string) => {
     const pwd = passwordById[id]?.trim();
     if (!pwd || pwd.length < 8) {
-      feedback.showError('Enter a password with at least 8 characters.', 'Password too short');
+      setPasswordErrorById(prev => ({ ...prev, [id]: 'Enter at least 8 characters.' }));
       return;
     }
-    await patchUser(id, { password: pwd });
+    const updated = await patchUser(id, { password: pwd });
+    if (!updated) return;
     setPasswordById(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setPasswordErrorById(prev => {
       const next = { ...prev };
       delete next[id];
       return next;
@@ -213,11 +222,24 @@ export default function JournalUsersAdminPage() {
                             className={styles.input}
                             placeholder="New password (8+)"
                             value={passwordById[u.docId] ?? ''}
-                            onChange={e =>
-                              setPasswordById(prev => ({ ...prev, [u.docId]: e.target.value }))
-                            }
+                            onChange={e => {
+                              setPasswordById(prev => ({ ...prev, [u.docId]: e.target.value }));
+                              if (passwordErrorById[u.docId]) {
+                                setPasswordErrorById(prev => {
+                                  const next = { ...prev };
+                                  delete next[u.docId];
+                                  return next;
+                                });
+                              }
+                            }}
                             autoComplete="new-password"
+                            aria-label={`New password for ${u.username}`}
+                            aria-invalid={Boolean(passwordErrorById[u.docId])}
+                            aria-describedby={passwordErrorById[u.docId] ? `password-error-${u.docId}` : undefined}
                           />
+                          <span id={`password-error-${u.docId}`} className={styles.inlineError} role="alert">
+                            {passwordErrorById[u.docId] ?? ''}
+                          </span>
                           <button
                             type="button"
                             className={styles.button}

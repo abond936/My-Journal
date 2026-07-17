@@ -34,6 +34,7 @@ export default function ReaderMobileQuickEdit({
   const [excerpt, setExcerpt] = useState(initial.excerpt);
   const [body, setBody] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [titleError, setTitleError] = useState('');
   const bodyEligible = useMemo(
     () => isReaderBodyQuickEditEligible(initial.content),
     [initial.content]
@@ -49,6 +50,7 @@ export default function ReaderMobileQuickEdit({
     setSubtitle(initial.subtitle);
     setExcerpt(initial.excerpt);
     setBody(initialBodyDraft);
+    setTitleError('');
   }, [initial.excerpt, initial.subtitle, initial.title, initialBodyDraft, open]);
 
   const isDirty = useMemo(() => {
@@ -90,7 +92,7 @@ export default function ReaderMobileQuickEdit({
     };
 
     if (!draft.title) {
-      feedback.showError('Add a title before saving this card.', 'Title required');
+      setTitleError('Add a title before saving this card.');
       return;
     }
 
@@ -162,10 +164,18 @@ export default function ReaderMobileQuickEdit({
             id="reader-quick-edit-title"
             className={styles.input}
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              if (titleError) setTitleError('');
+            }}
             autoComplete="off"
             disabled={isSaving}
+            aria-invalid={Boolean(titleError)}
+            aria-describedby={titleError ? 'reader-quick-edit-title-error' : undefined}
           />
+          <span id="reader-quick-edit-title-error" className={styles.fieldError} role="alert">
+            {titleError}
+          </span>
         </label>
 
         <label className={styles.field} htmlFor="reader-quick-edit-subtitle">

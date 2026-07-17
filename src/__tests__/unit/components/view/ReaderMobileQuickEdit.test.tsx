@@ -104,4 +104,24 @@ describe('ReaderMobileQuickEdit', () => {
     expect(screen.queryByLabelText('Body')).not.toBeInTheDocument();
     expect(screen.getByText(/rich formatting/i)).toBeInTheDocument();
   });
+
+  it('shows required-title validation beside the title without calling the API', () => {
+    render(
+      <ReaderMobileQuickEdit
+        open
+        onClose={jest.fn()}
+        cardId="card-1"
+        initial={{ title: 'Title', subtitle: '', excerpt: '', content: '<p>Body</p>' }}
+        onSaved={jest.fn()}
+      />
+    );
+
+    const title = screen.getByLabelText('Title');
+    fireEvent.change(title, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Add a title before saving this card.')).toBeInTheDocument();
+    expect(patchReaderQuickEditMock).not.toHaveBeenCalled();
+  });
 });
