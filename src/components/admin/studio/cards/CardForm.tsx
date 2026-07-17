@@ -35,7 +35,11 @@ import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChil
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
-import { newCardInheritanceOverrides, protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
+import {
+  inheritedDimensionsChangedByTagEdit,
+  newCardInheritanceOverrides,
+  protectExistingCardInheritance,
+} from '@/lib/utils/galleryTagInheritance';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 
 type CardDraftOption = {
@@ -342,8 +346,7 @@ const CardForm: React.FC = () => {
     setField('content', content);
   }, [setField]);
   
-  const handleTagsChange = useCallback((newTagIds: string[]) => {
-    setField('tags', newTagIds);
+  const handleTagsChange = useCallback(async (newTagIds: string[]) => {
     const savedTags = lastSavedState.cardData.tags || [];
     if (
       savedTags.length === newTagIds.length &&
@@ -351,8 +354,48 @@ const CardForm: React.FC = () => {
     ) {
       return;
     }
-    void persistFieldPatch({ tags: newTagIds });
-  }, [lastSavedState.cardData.tags, persistFieldPatch, setField]);
+
+    const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    const inheritedDimensions = galleryInheritanceSettings
+      ? inheritedDimensionsChangedByTagEdit(
+          cardData.tags ?? [],
+          newTagIds,
+          allTags,
+          galleryInheritanceSettings,
+          overrides
+        )
+      : [];
+
+    if (inheritedDimensions.length > 0) {
+      const labels = inheritedDimensions.map((dimension) => DIMENSION_LABEL[dimension]);
+      const dimensionText = labels.length === 1
+        ? labels[0]
+        : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+      const confirmed = await feedback.confirm({
+        title: `Stop inheriting ${dimensionText}?`,
+        message: `Changing ${dimensionText} tags will stop inheriting ${dimensionText} from Gallery items for this card.`,
+        confirmLabel: 'Stop inheriting and change',
+        cancelLabel: 'Keep inheritance',
+        tone: 'default',
+      });
+      if (!confirmed) return;
+
+      const nextOverrides = { ...overrides };
+      inheritedDimensions.forEach((dimension) => {
+        nextOverrides[dimension] = true;
+      });
+      setField('galleryTagInheritanceOverrides', nextOverrides);
+      setField('tags', newTagIds);
+      await persistFieldPatch({
+        galleryTagInheritanceOverrides: nextOverrides,
+        tags: newTagIds,
+      });
+      return;
+    }
+
+    setField('tags', newTagIds);
+    await persistFieldPatch({ tags: newTagIds });
+  }, [allTags, cardData.galleryTagInheritanceOverrides, cardData.tags, feedback, galleryInheritanceSettings, lastSavedState.cardData.tags, persistFieldPatch, setField]);
 
   const handleSubjectTagChange = useCallback((nextSubjectTagId: string | null) => {
     setField('subjectTagId', nextSubjectTagId);
@@ -369,12 +412,23 @@ const CardForm: React.FC = () => {
     void persistFieldPatch({ subjectTagIds: nextSubjectTagIds });
   }, [persistFieldPatch, setField]);
 
-  const handleGalleryInheritanceChange = useCallback((dimension: TagDimension, inherit: boolean) => {
+  const handleGalleryInheritanceChange = useCallback(async (dimension: TagDimension, inherit: boolean) => {
     const current = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    if (inherit && current[dimension]) {
+      const label = DIMENSION_LABEL[dimension];
+      const confirmed = await feedback.confirm({
+        title: `Resume inheriting ${label}?`,
+        message: `${label} tags on this card will be replaced by the Gallery rollup.`,
+        confirmLabel: 'Replace and inherit',
+        cancelLabel: 'Keep override',
+        tone: 'default',
+      });
+      if (!confirmed) return;
+    }
     const next = { ...current, [dimension]: !inherit };
     setField('galleryTagInheritanceOverrides', next);
-    void persistFieldPatch({ galleryTagInheritanceOverrides: next });
-  }, [cardData.galleryTagInheritanceOverrides, persistFieldPatch, setField]);
+    await persistFieldPatch({ galleryTagInheritanceOverrides: next });
+  }, [cardData.galleryTagInheritanceOverrides, feedback, persistFieldPatch, setField]);
 
   const galleryInheritanceControls = useMemo(() => {
     const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
@@ -394,7 +448,7 @@ const CardForm: React.FC = () => {
                   type="checkbox"
                   checked={available && !overrides[dimension]}
                   disabled={isSaving || !available}
-                  onChange={(event) => handleGalleryInheritanceChange(dimension, event.target.checked)}
+                  onChange={(event) => void handleGalleryInheritanceChange(dimension, event.target.checked)}
                 />
                 {DIMENSION_LABEL[dimension]}
               </label>

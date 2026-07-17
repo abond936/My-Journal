@@ -6,6 +6,8 @@ import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
+const confirmMock = jest.fn();
+
 jest.mock('react-dnd', () => ({
   DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -109,6 +111,7 @@ jest.mock('@/components/admin/studio/StudioShellContext', () => ({
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
     alert: jest.fn(async () => undefined),
+    confirm: confirmMock,
     showError: jest.fn(),
   }),
 }));
@@ -163,15 +166,16 @@ const mockTags: Tag[] = [
 describe('CardForm', () => {
   const mockOnSave = jest.fn();
 
-  const renderCardForm = () =>
+  const renderCardForm = (initialCard: Card = mockCard) =>
     render(
-      <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
+      <CardFormProvider initialCard={initialCard} allTags={mockTags} onSave={mockOnSave}>
         <CardForm />
       </CardFormProvider>
     );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    confirmMock.mockResolvedValue(true);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -186,6 +190,55 @@ describe('CardForm', () => {
         },
       }),
     }) as jest.Mock;
+  });
+
+  it('asks before a manual tag change overrides an inherited dimension', async () => {
+    const inheritedCard: Card = {
+      ...mockCard,
+      tags: ['tag-1'],
+      galleryTagInheritanceOverrides: { who: false, what: false, when: false, where: false },
+    };
+    mockOnSave.mockResolvedValue({
+      ...inheritedCard,
+      tags: ['tag-1', 'tag-2'],
+      galleryTagInheritanceOverrides: { who: false, what: true, when: false, where: false },
+    });
+    renderCardForm(inheritedCard);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await userEvent.click(screen.getByTestId('mock-tag-command-bar'));
+
+    await waitFor(() => expect(confirmMock).toHaveBeenCalled());
+    expect(confirmMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Stop inheriting What?',
+        confirmLabel: 'Stop inheriting and change',
+      })
+    );
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tags: ['tag-1', 'tag-2'],
+          galleryTagInheritanceOverrides: { who: false, what: true, when: false, where: false },
+        })
+      );
+    });
+  });
+
+  it('keeps inherited tags unchanged when override confirmation is cancelled', async () => {
+    confirmMock.mockResolvedValue(false);
+    const inheritedCard: Card = {
+      ...mockCard,
+      tags: ['tag-1'],
+      galleryTagInheritanceOverrides: { who: false, what: false, when: false, where: false },
+    };
+    renderCardForm(inheritedCard);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    await userEvent.click(screen.getByTestId('mock-tag-command-bar'));
+    await waitFor(() => expect(confirmMock).toHaveBeenCalled());
+
+    expect(mockOnSave).not.toHaveBeenCalled();
   });
 
   it('renders all main form sections', () => {

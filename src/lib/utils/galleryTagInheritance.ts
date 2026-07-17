@@ -65,6 +65,26 @@ export function effectiveGalleryInheritanceToggles(
   };
 }
 
+export function inheritedDimensionsChangedByTagEdit(
+  currentTagIds: string[],
+  nextTagIds: string[],
+  allTags: Tag[],
+  settings: GalleryTagInheritanceToggles,
+  overrides: GalleryTagInheritanceToggles | undefined
+): TagDimension[] {
+  const effective = effectiveGalleryInheritanceToggles(settings, overrides);
+  const resolved = buildResolvedTagDimensionMap(allTags);
+  const current = new Set(currentTagIds);
+  const next = new Set(nextTagIds);
+
+  return DIMENSION_ORDER.filter((dimension) => {
+    if (!effective[dimension]) return false;
+    return [...new Set([...current, ...next])].some(
+      (tagId) => resolved.get(tagId) === dimension && current.has(tagId) !== next.has(tagId)
+    );
+  });
+}
+
 function tagsForDimension(
   tagIds: string[],
   dimension: TagDimension,
