@@ -484,11 +484,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Piles** — Provisional story grouping, correction, tagging, dismissal, and card creation.
 - **Stacks** — Manual hero/member grouping without deleting assets.
 - **Map preview** — Transient media view from import-tag mapping.
-- **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record.
+- **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record. Existing accessible local originals have verified evidence and uncontested registry entries.
 
 ⭕1 **Planned**
 
-- **Duplicates** — Backfill existing evidence, review likely matches, and reconcile confirmed same-asset records with recovery evidence.
+- **Duplicates** — Recover evidence where original source bytes are unavailable, review exact and likely matches, and reconcile confirmed same-asset records with recovery evidence.
 - **Readiness** — Show truthful upload, processing, indexing, ready, and failure states.
 - **Consistency** — Align Media with Cards interaction patterns.
 - **Pile merge** — Merge and refine piles beyond moving individual members.
