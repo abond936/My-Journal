@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilterX, Pencil } from 'lucide-react';
+import { FilterX } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import BulkEditMediaTagsModal from '@/components/admin/studio/media/BulkEditMediaTagsModal';
@@ -17,8 +17,7 @@ import type { MediaBankImportSummary } from '@/components/admin/studio/media/Med
 import MediaOrganizeStrip from '@/components/admin/studio/media/MediaOrganizeStrip';
 import MediaStoryPilesOverlayView from '@/components/admin/studio/media/MediaStoryPilesOverlayView';
 import EditModal from '@/components/admin/studio/cards/EditModal';
-import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
-import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import AdminDimensionalTagFilter from '@/components/admin/common/AdminDimensionalTagFilter';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import AdminTileSizeControl from '@/components/admin/common/AdminTileSizeControl';
 import cardAdminStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
@@ -145,7 +144,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   };
 
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
-  const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [duplicateTriageMode, setDuplicateTriageMode] = useState(
     initialLocalFilterPrefsRef.current.duplicateTriageMode
   );
@@ -493,16 +491,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     [dimensionalQueryOverlay, transientDimensionalQueryOverlay]
   );
 
-  const studioSelectedFilterTags = useMemo(() => {
-    const ids = new Set(flattenDimensionalTagMapToTagIds(studioActiveTagFilterMap));
-    for (const dimension of ['who', 'what', 'when', 'where'] as DimensionKey[]) {
-      const state = dimensionFilters[dimension];
-      if (state.mode === 'matches' && state.tagId) {
-        ids.add(state.tagId);
-      }
-    }
-    return allTags.filter((t) => t.docId && ids.has(t.docId!));
-  }, [allTags, dimensionFilters, studioActiveTagFilterMap]);
+  const studioSelectedFilterTagIds = useMemo(
+    () => flattenDimensionalTagMapToTagIds(studioActiveTagFilterMap),
+    [studioActiveTagFilterMap]
+  );
 
   useEffect(() => {
     const overlayActive = storyPilesOverlay && mediaPopulation === 'bank';
@@ -877,13 +869,22 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     dimension: DimensionKey,
     patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>
   ) => {
-    setDimensionFilters((prev) => ({
-      ...prev,
-      [dimension]: {
-        ...prev[dimension],
-        ...patch,
-      },
-    }));
+    setDimensionFilters((prev) => {
+      const next = {
+        ...prev,
+        [dimension]: {
+          ...prev[dimension],
+          ...patch,
+        },
+      };
+      const dimensionPresence = Object.fromEntries(
+        (['who', 'what', 'when', 'where'] as const)
+          .filter((key) => next[key].mode === 'hasAny' || next[key].mode === 'isEmpty')
+          .map((key) => [key, next[key].mode])
+      ) as NonNullable<MediaFilters['dimensionPresence']>;
+      void fetchMedia(1, { dimensionPresence });
+      return next;
+    });
   };
 
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
@@ -1340,79 +1341,16 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             </label>
           </div>
           <div className={styles.studioMediaMacroBlock}>
-            <CardDimensionalTagCommandBar
+            <AdminDimensionalTagFilter
               className={styles.studioMediaMacroTagSelector}
-              card={{ tags: studioSelectedFilterTags.map((tag) => tag.docId!).filter(Boolean) }}
+              selectedTagIds={studioSelectedFilterTagIds}
               allTags={allTags}
-              onUpdateTags={handleStudioDimensionalFilterChange}
-              variant="compact"
-              searchPlaceholder="Edit tags..."
-              trailingSlot={
-                <div className={styles.studioTagsActions}>
-                  <button
-                    type="button"
-                    className={styles.studioTagsEditButton}
-                    onClick={() => setTagFilterModalOpen(true)}
-                    aria-label="Edit media tag filters"
-                    title="Edit media tag filters"
-                  >
-                    <Pencil size={16} aria-hidden="true" />
-                  </button>
-                </div>
-              }
-              footerContent={
-                <>
-                  <div className={styles.studioTagScopeRow}>
-                    <span className={styles.studioTagScopeLabel}>Tag scope</span>
-                    <select
-                      className={styles.studioFilterSelectFull}
-                      value={filters.tagScope}
-                      onChange={(e) => handleFilterChange('tagScope', e.target.value as MediaFilters['tagScope'])}
-                    >
-                      <option value="all">All tags</option>
-                      <option value="subject">Subject only</option>
-                    </select>
-                  </div>
-                  <div className={styles.studioMediaRuleMatrix}>
-                    {(['who', 'what', 'when', 'where'] as DimensionKey[]).map((dimension) => {
-                      const state = dimensionFilters[dimension];
-                      const options = allTags.filter((t) => t.dimension === dimension && t.docId);
-                      return (
-                        <div key={dimension} className={styles.studioMediaRuleColumn}>
-                          <select
-                            className={styles.studioFilterSelectFull}
-                            value={state.mode}
-                            onChange={(e) =>
-                              updateDimensionFilter(dimension, {
-                                mode: e.target.value as AdminDimensionFilterMode,
-                              })
-                            }
-                          >
-                            <option value="any">Any</option>
-                            <option value="hasAny">Has any</option>
-                            <option value="isEmpty">Is empty</option>
-                            <option value="matches">Matches tag</option>
-                          </select>
-                          {state.mode === 'matches' ? (
-                            <select
-                              className={styles.studioFilterSelectFull}
-                              value={state.tagId}
-                              onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                            >
-                              <option value="">Select tag...</option>
-                              {options.map((tag) => (
-                                <option key={tag.docId} value={tag.docId}>
-                                  {tag.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              }
+              onSelectedTagIdsChange={handleStudioDimensionalFilterChange}
+              tagScope={filters.tagScope}
+              onTagScopeChange={(scope) => handleFilterChange('tagScope', scope)}
+              dimensionFilters={dimensionFilters}
+              onDimensionFilterChange={updateDimensionFilter}
+              surfaceLabel="Media"
             />
           </div>
           </>
@@ -1505,23 +1443,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           setBulkTagModalOpen(false);
         }}
       />
-      <EditModal
-        isOpen={tagFilterModalOpen}
-        onClose={() => setTagFilterModalOpen(false)}
-        title="Media tag filters"
-        size="wide"
-      >
-        <MacroTagSelector
-          startExpanded
-          suppressOverlay
-          applySelectionOnChange
-          selectedTags={studioSelectedFilterTags}
-          allTags={allTags}
-          onChange={handleStudioDimensionalFilterChange}
-          onRequestClose={() => setTagFilterModalOpen(false)}
-          collapsedSummary="none"
-        />
-      </EditModal>
 
       <div className={styles.embeddedMediaBody}>{mainBody}</div>
     </div>

@@ -93,6 +93,7 @@ export interface CardDimensionalTagCommandBarProps {
   footerContent?: React.ReactNode;
   /** Compose/card-edit surfaces: render one tag per line within each dimension. */
   stackTagsWithinDimension?: boolean;
+  onDimensionSelect?: (dimension: TagDimension) => void;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -112,6 +113,7 @@ export default function CardDimensionalTagCommandBar({
   suggestionsDensity = 'default',
   footerContent,
   stackTagsWithinDimension = false,
+  onDimensionSelect,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -431,7 +433,16 @@ export default function CardDimensionalTagCommandBar({
           <div className={styles.dimensionRow}>
             {DIMENSION_ORDER.map((dim) => (
               <div key={dim} className={styles.dimCell}>
-                {hideDimensionRowLabels ? null : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
+                {hideDimensionRowLabels ? null : onDimensionSelect ? (
+                  <button
+                    type="button"
+                    className={styles.dimLabelButton}
+                    onClick={() => onDimensionSelect(dim)}
+                    aria-label={`Browse ${DIMENSION_LABEL[dim]} tags`}
+                  >
+                    {DIMENSION_LABEL[dim]}
+                  </button>
+                ) : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
                 <div className={styles.chipStrip}>
                   {core[dim].length === 0 ? (
                     card.galleryTagRollupStatuses?.[dim] === 'unreviewed' ? (

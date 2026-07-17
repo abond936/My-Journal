@@ -46,6 +46,28 @@
   line-height: var(--admin-support-meta-line-height);
 }
 
+.dimLabelButton {
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--font-weight-semibold);
+  font-style: italic;
+  line-height: var(--admin-support-meta-line-height);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.dimLabelButton:hover,
+.dimLabelButton:focus-visible {
+  color: var(--admin-support-label-color);
+}
+
 .wrapCompact .dimLabel {
   font-weight: var(--font-weight-normal);
   font-size: var(--font-size-xs);

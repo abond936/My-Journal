@@ -13,7 +13,9 @@ jest.mock('@/components/providers/TagProvider', () => ({
 
 jest.mock('@/components/admin/studio/cards/TagPickerDimensionColumn', () => ({
   __esModule: true,
-  default: () => <div data-testid="mock-dimension-column" />,
+  default: ({ dimension }: { dimension: { docId: string } }) => (
+    <div data-testid={`mock-dimension-${dimension.docId}`} />
+  ),
 }));
 
 const tags: Tag[] = [
@@ -46,5 +48,27 @@ describe('MacroTagSelector', () => {
       expect(onChange).toHaveBeenCalledWith(['alan', 'party']);
       expect(onSubjectTagIdChange).toHaveBeenCalledWith('party');
     });
+  });
+
+  it('can show one dimension without dropping selections from the others', async () => {
+    const onChange = jest.fn();
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={tags}
+        allTags={tags}
+        onChange={onChange}
+        visibleDimensions={['who']}
+        pickerTitle="Who filters"
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Who filters' })).toBeInTheDocument();
+    expect(screen.getByTestId('mock-dimension-dim-who')).toBeInTheDocument();
+    expect(screen.queryByTestId('mock-dimension-dim-what')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(['alan', 'party']));
   });
 });

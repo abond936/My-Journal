@@ -169,6 +169,7 @@ export interface MediaFilters {
   /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
   assignment: string;
   tagScope: 'all' | 'subject';
+  dimensionPresence?: Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
 }
 
 type CachedMediaQueryResult = {
@@ -488,6 +489,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (mediaFilters.search) params.append('search', mediaFilters.search);
     if (mediaFilters.assignment !== 'all') params.append('assignment', mediaFilters.assignment);
     if (mediaFilters.tagScope === 'subject') params.append('tagScope', 'subject');
+    for (const dimension of ['who', 'what', 'when', 'where'] as const) {
+      const presence = mediaFilters.dimensionPresence?.[dimension];
+      if (presence) params.set(`${dimension}Presence`, presence);
+    }
     appendDimensionalTagQueryParams(dimMap, params);
 
     return params.toString();

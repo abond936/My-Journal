@@ -10,7 +10,7 @@ import {
   filterTreesBySearch,
   normalizeTagDimensionKey,
 } from '@/lib/utils/tagUtils';
-import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
+import { DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 
@@ -62,6 +62,11 @@ interface MacroTagSelectorProps {
   suppressOverlay?: boolean;
   /** When true, each checkbox toggle calls onChange immediately (filter surfaces). */
   applySelectionOnChange?: boolean;
+  /** Limit the expanded tree while preserving selections from hidden dimensions. */
+  visibleDimensions?: TagDimension[];
+  pickerTitle?: string;
+  searchPlaceholder?: string;
+  hidePickerHeading?: boolean;
 }
 
 export default function MacroTagSelector({
@@ -80,6 +85,10 @@ export default function MacroTagSelector({
   collapsedSummary = 'sparseTrees',
   suppressOverlay = false,
   applySelectionOnChange = false,
+  visibleDimensions = [...DIMENSION_ORDER],
+  pickerTitle = 'Assign tags',
+  searchPlaceholder = 'Find tags…',
+  hidePickerHeading = false,
 }: MacroTagSelectorProps) {
   const isControlled =
     typeof expandedProp === 'boolean' && typeof onExpandedChange === 'function';
@@ -170,6 +179,10 @@ export default function MacroTagSelector({
         saving={saving}
         suppressOverlay={suppressOverlay}
         applySelectionOnChange={applySelectionOnChange}
+        visibleDimensions={visibleDimensions}
+        pickerTitle={pickerTitle}
+        searchPlaceholder={searchPlaceholder}
+        hidePickerHeading={hidePickerHeading}
       />
     );
   }
@@ -247,6 +260,10 @@ interface ExpandedViewProps {
   className?: string;
   suppressOverlay?: boolean;
   applySelectionOnChange?: boolean;
+  visibleDimensions: TagDimension[];
+  pickerTitle: string;
+  searchPlaceholder: string;
+  hidePickerHeading: boolean;
 }
 
 function ExpandedView({
@@ -261,6 +278,10 @@ function ExpandedView({
   className,
   suppressOverlay = false,
   applySelectionOnChange = false,
+  visibleDimensions,
+  pickerTitle,
+  searchPlaceholder,
+  hidePickerHeading,
 }: ExpandedViewProps) {
   const { tags } = useTag();
   const tagSource = useMemo(() => {
@@ -298,8 +319,12 @@ function ExpandedView({
 
   const dimensionalTree = useMemo(() => {
     if (!tagSource.length) return [];
-    return createUITreeFromDimensions(tagSource);
-  }, [tagSource]);
+    const visible = new Set(visibleDimensions);
+    return createUITreeFromDimensions(tagSource).filter((dimension) => {
+      const key = normalizeTagDimensionKey(dimension.dimension as string | undefined);
+      return key ? visible.has(key) : false;
+    });
+  }, [tagSource, visibleDimensions]);
 
   const filteredDimensionalTree = useMemo(() => {
     const search = searchTerm.trim();
@@ -391,12 +416,12 @@ function ExpandedView({
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <h2 className={styles.modalHeader}>Edit Tags</h2>
+      {hidePickerHeading ? null : <h2 className={styles.modalHeader}>{pickerTitle}</h2>}
 
       <div className={styles.searchBar}>
         <input
           type="text"
-          placeholder="Edit tags…"
+          placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className={styles.searchInput}

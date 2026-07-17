@@ -180,6 +180,17 @@ export async function GET(request: Request) {
     if (searchParams.get('whenMissing') === 'true') dimensionMissing.when = true;
     if (searchParams.get('whereMissing') === 'true') dimensionMissing.where = true;
 
+    const dimensionPresent: {
+      who?: boolean;
+      what?: boolean;
+      when?: boolean;
+      where?: boolean;
+    } = {};
+    if (searchParams.get('whoPresent') === 'true') dimensionPresent.who = true;
+    if (searchParams.get('whatPresent') === 'true') dimensionPresent.what = true;
+    if (searchParams.get('whenPresent') === 'true') dimensionPresent.when = true;
+    if (searchParams.get('wherePresent') === 'true') dimensionPresent.where = true;
+
     // Missing-dimension filter wins over same-dimension tag list (cannot intersect).
     if (dimensionMissing.who) delete dimensionalTags.who;
     if (dimensionMissing.what) delete dimensionalTags.what;
@@ -189,6 +200,10 @@ export async function GET(request: Request) {
     if (dimensionMissing.what) delete exactDimensionalTags.what;
     if (dimensionMissing.when) delete exactDimensionalTags.when;
     if (dimensionMissing.where) delete exactDimensionalTags.where;
+    if (dimensionMissing.who) delete dimensionPresent.who;
+    if (dimensionMissing.what) delete dimensionPresent.what;
+    if (dimensionMissing.when) delete dimensionPresent.when;
+    if (dimensionMissing.where) delete dimensionPresent.where;
 
     const hasExactDimensionalFilters = Boolean(
       exactDimensionalTags.who ||
@@ -202,6 +217,13 @@ export async function GET(request: Request) {
         dimensionMissing.what ||
         dimensionMissing.when ||
         dimensionMissing.where
+    );
+
+    const hasDimensionPresentFilters = Boolean(
+      dimensionPresent.who ||
+        dimensionPresent.what ||
+        dimensionPresent.when ||
+        dimensionPresent.where
     );
 
     let status = searchParams.get('status') as Card['status'] | 'all' | null;
@@ -294,7 +316,7 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
       }
 
-      if (sortBy === 'random' && !q?.trim()) {
+      if (sortBy === 'random' && !q?.trim() && !hasDimensionPresentFilters) {
         const result = await getSeededRandomCards({
           seed: searchParams.get('randomSeed') || 'default',
           status,
@@ -319,6 +341,7 @@ export async function GET(request: Request) {
         !tags?.length &&
         Object.keys(dimensionalTags).length === 0 &&
         !hasDimensionMissingFilters &&
+        !hasDimensionPresentFilters &&
         !listSortBy
       ) {
         const items = await getParentCardsByChildId(childrenIds_contains, {
@@ -354,16 +377,22 @@ export async function GET(request: Request) {
           if (dimensionMissing.what && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'what') : !cardDimEmpty(card.what))) return false;
           if (dimensionMissing.when && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'when') : !cardDimEmpty(card.when))) return false;
           if (dimensionMissing.where && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'where') : !cardDimEmpty(card.where))) return false;
+          if (dimensionPresent.who && (tagScope === 'subject' ? !cardHasSubjectInDimension(card, 'who') : cardDimEmpty(card.who))) return false;
+          if (dimensionPresent.what && (tagScope === 'subject' ? !cardHasSubjectInDimension(card, 'what') : cardDimEmpty(card.what))) return false;
+          if (dimensionPresent.when && (tagScope === 'subject' ? !cardHasSubjectInDimension(card, 'when') : cardDimEmpty(card.when))) return false;
+          if (dimensionPresent.where && (tagScope === 'subject' ? !cardHasSubjectInDimension(card, 'where') : cardDimEmpty(card.where))) return false;
           return true;
         });
       };
 
       const needsSubjectScopedScan =
-        tagScope === 'subject' &&
-        (Boolean(tags?.length) ||
-          Object.keys(dimensionalTags).length > 0 ||
-          hasExactDimensionalFilters ||
-          hasDimensionMissingFilters);
+        (tagScope === 'subject' &&
+          (Boolean(tags?.length) ||
+            Object.keys(dimensionalTags).length > 0 ||
+            hasExactDimensionalFilters ||
+            hasDimensionMissingFilters ||
+            hasDimensionPresentFilters)) ||
+        hasDimensionPresentFilters;
 
       // Only dispatch to Typesense for queries that actually need it: text search,
       // multi-dimensional tag filters, or missing-dimension filters. Plain catalog
@@ -373,6 +402,7 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !hasDimensionPresentFilters &&
         !(tagScope === 'subject' &&
           (Object.keys(dimensionalTags).length > 0 ||
             hasExactDimensionalFilters ||

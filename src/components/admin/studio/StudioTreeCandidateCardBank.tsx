@@ -2,14 +2,13 @@
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useDndContext } from '@dnd-kit/core';
-import { FilterX, Pencil, X } from 'lucide-react';
+import { FilterX, X } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
 import BulkEditTagsModal from '@/components/admin/studio/cards/BulkEditTagsModal';
 import CardAdminGrid from '@/components/admin/studio/cards/CardAdminGrid';
-import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import EditModal from '@/components/admin/studio/cards/EditModal';
-import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import AdminDimensionalTagFilter from '@/components/admin/common/AdminDimensionalTagFilter';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import AdminTileSizeControl from '@/components/admin/common/AdminTileSizeControl';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
@@ -173,7 +172,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>(
     initialLocalFilterPrefsRef.current.displayModeFilter
   );
-  const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [dimensionFilters, setDimensionFilters] = useState<AdminDimensionFilterState>(
     initialLocalFilterPrefsRef.current.dimensionFilters
   );
@@ -258,6 +256,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
         } else if (state.mode === 'isEmpty') {
           params.set(`${dimension}Missing`, 'true');
+        } else if (state.mode === 'hasAny') {
+          params.set(`${dimension}Present`, 'true');
         }
       }
       const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
@@ -472,11 +472,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const onCardTagDimensionalMap = useMemo(
     () => groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []),
     [deferredFilterTagIds, allTags]
-  );
-
-  const selectedFilterTags = useMemo(
-    () => (allTags ?? []).filter((t) => t.docId && filterTagIds.includes(t.docId!)),
-    [allTags, filterTagIds]
   );
 
   const matchesFilters = useCallback(
@@ -1009,79 +1004,16 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       </div>
 
       <div className={styles.studioCardMacroBlock}>
-        <CardDimensionalTagCommandBar
+        <AdminDimensionalTagFilter
           className={styles.studioCardMacroTagSelector}
-          card={{ tags: filterTagIds }}
+          selectedTagIds={filterTagIds}
           allTags={allTags || []}
-          onUpdateTags={(next) => setFilterTagIds(next)}
-          variant="compact"
-          searchPlaceholder="Edit tags..."
-          trailingSlot={
-            <div className={styles.studioTagsActions}>
-              <button
-                type="button"
-                className={styles.studioTagsEditButton}
-                onClick={() => setTagFilterModalOpen(true)}
-                aria-label="Edit card tag filters"
-                title="Edit card tag filters"
-              >
-                <Pencil size={16} aria-hidden="true" />
-              </button>
-            </div>
-          }
-          footerContent={
-            <>
-              <div className={styles.studioTagScopeRow}>
-                <span className={styles.studioTagScopeLabel}>Tag scope</span>
-                <select
-                  className={styles.studioCardSelect}
-                  value={tagFilterScope}
-                  onChange={(e) => setTagFilterScope(e.target.value as AdminTagFilterScope)}
-                >
-                  <option value="all">All tags</option>
-                  <option value="subject">Subject only</option>
-                </select>
-              </div>
-              <div className={styles.studioRuleMatrix}>
-                {Array.from(DIMENSION_KEYS).map((dimension) => {
-                  const state = dimensionFilters[dimension];
-                  const options = (allTags || []).filter((t) => t.dimension === dimension && t.docId);
-                  return (
-                    <div key={dimension} className={styles.studioRuleColumn}>
-                      <select
-                        className={styles.studioCardSelect}
-                        value={state.mode}
-                        onChange={(e) =>
-                          updateDimensionFilter(dimension, {
-                            mode: e.target.value as AdminDimensionFilterMode,
-                          })
-                        }
-                      >
-                        <option value="any">Any</option>
-                        <option value="hasAny">Has any</option>
-                        <option value="isEmpty">Is empty</option>
-                        <option value="matches">Matches tag</option>
-                      </select>
-                      {state.mode === 'matches' ? (
-                        <select
-                          className={styles.studioCardSelect}
-                          value={state.tagId}
-                          onChange={(e) => updateDimensionFilter(dimension, { tagId: e.target.value })}
-                        >
-                          <option value="">Select tag...</option>
-                          {options.map((tag) => (
-                            <option key={tag.docId} value={tag.docId}>
-                              {tag.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          }
+          onSelectedTagIdsChange={setFilterTagIds}
+          tagScope={tagFilterScope}
+          onTagScopeChange={setTagFilterScope}
+          dimensionFilters={dimensionFilters}
+          onDimensionFilterChange={updateDimensionFilter}
+          surfaceLabel="Cards"
         />
       </div>
       {loadingWorkspaceCards ? (
@@ -1289,22 +1221,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           setBulkSelectedCardIds(new Set());
         }}
       />
-      <EditModal
-        isOpen={tagFilterModalOpen}
-        onClose={() => setTagFilterModalOpen(false)}
-        title="Card filters"
-        size="wide"
-      >
-        <MacroTagSelector
-          expanded={tagFilterModalOpen}
-          onExpandedChange={setTagFilterModalOpen}
-          selectedTags={selectedFilterTags}
-          allTags={allTags || []}
-          onChange={setFilterTagIds}
-          collapsedSummary="none"
-          suppressOverlay
-        />
-      </EditModal>
     </div>
   );
 }

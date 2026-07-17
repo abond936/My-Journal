@@ -284,6 +284,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Density** — A compact tile-size control opens continuous adjustment while retaining title, dimensional subjects, selection, and tag access at every permitted size.
 - **Selection** — Individual and bulk selection with bounded actions.
 - **Filters** — Status, form, dimensions, tags, subject scope, and assignment-related refinements.
+- **Tag filtering** — Direct known-tag entry, independent Who/What/When/Where tree browsing, an explicit all-dimensions picker, and compact presence and subject-scope rules shared with Media.
 - **Forms** — Story, Gallery, Question, and Callout management.
 - **Subjects** — Card subject authoring.
 - **Compose** — Open the selected card for full authoring.
@@ -291,7 +292,6 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ⭕1 **Planned**
 
 - **Tags** — Improve keyboard use, hierarchy, and disambiguation.
-- **Filters** — Provide clearer single-dimension search without removing advanced filtering.
 - **Quote** — Add Quote only with the completed Quote object.
 
 ⭕2 **Future**
@@ -377,6 +377,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Starter set** — Optional additive Tag Set 0.
 - **Reader filters** — Any assigned and Subject only.
 - **Reliability** — Shared modal ownership, exact lookup, scoped filters, and post-save reconciliation.
+- **Selection** — Direct entry handles known tags, dimensional trees handle focused browsing, and the full four-dimensional selector remains available for comprehensive and bulk classification.
 - **Integrity** — Canonical hierarchy with reconciled paths, counts, derived fields, and search projections.
 - **Identities** — Stable human and non-human subjects with canonical names, aliases, details, and editing.
 - **Relationships** — Parent, spouse, and partner records with archive perspective and contextual role resolution.
@@ -400,12 +401,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 📋 **Contracts**
 
 - Reflections live under What; operational import branches are not normal author or Reader vocabulary.
+- Parenthood and Childhood may be stable What concepts when they describe story subject matter; a person's childhood, parenthood, or other life stage is identity-relative context rather than a universal assigned tag.
 - Who represents stable human and non-human named identities; What covers events, activities, and Reflections; When uses sortable chronology; Where supports geographic and venue hierarchy.
 - Each named subject has one stable identity; canonical and historical names remain searchable aliases of that identity.
 - Mother, Father, Parent, Sibling, Grandparent, and similar human roles are contextual relationships resolved from an explicit human perspective.
+- Relationship groups may organize Who browsing, but selecting through one assigns the stable identity rather than the relationship label. Existing relational-tag assignments remain unchanged until an author-reviewed migration.
+- Identity-relative stages combine an identity with a dated or approximate period for presentation and filtering; they are not inherited as ordinary When tags.
 - Multiple people may be subjects; a meaningful couple, family, or household is an explicitly typed group rather than a duplicate person.
 - `parentId` is taxonomy authority; paths, counts, dimensional fields, and search records are derived projections that must reconcile to it.
 - Existing assignments are never renamed, merged, deleted, or reinterpreted without an author-reviewed migration with affected-object counts and recovery evidence.
+- Known tags use direct entry; clicking Who, What, When, or Where opens only that dimension without changing the others; the complete selector is reserved for comprehensive, initial, or bulk classification.
 - Provisional assignments do not affect counts, filtering, or presentation.
 - Gallery inheritance has independent Who, What, When, and Where controls. Onboarding explains them and requires an explicit author selection; no dimension is implicitly enabled.
 - Delivered inheritance applies the deduplicated union of confirmed Gallery-media tags to enabled card dimensions.

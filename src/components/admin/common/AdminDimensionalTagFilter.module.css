@@ -1,0 +1,99 @@
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.actionButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 0.5rem;
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  cursor: pointer;
+}
+
+.actionButton:hover,
+.actionButton:focus-visible,
+.actionButton[aria-expanded='true'] {
+  background: var(--admin-support-control-strong-hover-background-color);
+}
+
+.ruleCount {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 15px;
+  min-height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--admin-feedback-warning-background-color, var(--admin-chrome-active-control-background-color));
+  color: var(--admin-feedback-warning-color, var(--admin-support-control-strong-text-color));
+  font-size: 0.625rem;
+  line-height: 15px;
+  text-align: center;
+}
+
+.rulesPopover {
+  position: absolute;
+  z-index: calc(var(--z-index-dropdown, 1100) + 1);
+  top: calc(100% + var(--spacing-xs));
+  right: 0;
+  width: min(310px, 100%);
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-window-background-color);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--admin-chrome-text-color) 18%, transparent);
+}
+
+.scopeRow,
+.ruleRow {
+  display: grid;
+  grid-template-columns: minmax(70px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.scopeRow {
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+}
+
+.ruleList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.scopeRow span,
+.ruleRow span {
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+}
+
+.scopeRow select,
+.ruleRow select {
+  min-width: 0;
+  padding: 3px var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font-family: var(--admin-support-control-font-family);
+  font-size: var(--font-size-xs);
+}

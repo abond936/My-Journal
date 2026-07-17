@@ -201,4 +201,60 @@ describe('GET /api/media fallback text search', () => {
     expect(payload.media).toHaveLength(1);
     expect(payload.media[0].docId).toBe('media-1');
   });
+
+  it('applies dimensional presence to the complete fallback population', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('media-with-who', {
+            filename: 'with-who.jpg',
+            width: 100,
+            height: 100,
+            size: 1000,
+            contentType: 'image/jpeg',
+            storageUrl: 'https://example.test/with-who.jpg',
+            storagePath: 'images/with-who.jpg',
+            source: 'local',
+            who: ['person-1'],
+            createdAt: 2,
+            updatedAt: 2,
+          }),
+          makeMediaDoc('media-empty-who', {
+            filename: 'empty-who.jpg',
+            width: 100,
+            height: 100,
+            size: 1000,
+            contentType: 'image/jpeg',
+            storageUrl: 'https://example.test/empty-who.jpg',
+            storagePath: 'images/empty-who.jpg',
+            source: 'local',
+            who: [],
+            createdAt: 1,
+            updatedAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(makeRequest('https://example.test/api/media?limit=40&whoPresence=hasAny'));
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['media-with-who']);
+  });
 });

@@ -211,6 +211,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const assignment = searchParams.get('assignment') || 'all';
     const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
+    const dimensionPresence = Object.fromEntries(
+      (['who', 'what', 'when', 'where'] as const)
+        .map((dimension) => [dimension, searchParams.get(`${dimension}Presence`)])
+        .filter((entry): entry is [string, 'hasAny' | 'isEmpty'] => entry[1] === 'hasAny' || entry[1] === 'isEmpty')
+    ) as Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
+    const hasDimensionPresenceSeek = Object.keys(dimensionPresence).length > 0;
     const includeTotal = searchParams.get('includeTotal') !== 'false';
     const tagDimension = searchParams.get('tagDimension');
     const tagMode = searchParams.get('tagMode');
@@ -233,6 +239,7 @@ export async function GET(request: NextRequest) {
     const wantTypesense =
       isTypesenseConfigured() &&
       !shouldUseLegacyTagSeek &&
+      !hasDimensionPresenceSeek &&
       !(tagScope === 'subject' && hasDimensionalTagSeek) &&
       (hasSearchSeek ||
         hasCaptionSeek ||
@@ -282,7 +289,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek) {
+    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek || hasDimensionPresenceSeek) {
       const predicate = (row: Media) => {
         if (hasSourceSeek && row.source !== source) return false;
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
@@ -292,6 +299,15 @@ export async function GET(request: NextRequest) {
         if (!mediaMatchesSearch(row, searchTrimmed, tagNameLookup)) return false;
         if (hasDimensionalTagSeek) {
           if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
+        }
+        for (const dimension of ['who', 'what', 'when', 'where'] as const) {
+          const presence = dimensionPresence[dimension];
+          if (!presence) continue;
+          const hasValue = tagScope === 'subject'
+            ? Boolean((row[dimension] ?? []).some((tagId) => row.subjectFilterTags?.[tagId]))
+            : (row[dimension] ?? []).length > 0;
+          if (presence === 'hasAny' && !hasValue) return false;
+          if (presence === 'isEmpty' && hasValue) return false;
         }
         if (shouldUseLegacyTagSeek) {
           if (!mediaMatchesTagFilter(row, tagDimension, tagMode, tagValue)) return false;
