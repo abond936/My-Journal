@@ -8,6 +8,10 @@ import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Media } from '@/lib/types/photo';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
+import { useTag } from '@/components/providers/TagProvider';
+import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import styles from './MediaEditModal.module.css';
 
 type RelatedCardSummary = {
@@ -38,7 +42,7 @@ export default function MediaEditModal({
   selectedMediaId: string | null;
   onSelectMedia: (mediaId: string) => void;
   onClose: () => void;
-  onSaveMediaFields: (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>) => Promise<void>;
+  onSaveMediaFields: (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagIds'>>) => Promise<void>;
   onMediaUpdated?: (media: Media) => void;
   onDeleteMedia?: (mediaId: string) => Promise<void>;
   currentCardContext?: CurrentCardContext | null;
@@ -46,6 +50,7 @@ export default function MediaEditModal({
 }) {
   const router = useRouter();
   const feedback = useAppFeedback();
+  const { tags: allTags } = useTag();
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const [localOverrides, setLocalOverrides] = useState<Record<string, Media>>({});
   const resolvedMediaItems = useMemo(
@@ -63,6 +68,8 @@ export default function MediaEditModal({
   const [replacing, setReplacing] = useState(false);
   const [relatedCards, setRelatedCards] = useState<RelatedCardSummary[]>([]);
   const [loadingRelatedCards, setLoadingRelatedCards] = useState(false);
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [tagPickerDimension, setTagPickerDimension] = useState<TagDimension | null>(null);
 
   useEffect(() => {
     if (!selectedMedia) return;
@@ -70,7 +77,26 @@ export default function MediaEditModal({
     const { horizontal, vertical } = parseObjectPositionToPercents(selectedMedia.objectPosition);
     setFocalH(horizontal);
     setFocalV(vertical);
+    setTagPickerOpen(false);
+    setTagPickerDimension(null);
   }, [selectedMedia]);
+
+  const saveTagAssignment = async (nextTagIds: string[], nextSubjectTagIds: string[]) => {
+    if (!selectedMedia) return;
+    await onSaveMediaFields(selectedMedia.docId, {
+      tags: nextTagIds,
+      subjectTagIds: nextSubjectTagIds,
+    });
+    setLocalOverrides((current) => ({
+      ...current,
+      [selectedMedia.docId]: {
+        ...selectedMedia,
+        tags: nextTagIds,
+        subjectTagIds: nextSubjectTagIds,
+        subjectTagId: nextSubjectTagIds[0] ?? null,
+      },
+    }));
+  };
 
   useEffect(() => {
     if (!isOpen || !selectedMedia) return;
@@ -318,6 +344,60 @@ export default function MediaEditModal({
                     Media caption is the default source of truth. Card-level caption overrides should stay exceptional.
                   </p>
                 </div>
+              </div>
+
+              <div className={styles.relationshipCard}>
+                <div className={styles.fieldLabel}>Tags</div>
+                <CardDimensionalTagCommandBar
+                  card={{
+                    tags: selectedMedia.tags ?? [],
+                    subjectTagId: selectedMedia.subjectTagId ?? null,
+                    subjectTagIds: selectedMedia.subjectTagIds ?? [],
+                  }}
+                  allTags={allTags}
+                  variant="compact"
+                  onUpdateTags={(tagIds) => saveTagAssignment(
+                    tagIds,
+                    (selectedMedia.subjectTagIds?.length
+                      ? selectedMedia.subjectTagIds
+                      : selectedMedia.subjectTagId
+                        ? [selectedMedia.subjectTagId]
+                        : []).filter((tagId) => tagIds.includes(tagId))
+                  )}
+                  onUpdateSubjectTagIds={(subjectTagIds) => saveTagAssignment(selectedMedia.tags ?? [], subjectTagIds)}
+                  onDimensionSelect={(dimension) => {
+                    setTagPickerDimension(dimension);
+                    setTagPickerOpen(true);
+                  }}
+                  trailingSlot={
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => {
+                        setTagPickerDimension(null);
+                        setTagPickerOpen(true);
+                      }}
+                    >
+                      All tags
+                    </button>
+                  }
+                />
+                <MacroTagSelector
+                  selectedTags={allTags.filter((tag) => tag.docId && (selectedMedia.tags ?? []).includes(tag.docId))}
+                  allTags={allTags}
+                  onChange={(tagIds) => saveTagAssignment(tagIds, selectedMedia.subjectTagIds ?? [])}
+                  subjectTagIds={selectedMedia.subjectTagIds?.length
+                    ? selectedMedia.subjectTagIds
+                    : selectedMedia.subjectTagId
+                      ? [selectedMedia.subjectTagId]
+                      : []}
+                  onSaveAssignment={saveTagAssignment}
+                  expanded={tagPickerOpen}
+                  onExpandedChange={setTagPickerOpen}
+                  visibleDimensions={tagPickerDimension ? [tagPickerDimension] : [...DIMENSION_ORDER]}
+                  pickerTitle={tagPickerDimension ? `Assign ${DIMENSION_LABEL[tagPickerDimension]} tags` : 'Assign tags'}
+                  collapsedSummary="none"
+                />
               </div>
 
               {currentCardContext ? (

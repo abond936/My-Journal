@@ -71,4 +71,51 @@ describe('MacroTagSelector', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(['alan', 'party']));
   });
+
+  it('saves multiple subjects with the assignment in one coordinated callback', async () => {
+    const onSaveAssignment = jest.fn(async () => undefined);
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={tags}
+        allTags={tags}
+        onChange={jest.fn()}
+        subjectTagIds={['alan']}
+        onSaveAssignment={onSaveAssignment}
+        collapsedSummary="none"
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Birthday Party' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(onSaveAssignment).toHaveBeenCalledWith(['alan', 'party'], ['alan', 'party']);
+    });
+  });
+
+  it('limits subject editing to the visible dimension while preserving hidden subjects', async () => {
+    const onSaveAssignment = jest.fn(async () => undefined);
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={tags}
+        allTags={tags}
+        onChange={jest.fn()}
+        subjectTagIds={['alan', 'party']}
+        onSaveAssignment={onSaveAssignment}
+        visibleDimensions={['who']}
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Alan' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Birthday Party' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Alan' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(onSaveAssignment).toHaveBeenCalledWith(['alan', 'party'], ['party']);
+    });
+  });
 });

@@ -7,7 +7,6 @@ import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
-import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import type { StudioSelectedDetail, StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
@@ -15,6 +14,7 @@ import { useTag, type TagWithChildren } from '@/components/providers/TagProvider
 import type { Question } from '@/lib/types/question';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { groupSelectedTagIdsByDimension } from '@/lib/utils/tagUtils';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import styles from './StudioWorkspace.module.css';
 
 type QuestionsResponse = { questions?: Question[]; message?: string; error?: string };
@@ -188,11 +188,13 @@ export default function StudioQuestionsPane() {
   const [newSubjectTagIds, setNewSubjectTagIds] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createAdvancedTagEditorOpen, setCreateAdvancedTagEditorOpen] = useState(false);
+  const [createTagDimension, setCreateTagDimension] = useState<TagDimension | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
   const [editSubjectTagIds, setEditSubjectTagIds] = useState<string[]>([]);
   const [advancedTagEditorId, setAdvancedTagEditorId] = useState<string | null>(null);
+  const [editTagDimension, setEditTagDimension] = useState<TagDimension | null>(null);
   const [unlinkConfirmQuestion, setUnlinkConfirmQuestion] = useState<Question | null>(null);
   const [deleteConfirmQuestion, setDeleteConfirmQuestion] = useState<Question | null>(null);
 
@@ -563,11 +565,18 @@ export default function StudioQuestionsPane() {
             onUpdateSubjectTagIds={setNewSubjectTagIds}
             variant="compact"
             searchPlaceholder="Edit tags..."
+            onDimensionSelect={(dimension) => {
+              setCreateTagDimension(dimension);
+              setCreateAdvancedTagEditorOpen(true);
+            }}
             trailingSlot={
               <button
                 type="button"
                 className={styles.studioQuestionTagActionButton}
-                onClick={() => setCreateAdvancedTagEditorOpen(open => !open)}
+                onClick={() => {
+                  setCreateTagDimension(null);
+                  setCreateAdvancedTagEditorOpen(open => !open);
+                }}
                 aria-label={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
                 title={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
               >
@@ -580,8 +589,16 @@ export default function StudioQuestionsPane() {
               selectedTags={allTags.filter(tag => tag.docId && newTagIds.includes(tag.docId))}
               allTags={allTags}
               onChange={setNewTagIds}
+              subjectTagIds={newSubjectTagIds}
+              onSubjectTagIdsChange={setNewSubjectTagIds}
+              onSaveAssignment={async (tagIds, subjectTagIds) => {
+                setNewTagIds(tagIds);
+                setNewSubjectTagIds(subjectTagIds);
+              }}
               expanded
               onExpandedChange={setCreateAdvancedTagEditorOpen}
+              visibleDimensions={createTagDimension ? [createTagDimension] : [...DIMENSION_ORDER]}
+              pickerTitle={createTagDimension ? `Assign ${DIMENSION_LABEL[createTagDimension]} tags` : 'Assign tags'}
               collapsedSummary="none"
             />
           ) : null}
@@ -775,28 +792,6 @@ export default function StudioQuestionsPane() {
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
               >
-                <DimensionalTagVerticalChips
-                  tagIds={activeTagIds}
-                  allTags={allTags}
-                  subjectTagId={question.subjectTagId ?? null}
-                  subjectTagIds={activeSubjectTagIds}
-                  onUpdateSubjectTagIds={(nextSubjectTagIds) => {
-                    if (editing) {
-                      setEditSubjectTagIds(nextSubjectTagIds);
-                      return;
-                    }
-                    return saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
-                  }}
-                  onUpdateTags={(nextTagIds) => {
-                    if (editing) {
-                      setEditTagIds(nextTagIds);
-                      return;
-                    }
-                    return saveQuestion(question.docId, { tagIds: nextTagIds });
-                  }}
-                  disabled={busy}
-                  variant="inline"
-                />
                 <CardDimensionalTagCommandBar
                   card={{ tags: activeTagIds, subjectTagId: question.subjectTagId, subjectTagIds: activeSubjectTagIds }}
                   allTags={allTags}
@@ -815,8 +810,18 @@ export default function StudioQuestionsPane() {
                     }
                     return saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
                   }}
-                  variant="searchOnly"
+                  variant="compact"
                   searchPlaceholder="Edit tags..."
+                  onDimensionSelect={(dimension) => {
+                    if (!editing) {
+                      setEditingId(question.docId);
+                      setEditPrompt(question.prompt);
+                      setEditTagIds(question.tagIds);
+                      setEditSubjectTagIds(question.subjectTagIds);
+                    }
+                    setEditTagDimension(dimension);
+                    setAdvancedTagEditorId(question.docId);
+                  }}
                   trailingSlot={
                     <button
                       type="button"
@@ -824,6 +829,7 @@ export default function StudioQuestionsPane() {
                       disabled={busy}
                       onClick={() => {
                         if (editing) {
+                          setEditTagDimension(null);
                           setAdvancedTagEditorId(current => current === question.docId ? null : question.docId);
                           return;
                         }
@@ -831,6 +837,7 @@ export default function StudioQuestionsPane() {
                         setEditPrompt(question.prompt);
                         setEditTagIds(question.tagIds);
                         setEditSubjectTagIds(question.subjectTagIds);
+                        setEditTagDimension(null);
                         setAdvancedTagEditorId(question.docId);
                       }}
                       aria-label={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
@@ -845,8 +852,16 @@ export default function StudioQuestionsPane() {
                     selectedTags={selectedEditTags}
                     allTags={allTags}
                     onChange={setEditTagIds}
+                    subjectTagIds={editSubjectTagIds}
+                    onSubjectTagIdsChange={setEditSubjectTagIds}
+                    onSaveAssignment={async (tagIds, subjectTagIds) => {
+                      setEditTagIds(tagIds);
+                      setEditSubjectTagIds(subjectTagIds);
+                    }}
                     expanded
                     onExpandedChange={(open) => setAdvancedTagEditorId(open ? question.docId : null)}
+                    visibleDimensions={editTagDimension ? [editTagDimension] : [...DIMENSION_ORDER]}
+                    pickerTitle={editTagDimension ? `Assign ${DIMENSION_LABEL[editTagDimension]} tags` : 'Assign tags'}
                     collapsedSummary="none"
                   />
                 ) : null}

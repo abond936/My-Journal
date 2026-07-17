@@ -45,10 +45,13 @@ const SUBJECT_DIMENSION_ORDER: Record<string, number> = {
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
   allTags: Tag[];
-  onChange: (newIds: string[]) => void;
+  onChange: (newIds: string[]) => void | Promise<void>;
   onSaveSelection?: (newIds: string[]) => void | Promise<void>;
   subjectTagId?: string | null;
   onSubjectTagIdChange?: (nextSubjectTagId: string | null) => void | Promise<void>;
+  subjectTagIds?: string[];
+  onSubjectTagIdsChange?: (nextSubjectTagIds: string[]) => void | Promise<void>;
+  onSaveAssignment?: (nextTagIds: string[], nextSubjectTagIds: string[]) => void | boolean | Promise<void | boolean>;
   error?: string;
   className?: string;
   startExpanded?: boolean;
@@ -76,6 +79,9 @@ export default function MacroTagSelector({
   onSaveSelection,
   subjectTagId,
   onSubjectTagIdChange,
+  subjectTagIds,
+  onSubjectTagIdsChange,
+  onSaveAssignment,
   error,
   className,
   startExpanded = false,
@@ -107,7 +113,7 @@ export default function MacroTagSelector({
   }, [providerTags, allTags]);
 
   const handleSave = async (newSelection: string[]) => {
-    onChange(newSelection);
+    await onChange(newSelection);
     if (onSaveSelection) {
       setSaving(true);
       try {
@@ -171,10 +177,12 @@ export default function MacroTagSelector({
       <ExpandedView
         initialSelection={selectedTagIds}
         initialSelectionKey={selectedTagIdsKey}
-        initialSubjectTagId={subjectTagId ?? null}
+        initialSubjectTagIds={subjectTagIds?.length ? subjectTagIds : subjectTagId ? [subjectTagId] : []}
         allTags={effectiveAllTags}
         onSave={handleSave}
         onSaveSubjectTagId={onSubjectTagIdChange}
+        onSaveSubjectTagIds={onSubjectTagIdsChange}
+        onSaveAssignment={onSaveAssignment}
         onCancel={handleCancel}
         saving={saving}
         suppressOverlay={suppressOverlay}
@@ -250,11 +258,13 @@ function TagNode({ node }: { node: TagWithChildren }) {
 interface ExpandedViewProps {
   initialSelection: string[];
   initialSelectionKey: string;
-  initialSubjectTagId?: string | null;
+  initialSubjectTagIds: string[];
   /** Fallback when TagProvider list is still empty; merged so trees show every tag. */
   allTags: Tag[];
   onSave: (newSelection: string[]) => void | Promise<void>;
   onSaveSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
+  onSaveSubjectTagIds?: (nextSubjectTagIds: string[]) => void | Promise<void>;
+  onSaveAssignment?: (nextTagIds: string[], nextSubjectTagIds: string[]) => void | boolean | Promise<void | boolean>;
   onCancel: () => void;
   saving?: boolean;
   className?: string;
@@ -269,10 +279,12 @@ interface ExpandedViewProps {
 function ExpandedView({
   initialSelection,
   initialSelectionKey,
-  initialSubjectTagId = null,
+  initialSubjectTagIds,
   allTags,
   onSave,
   onSaveSubjectTagId,
+  onSaveSubjectTagIds,
+  onSaveAssignment,
   onCancel,
   saving = false,
   className,
@@ -300,7 +312,10 @@ function ExpandedView({
   }, [tags, allTags]);
 
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
-  const [currentSubjectTagId, setCurrentSubjectTagId] = useState<string | null>(initialSubjectTagId);
+  const [currentSubjectTagIds, setCurrentSubjectTagIds] = useState<Set<string>>(
+    new Set(initialSubjectTagIds)
+  );
+  const initialSubjectTagIdsKey = initialSubjectTagIds.join('\u001e');
   const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
@@ -314,8 +329,8 @@ function ExpandedView({
   }, [initialSelectionKey]);
 
   React.useEffect(() => {
-    setCurrentSubjectTagId(initialSubjectTagId);
-  }, [initialSubjectTagId]);
+    setCurrentSubjectTagIds(new Set(initialSubjectTagIdsKey ? initialSubjectTagIdsKey.split('\u001e') : []));
+  }, [initialSubjectTagIdsKey]);
 
   const dimensionalTree = useMemo(() => {
     if (!tagSource.length) return [];
@@ -361,8 +376,12 @@ function ExpandedView({
     } else {
       newSelection.delete(tagId);
     }
-    if (!isSelected && currentSubjectTagId === tagId) {
-      setCurrentSubjectTagId(null);
+    if (!isSelected && currentSubjectTagIds.has(tagId)) {
+      setCurrentSubjectTagIds((current) => {
+        const next = new Set(current);
+        next.delete(tagId);
+        return next;
+      });
     }
     setCurrentSelection(newSelection);
     if (applySelectionOnChange) {
@@ -375,12 +394,22 @@ function ExpandedView({
       onCancel();
       return;
     }
-    await onSave(Array.from(currentSelection));
-    if (onSaveSubjectTagId) {
-      const resolvedSubjectTagId =
-        currentSubjectTagId && currentSelection.has(currentSubjectTagId) ? currentSubjectTagId : null;
-      await onSaveSubjectTagId(resolvedSubjectTagId);
+    const resolvedTagIds = Array.from(currentSelection);
+    const resolvedSubjectTagIds = Array.from(currentSubjectTagIds).filter((tagId) =>
+      currentSelection.has(tagId)
+    );
+    if (onSaveAssignment) {
+      const saved = await onSaveAssignment(resolvedTagIds, resolvedSubjectTagIds);
+      if (saved !== false) onCancel();
+      return;
     }
+    await onSave(resolvedTagIds);
+    if (onSaveSubjectTagIds) {
+      await onSaveSubjectTagIds(resolvedSubjectTagIds);
+    } else if (onSaveSubjectTagId) {
+      await onSaveSubjectTagId(resolvedSubjectTagIds[0] ?? null);
+    }
+    onCancel();
   };
 
   const selectedTagsById = useMemo(() => {
@@ -390,13 +419,17 @@ function ExpandedView({
         map.set(tag.docId, tag);
       }
     }
-    return Array.from(map.values()).sort((a, b) => {
+    const visible = new Set(visibleDimensions);
+    return Array.from(map.values()).filter((tag) => {
+      const dimension = normalizeTagDimensionKey(tag.dimension as string | undefined);
+      return dimension ? visible.has(dimension) : false;
+    }).sort((a, b) => {
       const dimensionRankA = SUBJECT_DIMENSION_ORDER[a.dimension ?? ''] ?? 99;
       const dimensionRankB = SUBJECT_DIMENSION_ORDER[b.dimension ?? ''] ?? 99;
       if (dimensionRankA !== dimensionRankB) return dimensionRankA - dimensionRankB;
       return a.name.localeCompare(b.name);
     });
-  }, [currentSelection, tagSource]);
+  }, [currentSelection, tagSource, visibleDimensions]);
 
   React.useEffect(() => {
     if (suppressOverlay) return;
@@ -438,14 +471,14 @@ function ExpandedView({
           </button>
         )}
       </div>
-      {onSaveSubjectTagId ? (
+      {onSaveSubjectTagId || onSaveSubjectTagIds || onSaveAssignment ? (
         <div className={styles.subjectPanel}>
           <div className={styles.subjectPanelHeader}>Subject</div>
           <div className={styles.subjectPanelHint}>Click a selected tag to toggle subject.</div>
           <div className={styles.subjectChipRow}>
             {selectedTagsById.length > 0 ? (
               selectedTagsById.map((tag) => {
-                const isSubject = currentSubjectTagId === tag.docId;
+                const isSubject = currentSubjectTagIds.has(tag.docId);
                 return (
                   <button
                     key={tag.docId}
@@ -455,7 +488,15 @@ function ExpandedView({
                       subjectChipDimensionClass(tag.dimension),
                       isSubject && styles.subjectChipActive
                     )}
-                    onClick={() => setCurrentSubjectTagId(isSubject ? null : tag.docId)}
+                    onClick={() => setCurrentSubjectTagIds((current) => {
+                      if (!onSaveSubjectTagIds && !onSaveAssignment) {
+                        return isSubject ? new Set<string>() : new Set([tag.docId]);
+                      }
+                      const next = new Set(current);
+                      if (isSubject) next.delete(tag.docId);
+                      else next.add(tag.docId);
+                      return next;
+                    })}
                   >
                     <span className={styles.subjectChipText}>{tag.name}</span>
                   </button>

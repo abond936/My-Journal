@@ -377,7 +377,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Starter set** — Optional additive Tag Set 0.
 - **Reader filters** — Any assigned and Subject only.
 - **Reliability** — Shared modal ownership, exact lookup, scoped filters, and post-save reconciliation.
-- **Selection** — Direct entry handles known tags, dimensional trees handle focused browsing, and the full four-dimensional selector remains available for comprehensive and bulk classification.
+- **Selection** — Direct entry handles known tags; Who, What, When, and Where open focused assignment trees; and the full four-dimensional selector remains available for comprehensive and bulk classification. Individual Card, Media, and Question assignment preserves hidden dimensions and supports multiple subjects.
 - **Integrity** — Canonical hierarchy with reconciled paths, counts, derived fields, and search projections.
 - **Identities** — Stable human and non-human subjects with canonical names, aliases, details, and editing.
 - **Relationships** — Parent, spouse, and partner records with archive perspective and contextual role resolution.
@@ -411,6 +411,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - `parentId` is taxonomy authority; paths, counts, dimensional fields, and search records are derived projections that must reconcile to it.
 - Existing assignments are never renamed, merged, deleted, or reinterpreted without an author-reviewed migration with affected-object counts and recovery evidence.
 - Known tags use direct entry; clicking Who, What, When, or Where opens only that dimension without changing the others; the complete selector is reserved for comprehensive, initial, or bulk classification.
+- Tags and subjects save as one assignment decision. Removing an assigned subject clears that subject; focused dimension work preserves every hidden dimension and its subjects.
 - Provisional assignments do not affect counts, filtering, or presentation.
 - Gallery inheritance has independent Who, What, When, and Where controls. Onboarding explains them and requires an explicit author selection; no dimension is implicitly enabled.
 - Delivered inheritance applies the deduplicated union of confirmed Gallery-media tags to enabled card dimensions.

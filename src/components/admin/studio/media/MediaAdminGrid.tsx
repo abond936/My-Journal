@@ -37,7 +37,7 @@ export interface MediaAdminGridCellProps {
   onSaveSubjectTags: (mediaId: string, nextSubjectTagIds: string[]) => Promise<void>;
   onSaveMediaFields: (
     mediaId: string,
-    updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>
+    updates: Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagIds'>>
   ) => Promise<void>;
   isSelected: boolean;
   onSelectionInteraction: (
@@ -707,7 +707,7 @@ export default function MediaAdminGrid({
   );
 
   const handleSaveMediaFields = useCallback(
-    async (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition'>>) => {
+    async (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagIds'>>) => {
       const updated = await updateMedia(mediaId, updates);
       if (!updated) {
         throw new Error('Media update failed. Please retry.');
