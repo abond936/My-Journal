@@ -391,7 +391,7 @@ export default function StudioQuestionsPane() {
           return;
         }
         router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
-        feedback.showSuccess('Created draft Question card.', 'Question ready');
+        feedback.showSuccess('Created a draft Question card.');
       }
     } catch (e) {
       setPendingQuestionId(null);
@@ -439,7 +439,7 @@ export default function StudioQuestionsPane() {
           upsertCollectionsCardList(toUnlinkedStoryCard(knownPreview));
         }
       }
-      feedback.showSuccess('Unlinked question and converted card to draft Story.', 'Question updated');
+      feedback.showSuccess('Unlinked the question and converted its card to a draft Story.');
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to unlink question', 'Could not unlink question');
     } finally {
@@ -482,7 +482,7 @@ export default function StudioQuestionsPane() {
       setNewSubjectTagIds([]);
       setCreateOpen(false);
       setCreateAdvancedTagEditorOpen(false);
-      feedback.showSuccess('Question added.', 'Saved');
+      feedback.showSuccess('Question added.');
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to create question', 'Could not add question');
     } finally {
@@ -507,7 +507,7 @@ export default function StudioQuestionsPane() {
         setEditingId(null);
         setAdvancedTagEditorId(null);
       }
-      feedback.showSuccess('Question deleted.', 'Deleted');
+      feedback.showSuccess('Question deleted.');
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to delete question', 'Could not delete question');
     } finally {

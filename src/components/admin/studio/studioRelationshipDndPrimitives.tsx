@@ -453,7 +453,7 @@ export async function handleStudioRelationshipDragEnd(
         coverImageId: mediaId,
         galleryMedia: promoteMediaToGalleryFront(gallery, mediaId),
       });
-      ctx.showSuccess('Cover image updated.', 'Cover updated');
+      ctx.showSuccess('Cover image updated.');
       return true;
     }
 
@@ -479,8 +479,7 @@ export async function handleStudioRelationshipDragEnd(
       }));
       await ctx.patchSelectedCard({ galleryMedia: [...gallery, ...appendedItems] });
       ctx.showSuccess(
-        mediaIdsToAppend.length > 1 ? `${mediaIdsToAppend.length} media added to gallery.` : 'Media added to gallery.',
-        'Gallery updated'
+        mediaIdsToAppend.length > 1 ? `${mediaIdsToAppend.length} media added to the Gallery.` : 'Media added to the Gallery.'
       );
       return true;
     }
@@ -501,7 +500,7 @@ export async function handleStudioRelationshipDragEnd(
         return true;
       }
       insert(media);
-      ctx.showSuccess('Image inserted in body.', 'Inserted');
+      ctx.showSuccess('Image inserted in the card body.');
       return true;
     }
   }

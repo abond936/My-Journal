@@ -328,7 +328,6 @@ export default function AdminSettingsPage() {
     setOperationsLoading(true);
     try {
       await loadOperations();
-      feedback.showSuccess('Operations status refreshed.');
     } catch (error) {
       feedback.showError(error instanceof Error ? error.message : 'Failed to refresh operations status');
     } finally {

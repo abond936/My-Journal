@@ -120,7 +120,7 @@ describe('handleStudioRelationshipDragEnd', () => {
 
     expect(handled).toBe(true);
     expect(insert).toHaveBeenCalledWith(media);
-    expect(showSuccess).toHaveBeenCalledWith('Image inserted in body.', 'Inserted');
+    expect(showSuccess).toHaveBeenCalledWith('Image inserted in the card body.');
     expect(showError).not.toHaveBeenCalled();
   });
 
@@ -205,7 +205,7 @@ describe('handleStudioRelationshipDragEnd', () => {
         { mediaId: 'media-gallery', order: 1 },
       ],
     });
-    expect(showSuccess).toHaveBeenCalledWith('Media added to gallery.', 'Gallery updated');
+    expect(showSuccess).toHaveBeenCalledWith('Media added to the Gallery.');
   });
 
   it('appends the full selected media set to gallery when dragging a selected bank item', async () => {
@@ -247,7 +247,7 @@ describe('handleStudioRelationshipDragEnd', () => {
         { mediaId: 'media-3', order: 2 },
       ],
     });
-    expect(showSuccess).toHaveBeenCalledWith('2 media added to gallery.', 'Gallery updated');
+    expect(showSuccess).toHaveBeenCalledWith('2 media added to the Gallery.');
   });
 
   it('reorders child cards when dropped onto another child row', async () => {
