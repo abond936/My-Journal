@@ -16,7 +16,6 @@ import styles from './CardForm.module.css';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
-import LoadingOverlay from '@/components/admin/studio/cards/LoadingOverlay';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
@@ -740,7 +739,6 @@ const CardForm: React.FC = () => {
     };
     const saved = await handleSave(overrides);
     if (saved) {
-      feedback.showSuccess('Card saved.', 'Saved');
       return;
     }
     feedback.showError('Could not save card. Please review any errors and try again.', 'Could not save');
@@ -1025,11 +1023,6 @@ const CardForm: React.FC = () => {
 
   return (
     <>
-      <LoadingOverlay
-        isVisible={isSaving && !studioShellForm}
-        title="Saving card..."
-        message="Updating card details and synchronizing feed data."
-      />
       {isPhotoPickerOpen && (
         <PhotoPicker
           isOpen={isPhotoPickerOpen}

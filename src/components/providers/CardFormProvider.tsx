@@ -39,6 +39,7 @@ interface FormState {
   cardData: CardUpdate;
 
   isSaving: boolean;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   errors: Record<string, string>;
 
   // A snapshot of the last successfully saved state. Used for 'reset' or 'cancel' logic.
@@ -183,6 +184,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return {
       cardData: card,
       isSaving: false,
+      saveStatus: 'idle',
       errors: {},
       lastSavedState: {
         cardData: card,
@@ -201,6 +203,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           return {
             ...prevState,
             cardData: mergedCard,
+            saveStatus: 'idle',
             errors: {},
             lastSavedState: {
               cardData: mergedCard
@@ -216,6 +219,29 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
   const batchStateUpdate = useCallback((updates: Partial<FormState>) => {
     setFormState(prev => ({ ...prev, ...updates }));
   }, []);
+
+  const pendingSaveCountRef = useRef(0);
+  const saveFailedRef = useRef(false);
+
+  const beginSaveFeedback = useCallback(() => {
+    pendingSaveCountRef.current += 1;
+    batchStateUpdate({ saveStatus: 'saving' });
+  }, [batchStateUpdate]);
+
+  const finishSaveFeedback = useCallback((succeeded: boolean) => {
+    if (!succeeded) saveFailedRef.current = true;
+    pendingSaveCountRef.current = Math.max(0, pendingSaveCountRef.current - 1);
+    if (pendingSaveCountRef.current > 0) return;
+    const saveStatus = saveFailedRef.current ? 'error' : 'saved';
+    saveFailedRef.current = false;
+    batchStateUpdate({ saveStatus });
+  }, [batchStateUpdate]);
+
+  useEffect(() => {
+    if (formState.saveStatus !== 'saved') return;
+    const timer = window.setTimeout(() => batchStateUpdate({ saveStatus: 'idle' }), 2000);
+    return () => window.clearTimeout(timer);
+  }, [batchStateUpdate, formState.saveStatus]);
 
   // Ref ensures handleSave always reads latest cardData (avoids stale closure if user clicks Remove then Save quickly)
   const cardDataRef = useRef<CardUpdate>(formState.cardData);
@@ -503,6 +529,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return false;
       }
 
+      beginSaveFeedback();
       batchStateUpdate({ isSaving: true });
 
       try {
@@ -528,15 +555,17 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
             cardData: { ...baseline },
           },
         });
+        finishSaveFeedback(true);
         setDirtyHint(false);
         return true;
       } catch (error) {
         console.error('[handleSave] Error during save:', error);
         batchStateUpdate({ isSaving: false });
+        finishSaveFeedback(false);
         return false;
       }
     },
-    [validateForm, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto, cardContext]
+    [validateForm, beginSaveFeedback, batchStateUpdate, onSave, formState.cardData, mergeEditorContentInto, cardContext, finishSaveFeedback]
   );
 
   const persistFieldPatch = useCallback(
@@ -554,9 +583,11 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return true;
       }
 
+      beginSaveFeedback();
       try {
         const savedCard = await onSave(cleanedPatch);
         if (!savedCard) {
+          finishSaveFeedback(false);
           return false;
         }
         cardContext?.patchVisibleCard(savedCard);
@@ -645,13 +676,15 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           };
         });
 
+        finishSaveFeedback(true);
         return true;
       } catch (error) {
         console.error('[persistFieldPatch] Error during partial save:', error);
+        finishSaveFeedback(false);
         return false;
       }
     },
-    [onSave, cardContext]
+    [onSave, cardContext, beginSaveFeedback, finishSaveFeedback]
   );
 
   const resetForm = useCallback(() => {
@@ -660,6 +693,7 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     setFormState((prev) => ({
       cardData: card,
       isSaving: false,
+      saveStatus: 'idle',
       errors: {},
       lastSavedState: {
         cardData: card,

@@ -69,6 +69,7 @@ function TestComponent() {
         Leave
       </button>
       <span data-testid="dirty-flag">{isDirty ? 'dirty' : 'clean'}</span>
+      <span data-testid="save-status">{formState.saveStatus}</span>
       {formState.errors.title ? <span data-testid="title-error">{formState.errors.title}</span> : null}
       {formState.isSaving ? <span data-testid="saving-indicator">Saving...</span> : null}
     </div>
@@ -209,6 +210,36 @@ describe('CardFormProvider', () => {
       expect(mockOnSave).toHaveBeenCalledWith({ title: 'Patched Title' });
     });
     expect(screen.getByTestId('title-input')).toHaveValue('Patched Title');
+  });
+
+  it('reports localized saving and saved states for instant field saves', async () => {
+    let resolveSave!: (card: Card) => void;
+    mockOnSave.mockImplementation(() => new Promise<Card>((resolve) => { resolveSave = resolve; }));
+
+    render(
+      <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
+        <TestComponent />
+      </CardFormProvider>
+    );
+
+    await userEvent.click(screen.getByTestId('patch-button'));
+    expect(screen.getByTestId('save-status')).toHaveTextContent('saving');
+
+    resolveSave({ ...mockCard, title: 'Patched Title', title_lowercase: 'patched title' });
+    await waitFor(() => expect(screen.getByTestId('save-status')).toHaveTextContent('saved'));
+  });
+
+  it('keeps a visible error state when an instant field save fails', async () => {
+    mockOnSave.mockResolvedValue(null);
+
+    render(
+      <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
+        <TestComponent />
+      </CardFormProvider>
+    );
+
+    await userEvent.click(screen.getByTestId('patch-button'));
+    await waitFor(() => expect(screen.getByTestId('save-status')).toHaveTextContent('error'));
   });
 
   it('does not prompt on leave when nothing has marked the form dirty', async () => {

@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** None; Interaction Feedback Definition Gate assessment is next.
+**Current active capability:** Interaction Feedback is Active.
 
 ---
 
@@ -168,12 +168,30 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 ### Interaction Feedback
 
-**Definition:** Not gated
+**Definition:** Ready
+**Execution:** Active
 
-- **States** — Define success, error, warning, progress, confirmation, and blocking behavior.
-- **Duration** — Standardize what disappears, persists, blocks, or permits continued work.
-- **System** — Reconcile shared feedback with remaining browser-native and surface-local dialogs.
-- **Scope** — Apply one contract across Administration and Reader without rewriting surface-specific instructions as generic messages.
+**Outcome** — The application communicates activity, completion, problems, consequences, and required decisions calmly and clearly without moving surrounding content, obscuring ordinary work, or exposing implementation language.
+
+**Actors** — Author, administrator, and Reader.
+
+**Includes** — Shared success, information, warning, error, confirmation, and alert behavior; localized pending and completion states; Compose autosave visibility; stable inline validation and page-level conditions; progress for long-running work; removal of routine full-screen saving blockers; replacement of browser-native confirmations; user-centered message wording; accessibility; and verification across Administration and Reader.
+
+**Excludes** — Marketing copy, Help and onboarding content strategy, workflow redesign unrelated to feedback, visual redesign of task modals, backend logging language, and exhaustive editorial review of text that is not a message, instruction, status, or notification.
+
+**Contracts** — Feedback never pushes or reflows surrounding content. Routine work reports progress and completion in the initiating card, control, row, or reserved status area. Compose instant saves explicitly show Saving, Saved, and failure; fading a Save control is not sufficient. Routine successful edits do not also produce generic Saved toasts when the local result is clear. Toasts float without blocking: success and ordinary information expire, while warnings requiring action and errors persist. Validation appears beside the affected control. Confirmation blocks only before destructive, cross-entity, discard, or consequential settings actions. Full-screen blocking is reserved for states where continuing is unsafe or impossible. Primary wording states what happened, the user consequence, and the next useful action; technical detail stays in logs or optional details.
+
+**Current state** — One application-level provider supplies floating success, error, warning, and information toasts plus shared confirm and alert dialogs. Success defaults to four seconds; errors default to persistent. Many Studio, Settings, Users, and Reader actions use it, but routine saves still produce generic Saved toasts outside the reconciled Compose path. Compose full and instant field saves now share explicit Save, Saving, Saved, and Retry states in one fixed-width local control; successful routine card saves no longer add a generic toast, and ordinary CardForm saving no longer blocks the screen with implementation-oriented copy. Three paths still use browser-native confirmation. Several surfaces also own inline loading, error, and status text with no shared placement or wording contract. The localized Opening state on the selected card is the preferred pending pattern. Focused provider tests, lint, and changed-component type checks pass; live Compose verification remains pending because the development runtime currently fails its Studio client build on the existing `farmhash-modern` WebAssembly import and client-reference manifest path.
+
+**Gaps / slices** — Add explicit Compose save-state feedback for full and partial saves; remove redundant routine Saved toasts and ordinary full-screen save blocking; harden shared feedback timing, persistence, dialog ownership, and accessibility; replace browser-native confirmations; inventory and align layout-affecting messages, long-running progress, validation, and actionable errors; rewrite primary messages around user consequences; verify representative Administration and Reader workflows.
+
+**Dependencies** — AppFeedbackProvider, CardFormProvider, surface-owned mutation state, shared theme roles, modal layering, accessible live regions, and representative browser workflows.
+
+**Risks** — False success, hidden failure, overlapping saves reporting the wrong state, excessive toast noise, lost error detail, duplicate dialogs, layout shift, blocking ordinary work, unannounced assistive-technology state, and changing mutation behavior while changing its presentation.
+
+**Decisions needed** — None. The author approved stable non-reflowing presentation, localized routine status, selective floating notification, minimal blocking, explicit Compose autosave state, and user-centered language.
+
+**Completion evidence** — Provider and surface tests for timing, persistence, queueing, save-state transitions, validation, and dialog semantics; browser verification of Compose full and partial saves, failure retention, card opening, representative success/error/confirmation flows, long-running progress, no ordinary full-screen save blocker, and no notification-driven layout shift; message inventory reconciliation; canon update.
 
 ### Reader Boundary
 

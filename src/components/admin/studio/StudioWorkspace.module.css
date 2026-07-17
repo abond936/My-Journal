@@ -364,8 +364,12 @@
 
 .studioComposeSaveButton {
   min-height: 30px;
-  min-width: 34px;
+  width: 88px;
   padding: 0 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   background-color: var(--admin-support-control-strong-background-color);
   color: var(--admin-support-control-strong-text-color);
   border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
@@ -386,7 +390,7 @@
 }
 
 .studioComposeSaveButton:disabled {
-  opacity: 0.45;
+  opacity: 0.72;
   cursor: not-allowed;
 }
 

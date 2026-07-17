@@ -18,7 +18,7 @@ export default function StudioComposeFormActions() {
   const router = useRouter();
   const { isDirty, resetForm, formState } = useCardForm();
   const feedback = useAppFeedback();
-  const { isSaving } = formState;
+  const { isSaving, saveStatus } = formState;
   const studioShell = useStudioShellOptional();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteDialogLoading, setDeleteDialogLoading] = useState(false);
@@ -118,10 +118,12 @@ export default function StudioComposeFormActions() {
           form="card-form"
           className={styles.studioComposeSaveButton}
           disabled={!isDirty || isSaving}
-          aria-label={isSaving ? 'Saving card' : 'Save card'}
-          title={isSaving ? 'Saving card' : 'Save card'}
+          aria-label={saveStatus === 'saving' ? 'Saving card' : saveStatus === 'error' ? 'Retry saving card' : saveStatus === 'saved' ? 'Card saved' : 'Save card'}
+          title={saveStatus === 'saving' ? 'Saving card' : saveStatus === 'error' ? 'Retry saving card' : saveStatus === 'saved' ? 'Card saved' : 'Save card'}
+          aria-live="polite"
         >
           <Save size={16} aria-hidden="true" />
+          <span>{saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Retry' : 'Save'}</span>
         </button>
       </div>
       <EditModal
