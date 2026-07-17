@@ -94,14 +94,14 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
   );
 
   const showSuccess = useCallback(
-    (message: string, title = 'Saved') => {
+    (message: string, title?: string) => {
       showToast({ title, message, tone: 'success', durationMs: 4000 });
     },
     [showToast]
   );
 
   const showError = useCallback(
-    (message: string, title = 'Something went wrong', persistent = true) => {
+    (message: string, title?: string, persistent = true) => {
       showToast({ title, message, tone: 'error', persistent });
     },
     [showToast]
@@ -147,9 +147,15 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
   return (
     <AppFeedbackContext.Provider value={value}>
       {children}
-      <div className={styles.toastViewport} aria-live="polite" aria-atomic="false">
+      <div className={styles.toastViewport}>
         {toasts.map((toast) => (
-          <div key={toast.id} className={`${styles.toastCard} ${styles[`toast${toast.tone[0]!.toUpperCase()}${toast.tone.slice(1)}`]}`}>
+          <div
+            key={toast.id}
+            className={`${styles.toastCard} ${styles[`toast${toast.tone[0]!.toUpperCase()}${toast.tone.slice(1)}`]}`}
+            role={toast.tone === 'error' ? 'alert' : 'status'}
+            aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
+            aria-atomic="true"
+          >
             <span className={styles.toastIcon}>{toneIcon(toast.tone)}</span>
             <div className={styles.toastBody}>
               {toast.title ? <p className={styles.toastTitle}>{toast.title}</p> : null}
