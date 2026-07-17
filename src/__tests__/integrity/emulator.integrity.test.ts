@@ -108,6 +108,8 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     const db = getFirestore(app);
     await clearCollection(db, 'cards');
     await clearCollection(db, 'media');
+    await clearCollection(db, 'mediaContentIdentities');
+    await clearCollection(db, 'mediaDuplicateReviews');
     await clearCollection(db, 'tags');
   });
 
@@ -490,6 +492,15 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(mediaAfter.width).toBe(640);
     expect(mediaAfter.height).toBe(480);
     expect(mediaAfter.size).toBe(Buffer.from('replacement-bytes').length);
+    expect(mediaAfter.contentIdentity).toEqual({
+      algorithm: 'sha256',
+      digest: '70bf69c13743b7193ffd7a3718caab18522b61d4643fe13ac80caa5301e2345a',
+      basis: 'source-bytes',
+    });
+    expect(
+      (await db.collection('mediaContentIdentities').doc(mediaAfter.contentIdentity.digest).get())
+        .data()?.mediaId
+    ).toBe('media-shared');
     expect(mediaAfter.referencedByCardIds?.sort()).toEqual(['card-a', 'card-b']);
 
     const cards = await readCards(db);
@@ -500,6 +511,77 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(cardB.contentMedia).toEqual(['media-shared']);
     expect(findDanglingCardMediaReferences(cards, [mediaAfter])).toEqual([]);
     expect(findBrokenMediaBackReferences(cards, [mediaAfter])).toEqual([]);
+  });
+
+  it('reuses one canonical media record for concurrent exact-byte imports', async () => {
+    const db = getFirestore(app);
+    const { importFromBuffer } = await getImageImportService();
+    const sourceBytes = Buffer.from('exact duplicate source bytes');
+
+    const [first, second] = await Promise.all([
+      importFromBuffer(sourceBytes, 'first__X.webp'),
+      importFromBuffer(sourceBytes, 'second__X.webp'),
+    ]);
+
+    expect(first.mediaId).toBe(second.mediaId);
+    const mediaSnap = await db.collection('media').get();
+    expect(mediaSnap.size).toBe(1);
+    const media = mediaSnap.docs[0]!.data();
+    expect(media.contentIdentity).toEqual({
+      algorithm: 'sha256',
+      digest: 'c90dc1b5289b67396d527b8ddba97a611099a15fe34e3ac5acd1c4cdf65a9aa5',
+      basis: 'source-bytes',
+    });
+    expect(media.sourceIdentities).toHaveLength(2);
+    expect(new Set(media.sourceIdentities.map((item: { assetId: string }) => item.assetId))).toEqual(
+      new Set([
+        'first__X.webp:c90dc1b5289b67396d527b8ddba97a611099a15fe34e3ac5acd1c4cdf65a9aa5',
+        'second__X.webp:c90dc1b5289b67396d527b8ddba97a611099a15fe34e3ac5acd1c4cdf65a9aa5',
+      ])
+    );
+    expect((await db.collection('mediaContentIdentities').get()).size).toBe(1);
+  });
+
+  it('persists reviewed keep-both decisions without changing either media record', async () => {
+    const db = getFirestore(app);
+    await db.collection('media').doc('duplicate-a').set({ docId: 'duplicate-a' });
+    await db.collection('media').doc('duplicate-b').set({ docId: 'duplicate-b' });
+
+    const { getMediaDuplicateDecision, recordMediaDuplicateDecision } = await import(
+      '@/lib/services/mediaDuplicateReviewService'
+    );
+    const decision = await recordMediaDuplicateDecision({
+      mediaIds: ['duplicate-b', 'duplicate-a'],
+      decision: 'keep_both',
+    });
+
+    expect(decision.pairKey).toBe('duplicate-a__duplicate-b');
+    expect(await getMediaDuplicateDecision('duplicate-a', 'duplicate-b')).toMatchObject({
+      mediaIds: ['duplicate-a', 'duplicate-b'],
+      decision: 'keep_both',
+    });
+    expect((await db.collection('media').doc('duplicate-a').get()).exists).toBe(true);
+    expect((await db.collection('media').doc('duplicate-b').get()).exists).toBe(true);
+  });
+
+  it('removes the exact-content identity when its canonical media record is deleted', async () => {
+    const db = getFirestore(app);
+    const digest = 'd'.repeat(64);
+    await db.collection('media').doc('media-delete-identity').set({
+      docId: 'media-delete-identity',
+      contentIdentity: { algorithm: 'sha256', digest, basis: 'source-bytes' },
+      tags: [],
+    });
+    await db.collection('mediaContentIdentities').doc(digest).set({
+      mediaId: 'media-delete-identity',
+      algorithm: 'sha256',
+    });
+
+    const { deleteMediaAsset } = await import('@/lib/services/images/mediaStorage');
+    await db.runTransaction(tx => deleteMediaAsset('media-delete-identity', tx));
+
+    expect((await db.collection('media').doc('media-delete-identity').get()).exists).toBe(false);
+    expect((await db.collection('mediaContentIdentities').doc(digest).get()).exists).toBe(false);
   });
 
   it('createCard maintains published tag counts and derived fields', async () => {

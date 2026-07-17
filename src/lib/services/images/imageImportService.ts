@@ -6,7 +6,7 @@ import {
   organizeTagsByDimension,
   updateTagCountsForMedia,
 } from '@/lib/firebase/tagService';
-import { Media } from '@/lib/types/photo';
+import { Media, type MediaSourceIdentity } from '@/lib/types/photo';
 import type { Tag } from '@/lib/types/tag';
 import {
   syncMediaToTypesense,
@@ -24,6 +24,10 @@ import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import sizeOf from 'image-size';
+import {
+  buildMediaSourceIdentity,
+  sha256SourceBytes,
+} from '@/lib/utils/mediaDuplicateEvidence';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const STUDIO_RENDITION_MAX_WIDTH = 960;
@@ -32,6 +36,7 @@ const STUDIO_RENDITION_QUALITY = 78;
 const READER_RENDITION_MAX_WIDTH = 640;
 const READER_RENDITION_MAX_HEIGHT = 640;
 const READER_RENDITION_QUALITY = 75;
+const MEDIA_CONTENT_IDENTITIES_COLLECTION = 'mediaContentIdentities';
 
 // Utility functions for consistent path handling
 const toSystemPath = (p: string) => p.split('/').join(path.sep);
@@ -212,6 +217,54 @@ export async function findMediaBySourcePath(sourcePath: string): Promise<Media |
   return { ...doc.data(), docId: doc.id } as Media;
 }
 
+export async function findMediaByContentDigest(digest: string): Promise<Media | null> {
+  const firestore = getAdminApp().firestore();
+  const snapshot = await firestore
+    .collection('media')
+    .where('contentIdentity.digest', '==', digest)
+    .limit(1)
+    .get();
+  if (snapshot.empty) return null;
+  const doc = snapshot.docs[0];
+  return { ...doc.data(), docId: doc.id } as Media;
+}
+
+async function recordMediaSourceIdentity(
+  mediaId: string,
+  identity: MediaSourceIdentity
+): Promise<Media> {
+  const firestore = getAdminApp().firestore();
+  const ref = firestore.collection('media').doc(mediaId);
+  return firestore.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new Error('Exact-match media record no longer exists');
+    const media = { ...snap.data(), docId: snap.id } as Media;
+    const digest = media.contentIdentity?.digest;
+    const identityRef = digest
+      ? firestore.collection(MEDIA_CONTENT_IDENTITIES_COLLECTION).doc(digest)
+      : null;
+    const identitySnap = identityRef ? await tx.get(identityRef) : null;
+    const identities = media.sourceIdentities ?? [];
+    const alreadyRecorded = identities.some(
+      item => item.provider === identity.provider && item.assetId === identity.assetId
+    );
+    if (!alreadyRecorded) {
+      tx.update(ref, {
+        sourceIdentities: [...identities, identity],
+        updatedAt: Date.now(),
+      });
+      if (identityRef && !identitySnap?.exists) {
+        tx.set(identityRef, { mediaId, algorithm: 'sha256', createdAt: Date.now() });
+      }
+      return { ...media, sourceIdentities: [...identities, identity] };
+    }
+    if (identityRef && !identitySnap?.exists) {
+      tx.set(identityRef, { mediaId, algorithm: 'sha256', createdAt: Date.now() });
+    }
+    return media;
+  });
+}
+
 /**
  * Reads caption from embedded metadata only (ExifTool). No JSON sidecars.
  * @param fullPath - Absolute path to the image file
@@ -243,7 +296,9 @@ async function createMediaAsset(
   sourcePath: string,
   captionOverride?: string,
   tagIds?: string[],
-  importBatchId?: string
+  importBatchId?: string,
+  sourceContentDigest?: string,
+  sourceIdentity?: MediaSourceIdentity
 ): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
@@ -307,6 +362,16 @@ async function createMediaAsset(
     storagePath,
     source,
     sourcePath,
+    ...(sourceContentDigest
+      ? {
+          contentIdentity: {
+            algorithm: 'sha256' as const,
+            digest: sourceContentDigest,
+            basis: 'source-bytes' as const,
+          },
+        }
+      : {}),
+    ...(sourceIdentity ? { sourceIdentities: [sourceIdentity] } : {}),
     objectPosition: '50% 50%',
     caption: captionOverride ?? '',
     createdAt: now,
@@ -340,13 +405,14 @@ async function createMediaAsset(
         hasWhere: false,
       };
 
-  // 6. Save media + tag counts atomically when tags are present
+  // 6. Preload tag paths before the write transaction.
+  let tagPathLookup: Map<string, Tag> | undefined;
   if (tagIdsResolved.length > 0) {
     // Pre-read tag.path outside the transaction so we never call transaction.getAll after writes
     // (Firestore: all reads before all writes in a transaction).
     const tagRefs = tagIdsResolved.map((id) => firestore.collection('tags').doc(id));
     const tagSnapshots = await firestore.getAll(...tagRefs);
-    const tagPathLookup = new Map<string, Tag>();
+    tagPathLookup = new Map<string, Tag>();
     const ancestorIds = new Set<string>();
     for (const snap of tagSnapshots) {
       if (snap.exists) {
@@ -368,12 +434,47 @@ async function createMediaAsset(
       }
     }
 
-    await firestore.runTransaction(async (tx) => {
-      tx.set(mediaRef, newMedia);
+  }
+
+  const identityRef = sourceContentDigest
+    ? firestore.collection(MEDIA_CONTENT_IDENTITIES_COLLECTION).doc(sourceContentDigest)
+    : null;
+  const persistence = await firestore.runTransaction(async tx => {
+    const identitySnap = identityRef ? await tx.get(identityRef) : null;
+    if (identitySnap?.exists) {
+      return { created: false, existingMediaId: String(identitySnap.data()?.mediaId ?? '') };
+    }
+    tx.set(mediaRef, newMedia);
+    if (identityRef) {
+      tx.set(identityRef, {
+        mediaId: docId,
+        algorithm: 'sha256',
+        createdAt: now,
+      });
+    }
+    if (tagIdsResolved.length > 0) {
       await updateTagCountsForMedia([], tagIdsResolved, tx, tagPathLookup);
-    });
-  } else {
-    await mediaRef.set(newMedia);
+    }
+    return { created: true, existingMediaId: '' };
+  });
+
+  if (!persistence.created) {
+    await Promise.allSettled(
+      [storagePath, studioRendition?.storagePath, readerRendition?.storagePath]
+        .filter((candidate): candidate is string => Boolean(candidate))
+        .map(candidate => bucket.file(candidate).delete())
+    );
+    if (!persistence.existingMediaId) {
+      throw new Error('Exact-match identity is missing its canonical media record');
+    }
+    const existingSnap = await firestore.collection('media').doc(persistence.existingMediaId).get();
+    if (!existingSnap.exists) {
+      throw new Error('Exact-match identity points to a missing canonical media record');
+    }
+    const existing = { ...existingSnap.data(), docId: existingSnap.id } as Media;
+    return sourceIdentity
+      ? recordMediaSourceIdentity(existing.docId, sourceIdentity)
+      : existing;
   }
 
   void syncMediaToTypesense(newMedia);
@@ -477,6 +578,28 @@ export async function importFromLocalDrive(
     const readT0 = Date.now();
     let fileBuffer = await fs.readFile(fullPath);
     let filename = path.basename(fullPath);
+    const sourceContentDigest = sha256SourceBytes(fileBuffer);
+    const sourceIdentity = buildMediaSourceIdentity(
+      'local',
+      sourcePath,
+      sourcePath,
+      Date.now(),
+      {
+        observedFilename: filename,
+        ...(caption ? { caption } : {}),
+        ...(resolvedTagIds?.length ? { tagIds: resolvedTagIds } : {}),
+        ...(options?.importBatchId ? { importBatchId: options.importBatchId } : {}),
+      }
+    );
+    const exactMatch = await findMediaByContentDigest(sourceContentDigest);
+    if (exactMatch) {
+      const mediaWithSource = await recordMediaSourceIdentity(exactMatch.docId, sourceIdentity);
+      return {
+        mediaId: mediaWithSource.docId,
+        media: mediaWithSource,
+        skipped: true,
+      };
+    }
     if (traceStages) {
       console.info(
         '[importFromLocalDrive] stage readFile',
@@ -506,7 +629,9 @@ export async function importFromLocalDrive(
       sourcePath,
       caption || undefined,
       resolvedTagIds,
-      options?.importBatchId
+      options?.importBatchId,
+      sourceContentDigest,
+      sourceIdentity
     );
     if (traceStages) {
       console.info(
@@ -545,8 +670,22 @@ export async function importFromLocalDrive(
 export async function importFromBuffer(
   fileBuffer: Buffer,
   originalFilename: string
-): Promise<{ mediaId: string; media: Media }> {
+): Promise<{ mediaId: string; media: Media; skipped?: boolean }> {
   try {
+    const sourceContentDigest = sha256SourceBytes(fileBuffer);
+    const sourceIdentity = buildMediaSourceIdentity(
+      'upload',
+      `${originalFilename}:${sourceContentDigest}`,
+      `upload://${originalFilename}`,
+      Date.now(),
+      { observedFilename: originalFilename }
+    );
+    const exactMatch = await findMediaByContentDigest(sourceContentDigest);
+    if (exactMatch) {
+      const mediaWithSource = await recordMediaSourceIdentity(exactMatch.docId, sourceIdentity);
+      return { mediaId: mediaWithSource.docId, media: mediaWithSource, skipped: true };
+    }
+
     let buffer = fileBuffer;
     let filename = originalFilename;
     if (!isCardExportMarkedFilename(originalFilename)) {
@@ -557,7 +696,17 @@ export async function importFromBuffer(
 
     // For uploads/pastes, the sourcePath is just a representation of where it came from.
     const sourcePath = `upload://${filename}`;
-    const newMedia = await createMediaAsset(buffer, filename, 'paste', sourcePath);
+    const newMedia = await createMediaAsset(
+      buffer,
+      filename,
+      'paste',
+      sourcePath,
+      undefined,
+      undefined,
+      undefined,
+      sourceContentDigest,
+      sourceIdentity
+    );
 
     // Return the hydrated object that the client expects
     return {
@@ -915,6 +1064,14 @@ export async function replaceMediaAssetContent(
     throw new Error(`Media document with ID ${mediaId} has no storagePath.`);
   }
 
+  const replacementDigest = sha256SourceBytes(fileBuffer);
+  const exactMatch = await findMediaByContentDigest(replacementDigest);
+  if (exactMatch && exactMatch.docId !== mediaId) {
+    throw new Error(
+      'This replacement exactly matches another media asset. Review the duplicate instead of replacing.'
+    );
+  }
+
   const image = sharp(fileBuffer);
   const metadata = await image.metadata();
   let { width, height } = metadata as { width?: number; height?: number };
@@ -944,6 +1101,21 @@ export async function replaceMediaAssetContent(
     size: fileBuffer.length,
     contentType,
     storageUrl,
+    contentIdentity: {
+      algorithm: 'sha256',
+      digest: replacementDigest,
+      basis: 'source-bytes',
+    },
+    sourceIdentities: [
+      ...(existing.sourceIdentities ?? []),
+      buildMediaSourceIdentity(
+        'upload',
+        `replacement:${mediaId}:${replacementDigest}`,
+        `replacement://${originalFilename}`,
+        Date.now(),
+        { observedFilename: originalFilename }
+      ),
+    ],
     updatedAt: Date.now(),
   };
   const mergedRenditions = mergeMediaRenditions(studioRendition, readerRendition);
@@ -954,7 +1126,31 @@ export async function replaceMediaAssetContent(
     };
   }
 
-  await mediaRef.update(payload);
+  const oldDigest = existing.contentIdentity?.digest;
+  const oldIdentityRef =
+    oldDigest && oldDigest !== replacementDigest
+      ? firestore.collection(MEDIA_CONTENT_IDENTITIES_COLLECTION).doc(oldDigest)
+      : null;
+  const newIdentityRef = firestore
+    .collection(MEDIA_CONTENT_IDENTITIES_COLLECTION)
+    .doc(replacementDigest);
+  await firestore.runTransaction(async tx => {
+    const [oldIdentitySnap, newIdentitySnap] = await Promise.all([
+      oldIdentityRef ? tx.get(oldIdentityRef) : Promise.resolve(null),
+      tx.get(newIdentityRef),
+    ]);
+    tx.update(mediaRef, payload);
+    if (oldIdentityRef && oldIdentitySnap?.data()?.mediaId === mediaId) {
+      tx.delete(oldIdentityRef);
+    }
+    if (!newIdentitySnap.exists || newIdentitySnap.data()?.mediaId === mediaId) {
+      tx.set(newIdentityRef, {
+        mediaId,
+        algorithm: 'sha256',
+        createdAt: Date.now(),
+      });
+    }
+  });
   void syncMediaToTypesenseById(mediaId);
 }
 

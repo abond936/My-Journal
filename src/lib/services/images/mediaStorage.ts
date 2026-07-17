@@ -12,6 +12,8 @@ import { Media } from '@/lib/types/photo';
 import { updateTagCountsForMedia } from '@/lib/firebase/tagService';
 import { removeMediaFromTypesense } from '@/lib/services/typesenseMediaService';
 
+const MEDIA_CONTENT_IDENTITIES_COLLECTION = 'mediaContentIdentities';
+
 // Add retry mechanism (exported for post-transaction storage cleanup, e.g. deleteCard)
 export async function deleteFromStorageWithRetry(storagePath: string, maxRetries = 3): Promise<boolean> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -66,7 +68,15 @@ export async function deleteMediaAsset(
   if (transaction) {
     const snap = await transaction.get(mediaRef);
     if (snap.exists) {
-      const tags = (snap.data() as Media).tags || [];
+      const media = snap.data() as Media;
+      const tags = media.tags || [];
+      if (media.contentIdentity?.digest) {
+        const identityRef = firestore
+          .collection(MEDIA_CONTENT_IDENTITIES_COLLECTION)
+          .doc(media.contentIdentity.digest);
+        const identitySnap = await transaction.get(identityRef);
+        if (identitySnap.data()?.mediaId === mediaId) transaction.delete(identityRef);
+      }
       if (tags.length > 0) {
         await updateTagCountsForMedia(tags, [], transaction);
       }
@@ -86,7 +96,15 @@ export async function deleteMediaAsset(
       await firestore.runTransaction(async (tx) => {
         const snap = await tx.get(mediaRef);
         if (!snap.exists) return;
-        const tags = (snap.data() as Media).tags || [];
+        const media = snap.data() as Media;
+        const tags = media.tags || [];
+        if (media.contentIdentity?.digest) {
+          const identityRef = firestore
+            .collection(MEDIA_CONTENT_IDENTITIES_COLLECTION)
+            .doc(media.contentIdentity.digest);
+          const identitySnap = await tx.get(identityRef);
+          if (identitySnap.data()?.mediaId === mediaId) tx.delete(identityRef);
+        }
         if (tags.length > 0) {
           await updateTagCountsForMedia(tags, [], tx);
         }

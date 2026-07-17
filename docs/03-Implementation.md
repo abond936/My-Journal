@@ -260,7 +260,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Definition:** Not gated
 
-- **Duplicates** — Define identity evidence, comparison, decisions, and reconciliation.
+- **Duplicates** — Backfill existing identity evidence, add author review, and implement recoverable same-asset reconciliation.
 - **Readiness** — Add durable upload, processing, indexing, ready, and failure states.
 - **Consistency** — Align layout, selection, filters, bulk actions, and drag behavior with Cards.
 - **Pile merge** — Add bounded author-controlled pile merging.

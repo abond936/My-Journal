@@ -15,6 +15,23 @@ const mediaRenditionsSchema = z.object({
   reader: mediaRenditionSchema.optional(),
 });
 
+const mediaContentIdentitySchema = z.object({
+  algorithm: z.literal('sha256'),
+  digest: z.string().regex(/^[a-f0-9]{64}$/),
+  basis: z.literal('source-bytes'),
+});
+
+const mediaSourceIdentitySchema = z.object({
+  provider: z.enum(['local', 'upload', 'apple_photos']),
+  assetId: z.string().min(1),
+  sourcePath: z.string().optional(),
+  importedAt: z.number(),
+  observedFilename: z.string().optional(),
+  caption: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
+  importBatchId: z.string().optional(),
+});
+
 // Defines the canonical metadata for a single media asset in the system.
 // This is the single source of truth, stored in the top-level 'media' collection.
 export const mediaSchema = z.object({
@@ -40,6 +57,10 @@ export const mediaSchema = z.object({
   // Details about the original source of the file.
   source: z.enum(['local', 'paste']),
   sourcePath: z.string(), // The original path/identifier from the source (e.g., '/2023/Vacation/IMG_1234.jpg').
+  /** Exact identity of source bytes before normalization or rendition generation. */
+  contentIdentity: mediaContentIdentitySchema.optional(),
+  /** Every known source identity for this canonical asset, including repeat imports. */
+  sourceIdentities: z.array(mediaSourceIdentitySchema).optional(),
   
   // The default caption for the image, potentially from file metadata.
   // This serves as the base caption that can be overridden in specific contexts.
@@ -87,6 +108,8 @@ export const mediaSchema = z.object({
 });
 
 export type Media = z.infer<typeof mediaSchema>;
+export type MediaContentIdentity = z.infer<typeof mediaContentIdentitySchema>;
+export type MediaSourceIdentity = z.infer<typeof mediaSourceIdentitySchema>;
 
 /** Local folder browser / picker preview item (not persisted as Media until import). */
 export interface PickerMedia {

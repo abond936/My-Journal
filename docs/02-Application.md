@@ -484,10 +484,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Piles** — Provisional story grouping, correction, tagging, dismissal, and card creation.
 - **Stacks** — Manual hero/member grouping without deleting assets.
 - **Map preview** — Transient media view from import-tag mapping.
+- **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record.
 
 ⭕1 **Planned**
 
-- **Duplicates** — Review likely duplicates using source and content evidence.
+- **Duplicates** — Backfill existing evidence, review likely matches, and reconcile confirmed same-asset records with recovery evidence.
 - **Readiness** — Show truthful upload, processing, indexing, ready, and failure states.
 - **Consistency** — Align Media with Cards interaction patterns.
 - **Pile merge** — Merge and refine piles beyond moving individual members.
@@ -510,6 +511,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Assignment never removes media from the bank or alone controls Reader discovery.
 - Media caption and tags are frame truth; card placement overrides are explicit and local.
 - Delete checks every authoritative card surface; replace preserves identity and relationships.
+- Exact source bytes or an exact provider asset identity may reuse one canonical asset. Filename, dates, dimensions, size, and visual similarity are review evidence only and never authorize automatic merging.
+- Duplicate review decisions are Same asset, Keep both, or Defer. Keep-both decisions persist; same-asset reconciliation requires an explicit canonical asset and field-by-field conflict resolution before references move.
 - A pile is provisional, exclusive to one pending pile per item, append-only when rebuilt, and distinct from a stack.
 - Applying pile tags confirms tags but does not accept the pile; dismissal deletes no media or confirmed tags.
 - Pile tag suggestions default visible when the overlay opens; dismissing more than 40 members requires confirmation and returns them to Unsorted.
