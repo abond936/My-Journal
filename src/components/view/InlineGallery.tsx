@@ -75,11 +75,11 @@ export default function InlineGallery({
   }, []);
 
   const saveCaptionForItem = useCallback(
-    async (item: HydratedGalleryMediaItem, draft: string) => {
-      if (!canEditCaptions || !cardId || !onGallerySaved) return;
+    async (item: HydratedGalleryMediaItem, draft: string): Promise<boolean> => {
+      if (!canEditCaptions || !cardId || !onGallerySaved) return true;
       const trimmedDraft = draft.trim();
       const currentEffective = getEffectiveGalleryCaption(item, item.media).trim();
-      if (trimmedDraft === currentEffective) return;
+      if (trimmedDraft === currentEffective) return true;
 
       setCaptionSaving(true);
       try {
@@ -87,11 +87,13 @@ export default function InlineGallery({
         if (saved) {
           onGallerySaved(saved);
         }
+        return true;
       } catch (err) {
         feedback.showError(
           err instanceof Error ? err.message : 'This caption could not be saved. Your changes are still here. Try again.',
           'Caption not saved'
         );
+        return false;
       } finally {
         setCaptionSaving(false);
       }
@@ -99,12 +101,14 @@ export default function InlineGallery({
     [canEditCaptions, cardId, feedback, media, onGallerySaved]
   );
 
-  const closeLightbox = useCallback(() => {
+  const closeLightbox = useCallback(async () => {
+    if (captionSaving) return;
     if (canEditCaptions && activeItem) {
-      void saveCaptionForItem(activeItem, captionDraft);
+      const saved = await saveCaptionForItem(activeItem, captionDraft);
+      if (!saved) return;
     }
     setLightboxOpen(false);
-  }, [activeItem, canEditCaptions, captionDraft, saveCaptionForItem]);
+  }, [activeItem, canEditCaptions, captionDraft, captionSaving, saveCaptionForItem]);
 
   useEffect(() => {
     if (!lightboxOpen || !activeItem) return;
@@ -123,7 +127,7 @@ export default function InlineGallery({
     const onWindowKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        closeLightbox();
+        void closeLightbox();
       }
     };
     window.addEventListener('keydown', onWindowKeyDown);
@@ -136,7 +140,7 @@ export default function InlineGallery({
   const handleLightboxKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      closeLightbox();
+      void closeLightbox();
     }
   }, [closeLightbox]);
 
@@ -257,6 +261,7 @@ export default function InlineGallery({
               className={styles.lightboxClose}
               onClick={closeLightbox}
               aria-label="Close image viewer"
+              disabled={captionSaving}
             >
               Close
             </button>
@@ -269,7 +274,16 @@ export default function InlineGallery({
               spaceBetween={0}
               onSlideChange={(swiper) => {
                 if (canEditCaptions && activeItem) {
-                  void saveCaptionForItem(activeItem, captionDraft);
+                  const previousIndex = activeIndex;
+                  const nextIndex = swiper.activeIndex;
+                  void saveCaptionForItem(activeItem, captionDraft).then((saved) => {
+                    if (saved) {
+                      setActiveIndex(nextIndex);
+                    } else {
+                      swiper.slideTo(previousIndex);
+                    }
+                  });
+                  return;
                 }
                 setActiveIndex(swiper.activeIndex);
               }}
