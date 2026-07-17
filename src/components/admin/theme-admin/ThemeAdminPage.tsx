@@ -28,6 +28,7 @@ import {
   normalizeReaderThemeRecipes,
 } from '@/lib/theme/readerThemeSystem';
 import { useTheme } from '@/components/providers/ThemeProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 
 type ApiErrorResponse = {
   message?: string;
@@ -1337,6 +1338,7 @@ const mergeReaderRecipes = (recipes?: Partial<ReaderThemeRecipes> | null): Reade
 
 // Main Theme Admin Component
 export default function ThemeAdminPage() {
+  const feedback = useAppFeedback();
   const router = useRouter();
   const { applyDraftThemeCss, clearDraftThemeCss, theme, toggleTheme } = useTheme();
   const workspaceRef = useRef<HTMLDivElement | null>(null);
@@ -1783,7 +1785,13 @@ export default function ThemeAdminPage() {
 
   const confirmSwitchWithDirtyDraft = async () => {
     if (!isDraftDirty) return true;
-    const shouldSave = window.confirm('You have unsaved changes. Press OK to save before switching, or Cancel to switch without saving.');
+    const shouldSave = await feedback.confirm({
+      title: 'Save theme changes?',
+      message: 'Save your current theme changes before switching. Choosing “Switch without saving” discards them.',
+      confirmLabel: 'Save and switch',
+      cancelLabel: 'Switch without saving',
+      tone: 'danger',
+    });
     if (!shouldSave) return true;
     return await saveTheme();
   };

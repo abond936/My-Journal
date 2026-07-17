@@ -343,9 +343,13 @@ export default function MediaStoryPilesOverlayView(props: MediaStoryPilesOverlay
       if (!cluster.docId) return;
       const memberCount = cluster.memberMediaIds.length;
       if (memberCount > MAX_REVIEW_PILE_SIZE) {
-        const confirmed = window.confirm(
-          `Dismiss “${cluster.title}”? All ${memberCount} photos will return to Unsorted. No tags will be applied.`
-        );
+        const confirmed = await feedback.confirm({
+          title: 'Dismiss this pile?',
+          message: `${memberCount} photos will return to Unsorted. No tags will be applied.`,
+          confirmLabel: 'Dismiss pile',
+          cancelLabel: 'Keep pile',
+          tone: 'danger',
+        });
         if (!confirmed) return;
       }
       setBusyClusterId(cluster.docId);

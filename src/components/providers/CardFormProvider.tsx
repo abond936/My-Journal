@@ -79,8 +79,6 @@ interface FormContextValue {
 
   /** True when persistable fields differ from last successful save (or initial load). */
   isDirty: boolean;
-  /** If dirty, prompts; returns true when navigation should proceed. */
-  confirmLeaveIfDirty: () => boolean;
   /** Modal-backed variant for shells that avoid browser prompts. */
   confirmLeaveIfDirtyAsync: () => Promise<boolean>;
   /** RichTextEditor registers latest HTML getter so leave/dirty matches TipTap buffer. */
@@ -279,17 +277,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
     return !persistableSnapshotsEqual(current, formState.lastSavedState.cardData);
   }, [deferredCardData, dirtyHint, formState.lastSavedState.cardData, mergeEditorContentInto]);
   const isDirty = dirtyHint && deferredPersistableDirty;
-
-  const confirmLeaveIfDirty = useCallback(() => {
-    if (!dirtyHint) {
-      return true;
-    }
-    const current = mergeEditorContentInto(cardDataRef.current);
-    if (persistableSnapshotsEqual(current, formState.lastSavedState.cardData)) {
-      return true;
-    }
-    return window.confirm('You have unsaved changes. Leave without saving?');
-  }, [dirtyHint, formState.lastSavedState.cardData, mergeEditorContentInto]);
 
   const confirmLeaveIfDirtyAsync = useCallback(async () => {
     if (!dirtyHint) {
@@ -716,7 +703,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       resetForm,
       validateForm,
       isDirty,
-      confirmLeaveIfDirty,
       confirmLeaveIfDirtyAsync,
       registerEditorContentGetter,
       syncPersistableBaseline,
@@ -737,7 +723,6 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
       resetForm,
       validateForm,
       isDirty,
-      confirmLeaveIfDirty,
       confirmLeaveIfDirtyAsync,
       registerEditorContentGetter,
       syncPersistableBaseline,
