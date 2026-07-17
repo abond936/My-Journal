@@ -3,6 +3,7 @@ import {
   buildReaderMetadataQuickEditPatch,
   buildReaderReturnAfterDelete,
   patchReaderQuickEdit,
+  readerCardPatchRequiresListRevalidation,
 } from '@/lib/utils/readerCardPatchReconcile';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 
@@ -95,6 +96,24 @@ describe('buildGalleryCaptionPatch', () => {
         { mediaId: 'media-2', order: 1 },
       ],
     });
+  });
+});
+
+describe('readerCardPatchRequiresListRevalidation', () => {
+  it.each([
+    [{ status: 'published' }, 'publication'],
+    [{ title: 'Retitled' }, 'search and title ordering'],
+    [{ tags: ['who-1'] }, 'tag filtering'],
+    [{ subjectTagIds: ['who-1'] }, 'subject filtering'],
+    [{ galleryTagInheritanceOverrides: { who: false } }, 'tag inheritance'],
+    [{ galleryMedia: [] }, 'Gallery rollup and preview'],
+    [{ childrenIds: ['child-1'] }, 'collection structure'],
+  ] as const)('revalidates card lists for %s changes', (patch) => {
+    expect(readerCardPatchRequiresListRevalidation(patch)).toBe(true);
+  });
+
+  it('keeps presentation-only changes local', () => {
+    expect(readerCardPatchRequiresListRevalidation({ displayMode: 'inline' })).toBe(false);
   });
 });
 

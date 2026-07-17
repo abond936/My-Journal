@@ -60,10 +60,43 @@ export function reconcileReaderCardListCaches(savedCard: Card): void {
   );
 }
 
+const CARD_LIST_REVALIDATION_FIELDS = new Set<keyof CardUpdate>([
+  'title',
+  'subtitle',
+  'excerpt',
+  'content',
+  'type',
+  'status',
+  'coverImageId',
+  'galleryMedia',
+  'tags',
+  'subjectTagId',
+  'subjectTagIds',
+  'galleryTagInheritanceOverrides',
+  'childrenIds',
+  'isCollectionRoot',
+  'collectionRootOrder',
+]);
+
+export function readerCardPatchRequiresListRevalidation(updates: CardUpdate): boolean {
+  return Object.keys(updates).some((field) =>
+    CARD_LIST_REVALIDATION_FIELDS.has(field as keyof CardUpdate)
+  );
+}
+
+function revalidateReaderCardLists(): void {
+  void globalMutate(
+    (key: Key) => typeof key === 'string' && key.startsWith('/api/cards?')
+  );
+}
+
 export async function patchReaderCard(
   cardId: string,
   updates: CardUpdate,
-  opts?: { onFeedPatch?: (savedCard: Card) => void }
+  opts?: {
+    onFeedPatch?: (savedCard: Card) => void;
+    revalidateCardLists?: boolean;
+  }
 ): Promise<Card> {
   const response = await fetch(`/api/cards/${cardId}`, {
     method: 'PATCH',
@@ -78,6 +111,9 @@ export async function patchReaderCard(
   }
   reconcileReaderCardListCaches(savedData);
   opts?.onFeedPatch?.(savedData);
+  if (opts?.revalidateCardLists ?? readerCardPatchRequiresListRevalidation(updates)) {
+    revalidateReaderCardLists();
+  }
   return savedData;
 }
 
@@ -152,7 +188,7 @@ export async function patchReaderGalleryCaption(
 ): Promise<Card | null> {
   const patch = buildGalleryCaptionPatch(gallery, mediaId, newCaption);
   if (!patch) return null;
-  return patchReaderCard(cardId, patch);
+  return patchReaderCard(cardId, patch, { revalidateCardLists: false });
 }
 
 export async function patchReaderQuickEdit(
