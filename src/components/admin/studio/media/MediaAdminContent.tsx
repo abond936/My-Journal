@@ -16,6 +16,7 @@ import {
 import type { MediaBankImportSummary } from '@/components/admin/studio/media/MediaLocalImportDialog';
 import MediaOrganizeStrip from '@/components/admin/studio/media/MediaOrganizeStrip';
 import MediaStoryPilesOverlayView from '@/components/admin/studio/media/MediaStoryPilesOverlayView';
+import MediaExactMatchesReview from '@/components/admin/studio/media/MediaExactMatchesReview';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import AdminDimensionalTagFilter from '@/components/admin/common/AdminDimensionalTagFilter';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
@@ -69,6 +70,7 @@ export type MediaAdminContentProps = {
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type MediaPopulation = 'bank' | 'this_card';
+type MediaWorkspaceMode = 'browse' | 'exact';
 type ApiErrorResponse = {
   message?: string;
   code?: string;
@@ -153,6 +155,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
   const [highlightAssigned, setHighlightAssigned] = useState(true);
   const [mediaPopulation, setMediaPopulation] = useState<MediaPopulation>('bank');
+  const [mediaWorkspaceMode, setMediaWorkspaceMode] = useState<MediaWorkspaceMode>('browse');
   const showOnlyAssigned = mediaPopulation === 'this_card';
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
@@ -1072,6 +1075,28 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           <div className={styles.studioHeaderRow}>
             <h2 className={styles.embeddedTitle}>Media</h2>
             <div className={styles.studioHeaderActions}>
+              <div className={styles.mediaModeToggle} role="group" aria-label="Media workspace">
+                <button
+                  type="button"
+                  className={`${styles.mediaModeToggleButton} ${
+                    mediaWorkspaceMode === 'browse' ? styles.mediaModeToggleButtonActive : ''
+                  }`}
+                  onClick={() => setMediaWorkspaceMode('browse')}
+                  aria-pressed={mediaWorkspaceMode === 'browse'}
+                >
+                  Browse
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.mediaModeToggleButton} ${
+                    mediaWorkspaceMode === 'exact' ? styles.mediaModeToggleButtonActive : ''
+                  }`}
+                  onClick={() => setMediaWorkspaceMode('exact')}
+                  aria-pressed={mediaWorkspaceMode === 'exact'}
+                >
+                  Exact matches
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => setImportPickerOpen(true)}
@@ -1081,6 +1106,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               </button>
             </div>
           </div>
+          {mediaWorkspaceMode === 'browse' ? (
+          <>
           {reconcileFilterActive && reconcileSourceTag ? (
             <div className={styles.studioReconcileMediaBanner}>
               <span>
@@ -1354,8 +1381,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             />
           </div>
           </>
+          </>
+          ) : null}
         </div>
-        {!loading && !error && selectedMediaIds.length > 0 ? (
+        {mediaWorkspaceMode === 'browse' && !loading && !error && selectedMediaIds.length > 0 ? (
           <div className={cardAdminStyles.bulkActions}>
             <span>
               {selectedMediaIds.length} media selected
@@ -1444,7 +1473,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         }}
       />
 
-      <div className={styles.embeddedMediaBody}>{mainBody}</div>
+      <div className={styles.embeddedMediaBody}>
+        {mediaWorkspaceMode === 'exact' ? <MediaExactMatchesReview /> : mainBody}
+      </div>
     </div>
   );
 }

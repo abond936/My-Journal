@@ -96,6 +96,8 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/questions/[id]/create-card', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/media/duplicates', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/media/duplicates', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
   { method: 'GET', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -182,6 +184,8 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-questions-create-card', method: 'POST', path: '/api/admin/questions/[id]/create-card', modulePath: '@/app/api/admin/questions/[id]/create-card/route', requestUrl: 'https://example.test/api/admin/questions/q-1/create-card', params: Promise.resolve({ id: 'q-1' }), body: {} },
 
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
+  { id: 'admin-media-duplicates-get', method: 'GET', path: '/api/admin/media/duplicates', modulePath: '@/app/api/admin/media/duplicates/route', requestUrl: 'https://example.test/api/admin/media/duplicates?status=unresolved' },
+  { id: 'admin-media-duplicates-post', method: 'POST', path: '/api/admin/media/duplicates', modulePath: '@/app/api/admin/media/duplicates/route', requestUrl: 'https://example.test/api/admin/media/duplicates', body: { mediaIds: ['m1', 'm2'], decision: 'defer' } },
 
   { id: 'admin-media-review-get', method: 'GET', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review?lens=suggested' },
   { id: 'admin-media-review-post', method: 'POST', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review', body: { lens: 'suggested' } },

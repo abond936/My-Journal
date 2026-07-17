@@ -1,9 +1,13 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import {
   mediaDuplicatePairKey,
+  groupExactMediaDuplicates,
   type MediaDuplicateDecision,
+  type MediaDuplicateReviewGroup,
   type MediaDuplicateReviewDecision,
+  type MediaDuplicateReviewStatus,
 } from '@/lib/utils/mediaDuplicateEvidence';
+import type { Media } from '@/lib/types/photo';
 
 const COLLECTION = 'mediaDuplicateReviews';
 
@@ -31,6 +35,21 @@ export async function recordMediaDuplicateDecision(input: {
   if (!first.exists || !second.exists) {
     throw new Error('Duplicate decisions require two existing media records');
   }
+  const firstMedia = { ...first.data(), docId: first.id } as Media;
+  const secondMedia = { ...second.data(), docId: second.id } as Media;
+  const firstIdentity = firstMedia.contentIdentity;
+  const secondIdentity = secondMedia.contentIdentity;
+  if (
+    !firstIdentity ||
+    !secondIdentity ||
+    firstIdentity.algorithm !== 'sha256' ||
+    secondIdentity.algorithm !== 'sha256' ||
+    firstIdentity.basis !== 'source-bytes' ||
+    secondIdentity.basis !== 'source-bytes' ||
+    firstIdentity.digest !== secondIdentity.digest
+  ) {
+    throw new Error('These media records are no longer an exact source-byte match');
+  }
 
   const result: MediaDuplicateReviewDecision = {
     pairKey,
@@ -42,6 +61,54 @@ export async function recordMediaDuplicateDecision(input: {
   };
   await firestore.collection(COLLECTION).doc(pairKey).set(result);
   return result;
+}
+
+export async function listMediaDuplicateReviewGroups(
+  status: MediaDuplicateReviewStatus = 'unresolved'
+): Promise<MediaDuplicateReviewGroup[]> {
+  const firestore = getAdminApp().firestore();
+  const [mediaSnapshot, decisionSnapshot] = await Promise.all([
+    firestore.collection('media').select('contentIdentity').get(),
+    firestore.collection(COLLECTION).get(),
+  ]);
+  const evidenceRows = mediaSnapshot.docs.map(doc => ({
+    docId: doc.id,
+    ...doc.data(),
+  })) as Media[];
+  const decisions = new Map(
+    decisionSnapshot.docs.map(doc => [doc.id, doc.data() as MediaDuplicateReviewDecision] as const)
+  );
+  const exactPairs = groupExactMediaDuplicates(evidenceRows).flatMap(group =>
+    group.mediaIds.flatMap((firstMediaId, index) =>
+      group.mediaIds.slice(index + 1).map(secondMediaId => ({
+        digest: group.digest,
+        mediaIds: [firstMediaId, secondMediaId] as [string, string],
+      }))
+    )
+  );
+  const included = exactPairs.filter(group => {
+    const decision = decisions.get(mediaDuplicatePairKey(group.mediaIds[0]!, group.mediaIds[1]!));
+    const reviewed = decision?.decision === 'same_asset' || decision?.decision === 'keep_both';
+    if (status === 'reviewed') return reviewed;
+    if (status === 'unresolved') return !reviewed;
+    return true;
+  });
+  const mediaRefs = included.flatMap(group =>
+    group.mediaIds.map(mediaId => firestore.collection('media').doc(mediaId))
+  );
+  const fullSnapshots = mediaRefs.length > 0 ? await firestore.getAll(...mediaRefs) : [];
+  const fullMedia = new Map(
+    fullSnapshots
+      .filter(snapshot => snapshot.exists)
+      .map(snapshot => [snapshot.id, { ...snapshot.data(), docId: snapshot.id } as Media] as const)
+  );
+
+  return included.map(group => ({
+    digest: group.digest,
+    media: group.mediaIds.map(mediaId => fullMedia.get(mediaId)).filter((item): item is Media => Boolean(item)),
+    decision:
+      decisions.get(mediaDuplicatePairKey(group.mediaIds[0]!, group.mediaIds[1]!)) ?? null,
+  }));
 }
 
 export async function getMediaDuplicateDecision(

@@ -12,6 +12,14 @@ export interface MediaDuplicateReviewDecision {
   decidedAt: number;
 }
 
+export type MediaDuplicateReviewStatus = 'unresolved' | 'reviewed' | 'all';
+
+export interface MediaDuplicateReviewGroup {
+  digest: string;
+  media: Media[];
+  decision: MediaDuplicateReviewDecision | null;
+}
+
 export function sha256SourceBytes(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex');
 }

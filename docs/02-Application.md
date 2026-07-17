@@ -485,10 +485,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Stacks** — Manual hero/member grouping without deleting assets.
 - **Map preview** — Transient media view from import-tag mapping.
 - **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record. Existing accessible local originals have verified evidence and uncontested registry entries.
+- **Exact review** — An author queue presents records with identical source bytes and records Same asset, Keep both, or Defer without merging, deleting, or moving references.
 
 ⭕1 **Planned**
 
-- **Duplicates** — Recover evidence where original source bytes are unavailable, review exact and likely matches, and reconcile confirmed same-asset records with recovery evidence.
+- **Duplicates** — Recover evidence where original source bytes are unavailable, extend review to likely matches, and reconcile confirmed same-asset records with recovery evidence.
 - **Readiness** — Show truthful upload, processing, indexing, ready, and failure states.
 - **Consistency** — Align Media with Cards interaction patterns.
 - **Pile merge** — Merge and refine piles beyond moving individual members.

@@ -544,8 +544,13 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   it('persists reviewed keep-both decisions without changing either media record', async () => {
     const db = getFirestore(app);
-    await db.collection('media').doc('duplicate-a').set({ docId: 'duplicate-a' });
-    await db.collection('media').doc('duplicate-b').set({ docId: 'duplicate-b' });
+    const contentIdentity = {
+      algorithm: 'sha256',
+      digest: 'e'.repeat(64),
+      basis: 'source-bytes',
+    };
+    await db.collection('media').doc('duplicate-a').set({ docId: 'duplicate-a', contentIdentity });
+    await db.collection('media').doc('duplicate-b').set({ docId: 'duplicate-b', contentIdentity });
 
     const { getMediaDuplicateDecision, recordMediaDuplicateDecision } = await import(
       '@/lib/services/mediaDuplicateReviewService'

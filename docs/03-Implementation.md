@@ -260,7 +260,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Definition:** Not gated
 
-- **Duplicates** — Source-byte evidence is stored for 3,064 of 3,503 Media records with 3,062 uncontested identity-registry entries; one exact two-record match remains deliberately unregistered and unresolved. Recover or explicitly classify 101 missing local originals and 338 non-local records, add author review, and implement recoverable same-asset reconciliation.
+- **Duplicates** — Source-byte evidence is stored for 3,064 of 3,503 Media records with 3,062 uncontested identity-registry entries. Studio Media now provides an author-only Exact matches queue for identical source bytes; it records Same asset, Keep both, or Defer while leaving media, references, and identity registration unchanged. One exact two-record match remains deliberately unregistered and unresolved. Recover or explicitly classify 101 missing local originals and 338 non-local records, extend review to likely matches, and implement recoverable same-asset reconciliation.
 - **Readiness** — Add durable upload, processing, indexing, ready, and failure states.
 - **Consistency** — Align layout, selection, filters, bulk actions, and drag behavior with Cards.
 - **Pile merge** — Add bounded author-controlled pile merging.
