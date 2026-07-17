@@ -22,27 +22,19 @@ function studioContextToInitialCard(card: StudioCardContext): Card {
   return rest as Card;
 }
 
-function StudioComposeActivityOverlay({
+function StudioCardTransitionOverlay({
   cardIsTransitioning,
 }: {
   cardIsTransitioning: boolean;
 }) {
-  const {
-    formState: { isSaving },
-  } = useCardForm();
-
-  if (!isSaving && !cardIsTransitioning) return null;
+  if (!cardIsTransitioning) return null;
 
   return (
     <PanelActivityOverlay
       active
-      blocking={isSaving}
-      title={isSaving ? 'Saving Compose...' : 'Loading selected card...'}
-      message={
-        isSaving
-          ? 'Updating card details and synchronizing related views.'
-          : 'Bringing the selected card into Compose.'
-      }
+      blocking={false}
+      title="Opening card…"
+      message="Bringing the selected card into Compose."
     />
   );
 }
@@ -158,9 +150,6 @@ export default function StudioCardEditPane({
       {activeCardViewModel.status === 'degraded' && activeCardViewModel.error && initialCard ? (
         <p className={styles.cardEditPlaceholderError}>{activeCardViewModel.error}</p>
       ) : null}
-      {activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard ? (
-        <p className={styles.cardEditPlaceholderMeta}>Loading selected card...</p>
-      ) : null}
       <CardFormProvider
         key={providerKey}
         initialCard={newCardRequested ? null : initialCard}
@@ -168,7 +157,7 @@ export default function StudioCardEditPane({
         onSave={handleSave}
       >
         <StudioComposeLeaveGuardBridge />
-        <StudioComposeActivityOverlay
+        <StudioCardTransitionOverlay
           cardIsTransitioning={activeCardViewModel.status === 'preview' || isTransitioningToDifferentCard}
         />
         <div className={styles.studioComposeHeader}>
