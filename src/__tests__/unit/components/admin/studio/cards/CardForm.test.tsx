@@ -172,6 +172,20 @@ describe('CardForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        settings: {
+          galleryTagInheritance: {
+            who: true,
+            what: true,
+            when: true,
+            where: true,
+          },
+          galleryTagInheritanceConfigured: true,
+        },
+      }),
+    }) as jest.Mock;
   });
 
   it('renders all main form sections', () => {
