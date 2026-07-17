@@ -18,12 +18,14 @@ import styles from './ReaderMobileQuickEdit.module.css';
 export default function ReaderMobileQuickEdit({
   open,
   onClose,
+  onOpenFullEditor,
   cardId,
   initial,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
+  onOpenFullEditor: () => void;
   cardId: string;
   initial: ReaderQuickEditInitial;
   onSaved: (savedCard: Card) => void;
@@ -119,6 +121,21 @@ export default function ReaderMobileQuickEdit({
       setIsSaving(false);
     }
   }, [body, cardId, excerpt, feedback, initial, isDirty, onClose, onSaved, subtitle, title]);
+
+  const handleOpenFullEditor = useCallback(async () => {
+    if (isSaving) return;
+    if (isDirty) {
+      const shouldDiscard = await feedback.confirm({
+        title: 'Open full editor?',
+        message: 'Your unsaved quick edits will be discarded before the full editor opens.',
+        confirmLabel: 'Discard and open',
+        cancelLabel: 'Keep editing',
+        tone: 'danger',
+      });
+      if (!shouldDiscard) return;
+    }
+    onOpenFullEditor();
+  }, [feedback, isDirty, isSaving, onOpenFullEditor]);
 
   useEffect(() => {
     if (!open) return;
@@ -222,6 +239,14 @@ export default function ReaderMobileQuickEdit({
         )}
 
         <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => void handleOpenFullEditor()}
+            disabled={isSaving}
+          >
+            Full editor
+          </button>
           <button
             type="button"
             className={styles.secondaryButton}

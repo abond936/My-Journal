@@ -40,6 +40,7 @@ describe('ReaderMobileQuickEdit', () => {
       <ReaderMobileQuickEdit
         open
         onClose={onClose}
+        onOpenFullEditor={jest.fn()}
         cardId="card-1"
         initial={{ title: 'Old title', subtitle: '', excerpt: '', content: '<p>Body</p>' }}
         onSaved={onSaved}
@@ -66,6 +67,7 @@ describe('ReaderMobileQuickEdit', () => {
       <ReaderMobileQuickEdit
         open
         onClose={jest.fn()}
+        onOpenFullEditor={jest.fn()}
         cardId="card-1"
         initial={{ title: 'Title', subtitle: '', excerpt: '', content: '<p>Original body</p>' }}
         onSaved={jest.fn()}
@@ -90,6 +92,7 @@ describe('ReaderMobileQuickEdit', () => {
       <ReaderMobileQuickEdit
         open
         onClose={jest.fn()}
+        onOpenFullEditor={jest.fn()}
         cardId="card-1"
         initial={{
           title: 'Title',
@@ -110,6 +113,7 @@ describe('ReaderMobileQuickEdit', () => {
       <ReaderMobileQuickEdit
         open
         onClose={jest.fn()}
+        onOpenFullEditor={jest.fn()}
         cardId="card-1"
         initial={{ title: 'Title', subtitle: '', excerpt: '', content: '<p>Body</p>' }}
         onSaved={jest.fn()}
@@ -123,5 +127,24 @@ describe('ReaderMobileQuickEdit', () => {
     expect(title).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('Add a title before saving this card.')).toBeInTheDocument();
     expect(patchReaderQuickEditMock).not.toHaveBeenCalled();
+  });
+
+  it('opens the full editor from the mobile quick editor', () => {
+    const onOpenFullEditor = jest.fn();
+
+    render(
+      <ReaderMobileQuickEdit
+        open
+        onClose={jest.fn()}
+        onOpenFullEditor={onOpenFullEditor}
+        cardId="card-1"
+        initial={{ title: 'Title', subtitle: '', excerpt: '', content: '<p>Body</p>' }}
+        onSaved={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Full editor' }));
+
+    expect(onOpenFullEditor).toHaveBeenCalledTimes(1);
   });
 });

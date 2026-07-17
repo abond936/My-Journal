@@ -208,3 +208,34 @@
   border-right: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 30%, transparent);
   border-bottom: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 30%, transparent);
 }
+
+@media (max-width: 768px) {
+  .readerModal {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-width: 0;
+    min-height: 0;
+    padding: var(--spacing-sm);
+    border: 0;
+    border-radius: 0;
+  }
+
+  .readerBody {
+    padding-top: 0;
+  }
+
+  .titleBar {
+    cursor: default;
+    touch-action: auto;
+  }
+
+  .titleBarDragAffordance,
+  .resizeHandle {
+    display: none;
+  }
+
+  .modalScroll :global(form#card-form) {
+    padding: var(--spacing-xs);
+  }
+}

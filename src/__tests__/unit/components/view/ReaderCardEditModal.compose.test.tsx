@@ -47,6 +47,15 @@ const mockedUseSWR = useSWR as jest.Mock;
 
 describe('ReaderCardEditModal compose integration', () => {
   beforeEach(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        settings: {
+          galleryTagInheritance: { who: true, what: true, when: true, where: true },
+          galleryTagInheritanceConfigured: true,
+        },
+      }),
+    }) as jest.Mock;
     mockedUseSWR.mockImplementation((key: string | null) => {
       if (key === '/api/cards/card-1?children=skip') {
         return {

@@ -30,6 +30,11 @@ export default function ReaderCardEditEntry({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(false);
 
+  const openFullEditor = useCallback(() => {
+    setMobileOpen(false);
+    setDesktopOpen(true);
+  }, []);
+
   const openEditor = useCallback(() => {
     onBeforeOpen?.();
     if (typeof window !== 'undefined' && window.matchMedia(MOBILE_EDIT_MEDIA).matches) {
@@ -56,6 +61,7 @@ export default function ReaderCardEditEntry({
       <ReaderMobileQuickEdit
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
+        onOpenFullEditor={openFullEditor}
         cardId={cardId}
         initial={metadata}
         onSaved={(saved) => onCardSaved?.(saved)}
