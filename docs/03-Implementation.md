@@ -256,13 +256,6 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 - **Context** — Keep historical context distinct from writing rewrites.
 - **Quote** — Define fields, attribution, media, relationships, presentation, and authoring.
 
-### Studio Questions
-
-**Definition:** Not gated
-
-- **Integrity** — Enforce one Question to at most one answer card transactionally in create and link paths.
-- **Regression** — Verify open, create, delete, unlink, conversion, usage, and Compose handoff.
-
 ### Studio Media
 
 **Definition:** Not gated

@@ -2,7 +2,10 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { createQuestionCardFromQuestion } from '@/lib/services/cardService';
-import { getQuestionById } from '@/lib/services/questionService';
+import {
+  getQuestionById,
+  QuestionAnswerConflictError,
+} from '@/lib/services/questionService';
 
 type RouteParams = Promise<{ id: string }>;
 
@@ -53,9 +56,21 @@ export async function POST(request: NextRequest, { params }: { params: RoutePara
 
   try {
     const created = await createQuestionCardFromQuestion(question);
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(created, { status: created.created ? 201 : 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
+    if (error instanceof QuestionAnswerConflictError) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'QUESTION_ANSWER_CONFLICT',
+          message,
+          severity: 'warning',
+          retryable: false,
+        },
+        409
+      );
+    }
     return errorResponse(
       {
         ok: false,

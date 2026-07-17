@@ -14,6 +14,13 @@ import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 
 const COLLECTION = 'questions';
 
+export class QuestionAnswerConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuestionAnswerConflictError';
+  }
+}
+
 function db() {
   return getFirestore(getAdminApp());
 }
@@ -154,71 +161,93 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
 }
 
 export async function deleteQuestion(questionId: string): Promise<void> {
-  const existing = await getQuestionById(questionId);
-  if (existing && existing.usedByCardIds.length > 0) {
-    throw new Error('Cannot delete a question that is linked to Q&A cards');
-  }
-  await db().collection(COLLECTION).doc(questionId).delete();
+  const ref = db().collection(COLLECTION).doc(questionId);
+  await db().runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    const existing = toQuestion(snap.id, snap.data() ?? {});
+    if (existing.usedByCardIds.length > 0) {
+      throw new QuestionAnswerConflictError('Cannot delete a question that has an answer card');
+    }
+    tx.delete(ref);
+  });
 }
 
 export async function linkCardToQuestion(questionId: string, cardId: string): Promise<Question> {
-  const cardSnap = await db().collection('cards').doc(cardId).get();
-  if (!cardSnap.exists) {
-    throw new Error('Card not found');
-  }
-  const parsedCard = cardSchema.partial().safeParse(cardSnap.data());
-  if (!parsedCard.success) {
-    throw new Error('Invalid card document');
-  }
-  if (parsedCard.data.type !== 'qa') {
-    throw new Error('Questions can only link to Q&A cards');
-  }
-  if (parsedCard.data.questionId && parsedCard.data.questionId !== questionId) {
-    throw new Error('Q&A card is already linked to a different question');
-  }
-
   const ref = db().collection(COLLECTION).doc(questionId);
+  const cardRef = db().collection('cards').doc(cardId);
   await db().runTransaction(async tx => {
-    const questionSnap = await tx.get(ref);
+    const [questionSnap, cardSnap] = await Promise.all([tx.get(ref), tx.get(cardRef)]);
     if (!questionSnap.exists) {
       throw new Error('Question not found');
     }
+    if (!cardSnap.exists) {
+      throw new Error('Card not found');
+    }
+    const parsedCard = cardSchema.partial().safeParse(cardSnap.data());
+    if (!parsedCard.success) {
+      throw new Error('Invalid card document');
+    }
+    if (parsedCard.data.type !== 'qa') {
+      throw new QuestionAnswerConflictError('Questions can only link to Question cards');
+    }
+    if (parsedCard.data.questionId && parsedCard.data.questionId !== questionId) {
+      throw new QuestionAnswerConflictError('This card already answers a different question');
+    }
+
+    const current = toQuestion(questionSnap.id, questionSnap.data() ?? {});
+    if (current.usedByCardIds.length > 1) {
+      throw new QuestionAnswerConflictError('This question has conflicting answer-card links and requires review');
+    }
+    if (current.usedByCardIds.length === 1 && current.usedByCardIds[0] !== cardId) {
+      throw new QuestionAnswerConflictError('This question already has an answer card');
+    }
+
+    const now = Date.now();
     tx.update(ref, {
-      usedByCardIds: FieldValue.arrayUnion(cardId),
-      updatedAt: Date.now(),
+      usedByCardIds: [cardId],
+      usageCount: 1,
+      updatedAt: now,
     });
-    tx.update(db().collection('cards').doc(cardId), {
+    tx.update(cardRef, {
       questionId,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
   });
 
-  await recalculateQuestionUsageCount(questionId);
   const fresh = await ref.get();
   return toQuestion(fresh.id, fresh.data() ?? {});
 }
 
 export async function unlinkCardFromQuestion(questionId: string, cardId: string): Promise<Question> {
   const ref = db().collection(COLLECTION).doc(questionId);
-  const snap = await ref.get();
-  if (!snap.exists) {
-    throw new Error('Question not found');
-  }
-
-  await ref.update({
-    usedByCardIds: FieldValue.arrayRemove(cardId),
-    updatedAt: Date.now(),
-  });
   const cardRef = db().collection('cards').doc(cardId);
-  const cardSnap = await cardRef.get();
-  if (cardSnap.exists && cardSnap.data()?.questionId === questionId) {
-    await cardRef.update({
-      questionId: FieldValue.delete(),
-      type: 'story',
-      status: 'draft',
-      updatedAt: Date.now(),
+  await db().runTransaction(async tx => {
+    const [questionSnap, cardSnap] = await Promise.all([tx.get(ref), tx.get(cardRef)]);
+    if (!questionSnap.exists) {
+      throw new Error('Question not found');
+    }
+    if (cardSnap.exists && cardSnap.data()?.questionId && cardSnap.data()?.questionId !== questionId) {
+      throw new QuestionAnswerConflictError('This card answers a different question');
+    }
+    const now = Date.now();
+    tx.update(ref, {
+      usedByCardIds: [],
+      usageCount: 0,
+      updatedAt: now,
     });
-    const updatedCardSnap = await cardRef.get();
+    if (cardSnap.exists) {
+      tx.update(cardRef, {
+        questionId: FieldValue.delete(),
+        type: 'story',
+        status: 'draft',
+        updatedAt: now,
+      });
+    }
+  });
+
+  const updatedCardSnap = await cardRef.get();
+  if (updatedCardSnap.exists) {
     const updatedCard = cardSchema.safeParse({
       docId: updatedCardSnap.id,
       ...updatedCardSnap.data(),
@@ -227,7 +256,6 @@ export async function unlinkCardFromQuestion(questionId: string, cardId: string)
       void syncCardToTypesense(updatedCard.data);
     }
   }
-  await recalculateQuestionUsageCount(questionId);
 
   const fresh = await ref.get();
   return toQuestion(fresh.id, fresh.data() ?? {});

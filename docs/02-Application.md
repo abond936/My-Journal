@@ -449,13 +449,14 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Prompts** — Create, edit, search, tag, and delete unlinked prompts.
 - **Filters** — Text, taxonomy, Assigned, Unassigned, Untagged, and descendant scope.
-- **Answers** — Create or open the linked Question card in Compose.
+- **Answers** — Transactionally create or open the sole linked Question card in Compose.
 - **Unlink** — Preserve the answer as a draft Story.
+- **Integrity** — Reject conflicting links, protect linked prompts from deletion, and atomically unlink and convert answers.
 
 📋 **Contracts**
 
 - A Question is a prompt; its Reader content lives in one linked Question card.
-- A Question may have zero or one answer card; service enforcement is still Planned in `03`.
+- A Question may have zero or one answer card; concurrent create requests resolve to that same card.
 - The prompt supplies the initial title and tags; prompt and answer then evolve independently.
 - A linked prompt cannot be deleted.
 - Unlinking removes the relationship and converts the answer to a draft Story.

@@ -17,7 +17,10 @@ import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhen
 import { applyPublicStorageUrlsToMedia } from '@/lib/utils/storageUrl';
 import { Media } from '@/lib/types/photo';
 import { AppError, ErrorCode } from '@/lib/types/error';
-import { unlinkCardFromAllQuestions } from '@/lib/services/questionService';
+import {
+  QuestionAnswerConflictError,
+  unlinkCardFromAllQuestions,
+} from '@/lib/services/questionService';
 import { syncCardToTypesense, removeCardFromTypesense } from '@/lib/services/typesenseService';
 import { syncMediaToTypesenseById } from '@/lib/services/typesenseMediaService';
 import {
@@ -54,7 +57,8 @@ async function withRetry<T>(
         // Don't retry validation errors or permission errors
         if (error.message.includes('permission') || 
             error.message.includes('validation') ||
-            error.message.includes('not found')) {
+            error.message.includes('not found') ||
+            error instanceof QuestionAnswerConflictError) {
           throw error;
         }
       }
@@ -965,7 +969,9 @@ export async function createCard(
   return finalCard;
 }
 
-export async function createQuestionCardFromQuestion(question: Question): Promise<{ card: Card; question: Question }> {
+export async function createQuestionCardFromQuestion(
+  question: Question
+): Promise<{ card: Card; question: Question; created: boolean }> {
   const collectionRef = firestore.collection(CARDS_COLLECTION);
   const docRef = collectionRef.doc();
   const now = Date.now();
@@ -1032,33 +1038,69 @@ export async function createQuestionCardFromQuestion(question: Question): Promis
   };
 
   const questionRef = firestore.collection(QUESTIONS_COLLECTION).doc(question.docId);
-  await withRetry(async () => {
+  const transactionResult = await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
       const questionSnap = await transaction.get(questionRef);
       if (!questionSnap.exists) {
         throw new Error('Question not found');
       }
 
+      const questionData = questionSnap.data() ?? {};
+      const usedByCardIds = Array.isArray(questionData.usedByCardIds)
+        ? questionData.usedByCardIds.filter((id): id is string => typeof id === 'string')
+        : [];
+      if (usedByCardIds.length > 1) {
+        throw new QuestionAnswerConflictError(
+          'This question has conflicting answer-card links and requires review'
+        );
+      }
+      if (usedByCardIds.length === 1) {
+        const existingCardSnap = await transaction.get(
+          firestore.collection(CARDS_COLLECTION).doc(usedByCardIds[0])
+        );
+        if (!existingCardSnap.exists) {
+          throw new QuestionAnswerConflictError(
+            'This question points to a missing answer card and requires review'
+          );
+        }
+        const existingCard = cardSchema.safeParse({
+          docId: existingCardSnap.id,
+          ...existingCardSnap.data(),
+        });
+        if (
+          !existingCard.success ||
+          existingCard.data.type !== 'qa' ||
+          existingCard.data.questionId !== question.docId
+        ) {
+          throw new QuestionAnswerConflictError(
+            'This question has an inconsistent answer-card link and requires review'
+          );
+        }
+        return { card: existingCard.data, created: false };
+      }
+
       await updateTagCountsForCard(null, newCard, transaction, buildTagMap(allTagsForJournal));
       transaction.set(docRef, newCard);
       transaction.update(questionRef, {
-        usedByCardIds: FieldValue.arrayUnion(docRef.id),
-        usageCount: FieldValue.increment(1),
+        usedByCardIds: [docRef.id],
+        usageCount: 1,
         updatedAt: now,
       });
+      return { card: newCard, created: true };
     });
   });
 
-  void syncCardToTypesense(newCard);
+  if (transactionResult.created) {
+    void syncCardToTypesense(transactionResult.card);
+  }
 
   return {
-    card: newCard,
+    card: transactionResult.card,
+    created: transactionResult.created,
     question: {
       ...question,
-      usedByCardIds: question.usedByCardIds.includes(docRef.id)
-        ? question.usedByCardIds
-        : [...question.usedByCardIds, docRef.id],
-      usageCount: (question.usedByCardIds.includes(docRef.id) ? question.usedByCardIds.length : question.usedByCardIds.length + 1),
+      usedByCardIds: [transactionResult.card.docId],
+      usageCount: 1,
       updatedAt: now,
     },
   };

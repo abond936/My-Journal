@@ -6,6 +6,7 @@ import {
   getQuestionById,
   linkCardToQuestion,
   unlinkCardFromQuestion,
+  QuestionAnswerConflictError,
   updateQuestion,
 } from '@/lib/services/questionService';
 import { updateQuestionSchema } from '@/lib/types/question';
@@ -203,8 +204,9 @@ export async function POST(request: NextRequest, { params }: { params: RoutePara
     return NextResponse.json({ question });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const status = message.includes('not found') ? 404 : 500;
-    const code = status === 404 ? 'QUESTION_NOT_FOUND' : 'QUESTION_LINK_FAILED';
+    const status = error instanceof QuestionAnswerConflictError ? 409 : message.includes('not found') ? 404 : 500;
+    const code =
+      status === 409 ? 'QUESTION_ANSWER_CONFLICT' : status === 404 ? 'QUESTION_NOT_FOUND' : 'QUESTION_LINK_FAILED';
     return errorResponse(
       {
         ok: false,
@@ -271,8 +273,9 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
     return NextResponse.json({ question });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const status = message.includes('not found') ? 404 : 500;
-    const code = status === 404 ? 'QUESTION_NOT_FOUND' : 'QUESTION_UNLINK_FAILED';
+    const status = error instanceof QuestionAnswerConflictError ? 409 : message.includes('not found') ? 404 : 500;
+    const code =
+      status === 409 ? 'QUESTION_ANSWER_CONFLICT' : status === 404 ? 'QUESTION_NOT_FOUND' : 'QUESTION_UNLINK_FAILED';
     return errorResponse(
       {
         ok: false,
