@@ -9,7 +9,7 @@ On the **first assistant turn of a new project chat**, before readiness claims, 
 
 1. **Read** `AGENTS.md`
 2. **Read** `.cursor/rules/Agent-Discipline.mdc`
-3. **Read** `docs/01-Vision-Architecture.md` -> **TECHNICAL -> Backend** *Principles* (through **Durability boundary**). If task-specific: matching `02` section; if sequencing: active lines in `03`
+3. **Read** `docs/01-Vision-Architecture.md` -> **TECHNICAL -> Backend** *Principles* (through **Durability boundary**) and `docs/CONTINUITY.md`. If task-specific: matching `02` section; if sequencing: active lines in `03`
 4. Do **not** claim full-repo mental model. After reads, use grep/read only on paths the task implies
 5. First project-substantive reply: one line **Doc anchors:** files/sections read. If a required file is unreadable, say so and stop
 

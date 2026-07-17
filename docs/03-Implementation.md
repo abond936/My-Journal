@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** Studio Cards. Definition is gated; search clarity and shared Cards/Media tile sizing are implemented and verified, while the remaining card-bank work is not yet Complete.
+**Current active capability:** None. The next required Definition Gate is Studio Media same-asset reconciliation after the author reviews the unresolved exact match. Exact-match review is delivered; no reconciliation, merge, deletion, reference movement, or identity registration is authorized by that delivery.
 
 ---
 

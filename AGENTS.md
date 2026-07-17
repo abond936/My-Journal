@@ -9,6 +9,7 @@ This file is an **index only**.
 | Vision, principles, tech stack, stable decisions | `docs/01-Vision-Architecture.md` |
 | App/product truth by area | `docs/02-Application.md` |
 | Phase 2 execution inventory and sequencing | `docs/03-Implementation.md` |
+| Current session handoff (operational context; not product canon) | `docs/CONTINUITY.md` |
 | Theme contract and reader/admin layout rules (support doc; details under canon) | `docs/04-Theme-Design-Contract.md` |
 | Guided archive / AI clustering seed spec (support doc; not active unless mirrored into `03`) | `docs/05-Guided-Archive-Assistance.md` |
 | Scripts and operational commands (support reference) | `docs/NPM-SCRIPTS.md` |
