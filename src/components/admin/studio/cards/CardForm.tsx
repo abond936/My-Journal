@@ -741,7 +741,10 @@ const CardForm: React.FC = () => {
     if (saved) {
       return;
     }
-    feedback.showError('Could not save card. Please review any errors and try again.', 'Could not save');
+    feedback.showError(
+      'This card could not be saved. Your changes are still here. Review any highlighted fields and try again.',
+      'Card not saved'
+    );
   }, [excerptDraft, feedback, handleSave, isExcerptAuto, subtitleDraft, titleDraft]);
 
   const handleAddImageToContent = useCallback(() => {

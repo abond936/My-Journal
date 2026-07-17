@@ -90,7 +90,7 @@ export default function ReaderMobileQuickEdit({
     };
 
     if (!draft.title) {
-      feedback.showError('Title is required.', 'Cannot save');
+      feedback.showError('Add a title before saving this card.', 'Title required');
       return;
     }
 
@@ -107,10 +107,12 @@ export default function ReaderMobileQuickEdit({
         return;
       }
       onSaved(saved);
-      feedback.showSuccess('Card updated.');
       onClose();
     } catch (err) {
-      feedback.showError(err instanceof Error ? err.message : 'Failed to save card.', 'Could not save');
+      feedback.showError(
+        err instanceof Error ? err.message : 'This card could not be saved. Your changes are still here. Try again.',
+        'Card not saved'
+      );
     } finally {
       setIsSaving(false);
     }

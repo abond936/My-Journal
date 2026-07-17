@@ -86,10 +86,12 @@ export default function InlineGallery({
         const saved = await patchReaderGalleryCaption(cardId, media, item.mediaId, trimmedDraft);
         if (saved) {
           onGallerySaved(saved);
-          feedback.showSuccess('Caption updated.');
         }
       } catch (err) {
-        feedback.showError(err instanceof Error ? err.message : 'Failed to save caption.', 'Could not save');
+        feedback.showError(
+          err instanceof Error ? err.message : 'This caption could not be saved. Your changes are still here. Try again.',
+          'Caption not saved'
+        );
       } finally {
         setCaptionSaving(false);
       }

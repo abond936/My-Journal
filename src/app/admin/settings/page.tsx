@@ -172,8 +172,8 @@ export default function AdminSettingsPage() {
     if (newlyEnabled.length > 0) {
       const confirmed = await feedback.confirm({
         title: 'Enable Gallery inheritance?',
-        message: `This enables ${newlyEnabled.map((dimension) => DIMENSION_LABEL[dimension]).join(', ')} for new cards. Existing cards remain protected unless you previously opted them into those dimensions; opted-in cards will be recalculated now.`,
-        confirmLabel: 'Enable and reconcile',
+        message: `This enables ${newlyEnabled.map((dimension) => DIMENSION_LABEL[dimension]).join(', ')} for new cards. Existing cards remain protected unless you previously released those dimensions to Gallery inheritance. Any released cards will be updated from their Gallery now.`,
+        confirmLabel: 'Enable inheritance',
         cancelLabel: 'Cancel',
       });
       if (!confirmed) return;
@@ -197,25 +197,25 @@ export default function AdminSettingsPage() {
       if (data.reconciliationError) {
         feedback.showToast({
           tone: 'warning',
-          title: 'Settings saved; reconciliation failed',
-          message: data.reconciliationError,
+          title: 'Settings saved; existing cards not updated',
+          message: 'Your new-card defaults are saved, but cards already using Gallery inheritance could not be updated. Try saving these settings again.',
         });
       } else if (data.reconciliation?.failedCardCount) {
         feedback.showToast({
           tone: 'warning',
-          title: 'Settings saved; some cards need retry',
-          message: `Recalculated ${data.reconciliation.reconciledCardCount} of ${data.reconciliation.candidateCount} opted-in cards. ${data.reconciliation.failedCardCount} failed.`,
+          title: 'Settings saved; some existing cards not updated',
+          message: `${data.reconciliation.reconciledCardCount} of ${data.reconciliation.candidateCount} cards using Gallery inheritance were updated. Save these settings again to retry the remaining ${data.reconciliation.failedCardCount}.`,
         });
       } else {
         const count = data.reconciliation?.reconciledCardCount ?? 0;
         feedback.showSuccess(
           count
-            ? `Settings saved. Recalculated ${count} opted-in card${count === 1 ? '' : 's'}.`
+            ? `Settings saved. Updated ${count} existing card${count === 1 ? '' : 's'} using Gallery inheritance.`
             : 'Settings saved. No existing protected cards were changed.'
         );
       }
     } catch (error) {
-      feedback.showError(error instanceof Error ? error.message : 'Failed to save settings');
+      feedback.showError(error instanceof Error ? error.message : 'Settings could not be saved. Try again.');
     } finally {
       setSaving(false);
     }
@@ -316,7 +316,7 @@ export default function AdminSettingsPage() {
       }
       const docs = data.manifest?.firestoreDocCount ?? 0;
       const objects = data.manifest?.storageObjectCount ?? 0;
-      feedback.showSuccess(`Backup finished (${docs} Firestore docs, ${objects} storage objects).`);
+      feedback.showSuccess(`Backup complete. Saved ${docs} records and ${objects} media files.`);
     } catch (error) {
       feedback.showError(error instanceof Error ? error.message : 'Backup failed');
     } finally {
