@@ -129,7 +129,6 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Hierarchy** — Clarify mode, filter, collection, and administrative controls.
 - **Mobile** — Improve drawer interaction without breaking browser gestures.
-- **Editing** — Make in-context author editing practical across desktop and mobile without displacing Reader navigation and filters.
 
 ⭕2 **Future**
 

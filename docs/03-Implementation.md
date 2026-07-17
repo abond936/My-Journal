@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** Reader Boundary is Active.
+**Current active capability:** None. Reader Boundary is Verified; Studio Cards is next for Definition Gate assessment.
 
 ---
 
@@ -196,7 +196,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 ### Reader Boundary
 
 **Definition:** Ready
-**Execution:** Active
+**Execution:** Verified
 
 **Outcome** — Viewing users experience a read-only Reader, while the administrator-author can correct the current card and visible media as fully as practical without losing Reader position or repeatedly moving through Studio.
 
@@ -212,7 +212,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Reconciliation evidence** — Reader writes immediately replace the saved card in visible list and detail state. Changes that can alter publication, filter membership, search, ordering, grouping, collection structure, Gallery rollup, or preview then revalidate card-list truth; Gallery caption-only changes remain local and do not cause a broad refresh. Live Reader verification proved Draft removal and Published restoration without manual refresh, and the reversible test card was restored. Failed full, partial, quick-edit, duplicate, and delete operations retain the editor and applicable draft or original card. A failed Gallery-caption save keeps the lightbox and revised caption open for retry instead of closing over an unsaved draft. Canonical Media captions are read-only for viewing users and editable for administrators; success patches the visible Media feed, while failure retains the lightbox and caption draft. Tag, subject, and Gallery-inheritance patches reconcile the complete server-derived tag, subject, dimension, filter, sort, rollup, and implicit-subject result into both the open full editor and visible Reader card state. A manual tag addition or removal in an inherited dimension requires confirmation and converts only that dimension to an override; cancel preserves inheritance and current tags. Releasing an override warns that Gallery rollup will replace that dimension's card tags. Gallery detail serialization recursively converts Firestore values to client-safe plain data. Live verification proved Gallery rendering, safe caption initialization, card-specific caption save, restoration of the original caption, the quick-to-full editing path at a 390-by-844 mobile viewport, and shared delete confirmation above Compose followed by safe return to `/view` and removal of the deleted card.
 
-**Gaps / slices** — Verify tag, subject, and inheritance results across feed and detail.
+**Gaps / slices** — None. Completion Gate passed.
 
 **Dependencies** — Session role and mutation authorization, ReaderCardEditEntry, ReaderCardEditModal, ReaderMobileQuickEdit, CardForm and focused editing components, card and media APIs, TagProvider and CardProvider reconciliation, Gallery caption editing, AppFeedbackProvider, Reader routing state, and Studio-owned taxonomy management.
 
@@ -220,7 +220,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Decisions needed** — None. The author approved read-only viewing users, maximum practical in-context author editing on desktop and mobile, viewport-driven presentation differences, and Studio ownership of archive-wide and bulk organization.
 
-**Completion evidence** — Authorization tests prove viewing users cannot mutate even through direct requests. Component and integration tests cover the shared capability map, desktop and mobile operation availability, cache reconciliation, failure retention, safe deletion and duplication, and filter preservation. Browser verification covers viewing-user read-only behavior plus administrator feed and detail editing on desktop and mobile-width layouts, contextual return, Gallery and tag correction, destructive confirmation, no taxonomy-library replacement of Reader filters, and no manual-refresh requirement. Canon is reconciled and no defined boundary work remains.
+**Completion evidence** — Authorization tests prove viewing users cannot mutate even through direct requests. Component and integration tests cover the shared capability map, desktop and mobile operation availability, cache reconciliation, failure retention, safe deletion and duplication, and filter preservation. Browser verification covers viewing-user read-only behavior plus administrator feed and detail editing on desktop and mobile-width layouts, contextual return, Gallery and tag correction, destructive confirmation, no taxonomy-library replacement of Reader filters, and no manual-refresh requirement. Subject changes reconciled from the detail editor into the feed, manual inherited-tag edits converted only the affected dimension to an override after confirmation, and releasing that override restored current Gallery truth without reload. Canon is reconciled, the Completion Gate passed, and no defined boundary work remains.
 
 ### Studio Cards
 
