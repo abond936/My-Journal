@@ -2,6 +2,7 @@ import {
   buildGalleryCaptionPatch,
   buildReaderMetadataQuickEditPatch,
   buildReaderReturnAfterDelete,
+  getReaderCardListRevalidationScope,
   patchReaderQuickEdit,
   readerCardPatchRequiresListRevalidation,
 } from '@/lib/utils/readerCardPatchReconcile';
@@ -114,6 +115,18 @@ describe('readerCardPatchRequiresListRevalidation', () => {
 
   it('keeps presentation-only changes local', () => {
     expect(readerCardPatchRequiresListRevalidation({ displayMode: 'inline' })).toBe(false);
+  });
+
+  it('limits body and supporting copy changes to search-bearing card lists', () => {
+    expect(getReaderCardListRevalidationScope({ content: '<p>Revised</p>' })).toBe('search');
+    expect(getReaderCardListRevalidationScope({ subtitle: 'Revised' })).toBe('search');
+    expect(getReaderCardListRevalidationScope({ excerpt: 'Revised' })).toBe('search');
+  });
+
+  it('uses full list revalidation when a mixed patch changes membership truth', () => {
+    expect(
+      getReaderCardListRevalidationScope({ content: '<p>Revised</p>', tags: ['who-1'] })
+    ).toBe('all');
   });
 });
 

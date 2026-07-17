@@ -62,9 +62,6 @@ export function reconcileReaderCardListCaches(savedCard: Card): void {
 
 const CARD_LIST_REVALIDATION_FIELDS = new Set<keyof CardUpdate>([
   'title',
-  'subtitle',
-  'excerpt',
-  'content',
   'type',
   'status',
   'coverImageId',
@@ -78,15 +75,33 @@ const CARD_LIST_REVALIDATION_FIELDS = new Set<keyof CardUpdate>([
   'collectionRootOrder',
 ]);
 
-export function readerCardPatchRequiresListRevalidation(updates: CardUpdate): boolean {
-  return Object.keys(updates).some((field) =>
-    CARD_LIST_REVALIDATION_FIELDS.has(field as keyof CardUpdate)
-  );
+const CARD_SEARCH_REVALIDATION_FIELDS = new Set<keyof CardUpdate>([
+  'subtitle',
+  'excerpt',
+  'content',
+]);
+
+export type ReaderCardListRevalidationScope = 'none' | 'search' | 'all';
+
+export function getReaderCardListRevalidationScope(
+  updates: CardUpdate
+): ReaderCardListRevalidationScope {
+  const fields = Object.keys(updates) as Array<keyof CardUpdate>;
+  if (fields.some((field) => CARD_LIST_REVALIDATION_FIELDS.has(field))) return 'all';
+  if (fields.some((field) => CARD_SEARCH_REVALIDATION_FIELDS.has(field))) return 'search';
+  return 'none';
 }
 
-function revalidateReaderCardLists(): void {
+export function readerCardPatchRequiresListRevalidation(updates: CardUpdate): boolean {
+  return getReaderCardListRevalidationScope(updates) !== 'none';
+}
+
+function revalidateReaderCardLists(scope: Exclude<ReaderCardListRevalidationScope, 'none'>): void {
   void globalMutate(
-    (key: Key) => typeof key === 'string' && key.startsWith('/api/cards?')
+    (key: Key) => {
+      if (typeof key !== 'string' || !key.startsWith('/api/cards?')) return false;
+      return scope === 'all' || new URL(key, 'https://reader.local').searchParams.has('q');
+    }
   );
 }
 
@@ -111,8 +126,14 @@ export async function patchReaderCard(
   }
   reconcileReaderCardListCaches(savedData);
   opts?.onFeedPatch?.(savedData);
-  if (opts?.revalidateCardLists ?? readerCardPatchRequiresListRevalidation(updates)) {
-    revalidateReaderCardLists();
+  const revalidationScope =
+    opts?.revalidateCardLists === undefined
+      ? getReaderCardListRevalidationScope(updates)
+      : opts.revalidateCardLists
+        ? 'all'
+        : 'none';
+  if (revalidationScope !== 'none') {
+    revalidateReaderCardLists(revalidationScope);
   }
   return savedData;
 }
