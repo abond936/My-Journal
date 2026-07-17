@@ -12,6 +12,7 @@ import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import PanelActivityOverlay from '@/components/admin/studio/PanelActivityOverlay';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
 import { useTag } from '@/components/providers/TagProvider';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './StudioWorkspace.module.css';
@@ -61,6 +62,7 @@ export default function StudioCardEditPane({
   onCardCreated?: (cardId: string) => void;
 }) {
   const router = useRouter();
+  const feedback = useAppFeedback();
   const {
     selectedCardId,
     activeCardViewModel,
@@ -86,13 +88,14 @@ export default function StudioCardEditPane({
         onCardCreated?.(data.docId);
         upsertCollectionsCardList(data as StudioCardContext);
         router.replace(`/admin/studio?card=${encodeURIComponent(data.docId)}`);
+        feedback.showSuccess('Card created.');
       } else if (selectedCardId) {
         setSelectedDetail(data as StudioCardContext);
         upsertCollectionsCardList(data as StudioCardContext);
       }
       return data;
     },
-    [onCardCreated, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
+    [feedback, onCardCreated, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
   );
 
   const initialCard = useMemo(() => {
