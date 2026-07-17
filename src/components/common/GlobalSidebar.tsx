@@ -14,7 +14,6 @@ import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { listCollectionRootCards, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
-import ViewTagLibrarySidebarPane from '@/components/view/ViewTagLibrarySidebarPane';
 import {
   User,
   Square,
@@ -33,7 +32,6 @@ import {
 } from 'lucide-react';
 import styles from './GlobalSidebar.module.css';
 
-const VIEW_TAG_SIDEBAR_TAB_KEY = 'myjournal-view-sidebar-tag-tab';
 const CURATED_TREE_EXPANDED_KEY = 'myjournal-curated-tree-expanded';
 const FREEFORM_DIMENSION_KEY = 'myjournal-freeform-dimension';
 const CONTENT_VIEW_SCROLL_POSITION_KEY = 'contentViewScrollPos';
@@ -49,7 +47,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const [showFeedOptions, setShowFeedOptions] = useState(false);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const treeControlsRef = useRef<{ expandAll: () => void; collapseAll: () => void } | null>(null);
-  const [viewTagSidebarTab, setViewTagSidebarTab] = useState<'filter' | 'library'>('filter');
   const [expandedCollectionIds, setExpandedCollectionIds] = useState<Set<string>>(() => new Set());
 
   const {
@@ -148,12 +145,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedTab =
-      window.localStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY) ??
-      window.sessionStorage.getItem(VIEW_TAG_SIDEBAR_TAB_KEY);
-    if (savedTab === 'library') {
-      setViewTagSidebarTab('library');
-    }
     const rawExpanded =
       window.localStorage.getItem(CURATED_TREE_EXPANDED_KEY) ??
       window.sessionStorage.getItem(CURATED_TREE_EXPANDED_KEY);
@@ -198,13 +189,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const isTagMode = !isCollectionsMode;
   const effectiveBrowseTarget = isCollectionsMode ? 'cards' : browseTarget;
   const isMediaBrowse = effectiveBrowseTarget === 'media';
-  const showViewTagLibrary = Boolean(isAdmin && isTagMode && isViewRoute);
-
-  const persistViewTagSidebarTab = useCallback((tab: 'filter' | 'library') => {
-    setViewTagSidebarTab(tab);
-    if (typeof window !== 'undefined') window.localStorage.setItem(VIEW_TAG_SIDEBAR_TAB_KEY, tab);
-  }, []);
-
   const collectionCardById = useMemo(
     () => new Map(collectionTreeCards.filter((card) => card.docId).map((card) => [card.docId!, card])),
     [collectionTreeCards]
@@ -463,7 +447,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                 <span className={styles.srOnly}>Clear filters</span>
               </button>
             </div>
-            {isTagMode && (!showViewTagLibrary || viewTagSidebarTab === 'filter') ? (
+            {isTagMode ? (
               <div className={`${styles.sectionControlRow} ${styles.headerDimensionControls}`}>
                 <h3 className={styles.sectionHeading}>Tags</h3>
                 <div className={styles.sectionControlRowMain}>
@@ -539,30 +523,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               ) : null}
 
               <div className={styles.sidebarSection}>
-                {showViewTagLibrary ? (
-                  <div className={styles.viewTagSidebarTabs} role="tablist" aria-label="Tag sidebar mode">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={viewTagSidebarTab === 'filter'}
-                      className={`${styles.viewTagSidebarTab} ${viewTagSidebarTab === 'filter' ? styles.viewTagSidebarTabActive : ''}`}
-                      onClick={() => persistViewTagSidebarTab('filter')}
-                    >
-                      Filter feed
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={viewTagSidebarTab === 'library'}
-                      className={`${styles.viewTagSidebarTab} ${viewTagSidebarTab === 'library' ? styles.viewTagSidebarTabActive : ''}`}
-                      onClick={() => persistViewTagSidebarTab('library')}
-                    >
-                      Edit library
-                    </button>
-                  </div>
-                ) : null}
-                {!showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
-                  <>
+                <>
                     {selectedFilterTagIds.length > 0 ? (
                       <div className={styles.activeFilters}>
                         <span className={styles.activeFiltersLabel}>Active</span>
@@ -592,8 +553,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         </div>
                       </div>
                     ) : null}
-                  </>
-                ) : null}
+                </>
               </div>
 
               {showFeedOptions ? (
@@ -737,7 +697,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                   <div className={styles.loadingPlaceholder} aria-busy="true">
                     Loading explore filters...
                   </div>
-                ) : !showViewTagLibrary || viewTagSidebarTab === 'filter' ? (
+                ) : (
                   <TagTree
                     tree={filteredTagTree}
                     selectedTags={selectedFilterTagIds}
@@ -754,8 +714,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                         : `No tags in ${FREEFORM_DIM_LABEL[browseDimension]}.`
                     }
                   />
-                ) : (
-                  <ViewTagLibrarySidebarPane />
                 )}
               </nav>
             </>

@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** None. Interaction Feedback is Verified; Reader Boundary is next for its Definition Gate.
+**Current active capability:** Reader Boundary is Active.
 
 ---
 
@@ -195,11 +195,30 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 ### Reader Boundary
 
-**Definition:** Not gated
+**Definition:** Ready
+**Execution:** Active
 
-- **Taxonomy** — Keep creation, deletion, hierarchy, and library reorganization in Studio.
-- **Correction** — Retain focused assignment and correction while editing Reader content.
-- **Conflict** — Remove the current full Studio tag-library editor from the Reader sidebar without weakening Reader filtering.
+**Outcome** — Viewing users experience a read-only Reader, while the administrator-author can correct the current card and visible media as fully as practical without losing Reader position or repeatedly moving through Studio.
+
+**Actors** — Viewing user and administrator-author.
+
+**Includes** — Server-enforced read-only viewing users; administrator-only edit entry on feed and detail; desktop and mobile editing of the current card; title, subtitle, excerpt, body, status, form, display, cover, Gallery, tags, subjects, inheritance overrides, captions, visible-media corrections, children, duplicate, and delete where the viewport and interaction can support them safely; immediate Reader reconciliation; safe contextual return; and preservation of Reader filters and navigation.
+
+**Excludes** — Archive-wide or bulk card and media operations; taxonomy-wide hierarchy reorganization, merge/split, cleanup, or deletion; Collections authoring; Users, Theme, Settings, import, and operational administration; redesign of Reader presentation; and unrelated Studio Compose improvements.
+
+**Contracts** — Viewing users never receive or execute mutations. Author editing is contextual to the current card or visible media and does not turn Reader navigation into a competing administrative workspace. Desktop and mobile share the same authorization and conceptual capability; viewport may change presentation and staging but does not silently redefine product permission. Card-specific edits update card work truth; canonical media changes remain explicit. Delete, duplicate, discard, publication, inheritance, and cross-entity effects communicate consequences and preserve a safe return path. Successful writes reconcile feed, detail, filters, and derived Reader truth without requiring a manual refresh. Studio remains the primary workspace for archive-wide, bulk, and taxonomy-structure operations.
+
+**Current state** — Viewing users do not receive edit entry points. Administrators can enter editing from feed cards and detail pages. Desktop embeds the complete Studio CardForm and currently exposes delete, duplicate, status, type, display mode, Cover, Gallery, card tags and subjects, inheritance, body, Story Assist, and Children. Mobile supplies a separate quick editor limited to title, subtitle, excerpt, and eligible plain body. Gallery captions can be edited directly in Reader. Reader writes patch card data and reconcile visible card caches. Freeform preserves its card/media, dimensional, hierarchy, Subject-scope, search, and active-filter controls without exposing the former archive-wide taxonomy editor.
+
+**Gaps / slices** — Enforce and test the read-only viewer boundary at mutation routes; define one reusable Reader edit capability map and make mobile disclose or stage supported author operations rather than silently omitting them; preserve the broad desktop editor while separating Reader-inappropriate archive-wide actions; reconcile delete, duplicate, publication, card, Gallery, tag, subject, inheritance, caption, and visible-media results across feed and detail; and verify contextual return and failure retention.
+
+**Dependencies** — Session role and mutation authorization, ReaderCardEditEntry, ReaderCardEditModal, ReaderMobileQuickEdit, CardForm and focused editing components, card and media APIs, TagProvider and CardProvider reconciliation, Gallery caption editing, AppFeedbackProvider, Reader routing state, and Studio-owned taxonomy management.
+
+**Risks** — Exposing mutations to viewing users; losing Reader position or active collection/filter state; desktop and mobile producing different product truth; full CardForm coupling making Reader fragile or slow; stale feed or detail state after writes; card edits silently changing canonical media; destructive actions with unsafe return; Reader filters losing space or behavior; and duplicating Studio domain logic in Reader-specific components.
+
+**Decisions needed** — None. The author approved read-only viewing users, maximum practical in-context author editing on desktop and mobile, viewport-driven presentation differences, and Studio ownership of archive-wide and bulk organization.
+
+**Completion evidence** — Authorization tests prove viewing users cannot mutate even through direct requests. Component and integration tests cover the shared capability map, desktop and mobile operation availability, cache reconciliation, failure retention, safe deletion and duplication, and filter preservation. Browser verification covers viewing-user read-only behavior plus administrator feed and detail editing on desktop and mobile-width layouts, contextual return, Gallery and tag correction, destructive confirmation, no taxonomy-library replacement of Reader filters, and no manual-refresh requirement. Canon is reconciled and no defined boundary work remains.
 
 ### Studio Cards
 

@@ -123,13 +123,13 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Modes** — Freeform and Guided navigation.
 - **Filters** — Dimensional tag filtering and Subject-only scope.
 - **Collections** — Published authored tree in Guided mode.
-- **Admin tags** — Focused tag assignment correction for the administrator.
+- **Author editing** — Administrator-only entry to edit the current card and its visible media without leaving Reader context.
 
 ⭕1 **Planned**
 
 - **Hierarchy** — Clarify mode, filter, collection, and administrative controls.
 - **Mobile** — Improve drawer interaction without breaking browser gestures.
-- **Editing** — Preserve focused correction without exposing full taxonomy management.
+- **Editing** — Make in-context author editing practical across desktop and mobile without displacing Reader navigation and filters.
 
 ⭕2 **Future**
 
@@ -138,8 +138,9 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 📋 **Contracts**
 
 - Freeform uses filters and discovery; Guided uses published collection structure and order.
-- Author editing in Reader is limited to focused content and assigned-tag correction.
-- Full taxonomy structure remains in Studio Tags.
+- Viewing users are read-only; Reader mutations remain administrator-authorized server-side.
+- Authors may edit the current card and visible media as fully as practical while preserving their Reader position.
+- Studio remains the primary workspace for archive-wide, bulk, and taxonomy-structure operations; Reader retains contextual assignment and correction.
 
 ---
 
@@ -260,7 +261,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ⭕1 **Planned**
 
 - **Feedback** — Standardize success, error, warning, progress, confirmation, and blocking behavior across the application.
-- **Boundary** — Keep full taxonomy management in Studio and focused correction in Reader.
+- **Boundary** — Keep viewing users read-only, support practical in-context author editing in Reader, and retain archive-wide and bulk organization in Studio.
 
 ⭕2 **Future**
 
