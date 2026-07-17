@@ -383,13 +383,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Relationships** — Parent, spouse, and partner records with archive perspective and contextual role resolution.
 - **Groups** — Typed couples, families, and households without duplicate people.
 - **Migration** — Manifested, reviewed identity conversion with audit and rollback evidence.
+- **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets.
 
 ⭕1 **Planned**
 
 - **Merge/split** — Define and implement recoverable identity correction without silently changing assignments.
-- **Shortcuts** — Direct Who, What, When, and Where navigation.
-- **Density** — Tighten the tree without weakening drag targets.
-- **Affordance** — Replace generic edit iconography.
 
 ⭕2 **Future**
 

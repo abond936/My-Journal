@@ -78,7 +78,7 @@ export default function TagAdminStudioPane({
           <TagAdminList
             tagTree={tagTree}
             stackDimensionColumns
-            hideDimensionColumnHeadings
+            showDimensionNavigation
             highlightTagIds={mergedHighlightTagIds}
             onReorder={handleReorder}
             onReparent={handleReparent}

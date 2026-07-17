@@ -383,6 +383,40 @@
   grid-template-columns: 1fr;
 }
 
+.dimensionNavigation {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: color-mix(in srgb, var(--layout-background1-color) 94%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.dimensionNavigationButton {
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+  font: inherit;
+}
+
+.dimensionNavigationButton:hover,
+.dimensionNavigationButton:focus-visible,
+.dimensionNavigationButton[aria-current='location'] {
+  border-color: var(--admin-support-control-border-color);
+  background: var(--admin-support-control-hover-background-color);
+  outline: none;
+}
+
 .dimensionColumn {
   min-width: 0;
   min-height: 0;

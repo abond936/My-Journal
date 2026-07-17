@@ -1,30 +1,30 @@
-/**
- * @file TagAdminRow.tsx
- * @description This component renders a single row in the tag management tree.
- * It is a purely presentational component responsible for displaying tag information,
- * handling user interactions like editing, adding a child, and deleting, but it
- * does NOT contain any drag-and-drop logic itself. The drag-and-drop capability
- * is provided by a parent wrapper component (e.g., SortableTag).
- */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Ellipsis,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { Tag } from '@/lib/types/tag';
 import styles from './TagAdminRow.module.css';
 
-// Extends the base Tag type to include children for tree structures.
 interface TagWithChildren extends Tag {
   children?: TagWithChildren[];
 }
 
-// Defines the props accepted by the TagAdminRow component.
 interface TagAdminRowProps {
   tag: TagWithChildren;
-  depth: number; // The nesting level of the tag in the tree, used for indentation.
+  depth: number;
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => void;
   onDeleteTag: (id: string) => void;
   onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => void;
-  isCollapsed: boolean; // Whether the node's children are currently hidden.
+  isCollapsed: boolean;
   onToggleCollapse: (tagId: string) => void;
   highlighted?: boolean;
 }
@@ -39,146 +39,188 @@ export function TagAdminRow({
   onToggleCollapse,
   highlighted = false,
 }: TagAdminRowProps) {
-  // State for handling inline editing of the tag name.
   const [isEditing, setIsEditing] = useState(false);
   const [tagName, setTagName] = useState(tag.name);
-
-  // State for showing/hiding the "add child" form.
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [childName, setChildName] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Check if this is an artificial dimension label
-  const isDimensionLabel = tag.docId?.startsWith('dim-');
-  
-  // Check if this is a top-level parent (first actual tag in a dimension)
-  const isTopLevelParent = depth === 0 && !isDimensionLabel;
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeMenu = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, [menuOpen]);
 
-  // Hide dimension labels completely
-  if (isDimensionLabel) {
-    return null;
-  }
+  if (tag.docId?.startsWith('dim-')) return null;
 
-  /**
-   * Saves the updated tag name if it has changed.
-   */
+  const isTopLevelParent = depth === 0;
+  const hasChildren = Boolean(tag.children?.length);
+
+  const restoreMenuFocus = () => {
+    requestAnimationFrame(() => menuButtonRef.current?.focus());
+  };
+
   const handleSave = () => {
     if (tagName.trim() && tagName.trim() !== tag.name) {
       onUpdateTag(tag.docId!, { name: tagName.trim() });
     }
     setIsEditing(false);
+    restoreMenuFocus();
   };
 
-  /**
-   * Handles the form submission for creating a new child tag.
-   */
-  const handleAddChild = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (childName.trim()) {
-      // The parentId is the current tag's docId.
-      await onCreateTag({ name: childName.trim(), parentId: tag.docId! });
-      setIsAddingChild(false);
-      setChildName('');
-    }
+  const handleCancelEdit = () => {
+    setTagName(tag.name);
+    setIsEditing(false);
+    restoreMenuFocus();
   };
 
-  const hasChildren = tag.children && tag.children.length > 0;
+  const handleAddChild = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!childName.trim()) return;
+    await onCreateTag({ name: childName.trim(), parentId: tag.docId! });
+    setIsAddingChild(false);
+    setChildName('');
+    restoreMenuFocus();
+  };
+
+  const handleCancelAddChild = () => {
+    setChildName('');
+    setIsAddingChild(false);
+    restoreMenuFocus();
+  };
 
   return (
     <div className={styles.tagAdminRow}>
       <div className={`${styles.tagContent} ${highlighted ? styles.tagContentHighlighted : ''}`}>
-        {/* Expander button (for nodes with children) */}
-        {hasChildren && (
-          <div className={styles.expander}>
+        <div className={styles.expander}>
+          {hasChildren && (
             <button
               type="button"
               onClick={() => onToggleCollapse(tag.docId!)}
               className={styles.expandButton}
+              aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${tag.name}`}
+              aria-expanded={!isCollapsed}
             >
-              {isCollapsed ? '►' : '▼'}
+              {isCollapsed ? (
+                <ChevronRight size={14} aria-hidden="true" />
+              ) : (
+                <ChevronDown size={14} aria-hidden="true" />
+              )}
             </button>
-          </div>
-        )}
-        {!hasChildren && <div className={styles.expander} />}
+          )}
+        </div>
 
-        {/* Tag name (editable on click) */}
         <div className={styles.tagNameContainer}>
           {isEditing ? (
             <input
               value={tagName}
-              onChange={(e) => setTagName(e.target.value)}
+              onChange={(event) => setTagName(event.target.value)}
               onBlur={handleSave}
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleSave();
+                if (event.key === 'Escape') handleCancelEdit();
+              }}
+              aria-label={`Rename ${tag.name}`}
               autoFocus
               className={styles.editInput}
             />
           ) : (
-            <span 
-              onClick={() => setIsEditing(true)} 
+            <span
               className={`${styles.tagName} ${isTopLevelParent ? styles.topLevelParent : ''}`}
               data-dimension={tag.dimension || 'none'}
             >
               {tag.name}
-              <span className={styles.cardCount}>
+              <span
+                className={styles.cardCount}
+                title={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
+                aria-label={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
+              >
                 ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
               </span>
             </span>
           )}
         </div>
-        
-        {/* Action Buttons */}
-        <div className={styles.actions}>
-          {hasChildren && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false });
-              }}
-              className={styles.actionButton}
-              title={
-                tag.defaultExpanded === false
-                  ? 'Collapsed by default in Explore sidebar (click for expanded by default)'
-                  : 'Expanded by default in Explore sidebar (click for collapsed by default)'
-              }
-              aria-label={
-                tag.defaultExpanded === false ? 'Set expanded by default in Explore' : 'Set collapsed by default in Explore'
-              }
-            >
-              {tag.defaultExpanded === false ? '⊞' : '⊟'}
-            </button>
-          )}
+
+        <div className={styles.actions} ref={menuRef}>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsAddingChild((p) => !p);
-            }}
+            ref={menuButtonRef}
+            onClick={() => setMenuOpen((open) => !open)}
             className={styles.actionButton}
-            aria-label="Add child tag"
+            aria-label={`Actions for ${tag.name}`}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
           >
-            +
+            <Ellipsis size={16} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteTag(tag.docId!);
-            }}
-            className={`${styles.actionButton} ${styles.destructiveActionButton}`}
-            aria-label="Delete tag"
-          >
-            ×
-          </button>
+          {menuOpen && (
+            <div
+              className={styles.actionMenu}
+              role="menu"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  setMenuOpen(false);
+                  restoreMenuFocus();
+                }
+              }}
+            >
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setIsEditing(true); }}>
+                <Pencil size={14} aria-hidden="true" /> Rename
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setIsAddingChild(true); }}>
+                <Plus size={14} aria-hidden="true" /> Add child
+              </button>
+              {hasChildren && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false });
+                  }}
+                >
+                  {tag.defaultExpanded === false ? (
+                    <PanelLeftOpen size={14} aria-hidden="true" />
+                  ) : (
+                    <PanelLeftClose size={14} aria-hidden="true" />
+                  )}
+                  {tag.defaultExpanded === false ? 'Expand in Reader' : 'Collapse in Reader'}
+                </button>
+              )}
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.destructiveMenuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDeleteTag(tag.docId!);
+                }}
+              >
+                <Trash2 size={14} aria-hidden="true" /> Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Form for adding a new child tag */}
       {isAddingChild && (
         <form onSubmit={handleAddChild} className={styles.addChildForm}>
           <input
             value={childName}
-            onChange={(e) => setChildName(e.target.value)}
+            onChange={(event) => setChildName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                handleCancelAddChild();
+              }
+            }}
             placeholder="New child name"
+            aria-label={`New child of ${tag.name}`}
             autoFocus
             className={styles.addChildInput}
           />
@@ -187,4 +229,4 @@ export function TagAdminRow({
       )}
     </div>
   );
-} 
+}

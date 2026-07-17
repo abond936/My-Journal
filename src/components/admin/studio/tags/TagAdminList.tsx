@@ -189,6 +189,8 @@ interface TagAdminListProps {
   stackDimensionColumns?: boolean;
   /** Studio embedded: hide Who/What/When/Where column titles. */
   hideDimensionColumnHeadings?: boolean;
+  /** Studio embedded: add compact links to each stacked dimension. */
+  showDimensionNavigation?: boolean;
   /** Highlight tag rows (e.g. Organize reconcile target preview). */
   highlightTagIds?: string[];
 }
@@ -375,9 +377,9 @@ function TagAdminDimensionColumn({
   );
 
   return (
-    <section className={styles.dimensionColumn}>
+    <section className={styles.dimensionColumn} id={`tag-dimension-${col.id}`}>
       {hideDimensionColumnHeadings ? null : (
-        <h2 className={styles.dimensionColumnHeading}>{col.title}</h2>
+        <h2 className={styles.dimensionColumnHeading} tabIndex={-1}>{col.title}</h2>
       )}
       <div className={styles.dimensionColumnDndRoot}>
         <DndContext
@@ -429,6 +431,7 @@ export function TagAdminList({
   onReparent,
   stackDimensionColumns = false,
   hideDimensionColumnHeadings = false,
+  showDimensionNavigation = false,
   highlightTagIds = [],
 }: TagAdminListProps) {
   const highlightTagIdSet = useMemo(() => new Set(highlightTagIds), [highlightTagIds]);
@@ -499,8 +502,32 @@ export function TagAdminList({
     });
   }, []);
 
+  const [activeDimensionId, setActiveDimensionId] = useState<string | null>(null);
+
+  const navigateToDimension = useCallback((column: DimensionColumn) => {
+    const section = document.getElementById(`tag-dimension-${column.id}`);
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+    setActiveDimensionId(column.id);
+  }, []);
+
   return (
     <div>
+      {showDimensionNavigation && (
+        <nav className={styles.dimensionNavigation} aria-label="Tag dimensions">
+          {columns.map((column) => (
+            <button
+              key={column.id}
+              type="button"
+              className={styles.dimensionNavigationButton}
+              aria-current={activeDimensionId === column.id ? 'location' : undefined}
+              onClick={() => navigateToDimension(column)}
+            >
+              {column.title}
+            </button>
+          ))}
+        </nav>
+      )}
       {isShiftPressed && (
         <div
           style={{

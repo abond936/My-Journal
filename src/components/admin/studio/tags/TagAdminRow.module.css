@@ -4,6 +4,7 @@
 }
 
 .tagContent {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -48,13 +49,11 @@
 
 .tagNameContainer {
   flex-grow: 1;
-  cursor: pointer;
   min-width: 0;
   line-height: var(--line-height-tight);
 }
 
 .tagName {
-  cursor: pointer;
   padding: var(--spacing-xs) var(--spacing-xs);
   border-radius: var(--border-radius-sm);
   transition: background-color var(--transition-short);
@@ -86,6 +85,7 @@
 }
 
 .actions {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -103,8 +103,8 @@
   cursor: pointer;
   padding: 0;
   font-size: var(--font-size-base);
-  min-width: 2rem;
-  min-height: 2rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -126,6 +126,44 @@
 }
 
 .destructiveActionButton {
+  color: var(--state-error-text-color);
+}
+
+.actionMenu {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  right: 0;
+  z-index: 20;
+  min-width: 10.5rem;
+  padding: var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-support-control-background-color);
+  box-shadow: var(--shadow-md);
+}
+
+.actionMenu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.actionMenu button:hover,
+.actionMenu button:focus-visible {
+  background: var(--admin-support-control-hover-background-color);
+  outline: none;
+}
+
+.actionMenu .destructiveMenuItem {
   color: var(--state-error-text-color);
 }
 

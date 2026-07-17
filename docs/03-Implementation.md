@@ -256,14 +256,6 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 - **Context** — Keep historical context distinct from writing rewrites.
 - **Quote** — Define fields, attribution, media, relationships, presentation, and authoring.
 
-### Studio Tags
-
-**Definition:** Not gated
-
-- **Shortcuts** — Add direct dimension navigation.
-- **Density** — Tighten the taxonomy tree without weakening drag targets.
-- **Affordance** — Replace generic edit iconography.
-
 ### Studio Questions
 
 **Definition:** Not gated
