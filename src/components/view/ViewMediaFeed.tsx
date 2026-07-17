@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWRInfinite from 'swr/infinite';
+import { useSession } from 'next-auth/react';
 import JournalImage from '@/components/common/JournalImage';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { Media } from '@/lib/types/photo';
 import { PaginatedResult } from '@/lib/types/services';
 import { useCardContext } from '@/components/providers/CardProvider';
@@ -39,6 +41,9 @@ function dedupeMediaByDocId(items: Media[]): Media[] {
 }
 
 export default function ViewMediaFeed() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+  const feedback = useAppFeedback();
   const {
     selectedTags,
     searchTerm,
@@ -50,6 +55,7 @@ export default function ViewMediaFeed() {
   const [lightboxMedia, setLightboxMedia] = useState<Media | null>(null);
   const [lightboxCaptionDraft, setLightboxCaptionDraft] = useState('');
   const [lightboxCaptionSaving, setLightboxCaptionSaving] = useState(false);
+  const captionSaveInFlightRef = useRef<Promise<boolean> | null>(null);
 
   const dimensionalTags = useMemo(() => {
     const grouped: Partial<Record<'who' | 'what' | 'when' | 'where', string[]>> = {};
@@ -138,37 +144,58 @@ export default function ViewMediaFeed() {
     setLightboxCaptionDraft(lightboxMedia?.caption ?? '');
   }, [lightboxMedia?.caption, lightboxMedia?.docId]);
 
-  const handleLightboxCaptionSave = useCallback(async () => {
-    if (!lightboxMedia?.docId) return;
-    if (lightboxCaptionDraft === (lightboxMedia.caption ?? '')) return;
+  const handleLightboxCaptionSave = useCallback((): Promise<boolean> => {
+    if (!isAdmin || !lightboxMedia?.docId) return Promise.resolve(true);
+    if (lightboxCaptionDraft === (lightboxMedia.caption ?? '')) return Promise.resolve(true);
+    if (captionSaveInFlightRef.current) return captionSaveInFlightRef.current;
 
     setLightboxCaptionSaving(true);
-    try {
-      const response = await fetch(`/api/images/${lightboxMedia.docId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caption: lightboxCaptionDraft }),
-      });
+    const savePromise = (async () => {
+      try {
+        const response = await fetch(`/api/images/${lightboxMedia.docId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caption: lightboxCaptionDraft }),
+        });
 
-      const body = (await response.json().catch(() => ({}))) as { media?: Media; message?: string };
-      if (!response.ok) {
-        throw new Error(body.message?.trim() || `Could not save caption (${response.status}).`);
+        const body = (await response.json().catch(() => ({}))) as { media?: Media; message?: string };
+        if (!response.ok) {
+          throw new Error(body.message?.trim() || `Could not save caption (${response.status}).`);
+        }
+
+        const updatedMedia = body.media ?? { ...lightboxMedia, caption: lightboxCaptionDraft };
+        setLightboxMedia(updatedMedia);
+        await mutate(
+          (pages) =>
+            (pages ?? []).map((page) => ({
+              ...page,
+              items: page.items.map((item) => (item.docId === updatedMedia.docId ? updatedMedia : item)),
+            })),
+          { revalidate: false }
+        );
+        return true;
+      } catch (err) {
+        feedback.showError(
+          err instanceof Error
+            ? err.message
+            : 'This caption could not be saved. Your changes are still here. Try again.',
+          'Caption not saved'
+        );
+        return false;
+      } finally {
+        captionSaveInFlightRef.current = null;
+        setLightboxCaptionSaving(false);
       }
+    })();
+    captionSaveInFlightRef.current = savePromise;
+    return savePromise;
+  }, [feedback, isAdmin, lightboxCaptionDraft, lightboxMedia, mutate]);
 
-      const updatedMedia = body.media ?? { ...lightboxMedia, caption: lightboxCaptionDraft };
-      setLightboxMedia(updatedMedia);
-      await mutate(
-        (pages) =>
-          (pages ?? []).map((page) => ({
-            ...page,
-            items: page.items.map((item) => (item.docId === updatedMedia.docId ? updatedMedia : item)),
-          })),
-        { revalidate: false }
-      );
-    } finally {
-      setLightboxCaptionSaving(false);
-    }
-  }, [lightboxCaptionDraft, lightboxMedia, mutate]);
+  const closeLightbox = useCallback(async () => {
+    const saved = await (captionSaveInFlightRef.current ?? handleLightboxCaptionSave());
+    if (!saved) return;
+    setLightboxMedia(null);
+  }, [handleLightboxCaptionSave]);
 
   if (error) {
     return (
@@ -245,13 +272,14 @@ export default function ViewMediaFeed() {
       </main>
 
       {lightboxMedia ? (
-        <div className={styles.lightboxBackdrop} role="dialog" aria-modal="true" onClick={() => setLightboxMedia(null)}>
+        <div className={styles.lightboxBackdrop} role="dialog" aria-modal="true" onClick={() => void closeLightbox()}>
           <div className={styles.lightboxPanel} onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               className={styles.lightboxClose}
-              onClick={() => setLightboxMedia(null)}
+              onClick={() => void closeLightbox()}
               aria-label="Close media view"
+              disabled={lightboxCaptionSaving}
             >
               ×
             </button>
@@ -267,23 +295,26 @@ export default function ViewMediaFeed() {
               />
             </div>
             <div className={styles.lightboxMeta}>
-              <textarea
-                className={styles.lightboxCaptionInput}
-                rows={2}
-                value={lightboxCaptionDraft}
-                placeholder="Add caption"
-                onChange={(e) => setLightboxCaptionDraft(e.target.value)}
-                onBlur={() => void handleLightboxCaptionSave()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleLightboxCaptionSave();
-                    e.currentTarget.blur();
-                  }
-                }}
-                disabled={lightboxCaptionSaving}
-                aria-label="Media caption"
-              />
+              {isAdmin ? (
+                <textarea
+                  className={styles.lightboxCaptionInput}
+                  rows={2}
+                  value={lightboxCaptionDraft}
+                  placeholder="Add caption"
+                  onChange={(e) => setLightboxCaptionDraft(e.target.value)}
+                  onBlur={() => void handleLightboxCaptionSave()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  disabled={lightboxCaptionSaving}
+                  aria-label="Media caption"
+                />
+              ) : lightboxMedia.caption?.trim() ? (
+                <p className={styles.lightboxCaption}>{lightboxMedia.caption.trim()}</p>
+              ) : null}
             </div>
           </div>
         </div>

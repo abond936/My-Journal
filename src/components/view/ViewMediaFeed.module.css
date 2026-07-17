@@ -198,6 +198,15 @@
   opacity: 0.8;
 }
 
+.lightboxCaption {
+  margin: 0;
+  color: var(--reader-caption-color);
+  font-family: var(--reader-caption-font-family);
+  font-size: calc(var(--reader-caption-font-size) * 0.875);
+  font-weight: var(--reader-caption-font-weight);
+  line-height: var(--reader-caption-line-height);
+}
+
 @media (max-width: 768px) {
   .masonry {
     column-width: 12rem;
