@@ -8,6 +8,10 @@ function FeedbackHarness() {
     <>
       <button type="button" onClick={() => feedback.showSuccess('Card saved.')}>Success</button>
       <button type="button" onClick={() => feedback.showError('Your changes are still here. Try again.')}>Error</button>
+      <button type="button" onClick={() => {
+        void feedback.confirm({ title: 'First decision', message: 'Choose the first outcome.', confirmLabel: 'Continue' });
+        void feedback.confirm({ title: 'Second decision', message: 'Choose the second outcome.', confirmLabel: 'Finish' });
+      }}>Two decisions</button>
     </>
   );
 }
@@ -46,5 +50,28 @@ describe('AppFeedbackProvider', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('queues dialogs, contains keyboard focus, and restores focus after the queue closes', () => {
+    render(<AppFeedbackProvider><FeedbackHarness /></AppFeedbackProvider>);
+
+    const trigger = screen.getByRole('button', { name: 'Two decisions' });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('First decision');
+    expect(screen.getByTitle('Cancel')).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Second decision');
+    expect(screen.getByTitle('Cancel')).toHaveFocus();
+
+    screen.getByRole('button', { name: 'Close dialog' }).focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(screen.getByRole('button', { name: 'Finish' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 });

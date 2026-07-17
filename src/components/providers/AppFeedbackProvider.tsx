@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, Save, Trash2, X } from 'lucide-react';
 import styles from '@/components/common/AppFeedback.module.css';
 
@@ -77,6 +77,9 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const toastIdRef = useRef(0);
+  const dialogQueueRef = useRef<DialogState[]>([]);
+  const dialogCardRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -107,9 +110,31 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
     [showToast]
   );
 
+  const enqueueDialog = useCallback((nextDialog: DialogState) => {
+    setDialog((current) => {
+      if (current) {
+        dialogQueueRef.current.push(nextDialog);
+        return current;
+      }
+      return nextDialog;
+    });
+  }, []);
+
+  const closeDialog = useCallback((result?: boolean) => {
+    setDialog((current) => {
+      if (!current) return null;
+      if (current.kind === 'confirm') {
+        current.resolve(result ?? false);
+      } else {
+        current.resolve();
+      }
+      return dialogQueueRef.current.shift() ?? null;
+    });
+  }, []);
+
   const confirm = useCallback((options: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
-      setDialog({
+      enqueueDialog({
         kind: 'confirm',
         resolve,
         title: options.title,
@@ -119,11 +144,11 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
         tone: options.tone ?? 'default',
       });
     });
-  }, []);
+  }, [enqueueDialog]);
 
   const alert = useCallback((options: AlertOptions) => {
     return new Promise<void>((resolve) => {
-      setDialog({
+      enqueueDialog({
         kind: 'alert',
         resolve,
         title: options.title,
@@ -131,7 +156,44 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
         acknowledgeLabel: options.acknowledgeLabel ?? 'OK',
       });
     });
-  }, []);
+  }, [enqueueDialog]);
+
+  useEffect(() => {
+    if (!dialog) {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+      return;
+    }
+
+    if (!restoreFocusRef.current) {
+      restoreFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+
+    const card = dialogCardRef.current;
+    const focusable = card?.querySelectorAll<HTMLElement>('button:not([disabled])');
+    card?.querySelector<HTMLElement>('[data-dialog-initial-focus]')?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeDialog(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [closeDialog, dialog]);
 
   const value = useMemo<AppFeedbackContextValue>(
     () => ({
@@ -174,7 +236,7 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
       </div>
       {dialog ? (
         <div className={styles.dialogBackdrop}>
-          <div className={styles.dialogCard} role="alertdialog" aria-modal="true" aria-labelledby="app-feedback-title">
+          <div ref={dialogCardRef} className={styles.dialogCard} role="alertdialog" aria-modal="true" aria-labelledby="app-feedback-title" aria-describedby="app-feedback-message">
             <div className={styles.dialogHeader}>
               <p id="app-feedback-title" className={styles.dialogTitle}>
                 {dialog.title}
@@ -182,30 +244,21 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
               <button
                 type="button"
                 className={styles.iconButton}
-                aria-label={dialog.kind === 'confirm' ? 'Cancel' : 'Close'}
-                onClick={() => {
-                  if (dialog.kind === 'confirm') {
-                    dialog.resolve(false);
-                  } else {
-                    dialog.resolve();
-                  }
-                  setDialog(null);
-                }}
+                aria-label="Close dialog"
+                onClick={() => closeDialog(false)}
               >
                 <X size={16} aria-hidden="true" />
               </button>
             </div>
-            <p className={styles.dialogMessage}>{dialog.message}</p>
+            <p id="app-feedback-message" className={styles.dialogMessage}>{dialog.message}</p>
             <div className={styles.dialogActions}>
               {dialog.kind === 'confirm' ? (
                 <>
                   <button
                     type="button"
                     className={styles.dialogButton}
-                    onClick={() => {
-                      dialog.resolve(false);
-                      setDialog(null);
-                    }}
+                    data-dialog-initial-focus
+                    onClick={() => closeDialog(false)}
                     aria-label={dialog.cancelLabel}
                     title={dialog.cancelLabel}
                   >
@@ -217,10 +270,7 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
                     className={`${styles.dialogButton} ${
                       dialog.tone === 'danger' ? styles.dialogDanger : styles.dialogPrimary
                     }`}
-                    onClick={() => {
-                      dialog.resolve(true);
-                      setDialog(null);
-                    }}
+                    onClick={() => closeDialog(true)}
                     aria-label={dialog.confirmLabel}
                     title={dialog.confirmLabel}
                   >
@@ -232,10 +282,8 @@ export function AppFeedbackProvider({ children }: { children: React.ReactNode })
                 <button
                   type="button"
                   className={`${styles.dialogButton} ${styles.dialogPrimary}`}
-                  onClick={() => {
-                    dialog.resolve();
-                    setDialog(null);
-                  }}
+                  data-dialog-initial-focus
+                  onClick={() => closeDialog()}
                   aria-label={dialog.acknowledgeLabel}
                   title={dialog.acknowledgeLabel}
                 >
