@@ -280,6 +280,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ✅ **Complete**
 
 - **Grid** — Searchable, filterable card population with status and type context.
+- **Search** — Title search is temporary task state, identifies active no-result queries, and provides direct clearing instead of silently reopening an empty pane.
+- **Density** — A compact tile-size control opens continuous adjustment while retaining title, dimensional subjects, selection, and tag access at every permitted size.
 - **Selection** — Individual and bulk selection with bounded actions.
 - **Filters** — Status, form, dimensions, tags, subject scope, and assignment-related refinements.
 - **Forms** — Story, Gallery, Question, and Callout management.
@@ -288,7 +290,6 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕1 **Planned**
 
-- **Density** — Reduce tile footprint while preserving legibility and selection.
 - **Tags** — Improve keyboard use, hierarchy, and disambiguation.
 - **Filters** — Provide clearer single-dimension search without removing advanced filtering.
 - **Quote** — Add Quote only with the completed Quote object.

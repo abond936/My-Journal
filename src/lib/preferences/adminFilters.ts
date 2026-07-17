@@ -34,6 +34,7 @@ export type StudioCardBankLocalFilterPreferences = {
   filterTagIds: string[];
   tagFilterScope: AdminTagFilterScope;
   dimensionFilters: AdminDimensionFilterState;
+  gridTileMinPx: number;
 };
 
 export type MediaAdminStoredFilters = {
@@ -108,6 +109,7 @@ export const DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES: StudioCardBankLo
   filterTagIds: [],
   tagFilterScope: 'all',
   dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+  gridTileMinPx: 228,
 };
 
 export const DEFAULT_MEDIA_ADMIN_STORED_FILTERS: MediaAdminStoredFilters = {
@@ -195,7 +197,9 @@ function parseStudioCardBankSharedFilterPreferences(value: unknown): StudioCardB
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<Record<keyof StudioCardBankSharedFilterPreferences, unknown>>;
   return {
-    search: normalizeString(candidate.search),
+    // Free-text search is task state, not a durable workspace preference. Discard
+    // previously stored values so an old query cannot make Studio look empty.
+    search: '',
     statusFilter: normalizeEnumValue(candidate.statusFilter, STUDIO_CARD_BANK_STATUS_VALUES, 'all'),
   };
 }
@@ -209,6 +213,10 @@ function parseStudioCardBankLocalFilterPreferences(value: unknown): StudioCardBa
     filterTagIds: normalizeStringArray(candidate.filterTagIds),
     tagFilterScope: normalizeEnumValue(candidate.tagFilterScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
     dimensionFilters: normalizeAdminDimensionFilters(candidate.dimensionFilters),
+    gridTileMinPx:
+      typeof candidate.gridTileMinPx === 'number' && candidate.gridTileMinPx >= 228 && candidate.gridTileMinPx <= 360
+        ? candidate.gridTileMinPx
+        : DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES.gridTileMinPx,
   };
 }
 

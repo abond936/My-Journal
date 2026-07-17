@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** None. Reader Boundary is Verified; Studio Cards is next for Definition Gate assessment.
+**Current active capability:** Studio Cards. Definition is gated; search clarity and shared Cards/Media tile sizing are implemented and verified, while the remaining card-bank work is not yet Complete.
 
 ---
 
@@ -224,9 +224,24 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 ### Studio Cards
 
-**Definition:** Not gated
+**Definition:** Gated
 
-- **Density** — Reduce tile footprint while preserving legibility and selection.
+**Outcome** — The author can scan, find, compare, select, and manage cards in a predictable archive bank that is consistent with Media where their roles overlap and retains card-specific information and actions.
+
+**Includes** — Explicit title search and recoverable no-result state; temporary search state; persistent structural working preferences; continuous tile sizing behind a compact control; stable title, dimensional-subject, selection, and tag access at every permitted size; card-specific type, status, display-mode, and bulk controls; and presentation alignment with the Media bank.
+
+**Excludes** — Compose behavior; tag-system rules or hierarchy redesign; Collections behavior; Media-specific assignment, import, stacking, or organization behavior; Quote implementation; global Settings preference implementation; and broader Studio-shell redesign.
+
+**Contracts** — Cards and Media follow one Studio-bank interaction model where their jobs overlap without becoming identical surfaces. Tile size changes density, not feature availability. Each bank may enforce a different content-safe minimum. The current control remains available in Studio; Settings may later own the author default. Free-text search is session task state and does not persist across Studio reloads, while structural working filters may persist. Empty results identify the active constraint and provide direct recovery.
+
+**Current state** — Studio Cards explicitly searches titles, visibly exposes active-search clearing, and names the query when no cards match. Previously stored free text is discarded so a stale verification query cannot make the catalog appear empty on return. Cards and Media use the same compact icon-triggered tile-size popover with a continuous slider and reset action. Cards retain their existing 228-pixel information-safe minimum and may expand to 360 pixels; Media retains its established 140-to-320-pixel range. Card title, dimensional subjects, selection, and tag access remain present throughout the permitted range.
+
+**Risks** — Pane width can force a single responsive column below the preferred minimum; large archive rendering can delay browser settling; and future Settings defaults could conflict with current local workspace preferences unless precedence is defined before implementation.
+
+**Decisions needed** — None for the implemented search and density slice. Settings ownership of cross-device defaults belongs to a later Settings capability.
+
+**Completion evidence** — Focused Studio-bank, preference, and shared tile-control tests pass. Touched-code lint has no errors and retains one pre-existing Media hook-dependency warning. Live Studio verification confirmed the query-specific empty state and recovery, compact Cards and Media controls, correct surface-specific ranges, and retained card subject presentation. Search non-persistence is directly covered by preference normalization; the final live reload read was limited by Studio browser settling.
+
 - **Tags** — Improve keyboard use, hierarchy, and disambiguation.
 - **Filters** — Provide clearer single-dimension search without removing advanced filtering.
 - **Quote** — Add Quote only with the completed Quote object.

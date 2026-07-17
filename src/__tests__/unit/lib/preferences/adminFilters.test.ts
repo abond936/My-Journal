@@ -26,14 +26,14 @@ describe('adminFilters preferences', () => {
     };
   }
 
-  it('reads Studio card-bank shared filters with defaults for missing values', () => {
+  it('does not restore Studio card-bank free-text search', () => {
     const storage = createStorage({
       [BROWSER_PREFERENCE_KEYS.studioCardBankSharedFilters]: JSON.stringify({ search: 'summer' }),
     });
 
     expect(readStoredStudioCardBankSharedFilterPreferences(storage)).toEqual({
       ...DEFAULT_STUDIO_CARD_BANK_SHARED_FILTER_PREFERENCES,
-      search: 'summer',
+      search: '',
     });
   });
 
@@ -61,6 +61,7 @@ describe('adminFilters preferences', () => {
         when: DEFAULT_ADMIN_DIMENSION_FILTERS.when,
         where: DEFAULT_ADMIN_DIMENSION_FILTERS.where,
       },
+      gridTileMinPx: DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES.gridTileMinPx,
     });
   });
 

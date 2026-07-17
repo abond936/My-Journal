@@ -2,7 +2,7 @@
 
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useDndContext } from '@dnd-kit/core';
-import { FilterX, Pencil } from 'lucide-react';
+import { FilterX, Pencil, X } from 'lucide-react';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import { useTag } from '@/components/providers/TagProvider';
 import BulkEditTagsModal from '@/components/admin/studio/cards/BulkEditTagsModal';
@@ -11,6 +11,7 @@ import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
+import AdminTileSizeControl from '@/components/admin/common/AdminTileSizeControl';
 import type { EmbeddedUnparentedBankContext } from '@/components/admin/collections/embeddedUnparentedBankContext';
 import {
   listCuratedTreeAttachCandidates,
@@ -36,6 +37,7 @@ import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/
 import type { StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
+  DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES,
   readStoredStudioCardBankLocalFilterPreferences,
   writeStoredStudioCardBankLocalFilterPreferences,
   type AdminTagFilterScope,
@@ -175,6 +177,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [dimensionFilters, setDimensionFilters] = useState<AdminDimensionFilterState>(
     initialLocalFilterPrefsRef.current.dimensionFilters
   );
+  const [gridTileMinPx, setGridTileMinPx] = useState(initialLocalFilterPrefsRef.current.gridTileMinPx);
   const [isStreamingMore, setIsStreamingMore] = useState(false);
   const [workspaceHasMore, setWorkspaceHasMore] = useState(false);
   const [workspaceLastDocId, setWorkspaceLastDocId] = useState<string | undefined>(undefined);
@@ -190,6 +193,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const deferredDimensionFilters = useDeferredValue(dimensionFilters);
   const deferredStatusFilter = useDeferredValue(statusFilter);
   const deferredSortMode = useDeferredValue(sortMode);
+  const trimmedSearch = search.trim();
   const dragActiveRef = useRef(false);
   const workspaceRequestIdRef = useRef(0);
   const resultsScrollRef = useRef<HTMLDivElement | null>(null);
@@ -210,8 +214,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       filterTagIds,
       tagFilterScope,
       dimensionFilters,
+      gridTileMinPx,
     });
-  }, [dimensionFilters, displayModeFilter, filterTagIds, studioCardFiltersHydrated, tagFilterScope, typeFilter]);
+  }, [dimensionFilters, displayModeFilter, filterTagIds, gridTileMinPx, studioCardFiltersHydrated, tagFilterScope, typeFilter]);
 
   // Workspace query owner: the Studio card bank owns a server-shaped card query
   // rather than filtering a large local mega-catalog. Results still append in
@@ -909,13 +914,26 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       <div className={styles.studioCardFilters} role="search">
         <label className={`${styles.studioCardField} ${styles.studioPaneSearchField}`}>
           <span className={styles.studioCardPanelTitle}>Cards</span>
-          <DebouncedSearchInput
-            value={search}
-            onCommit={setSearch}
-            className={styles.studioCardSearchInput}
-            placeholder="Search"
-            aria-label="Search cards"
-          />
+          <span className={styles.studioCardSearchControl} data-active={trimmedSearch ? 'true' : 'false'}>
+            <DebouncedSearchInput
+              value={search}
+              onCommit={setSearch}
+              className={styles.studioCardSearchInput}
+              placeholder="Search card titles"
+              ariaLabel="Search card titles"
+            />
+            {trimmedSearch ? (
+              <button
+                type="button"
+                className={styles.studioCardSearchClear}
+                onClick={() => setSearch('')}
+                aria-label="Clear card search"
+                title="Clear card search"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
+            ) : null}
+          </span>
         </label>
         <label className={styles.studioCardField}>
           <select
@@ -970,6 +988,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             <option value="createdAsc">Oldest</option>
           </select>
         </label>
+        <AdminTileSizeControl
+          value={gridTileMinPx}
+          min={228}
+          max={360}
+          step={10}
+          defaultValue={DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES.gridTileMinPx}
+          onChange={setGridTileMinPx}
+          surfaceLabel="Cards"
+        />
         <button
           type="button"
           className={styles.studioCardClearButton}
@@ -1149,6 +1176,17 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           pendingFocusCardId={pendingFocusCardId}
           interactionDisabled={saving}
           compactStudioGrid
+          gridTileMinPx={gridTileMinPx}
+          emptyState={
+            trimmedSearch ? (
+              <div className={styles.studioSearchEmptyState}>
+                <p>No cards match &ldquo;{trimmedSearch}&rdquo;.</p>
+                <button type="button" onClick={() => setSearch('')}>
+                  Clear search
+                </button>
+              </div>
+            ) : undefined
+          }
         />
         {(workspaceHasMore || isStreamingMore || workspaceLoadMoreError) ? (
           <div className={styles.loadMoreFooter}>

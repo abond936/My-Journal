@@ -65,7 +65,7 @@
   width: 100%;
   box-sizing: border-box;
   min-width: 0;
-  padding: 3px var(--spacing-xs);
+  padding: 3px 1.75rem 3px var(--spacing-xs);
   font-size: var(--font-size-xs);
   line-height: 1.25;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
@@ -77,6 +77,55 @@
   transition:
     border-color var(--transition-short) ease,
     box-shadow var(--transition-short) ease;
+}
+
+.studioCardSearchControl {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.studioCardSearchControl[data-active='true'] .studioCardSearchInput {
+  border-color: var(--admin-support-control-strong-border-color);
+}
+
+.studioCardSearchClear {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+}
+
+.studioCardSearchClear:hover,
+.studioCardSearchClear:focus-visible {
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.studioSearchEmptyState p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.studioSearchEmptyState button {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 3px var(--spacing-xs);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font: inherit;
+  font-style: normal;
+  cursor: pointer;
 }
 
 .studioCardSearchInput:focus-visible {

@@ -63,6 +63,8 @@ interface CardAdminGridProps {
   /** Studio attach bank: denser grid (smaller min cell width). */
   compactStudioGrid?: boolean;
   pendingFocusCardId?: string | null;
+  emptyState?: React.ReactNode;
+  gridTileMinPx?: number;
 }
 
 const CARD_TYPE_LABELS: Record<Card['type'], string> = {
@@ -690,6 +692,8 @@ export default function CardAdminGrid({
   interactionDisabled = false,
   compactStudioGrid = false,
   pendingFocusCardId = null,
+  emptyState,
+  gridTileMinPx,
 }: CardAdminGridProps) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -766,7 +770,14 @@ export default function CardAdminGrid({
           <span className={styles.selectAllLabel}>Select visible</span>
         </div>
       ) : null}
-      <div className={compactStudioGrid ? `${styles.grid} ${styles.gridStudioCompact}` : styles.grid}>
+      <div
+        className={compactStudioGrid ? `${styles.grid} ${styles.gridStudioCompact}` : styles.grid}
+        style={
+          gridTileMinPx
+            ? ({ ['--card-grid-min-col' as string]: `${gridTileMinPx}px` } as React.CSSProperties)
+            : undefined
+        }
+      >
         {cards.map((card, index) =>
           needsCuratedDndKit ? (
             <MemoizedCardAdminGridStudioCell
@@ -811,7 +822,7 @@ export default function CardAdminGrid({
       </div>
       {cards.length === 0 && (
         <div className={styles.emptyState}>
-          <p>No cards found matching the current filters.</p>
+          {emptyState ?? <p>No cards found matching the current filters.</p>}
         </div>
       )}
     </div>

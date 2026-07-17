@@ -20,6 +20,7 @@ import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
+import AdminTileSizeControl from '@/components/admin/common/AdminTileSizeControl';
 import cardAdminStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import styles from './mediaAdminShell.module.css';
 import {
@@ -29,6 +30,7 @@ import {
 } from '@/lib/utils/tagUtils';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
+  DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES,
   readStoredMediaAdminLocalFilterPreferences,
   writeStoredMediaAdminLocalFilterPreferences,
   type AdminDimensionFilterMode,
@@ -1319,17 +1321,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 ))}
               </select>
             </label>
-            <label className={styles.studioInlineLabel} aria-label="Tile size">
-              <span className={styles.studioTagScopeLabel}>Tiles</span>
-              <input
-                type="range"
-                min={140}
-                max={320}
-                step={10}
-                value={gridTileMinPx}
-                onChange={(e) => setGridTileMinPx(Number(e.target.value))}
-              />
-            </label>
+            <AdminTileSizeControl
+              value={gridTileMinPx}
+              min={140}
+              max={320}
+              step={10}
+              defaultValue={DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES.gridTileMinPx}
+              onChange={setGridTileMinPx}
+              surfaceLabel="Media"
+            />
             <label className={styles.studioAssignedToggle}>
               <input
                 type="checkbox"
