@@ -624,11 +624,12 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
           keysToSync.add('type');
           keysToSync.add('displayMode');
         }
-        if (keysToSync.has('subjectTagIds')) {
-          keysToSync.add('subjectTagId');
-          keysToSync.add('subjectFilterTags');
-        }
-        if (keysToSync.has('galleryTagInheritanceOverrides')) {
+        if (
+          keysToSync.has('tags') ||
+          keysToSync.has('subjectTagId') ||
+          keysToSync.has('subjectTagIds') ||
+          keysToSync.has('galleryTagInheritanceOverrides')
+        ) {
           (
             [
               'tags', 'subjectTagId', 'subjectTagIds', 'subjectFilterTags', 'filterTags',
