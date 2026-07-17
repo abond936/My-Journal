@@ -3,16 +3,15 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
+import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './journal-users.module.css';
 
 type ListResponse = { users: JournalUserPublic[] };
 
 async function fetchUsers(): Promise<JournalUserPublic[]> {
   const res = await fetch('/api/admin/journal-users');
-  const data = (await res.json()) as ListResponse & { message?: string };
-  if (!res.ok) {
-    throw new Error(data.message || 'Failed to load users');
-  }
+  const data = (await res.json()) as ListResponse & { message?: string; error?: string; code?: string };
+  throwIfJsonApiFailed(res, data, 'Users could not be loaded. Try again.');
   return data.users;
 }
 
@@ -78,16 +77,14 @@ export default function JournalUsersAdminPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Create failed');
-      }
-      feedback.showSuccess('User created. Share the site link, username, and temporary password.', 'Added');
+      throwIfJsonApiFailed(res, data, 'This user could not be added. Check the details and try again.');
+      feedback.showSuccess('User added. Share the site link, username, and temporary password.');
       setNewUsername('');
       setNewPassword('');
       setNewDisplayName('');
       await load();
     } catch (err) {
-      feedback.showError(err instanceof Error ? err.message : 'Create failed', 'Could not add user');
+      feedback.showError(err instanceof Error ? err.message : 'This user could not be added. Try again.', 'User not added');
     } finally {
       setCreateBusy(false);
     }
@@ -102,12 +99,10 @@ export default function JournalUsersAdminPage() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Update failed');
-      }
+      throwIfJsonApiFailed(res, data, 'This user could not be updated. Try again.');
       await load();
     } catch (err) {
-      feedback.showError(err instanceof Error ? err.message : 'Update failed', 'Could not update user');
+      feedback.showError(err instanceof Error ? err.message : 'This user could not be updated. Try again.', 'User not updated');
     } finally {
       setRowBusy(null);
     }
@@ -116,7 +111,7 @@ export default function JournalUsersAdminPage() {
   const handleSetPassword = async (id: string) => {
     const pwd = passwordById[id]?.trim();
     if (!pwd || pwd.length < 8) {
-      feedback.showError('New password must be at least 8 characters', 'Could not set password');
+      feedback.showError('Enter a password with at least 8 characters.', 'Password too short');
       return;
     }
     await patchUser(id, { password: pwd });

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { TAG_SET_0_LABEL } from '@/lib/constants/tagSet0';
 import {
   DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES,
@@ -97,9 +98,7 @@ export default function AdminSettingsPage() {
   const loadOperations = useCallback(async () => {
     const res = await fetch('/api/admin/settings/operations');
     const data = (await res.json()) as OperationsResponse;
-    if (!res.ok) {
-      throw new Error(data.message || 'Failed to load operations status');
-    }
+    throwIfJsonApiFailed(res, data, 'Backup and search status could not be loaded. Try again.');
     setOperations({
       backup: data.backup ?? null,
       index: data.index ?? null,
@@ -109,9 +108,7 @@ export default function AdminSettingsPage() {
   const loadTagSet0 = useCallback(async () => {
     const res = await fetch('/api/admin/tag-set-0');
     const data = (await res.json()) as TagSet0Response;
-    if (!res.ok) {
-      throw new Error(data.message || 'Failed to load taxonomy status');
-    }
+    throwIfJsonApiFailed(res, data, 'Starter tags could not be loaded. Try again.');
     if (data.tagSet0) {
       setTagSet0(data.tagSet0);
     }
@@ -125,21 +122,19 @@ export default function AdminSettingsPage() {
           fetch('/api/admin/author-settings'),
           loadTagSet0().catch((error) => {
             if (!cancelled) {
-              feedback.showError(error instanceof Error ? error.message : 'Failed to load taxonomy');
+              feedback.showError(error instanceof Error ? error.message : 'Starter tags could not be loaded. Try again.');
             }
           }),
           loadOperations().catch((error) => {
             if (!cancelled) {
               feedback.showError(
-                error instanceof Error ? error.message : 'Failed to load operations status'
+                error instanceof Error ? error.message : 'Backup and search status could not be loaded. Try again.'
               );
             }
           }),
         ]);
         const data = (await settingsRes.json()) as SettingsResponse;
-        if (!settingsRes.ok) {
-          throw new Error(data.message || 'Failed to load settings');
-        }
+        throwIfJsonApiFailed(settingsRes, data, 'Settings could not be loaded. Try again.');
         if (!cancelled && data.settings?.galleryTagInheritance) {
           setSavedToggles(data.settings.galleryTagInheritance);
           setToggles(data.settings.galleryTagInheritance);
@@ -147,7 +142,7 @@ export default function AdminSettingsPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          feedback.showError(error instanceof Error ? error.message : 'Failed to load settings');
+          feedback.showError(error instanceof Error ? error.message : 'Settings could not be loaded. Try again.');
         }
       } finally {
         if (!cancelled) {
