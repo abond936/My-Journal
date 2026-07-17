@@ -9,6 +9,20 @@ import {
   buildReaderBodyQuickEditPatch,
 } from '@/lib/utils/readerBodyQuickEdit';
 
+export function buildReaderReturnAfterDelete(returnTo: string, deletedCardId: string): string {
+  const target = new URL(returnTo, 'https://reader.local');
+  const deletedDetailPath = `/view/${encodeURIComponent(deletedCardId)}`;
+
+  if (target.pathname === deletedDetailPath) {
+    target.pathname = '/view';
+  }
+  if (target.searchParams.get('focusCardId') === deletedCardId) {
+    target.searchParams.delete('focusCardId');
+  }
+
+  return `${target.pathname}${target.search}${target.hash}`;
+}
+
 export function reconcileReaderCardListCaches(savedCard: Card): void {
   void globalMutate(
     (key: Key) => typeof key === 'string' && key.startsWith('/api/cards?'),

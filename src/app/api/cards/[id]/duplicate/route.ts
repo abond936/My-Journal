@@ -56,17 +56,21 @@ export async function POST(
     const newCard = await duplicateCard(id);
     return NextResponse.json(newCard, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    const status = message.includes('not found') ? 404 : 500;
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`[POST /api/cards/${id}/duplicate]`, error);
+    const status = errorMessage.includes('not found') ? 404 : 500;
     const code = status === 404 ? 'CARD_NOT_FOUND' : 'CARD_DUPLICATE_FAILED';
     return errorResponse(
       {
         ok: false,
         code,
-        message,
+        message:
+          status === 404
+            ? 'The original card could not be found.'
+            : 'This card could not be duplicated. Try again.',
         severity: 'error',
         retryable: status === 500,
-        error: message,
+        error: errorMessage,
       },
       status
     );

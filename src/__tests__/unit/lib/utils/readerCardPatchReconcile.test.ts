@@ -1,6 +1,7 @@
 import {
   buildGalleryCaptionPatch,
   buildReaderMetadataQuickEditPatch,
+  buildReaderReturnAfterDelete,
   patchReaderQuickEdit,
 } from '@/lib/utils/readerCardPatchReconcile';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
@@ -36,6 +37,24 @@ describe('buildReaderMetadataQuickEditPatch', () => {
     );
 
     expect(patch).toEqual({ subtitle: null });
+  });
+});
+
+describe('buildReaderReturnAfterDelete', () => {
+  it('returns from a deleted detail route to the Reader feed while preserving mode', () => {
+    expect(buildReaderReturnAfterDelete('/view/card-1?mode=guided', 'card-1')).toBe('/view?mode=guided');
+  });
+
+  it('removes focus for the deleted feed card and preserves other context', () => {
+    expect(
+      buildReaderReturnAfterDelete('/view?mode=freeform&focusCardId=card-1#stories', 'card-1')
+    ).toBe('/view?mode=freeform#stories');
+  });
+
+  it('preserves an unrelated focus target', () => {
+    expect(buildReaderReturnAfterDelete('/view?focusCardId=card-2', 'card-1')).toBe(
+      '/view?focusCardId=card-2'
+    );
   });
 });
 

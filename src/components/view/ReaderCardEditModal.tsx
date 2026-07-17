@@ -13,7 +13,10 @@ import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCa
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
-import { patchReaderCard } from '@/lib/utils/readerCardPatchReconcile';
+import {
+  buildReaderReturnAfterDelete,
+  patchReaderCard,
+} from '@/lib/utils/readerCardPatchReconcile';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import {
   buildSingleCardDeletePrompt,
@@ -225,6 +228,7 @@ export default function ReaderCardEditModal({
   const [activeCardId, setActiveCardId] = useState(cardId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [editingDuplicate, setEditingDuplicate] = useState(false);
   const [modalFrame, setModalFrame] = useState<ModalFrame | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const pointerStateRef = useRef<
@@ -277,6 +281,7 @@ export default function ReaderCardEditModal({
   const openModal = () => {
     onBeforeOpen?.();
     setActiveCardId(cardId);
+    setEditingDuplicate(false);
     setModalFrame((current) => current ?? buildDefaultFrame());
     setIsOpen(true);
   };
@@ -284,6 +289,7 @@ export default function ReaderCardEditModal({
   useEffect(() => {
     if (!isControlled || !openControlled) return;
     setActiveCardId(cardId);
+    setEditingDuplicate(false);
     setModalFrame((current) => current ?? buildDefaultFrame());
   }, [buildDefaultFrame, cardId, isControlled, openControlled]);
 
@@ -422,7 +428,7 @@ export default function ReaderCardEditModal({
       void globalMutate((key) => typeof key === 'string' && key.startsWith('/api/cards?'), undefined, {
         revalidate: true,
       });
-      router.push(returnTo);
+      router.push(buildReaderReturnAfterDelete(returnTo, activeCardId));
       router.refresh();
     } catch (err) {
       feedback.showError(err instanceof Error ? err.message : 'Failed to delete card.', 'Could not delete card');
@@ -438,19 +444,28 @@ export default function ReaderCardEditModal({
         method: 'POST',
         credentials: 'same-origin',
       });
-      const payload = (await response.json().catch(() => ({}))) as Card & { error?: string };
-      if (!response.ok || !payload.docId) {
-        throw new Error(payload.error || 'Failed to duplicate card.');
-      }
+      const payload = (await response.json().catch(() => ({}))) as Card & {
+        message?: string;
+        error?: string;
+      };
+      throwIfJsonApiFailed(response, payload, 'This card could not be duplicated. Try again.');
+      if (!payload.docId) throw new Error('This card could not be duplicated. Try again.');
       setActiveCardId(payload.docId);
+      setEditingDuplicate(true);
+      feedback.showSuccess('Duplicate created. You are now editing the new draft.');
       void globalMutate((key) => typeof key === 'string' && key.startsWith('/api/cards?'), undefined, {
         revalidate: true,
       });
       router.refresh();
+    } catch (err) {
+      feedback.showError(
+        err instanceof Error ? err.message : 'This card could not be duplicated. Try again.',
+        'Card not duplicated'
+      );
     } finally {
       setIsDuplicating(false);
     }
-  }, [activeCardId, router]);
+  }, [activeCardId, feedback, router]);
 
   const modalBody = useMemo(() => {
     if (!modalReady || !card || !tags) {
@@ -462,7 +477,11 @@ export default function ReaderCardEditModal({
           <ReaderModalBaselineSync syncKey={activeCardId} />
           <div className={styles.modalShell}>
             <div className={styles.modalHeader}>
-              <ModalTitleBar title="Compose" onDragStart={handleDragStart} onClose={closeModal} />
+              <ModalTitleBar
+                title={editingDuplicate ? 'Compose — New draft' : 'Compose'}
+                onDragStart={handleDragStart}
+                onClose={closeModal}
+              />
               <div className={styles.modalActions}>
                 <ModalActions
                   onClose={closeModal}
@@ -492,6 +511,7 @@ export default function ReaderCardEditModal({
     handleSave,
     isDeleting,
     isDuplicating,
+    editingDuplicate,
     modalReady,
     tags,
   ]);

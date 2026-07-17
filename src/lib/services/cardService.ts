@@ -77,6 +77,20 @@ async function withRetry<T>(
   throw lastError!;
 }
 
+function removeUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => removeUndefinedDeep(item)) as T;
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, nested]) => nested !== undefined)
+        .map(([key, nested]) => [key, removeUndefinedDeep(nested)])
+    ) as T;
+  }
+  return value;
+}
+
 const adminApp = getAdminApp();
 const firestore = adminApp.firestore();
 const CARDS_COLLECTION = 'cards';
@@ -853,7 +867,7 @@ export async function createCard(
   const autoExcerpt = validatedData.excerptAuto ? generateExcerpt(cleanedContent) : undefined;
 
   const cardType = validatedData.type ?? 'story';
-  const newCard: Card = {
+  const newCard = removeUndefinedDeep<Card>({
     ...validatedData,
     docId: docRef.id,
     type: cardType,
@@ -895,7 +909,7 @@ export async function createCard(
       childrenIds: normalizedChildren,
       isCollectionRoot: requestedRoot,
     }),
-  };
+  });
 
   // Use a transaction to ensure atomicity with retry logic
   await withRetry(async () => {
@@ -1146,21 +1160,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       const validatedUpdate = cardSchema.partial().parse(updatePayload);
       
 
-  
-      // Helper to recursively strip undefined values (Firestore disallows them)
-      const removeUndefinedDeep = (val: unknown): unknown => {
-        if (Array.isArray(val)) {
-          return val.map(removeUndefinedDeep);
-        }
-        if (val && typeof val === 'object') {
-          return Object.fromEntries(
-            Object.entries(val)
-              .filter(([, v]) => v !== undefined)
-              .map(([k, v]) => [k, removeUndefinedDeep(v)])
-          );
-        }
-        return val;
-      };
   
       const cleanedUpdate = removeUndefinedDeep(validatedUpdate) as Partial<Card>;
 
