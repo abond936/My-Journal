@@ -71,8 +71,10 @@ export default function InlineGallery({
 
   const openLightbox = useCallback((index: number) => {
     setActiveIndex(index);
+    const item = validMedia[index];
+    setCaptionDraft(item ? getEffectiveGalleryCaption(item, item.media) : '');
     setLightboxOpen(true);
-  }, []);
+  }, [validMedia]);
 
   const saveCaptionForItem = useCallback(
     async (item: HydratedGalleryMediaItem, draft: string): Promise<boolean> => {

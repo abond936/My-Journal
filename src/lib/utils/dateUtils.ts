@@ -4,6 +4,7 @@
 
 type TimestampLike = {
     toDate: () => Date;
+    toMillis?: () => number;
     _seconds?: number;
     _nanoseconds?: number;
 };
@@ -17,10 +18,6 @@ type SerializableCard = Record<string, unknown> & {
 
 function isTimestampLike(value: unknown): value is TimestampLike {
     return typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function';
-}
-
-function isSerializableCard(value: unknown): value is SerializableCard {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -51,7 +48,7 @@ export const safeToDate = (field: unknown): Date | undefined => {
 };
 
 /**
- * Serializes a card object for client components by converting Firestore Timestamps to plain objects.
+ * Serializes a card object for client components by converting Firestore values to plain data.
  * This prevents the "Only plain objects can be passed to Client Components" error.
  * 
  * @param card The card object from Firestore that may contain Timestamps
@@ -59,37 +56,20 @@ export const safeToDate = (field: unknown): Date | undefined => {
  */
 export const serializeCardForClient = <T extends SerializableCard>(card: T | null | undefined): T | null | undefined => {
     if (!card) return card;
-    
-    const serialized = { ...card } as T;
-    
-    // Convert Firestore Timestamps to plain objects
-    if (isTimestampLike(serialized.createdAt)) {
-        serialized.createdAt = {
-            _seconds: serialized.createdAt._seconds,
-            _nanoseconds: serialized.createdAt._nanoseconds
-        };
-    }
-    
-    if (isTimestampLike(serialized.updatedAt)) {
-        serialized.updatedAt = {
-            _seconds: serialized.updatedAt._seconds,
-            _nanoseconds: serialized.updatedAt._nanoseconds
-        };
-    }
-    
-    // Handle nested objects that might contain timestamps
-    if (isSerializableCard(serialized.coverImage)) {
-        serialized.coverImage = serializeCardForClient(serialized.coverImage);
-    }
-    
-    if (Array.isArray(serialized.galleryMedia)) {
-        serialized.galleryMedia = serialized.galleryMedia.map((item) => {
-            if (isSerializableCard(item) && isSerializableCard(item.media)) {
-                return { ...item, media: serializeCardForClient(item.media) };
-            }
-            return item;
-        });
-    }
-    
-    return serialized;
+
+    const serializeValue = (value: unknown): unknown => {
+        if (value === null || value === undefined) return value;
+        if (typeof value !== 'object') return value;
+        if (value instanceof Date) return value.getTime();
+        if (isTimestampLike(value)) {
+            return typeof value.toMillis === 'function' ? value.toMillis() : value.toDate().getTime();
+        }
+        if (Array.isArray(value)) return value.map(serializeValue);
+
+        return Object.fromEntries(
+            Object.entries(value).map(([key, nestedValue]) => [key, serializeValue(nestedValue)])
+        );
+    };
+
+    return serializeValue(card) as T;
 }; 

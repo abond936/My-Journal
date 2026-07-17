@@ -147,4 +147,33 @@ describe('InlineGallery focal contract', () => {
       'Unsaved revised caption'
     );
   });
+
+  it('opens an editable caption with the existing value before it can blur', () => {
+    const media = [
+      {
+        mediaId: 'media-4',
+        order: 0,
+        media: {
+          docId: 'media-4',
+          filename: 'captioned.jpg',
+          caption: 'Existing caption',
+        },
+      } as HydratedGalleryMediaItem,
+    ];
+
+    render(
+      <InlineGallery
+        media={media}
+        editableCaptions
+        cardId="card-1"
+        onGallerySaved={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open image 1 fullscreen' }));
+    const caption = screen.getByRole('textbox', { name: 'Gallery image caption' });
+    expect(caption).toHaveValue('Existing caption');
+    fireEvent.blur(caption);
+    expect(patchReaderGalleryCaption).not.toHaveBeenCalled();
+  });
 });
