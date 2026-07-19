@@ -4,8 +4,9 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Card } from '@/lib/types/card';
+import { resolveReaderRouteMode } from '@/lib/utils/readerMode';
 
 /** Reader feed card-type chip order (Explore sidebar). */
 export const FEED_CARD_TYPES_ORDER: Card['type'][] = [
@@ -30,10 +31,9 @@ function dedupeCardsByDocId(cards: Card[]): Card[] {
 }
 import { PaginatedResult } from '@/lib/types/services';
 import { useTag } from './TagProvider';
-import { groupCardsForFeed, type FeedGroupBy } from '@/lib/utils/feedGrouping';
 import {
-  appendCoverOnlyFeedHydration,
-  withCoverOnlyFeedHydrationQuery,
+  appendReaderFeedHydration,
+  withReaderFeedHydrationQuery,
 } from '@/lib/utils/feedHydration';
 import {
   appendReaderTagScopeParam,
@@ -73,9 +73,6 @@ export type FeedSortOrder =
   | 'whereAsc'
   | 'whereDesc';
 
-export type { FeedGroupBy };
-export type FeedSections = { heading: string; cards: Card[] }[] | null;
-
 export interface ICardContext {
   // Filter state
   selectedTags: string[];
@@ -89,12 +86,8 @@ export interface ICardContext {
   collectionCards: Card[]; // Flat list of collection parent cards
   collectionTreeCards: Card[]; // Full curated hierarchy payload for sidebar/tree views
   feedSort: FeedSortOrder;
-  feedGroupBy: FeedGroupBy;
   cardDimensionMissing: CardDimensionMissing;
-  /** Grouped sections for the main feed; null when grouping is off or not applicable. */
-  feedSections: FeedSections;
   visibleCards: Card[];
-  visibleFeedSections: FeedSections;
   isGuidedCollectionTransition: boolean;
   guidedTransitionTitle: string | null;
 
@@ -113,7 +106,6 @@ export interface ICardContext {
   setCollectionId: (id: string | null) => void;
   setFeedSort: (order: FeedSortOrder) => void;
   refreshRandomOrder: () => void;
-  setFeedGroupBy: (g: FeedGroupBy) => void;
   setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
   clearFilters: () => void;
   setPageLimit: (limit: number) => void;
@@ -142,7 +134,7 @@ const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
 const READER_MODE_KEY = 'myjournal-reader-mode';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
-const FEED_GROUP_KEY = 'myjournal-feed-group';
+const LEGACY_FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
 const FEED_TAG_SCOPE_KEY = 'myjournal-feed-tag-scope';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
@@ -164,7 +156,6 @@ const FEED_SORT_VALUES = new Set<string>([
   'whereAsc',
   'whereDesc',
 ]);
-const FEED_GROUP_VALUES = new Set<string>(['none', 'who', 'what', 'when', 'where']);
 
 function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
   if (!raw || raw === 'all') return 'collections';
@@ -195,13 +186,6 @@ function readStoredBrowseTarget(): BrowseTarget {
   if (typeof window === 'undefined') return 'cards';
   const raw = readStoredValue(BROWSE_TARGET_KEY);
   return raw === 'media' ? 'media' : 'cards';
-}
-
-function readStoredFeedGroup(): FeedGroupBy {
-  if (typeof window === 'undefined') return 'none';
-  const raw = readStoredValue(FEED_GROUP_KEY);
-  if (!raw || !FEED_GROUP_VALUES.has(raw)) return 'none';
-  return raw as FeedGroupBy;
 }
 
 function readStoredIncludeSubTagsInFeed(): boolean {
@@ -271,6 +255,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { data: session, status: sessionStatus } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // --- Global Filter State ---
   const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
@@ -317,7 +302,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [collectionId, setCollectionIdState] = useState<string | null>(null);
   const [guidedTransitionCollectionId, setGuidedTransitionCollectionId] = useState<string | null>(null);
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>('random');
-  const [feedGroupBy, setFeedGroupByState] = useState<FeedGroupBy>('none');
   const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(false);
   const [readerTagFilterScope, setReaderTagFilterScopeState] = useState<ReaderTagFilterScope>('all');
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
@@ -327,12 +311,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     where: false,
   });
   const [hasHydratedPersistedReaderState, setHasHydratedPersistedReaderState] = useState(false);
+  const effectiveReaderMode = resolveReaderRouteMode(pathname, searchParams?.get?.('mode'), readerMode);
 
   const [randomSeed, setRandomSeed] = useState<string>(() => createRandomSeed());
-  const lastVisibleReaderSnapshotRef = useRef<{
-    cards: Card[];
-    feedSections: FeedSections;
-  }>({ cards: [], feedSections: null });
+  const lastVisibleReaderSnapshotRef = useRef<Card[]>([]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -351,7 +333,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       storedActiveDimension === 'collections' ? readStoredValue(COLLECTION_STORAGE_KEY) || null : null
     );
     setFeedSortState(readStoredFeedSort());
-    setFeedGroupByState(readStoredFeedGroup());
+    window.localStorage.removeItem(LEGACY_FEED_GROUP_KEY);
+    window.sessionStorage.removeItem(LEGACY_FEED_GROUP_KEY);
     setIncludeSubTagsInFeedState(readStoredIncludeSubTagsInFeed());
     setReaderTagFilterScopeState(readPersistedReaderTagFilterScope());
     setHasHydratedPersistedReaderState(true);
@@ -360,11 +343,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const setFeedSort = useCallback((order: FeedSortOrder) => {
     setFeedSortState(order);
     if (typeof window !== 'undefined') window.localStorage.setItem(FEED_SORT_KEY, order);
-  }, []);
-
-  const setFeedGroupBy = useCallback((g: FeedGroupBy) => {
-    setFeedGroupByState(g);
-    if (typeof window !== 'undefined') window.localStorage.setItem(FEED_GROUP_KEY, g);
   }, []);
 
   const setIncludeSubTagsInFeed = useCallback((value: boolean) => {
@@ -531,9 +509,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setRandomSeed(nextSeed);
   }, [feedSort, randomFeedSignature]);
 
-  // Reader feed/search lists use cover-only hydration; detail pages fetch full card data separately.
+  // Reader lists hydrate covers plus complete Gallery media; detail pages fetch full card data separately.
   const adminFetcher = useCallback(async (url: string) => {
-    const fetchUrl = withCoverOnlyFeedHydrationQuery(url, pathname);
+    const fetchUrl = withReaderFeedHydrationQuery(url, pathname);
     const response = await fetch(fetchUrl);
     if (!response.ok) {
       let message = `Request failed (${response.status}).`;
@@ -552,9 +530,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   // Keep the collections tree loaded for curated mode, even when a collection is selected.
   const shouldFetchCollections =
-    isFetchActive && (activeDimension === 'collections' || readerMode === 'guided');
+    isFetchActive && (activeDimension === 'collections' || effectiveReaderMode === 'guided');
   const collectionsUrl = shouldFetchCollections
-    ? withCoverOnlyFeedHydrationQuery(
+    ? withReaderFeedHydrationQuery(
         `/api/cards?collectionsOnly=true&status=${isAdmin ? 'all' : 'published'}`,
         pathname
       )
@@ -562,7 +540,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { data: collectionListData, isLoading: collectionsLoading } = useSWR<{ items: Card[] }>(
     collectionsUrl,
     (url) => {
-      return fetch(withCoverOnlyFeedHydrationQuery(url, pathname)).then((r) =>
+      return fetch(withReaderFeedHydrationQuery(url, pathname)).then((r) =>
         r.ok ? r.json() : Promise.reject(new Error(r.statusText))
       );
     },
@@ -570,7 +548,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   );
   const collectionCards = useMemo(() => collectionListData?.items ?? [], [collectionListData]);
   const collectionTreeUrl = shouldFetchCollections
-    ? withCoverOnlyFeedHydrationQuery(
+    ? withReaderFeedHydrationQuery(
         `/api/cards?collectionsOnly=true&includeDescendants=true&status=${isAdmin ? 'all' : 'published'}`,
         pathname
       )
@@ -578,7 +556,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const { data: collectionTreeData } = useSWR<{ items: Card[] }>(
     collectionTreeUrl,
     (url) => {
-      return fetch(withCoverOnlyFeedHydrationQuery(url, pathname)).then((r) =>
+      return fetch(withReaderFeedHydrationQuery(url, pathname)).then((r) =>
         r.ok ? r.json() : Promise.reject(new Error(r.statusText))
       );
     },
@@ -616,7 +594,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         if (pageIndex > 0 && previousPageData?.lastDocId) {
           params.set('lastDocId', previousPageData.lastDocId);
         }
-        appendCoverOnlyFeedHydration(params, pathname);
+        appendReaderFeedHydration(params, pathname);
         return `${endpoint}?${params.toString()}`;
       }
 
@@ -648,7 +626,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (isReaderListRoute) {
         appendReaderTagScopeParam(params, readerTagFilterScope);
       }
-      appendCoverOnlyFeedHydration(params, pathname);
+      appendReaderFeedHydration(params, pathname);
       if (!searchTerm?.trim()) {
         if (feedSort === 'random') {
           params.set('sortBy', 'random');
@@ -739,19 +717,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     );
   }, [mutate]);
 
-  const tagNameById = useMemo(
-    () => new Map(allTags?.filter((t) => t.docId).map((t) => [t.docId!, t.name]) ?? []),
-    [allTags]
-  );
-
   const isCollectionsListMode = activeDimension === 'collections' && !collectionId;
-  const feedSections = useMemo(() => {
-    if (feedGroupBy === 'none' || isCollectionsListMode) return null;
-    return groupCardsForFeed(cards, feedGroupBy, tagNameById);
-  }, [cards, feedGroupBy, tagNameById, isCollectionsListMode]);
   const isReaderRoute = pathname?.startsWith('/view') ?? false;
-  const hasRenderableSections = Boolean(feedSections?.some((section) => section.cards.length > 0));
-  const hasRenderableCards = cards.length > 0 || hasRenderableSections;
+  const hasRenderableCards = cards.length > 0;
   const readerBackgroundLoading = isCollectionsListMode ? collectionsLoading : isValidating;
   const isGuidedCollectionTransition = Boolean(
     guidedTransitionCollectionId &&
@@ -767,11 +735,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   useEffect(() => {
     if (!isReaderRoute || !hasRenderableCards) return;
     if (isGuidedCollectionTransition) return;
-    lastVisibleReaderSnapshotRef.current = {
-      cards,
-      feedSections,
-    };
-  }, [isReaderRoute, hasRenderableCards, cards, feedSections, isGuidedCollectionTransition]);
+    lastVisibleReaderSnapshotRef.current = cards;
+  }, [isReaderRoute, hasRenderableCards, cards, isGuidedCollectionTransition]);
 
   useEffect(() => {
     if (!guidedTransitionCollectionId || guidedTransitionCollectionId !== collectionId) return;
@@ -779,28 +744,22 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setGuidedTransitionCollectionId(null);
   }, [collectionId, guidedTransitionCollectionId, readerBackgroundLoading]);
 
-  const hasVisibleReaderSnapshot = Boolean(
-    lastVisibleReaderSnapshotRef.current.cards.length > 0 ||
-      lastVisibleReaderSnapshotRef.current.feedSections?.some((section) => section.cards.length > 0)
-  );
+  const hasVisibleReaderSnapshot = lastVisibleReaderSnapshotRef.current.length > 0;
   const shouldUseVisibleReaderSnapshot =
     isReaderRoute &&
     !isGuidedCollectionTransition &&
     !hasRenderableCards &&
     (readerBackgroundLoading || Boolean(error)) &&
     hasVisibleReaderSnapshot;
-  const { visibleCards, visibleFeedSections } = useMemo(() => {
+  const visibleCards = useMemo(() => {
     if (isGuidedCollectionTransition) {
-      return { visibleCards: [], visibleFeedSections: null };
+      return [];
     }
     if (shouldUseVisibleReaderSnapshot) {
-      return {
-        visibleCards: lastVisibleReaderSnapshotRef.current.cards,
-        visibleFeedSections: lastVisibleReaderSnapshotRef.current.feedSections,
-      };
+      return lastVisibleReaderSnapshotRef.current;
     }
-    return { visibleCards: cards, visibleFeedSections: feedSections };
-  }, [cards, feedSections, isGuidedCollectionTransition, shouldUseVisibleReaderSnapshot]);
+    return cards;
+  }, [cards, isGuidedCollectionTransition, shouldUseVisibleReaderSnapshot]);
   const isLoading = isCollectionsListMode ? collectionsLoading : (swrLoading && !data);
   const isInitialLoading = isLoading && !shouldUseVisibleReaderSnapshot;
   const loadingMore = swrLoading && size > 1;
@@ -854,7 +813,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     }
     setCollectionId(null);
     setFeedSort('random');
-    setFeedGroupBy('none');
     setIncludeSubTagsInFeed(false);
     setReaderTagFilterScope('all');
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
@@ -866,7 +824,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFilterTags,
     setCollectionId,
     setFeedSort,
-    setFeedGroupBy,
     setIncludeSubTagsInFeed,
     setReaderTagFilterScope,
   ]);
@@ -895,10 +852,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       collectionTreeCards,
       feedSort,
-      feedGroupBy,
       cardDimensionMissing,
-      feedSections,
-      visibleFeedSections,
       isGuidedCollectionTransition,
       guidedTransitionTitle,
       loadMore,
@@ -914,7 +868,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       refreshRandomOrder,
-      setFeedGroupBy,
       setCardDimensionMissing,
       clearFilters,
       setPageLimit,
@@ -947,10 +900,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionCards,
       collectionTreeCards,
       feedSort,
-      feedGroupBy,
       cardDimensionMissing,
-      feedSections,
-      visibleFeedSections,
       isGuidedCollectionTransition,
       guidedTransitionTitle,
       loadMore,
@@ -966,7 +916,6 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setCollectionId,
       setFeedSort,
       refreshRandomOrder,
-      setFeedGroupBy,
       setCardDimensionMissing,
       clearFilters,
       setPageLimit,

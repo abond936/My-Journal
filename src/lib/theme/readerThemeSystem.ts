@@ -1,6 +1,7 @@
 import type {
   ReaderThemePresetId,
   ReaderThemeRecipes,
+  ThemeRecipeTokenRef,
 } from '@/lib/types/theme';
 
 export interface ReaderThemeSummarySystem {
@@ -67,6 +68,11 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
       'Components still decide when a variant applies, such as closed versus open, or full feed card versus discovery rail. Theme data defines the recipe for each named variant; component logic chooses when to render it.',
   },
   recipes: {
+    foundationTypography: {
+      uiFamily: 'font-family/sans1',
+      readingFamily: 'font-family/sans1',
+      displayFamily: 'font-family/sans1',
+    },
     typography: {
       title: {
         family: 'font-family/sans1',
@@ -464,6 +470,18 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
       },
     },
     controls: {
+      primaryAction: {
+        background: 'component/button/solid/backgroundColor',
+        text: 'component/button/solid/textColor',
+        border: 'component/button/solid/borderColor',
+        hoverBackground: 'component/button/solid/backgroundColorHover',
+      },
+      typeChip: {
+        background: 'semantic/reader/field-surface',
+        text: 'component/input/textColor',
+        border: 'semantic/reader/field-border',
+        hoverBackground: 'layout/background2Color',
+      },
       chromeActiveTab: {
         background: 'component/button/solid/backgroundColor',
         text: 'semantic/reader/contrast-on-fill-text',
@@ -566,8 +584,10 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
       accent: 'palette/3',
     },
     treatments: {
+      contentGridGap: 'spacing/sm',
       quoteWatermarkOpacity: '0.16',
       questionWatermarkOpacity: '0.22',
+      questionWatermarkScale: '0.78',
       calloutWatermarkOpacity: '0.22',
       calloutBodyListLineHeight: 'line-height/relaxed',
     },
@@ -575,6 +595,20 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
 };
 
 export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
+  {
+    id: 'contentGrid',
+    label: 'Content Grid',
+    description: 'Reader card-grid density while responsive fitting and minimum tile widths remain fixed safeguards.',
+    variants: [
+      {
+        id: 'layout',
+        label: 'Layout',
+        elements: [
+          { id: 'gap', label: 'Tile spacing', description: 'Space between Content Grid tiles on desktop and mobile.', binding: { kind: 'treatment', key: 'contentGridGap' } },
+        ],
+      },
+    ],
+  },
   {
     id: 'canvas',
     label: 'Canvas',
@@ -730,6 +764,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
           { id: 'question', label: 'Question', binding: { kind: 'typography', key: 'question' } },
           { id: 'overlayQuestion', label: 'Overlay question', binding: { kind: 'typography', key: 'questionOverlay' } },
           { id: 'excerpt', label: 'Answer preview', binding: { kind: 'typography', key: 'excerpt' } },
+          { id: 'watermarkOpacity', label: 'Watermark opacity', binding: { kind: 'treatment', key: 'questionWatermarkOpacity' } },
+          { id: 'watermarkScale', label: 'Watermark scale', binding: { kind: 'treatment', key: 'questionWatermarkScale' } },
         ],
       },
       {
@@ -815,6 +851,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         id: 'controls',
         label: 'Controls and selectors',
         elements: [
+          { id: 'primaryAction', label: 'Primary action', description: 'Shared treatment for genuine commit and proceed actions; selected navigation and filters do not inherit it.', binding: { kind: 'control', key: 'primaryAction' } },
+          { id: 'typeChip', label: 'Type chip', description: 'Shared visual identity for Reader Type chips; grid, rail, and compact contexts retain proportional sizing and placement.', binding: { kind: 'control', key: 'typeChip' } },
           { id: 'title', label: 'Support title', description: 'Shared support title role reused by empty states, helper panels, and nearby chrome.', binding: { kind: 'typography', key: 'supportTitle' } },
           { id: 'label', label: 'Support label', description: 'Shared label role reused by reader fields and support chrome.', binding: { kind: 'typography', key: 'supportLabel' } },
           { id: 'meta', label: 'Support meta', description: 'Shared meta role reused by reader fields and support chrome.', binding: { kind: 'typography', key: 'supportMeta' } },
@@ -903,9 +941,58 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
   },
 ];
 
-export const DEFAULT_READER_THEME_RECIPES: ReaderThemeRecipes = JSON.parse(
-  JSON.stringify(CURRENT_READER_THEME_SYSTEM.recipes)
-) as ReaderThemeRecipes;
+const TYPOGRAPHY_FOUNDATION_FAMILY_BY_ROLE: Record<keyof ReaderThemeRecipes['typography'], ThemeRecipeTokenRef> = {
+  title: 'foundation/typography/display-family',
+  storyTitle: 'foundation/typography/display-family',
+  storyOverlayTitle: 'foundation/typography/display-family',
+  storyExcerpt: 'foundation/typography/reading-family',
+  galleryTitle: 'foundation/typography/display-family',
+  galleryOverlayTitle: 'foundation/typography/display-family',
+  galleryHeaderTitle: 'foundation/typography/display-family',
+  titleCompact: 'foundation/typography/display-family',
+  detailTitle: 'foundation/typography/display-family',
+  storyDetailTitle: 'foundation/typography/display-family',
+  galleryDetailTitle: 'foundation/typography/display-family',
+  discoveryTitle: 'foundation/typography/display-family',
+  discoveryMeta: 'foundation/typography/reading-family',
+  railSectionTitle: 'foundation/typography/display-family',
+  railCardTitle: 'foundation/typography/display-family',
+  subtitle: 'foundation/typography/reading-family',
+  body: 'foundation/typography/reading-family',
+  excerpt: 'foundation/typography/reading-family',
+  meta: 'foundation/typography/reading-family',
+  caption: 'foundation/typography/reading-family',
+  chromeText: 'foundation/typography/ui-family',
+  chromeMeta: 'foundation/typography/ui-family',
+  supportTitle: 'foundation/typography/ui-family',
+  supportLabel: 'foundation/typography/ui-family',
+  supportMeta: 'foundation/typography/ui-family',
+  supportHint: 'foundation/typography/ui-family',
+  supportControlText: 'foundation/typography/ui-family',
+  feedbackTitle: 'foundation/typography/ui-family',
+  feedbackMeta: 'foundation/typography/ui-family',
+  feedbackHint: 'foundation/typography/ui-family',
+  quote: 'foundation/typography/reading-family',
+  question: 'foundation/typography/display-family',
+  questionOverlay: 'foundation/typography/display-family',
+  calloutTitle: 'foundation/typography/display-family',
+  calloutBody: 'foundation/typography/reading-family',
+  tagLabel: 'foundation/typography/ui-family',
+};
+
+const buildDefaultReaderThemeRecipes = (): ReaderThemeRecipes => {
+  const recipes = JSON.parse(JSON.stringify(CURRENT_READER_THEME_SYSTEM.recipes)) as ReaderThemeRecipes;
+  Object.entries(TYPOGRAPHY_FOUNDATION_FAMILY_BY_ROLE).forEach(([role, family]) => {
+    recipes.typography[role as keyof ReaderThemeRecipes['typography']].family = family;
+  });
+  return recipes;
+};
+
+export const DEFAULT_READER_THEME_RECIPES: ReaderThemeRecipes = buildDefaultReaderThemeRecipes();
+
+export const getTypographyFoundationFamilyForRole = (
+  role: keyof ReaderThemeRecipes['typography']
+): ThemeRecipeTokenRef => TYPOGRAPHY_FOUNDATION_FAMILY_BY_ROLE[role];
 
 const cloneReaderThemeRecipes = (recipes: ReaderThemeRecipes): ReaderThemeRecipes => (
   JSON.parse(JSON.stringify(recipes)) as ReaderThemeRecipes
@@ -928,6 +1015,7 @@ export function normalizeReaderThemeRecipes(
   const normalized = cloneReaderThemeRecipes(DEFAULT_READER_THEME_RECIPES);
   const incomingRecipes = recipes as Partial<ReaderThemeRecipes>;
 
+  Object.assign(normalized.foundationTypography, incomingRecipes.foundationTypography);
   Object.assign(normalized.typography, incomingRecipes.typography);
   Object.assign(normalized.surfaces, incomingRecipes.surfaces);
   Object.assign(normalized.controls, incomingRecipes.controls);

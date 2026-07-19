@@ -111,6 +111,8 @@ jest.mock('@/lib/services/images/imageImportService', () => ({
   bulkApplyMediaTags: jest.fn().mockResolvedValue({ updatedIds: [], updatedMedia: [] }),
   patchMediaDocument: jest.fn(),
   replaceMediaAssetContent: jest.fn(),
+  auditLegacyMediaReadiness: jest.fn().mockResolvedValue({ total: 0, assessed: 0, unassessed: 0, ready: 0, pending: 0, failed: 0 }),
+  retryMediaReadiness: jest.fn(),
 }));
 
 jest.mock('@/lib/services/provisionalClusterService', () => ({
@@ -124,6 +126,7 @@ jest.mock('@/lib/services/provisionalClusterService', () => ({
   acceptReviewClusterPile: jest.fn(),
   dismissReviewCluster: jest.fn(),
   splitReviewCluster: jest.fn(),
+  mergeReviewClusters: jest.fn(),
 }));
 
 jest.mock('@/lib/services/backupStatusService', () => ({

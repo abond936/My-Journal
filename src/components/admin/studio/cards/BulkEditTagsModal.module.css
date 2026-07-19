@@ -211,9 +211,9 @@
 }
 
 .saveButton {
-  background-color: var(--admin-feedback-action-background-color);
-  color: var(--admin-feedback-action-text-color);
-  border-color: var(--admin-feedback-action-border-color);
+  background-color: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
+  border-color: var(--primary-action-border-color);
 }
 
 .saveButton:disabled {

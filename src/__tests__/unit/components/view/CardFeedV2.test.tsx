@@ -27,7 +27,6 @@ function mockContext(overrides: Partial<ReturnType<typeof useCardContext>> = {})
     activeDimension: 'collections',
     collectionId: 'collection-b',
     collectionTreeCards: [],
-    feedGroupBy: 'none',
     isGuidedCollectionTransition: false,
     guidedTransitionTitle: null,
     ...overrides,
@@ -48,7 +47,6 @@ describe('CardFeedV2 guided transitions', () => {
     render(
       <CardFeedV2
         cards={[{ docId: 'old-card', title: 'Old Collection Card' } as never]}
-        sections={null}
         loading={false}
         loadMoreRef={() => {}}
         onSaveScrollPosition={() => {}}
@@ -66,7 +64,6 @@ describe('CardFeedV2 guided transitions', () => {
     const { container } = render(
       <CardFeedV2
         cards={[{ docId: 'card-1', title: 'Story One' } as never]}
-        sections={null}
         loading={false}
         loadMoreRef={() => {}}
         onSaveScrollPosition={() => {}}

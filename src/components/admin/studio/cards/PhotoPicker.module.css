@@ -326,7 +326,7 @@
 .retryButton {
   padding: 0.5rem 1rem;
   background-color: var(--color-danger);
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;

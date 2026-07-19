@@ -330,6 +330,7 @@ export type ThemeRecipeTokenRef =
   | `semantic/reader/${'tonal-text-primary' | 'tonal-text-secondary' | 'contrast-on-fill-text' | 'overlay-contrast-text' | 'accent' | 'focus-ring' | 'canvas-surface' | 'canvas-border' | 'chrome-surface' | 'chrome-border' | 'field-surface' | 'field-border' | 'feedback-surface' | 'feedback-border' | 'media-frame-surface' | 'media-frame-border' | 'discovery-surface' | 'discovery-border' | 'media-control-surface' | 'media-control-border' | 'lightbox-control-surface' | 'lightbox-control-border' | 'overlay-scrim' | 'overlay-scrim-strong' | 'overlay-border' | 'covered-fade' | 'covered-fade-strong'}`
   | `state/${'success' | 'error' | 'warning' | 'info'}/${'background' | 'border'}`
   | `gradient/${'bottomOverlay' | 'bottomOverlayStrong'}`
+  | `foundation/typography/${'ui-family' | 'reading-family' | 'display-family'}`
   | `shared/card/${'background' | 'border' | 'radius' | 'shadow' | 'shadowHover' | 'padding'}`
   | `literal/${string}`;
 
@@ -366,6 +367,11 @@ export interface ReaderOverlayRoleRecipe {
 }
 
 export interface ReaderThemeRecipes {
+  foundationTypography: {
+    uiFamily: ThemeRecipeTokenRef;
+    readingFamily: ThemeRecipeTokenRef;
+    displayFamily: ThemeRecipeTokenRef;
+  };
   typography: {
     title: ReaderTypographyRoleRecipe;
     storyTitle: ReaderTypographyRoleRecipe;
@@ -429,6 +435,8 @@ export interface ReaderThemeRecipes {
     windowElevation: ReaderSurfaceRoleRecipe;
   };
   controls: {
+    primaryAction: ReaderControlRoleRecipe;
+    typeChip: ReaderControlRoleRecipe;
     chromeActiveTab: ReaderControlRoleRecipe;
     supportControl: ReaderControlRoleRecipe;
     supportControlStrong: ReaderControlRoleRecipe;
@@ -460,8 +468,10 @@ export interface ReaderThemeRecipes {
     accent: ThemeRecipeTokenRef;
   };
   treatments: {
+    contentGridGap: ThemeRecipeTokenRef;
     quoteWatermarkOpacity: string;
     questionWatermarkOpacity: string;
+    questionWatermarkScale: string;
     calloutWatermarkOpacity: string;
     calloutBodyListLineHeight: ThemeRecipeTokenRef;
   };

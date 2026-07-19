@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
@@ -14,8 +14,9 @@ interface AppShellProps {
 }
 
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
-const MOBILE_SWIPE_EDGE_PX = 28;
 const MOBILE_SWIPE_MIN_DISTANCE_PX = 54;
+const MOBILE_SWIPE_OPEN_INSET_START_PX = 24;
+const MOBILE_SWIPE_OPEN_INSET_END_PX = 80;
 
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
@@ -87,23 +88,22 @@ export default function AppShell({ children }: AppShellProps) {
   const canUseMobileSwipe =
     isMobileViewport && !isMarketingRoute(pathname) && !isAdminRoute;
 
-  const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>, forceTrack = false) => {
+  const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>) => {
     if (!canUseMobileSwipe) return;
     const touch = event.touches[0];
     if (!touch) return;
 
-    const shouldTrack = forceTrack || isSidebarOpen || touch.clientX <= MOBILE_SWIPE_EDGE_PX;
-    swipeStartRef.current = shouldTrack
+    const canStartInsetOpenSwipe =
+      !isSidebarOpen &&
+      touch.clientX >= MOBILE_SWIPE_OPEN_INSET_START_PX &&
+      touch.clientX <= MOBILE_SWIPE_OPEN_INSET_END_PX;
+    swipeStartRef.current = isSidebarOpen || canStartInsetOpenSwipe
       ? { x: touch.clientX, y: touch.clientY, tracking: true }
       : null;
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     beginSwipeTracking(event);
-  };
-
-  const handleEdgeSwipeStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    beginSwipeTracking(event, true);
   };
 
   const handleTouchMove = (event: React.TouchEvent<HTMLElement>) => {
@@ -138,12 +138,10 @@ export default function AppShell({ children }: AppShellProps) {
       return;
     }
 
-    if (!isSidebarOpen && deltaX > 0) {
-      setSidebarOpen(true);
-      return;
-    }
     if (isSidebarOpen && deltaX < 0) {
       setSidebarOpen(false);
+    } else if (!isSidebarOpen && deltaX > 0) {
+      setSidebarOpen(true);
     }
   };
 
@@ -180,17 +178,6 @@ export default function AppShell({ children }: AppShellProps) {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchCancel}
       >
-        {canUseMobileSwipe && !isSidebarOpen ? (
-          <div
-            className={styles.mobileSwipeEdgeZone}
-            data-testid="mobile-swipe-edge-zone"
-            onTouchStart={handleEdgeSwipeStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchCancel}
-            aria-hidden="true"
-          />
-        ) : null}
         {!isMarketingSurface && !isSpecialistAdminRoute && (
           <>
             <div
@@ -201,7 +188,12 @@ export default function AppShell({ children }: AppShellProps) {
             <div
               className={`${styles.sidebarWrapper} ${isSidebarOpen ? styles.sidebarWrapperOpen : styles.sidebarWrapperClosed}`}
             >
-              <GlobalSidebar isOpen={isSidebarOpen} />
+              <Suspense fallback={null}>
+                <GlobalSidebar
+                  isOpen={isSidebarOpen}
+                  onRequestClose={isMobileViewport ? () => setSidebarOpen(false) : undefined}
+                />
+              </Suspense>
             </div>
           </>
         )}

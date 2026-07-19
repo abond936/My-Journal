@@ -8,7 +8,6 @@ import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import {
   getAspectRatioBucket,
-  getAspectRatioValue,
   getObjectPositionFromFocalPoint,
 } from '@/lib/utils/objectPositionUtils';
 import styles from './CardDetail.module.css';
@@ -22,6 +21,9 @@ import { buildReaderCardPresentation } from '@/lib/utils/readerCardContext';
 import ReaderCardEditEntry from '@/components/view/ReaderCardEditEntry';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { useTag } from '@/components/providers/TagProvider';
+import { resolveReaderRouteMode } from '@/lib/utils/readerMode';
+import { Pencil } from 'lucide-react';
+import { getQuestionPromptLength } from '@/lib/utils/questionPromptPresentation';
 
 interface CardDetailPageProps {
   card: Card;
@@ -43,12 +45,12 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const [displayCard, setDisplayCard] = useState(initialCard);
   const isAdmin = session?.user?.role === 'admin';
   const explicitMode = searchParams.get('mode');
-  const effectiveReaderMode =
-    explicitMode === 'guided' || explicitMode === 'freeform' ? explicitMode : readerMode;
+  const effectiveReaderMode = resolveReaderRouteMode('/view/detail', explicitMode, readerMode);
   const shouldSuppressDiscovery = suppressDiscovery || effectiveReaderMode === 'guided';
   const detailReturnTo = displayCard.docId ? `/view/${displayCard.docId}` : null;
   const isQa = displayCard.type === 'qa';
   const isQuote = displayCard.type === 'quote';
+  const isCallout = displayCard.type === 'callout';
   const detailHeadingVariant =
     displayCard.type === 'story'
       ? 'storyDetail'
@@ -57,7 +59,6 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         : 'detail';
   const quoteAttribution = isQuote ? formatQuoteAttribution(displayCard.subtitle, displayCard.excerpt) : '';
   const coverBucket = getAspectRatioBucket(displayCard.coverImage);
-  const coverRatio = getAspectRatioValue(coverBucket);
   const coverObjectFit = displayCard.coverImageMode === 'fit' ? 'contain' : 'cover';
   const coverFrameClass =
     coverBucket === 'landscape'
@@ -68,6 +69,19 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   const hydratedGalleryItems = (displayCard.galleryMedia ?? []).filter(
     (item): item is HydratedGalleryMediaItem => Boolean(item.media)
   );
+  const coverMediaId = displayCard.coverImageId ?? displayCard.coverImage?.docId ?? null;
+  const coverGalleryItem = coverMediaId
+    ? hydratedGalleryItems.find((item) => item.mediaId === coverMediaId) ?? null
+    : null;
+  const galleryHasExternalCover =
+    displayCard.type === 'gallery' && Boolean(displayCard.coverImage && coverMediaId && !coverGalleryItem);
+  const galleryHeroItem = displayCard.type === 'gallery' && !galleryHasExternalCover
+    ? coverGalleryItem ?? hydratedGalleryItems[0] ?? null
+    : null;
+  const heroMediaId = displayCard.type === 'gallery'
+    ? galleryHeroItem?.mediaId ?? coverMediaId
+    : coverMediaId;
+  const remainingGalleryItems = hydratedGalleryItems.filter((item) => item.mediaId !== heroMediaId);
   const readerCardPresentation = useMemo(
     () => buildReaderCardPresentation(displayCard, allTags),
     [displayCard, allTags]
@@ -111,6 +125,21 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       variant="detail"
     />
   ) : null;
+  const detailTags = readerCardPresentation.chips.length > 0 ? (
+    <ReaderCardContextMeta chips={readerCardPresentation.chips} variant="detail" />
+  ) : null;
+  const storyGalleryIdentity = (
+    <>
+      {readerCardPresentation.badgeLabel ? (
+        <p className={styles.detailKicker}>{readerCardPresentation.badgeLabel}</p>
+      ) : null}
+      <h1 className={`${styles.title} ${displayCard.subtitle ? styles.titleWithSubtitle : ''}`}>
+        {displayCard.title}
+      </h1>
+      {displayCard.subtitle ? <p className={styles.subtitle}>{displayCard.subtitle}</p> : null}
+      {detailTags ? <div className={styles.detailTags}>{detailTags}</div> : null}
+    </>
+  );
   const headerIntro = (
     <>
       {detailMeta}
@@ -124,7 +153,10 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
   );
 
   const questionHeaderIntro = (
-    <div className={styles.questionHeaderPanel}>
+    <div
+      className={styles.questionHeaderPanel}
+      data-question-prompt-length={getQuestionPromptLength(displayCard.title)}
+    >
       <div className={styles.questionHeaderText}>
         <h1
           className={`${styles.title} ${displayCard.subtitle && !isQuote ? styles.titleWithSubtitle : ''}`}
@@ -150,14 +182,27 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
             metadata={quickEditMetadata}
             onCardSaved={handleCardSaved}
           >
-            Edit card
+            <Pencil size={14} aria-hidden="true" />
+            <span className={styles.srOnly}>Edit</span>
           </ReaderCardEditEntry>
         </div>
       ) : null}
-      <header
-        className={`${styles.header} ${!displayCard.subtitle || isQuote ? styles.noSubtitle : ''}`}
-      >
-        {displayCard.coverImage && displayCard.type !== 'gallery' && (
+      <div className={isCallout ? styles.calloutDetailPanel : undefined}>
+      {isCallout ? (
+        <JournalImage
+          src="/images/pushpin.svg"
+          alt=""
+          width={458}
+          height={443}
+          className={styles.calloutDetailWatermark}
+          aria-hidden="true"
+        />
+      ) : null}
+      {displayCard.type !== 'gallery' ? (
+        <header
+          className={`${styles.header} ${!displayCard.subtitle || isQuote ? styles.noSubtitle : ''}`}
+        >
+        {displayCard.coverImage && (
           <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
             <JournalImage
               src={getReaderDisplayUrl(displayCard.coverImage)}
@@ -187,10 +232,60 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
             {questionHeaderIntro}
             {detailMeta ? <div className={styles.questionDetailMeta}>{detailMeta}</div> : null}
           </>
+        ) : displayCard.type === 'story' ? (
+          storyGalleryIdentity
         ) : (
           headerIntro
         )}
-      </header>
+        </header>
+      ) : null}
+
+      {displayCard.type === 'gallery' && galleryHeroItem ? (
+        <InlineGallery
+          media={[galleryHeroItem]}
+          sequenceMedia={hydratedGalleryItems}
+          title={null}
+          ariaLabel={displayCard.title}
+          variant="galleryDetail"
+          editableCaptions={isAdmin}
+          cardId={displayCard.docId}
+          onGallerySaved={handleCardSaved}
+        />
+      ) : displayCard.type === 'gallery' && displayCard.coverImage ? (
+        <div className={`${styles.coverImageContainer} ${coverFrameClass}`}>
+          <JournalImage
+            src={getReaderDisplayUrl(displayCard.coverImage)}
+            alt={displayCard.title}
+            className={styles.coverImage}
+            width={800}
+            height={600}
+            sizes="(max-width: 768px) 100vw, 800px"
+            style={{
+              objectFit: coverObjectFit,
+              objectPosition:
+                coverObjectFit === 'cover' &&
+                displayCard.coverImageFocalPoint &&
+                displayCard.coverImage.width &&
+                displayCard.coverImage.height
+                  ? getObjectPositionFromFocalPoint(
+                      {
+                        x: displayCard.coverImageFocalPoint.x ?? 0,
+                        y: displayCard.coverImageFocalPoint.y ?? 0,
+                      },
+                      { width: displayCard.coverImage.width, height: displayCard.coverImage.height }
+                    )
+                  : 'center',
+            }}
+            priority
+          />
+        </div>
+      ) : null}
+
+      {displayCard.type === 'gallery' ? (
+        <header className={`${styles.header} ${styles.galleryIdentityHeader}`}>
+          {storyGalleryIdentity}
+        </header>
+      ) : null}
 
       {displayCard.content && (
         <section className={styles.content} aria-label={isQa ? 'Answer' : undefined}>
@@ -199,7 +294,11 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
               <TipTapRenderer content={displayCard.content} headingVariant={detailHeadingVariant} />
             </blockquote>
           ) : (
-            <TipTapRenderer content={displayCard.content} headingVariant={detailHeadingVariant} />
+            <TipTapRenderer
+              content={displayCard.content}
+              headingVariant={detailHeadingVariant}
+              surface={isCallout ? 'transparent' : 'default'}
+            />
           )}
         </section>
       )}
@@ -209,19 +308,15 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
           <cite className={styles.quoteDetailCite}>{quoteAttribution}</cite>
         </footer>
       ) : null}
-
-      {displayCard.type === 'story' && childrenCards.length > 0 ? (
-        <ChildCardsRail
-          cards={childrenCards}
-          adminEditReturnTo={detailReturnTo ?? '/view'}
-        />
-      ) : null}
+      </div>
 
       {/* Inline Gallery */}
-      {hydratedGalleryItems.length > 0 && (
+      {remainingGalleryItems.length > 0 && (
         <InlineGallery 
-          media={hydratedGalleryItems}
+          media={remainingGalleryItems}
+          sequenceMedia={hydratedGalleryItems}
           title={displayCard.type === 'gallery' ? null : 'Gallery'}
+          ariaLabel={displayCard.type === 'gallery' ? `${displayCard.title} — remaining images` : 'Gallery'}
           variant={displayCard.type === 'gallery' ? 'galleryDetail' : 'default'}
           editableCaptions={isAdmin}
           cardId={displayCard.docId}
@@ -229,12 +324,21 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         />
       )}
 
+      {displayCard.type === 'story' && childrenCards.length > 0 ? (
+        <ChildCardsRail
+          cards={childrenCards}
+          readerMode={effectiveReaderMode}
+          adminEditReturnTo={detailReturnTo ?? '/view'}
+        />
+      ) : null}
+
       {/* Discovery Section */}
       {!shouldSuppressDiscovery ? (
         <DiscoverySection
           currentCard={displayCard}
           childrenCards={childrenCards}
           suppressChildCardsGroup={displayCard.type === 'story' && childrenCards.length > 0}
+          readerMode={effectiveReaderMode}
         />
       ) : null}
     </article>

@@ -21,8 +21,10 @@ jest.mock('@/components/common/Navigation', () => ({
 
 jest.mock('@/components/common/GlobalSidebar', () => ({
   __esModule: true,
-  default: ({ isOpen }: { isOpen: boolean }) => (
-    <aside data-testid="global-sidebar" data-open={String(isOpen)} />
+  default: ({ isOpen, onRequestClose }: { isOpen: boolean; onRequestClose?: () => void }) => (
+    <aside data-testid="global-sidebar" data-open={String(isOpen)}>
+      <button type="button" onClick={onRequestClose}>Guided destination</button>
+    </aside>
   ),
 }));
 
@@ -63,7 +65,7 @@ describe('AppShell mobile sidebar drawer', () => {
     mockedUsePathname.mockReturnValue('/view');
   });
 
-  it('opens the mobile sidebar with a right swipe from the left edge', async () => {
+  it('leaves the mobile left edge available to browser navigation', async () => {
     mockMatchMedia(true);
 
     render(
@@ -76,20 +78,61 @@ describe('AppShell mobile sidebar drawer', () => {
       expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
     });
 
-    const edgeZone = screen.getByTestId('mobile-swipe-edge-zone');
-
-    fireEvent.touchStart(edgeZone, {
+    expect(screen.queryByTestId('mobile-swipe-edge-zone')).toBeNull();
+    fireEvent.touchStart(screen.getByText('Reader content'), {
       touches: [{ clientX: 8, clientY: 120 }],
     });
-    fireEvent.touchMove(edgeZone, {
+    fireEvent.touchMove(screen.getByText('Reader content'), {
       touches: [{ clientX: 58, clientY: 124 }],
     });
-    fireEvent.touchEnd(edgeZone, {
+    fireEvent.touchEnd(screen.getByText('Reader content'), {
       changedTouches: [{ clientX: 82, clientY: 126 }],
     });
 
     await waitFor(() => {
+      expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
+    });
+  });
+
+  it('opens from the protected inset swipe zone without using the browser edge', async () => {
+    mockMatchMedia(true);
+
+    render(
+      <AppShell>
+        <div>Reader content</div>
+      </AppShell>
+    );
+
+    fireEvent.touchStart(screen.getByText('Reader content'), {
+      touches: [{ clientX: 42, clientY: 120 }],
+    });
+    fireEvent.touchEnd(screen.getByText('Reader content'), {
+      changedTouches: [{ clientX: 112, clientY: 124 }],
+    });
+
+    await waitFor(() => {
       expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'true');
+    });
+  });
+
+  it('does not open for vertically dominant movement in the inset zone', async () => {
+    mockMatchMedia(true);
+
+    render(
+      <AppShell>
+        <div>Reader content</div>
+      </AppShell>
+    );
+
+    fireEvent.touchStart(screen.getByText('Reader content'), {
+      touches: [{ clientX: 42, clientY: 100 }],
+    });
+    fireEvent.touchEnd(screen.getByText('Reader content'), {
+      changedTouches: [{ clientX: 102, clientY: 190 }],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
     });
   });
 
@@ -102,12 +145,7 @@ describe('AppShell mobile sidebar drawer', () => {
       </AppShell>
     );
 
-    fireEvent.touchStart(screen.getByText('Reader content'), {
-      touches: [{ clientX: 8, clientY: 120 }],
-    });
-    fireEvent.touchEnd(screen.getByText('Reader content'), {
-      changedTouches: [{ clientX: 82, clientY: 126 }],
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle sidebar' }));
     await waitFor(() => {
       expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'true');
     });
@@ -153,6 +191,23 @@ describe('AppShell mobile sidebar drawer', () => {
 
     expect(screen.getByTestId('navigation')).toBeInTheDocument();
     expect(screen.getByTestId('global-sidebar')).toBeInTheDocument();
+  });
+
+  it('lets a mobile Guided destination request that the drawer close', async () => {
+    mockMatchMedia(true);
+
+    render(
+      <AppShell>
+        <div>Reader content</div>
+      </AppShell>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle sidebar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Guided destination' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
+    });
   });
 
   it('keeps the Studio sidebar available but removes Reader chrome from specialist admin pages', async () => {

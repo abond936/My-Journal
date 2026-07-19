@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import V2ContentCard from '@/components/view/V2ContentCard';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
@@ -93,7 +93,7 @@ describe('V2ContentCard square feed tile', () => {
     expect(title.compareDocumentPosition(chipStrip!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('renders centered utility hero with bottom chips for quote and question tiles', () => {
+  it('renders utility headings and preserves the square Question chip strip', () => {
     const { container } = render(
       <>
         <V2ContentCard
@@ -121,8 +121,8 @@ describe('V2ContentCard square feed tile', () => {
 
     expect(screen.getByRole('heading', { name: 'A wise line' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'What happened next?' })).toBeInTheDocument();
-    expect(screen.getAllByText('Alan')).toHaveLength(2);
-    expect(container.querySelector('[data-card-id="quote-1"] .utilityTileHeroFullCenter')).toBeTruthy();
+    expect(screen.getAllByText('Alan')).toHaveLength(1);
+    expect(container.querySelector('[data-card-id="qa-1"] [class*="feedTileChipStrip"]')).toBeTruthy();
     expect(container.querySelector('[data-card-id="qa-1"] .utilityTileHeroFullCenter')).toBeTruthy();
   });
 
@@ -172,5 +172,152 @@ describe('V2ContentCard square feed tile', () => {
     const root = container.querySelector('[data-card-id="gallery-1"]');
     expect(root?.className ?? '').not.toContain('squareFeedTile');
     expect(screen.queryByText('Alan')).not.toBeInTheDocument();
+  });
+
+  it('uses the same long-prompt fitting marker in grid and rail Question tiles', () => {
+    const card = baseStory({
+      docId: 'qa-long',
+      type: 'qa',
+      displayMode: 'navigate',
+      title: 'What was your relationship with your parents like when you were a child, teenager, or adult?',
+      coverImage: undefined,
+    });
+
+    const { container, rerender } = render(<V2ContentCard card={card} />);
+    expect(container.querySelector('[data-question-prompt-length="dense"]')).toBeTruthy();
+
+    rerender(<V2ContentCard card={card} size="small" fullWidth destinationTile />);
+    expect(container.querySelector('[data-question-prompt-length="dense"]')).toBeTruthy();
+  });
+
+  it('renders a square Callout with its complete bounded body and standard chip strip', () => {
+    const { container } = render(
+      <V2ContentCard
+        card={baseStory({
+          docId: 'callout-1',
+          type: 'callout',
+          displayMode: 'static',
+          title: 'Culture',
+          coverImage: undefined,
+          content: '<ul><li>Music</li><li>Movies</li><li>Art</li><li>Books</li><li>Traditions</li></ul>',
+        })}
+      />
+    );
+
+    const tile = container.querySelector('[data-card-id="callout-1"]');
+    expect(tile?.className).toContain('squareFeedTile');
+    expect(tile).toHaveAttribute('data-feed-tile-variant', 'grid');
+    expect(screen.getByText('Music')).toBeInTheDocument();
+    expect(screen.getByText('Traditions')).toBeInTheDocument();
+    expect(screen.getByText('Alan')).toBeInTheDocument();
+    expect(screen.getByText('Travel')).toBeInTheDocument();
+    expect(container.querySelector('[class*="feedTileChipStrip"]')).toBeTruthy();
+  });
+
+  it('renders Gallery type, position, and a fully disclosed bounded feed caption', () => {
+    const caption = 'A long authored caption that remains available in full while the feed overlay is visually bounded.';
+    const card = baseStory({
+      docId: 'gallery-caption',
+      type: 'gallery',
+      title: 'Captioned album',
+      coverImage: undefined,
+      galleryMedia: [
+        {
+          mediaId: 'gallery-image-1',
+          order: 0,
+          caption,
+          media: {
+            docId: 'gallery-image-1',
+            filename: 'first.jpg',
+            storageUrl: 'https://example.com/first.jpg',
+            width: 1200,
+            height: 900,
+          },
+        },
+        {
+          mediaId: 'gallery-image-2',
+          order: 1,
+          media: {
+            docId: 'gallery-image-2',
+            filename: 'second.jpg',
+            storageUrl: 'https://example.com/second.jpg',
+            width: 1200,
+            height: 900,
+          },
+        },
+      ],
+    });
+
+    render(<V2ContentCard card={card} />);
+
+    expect(screen.getByText('Gallery')).toBeInTheDocument();
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(screen.getByLabelText(`Image caption: ${caption}`)).toHaveAttribute('title', caption);
+    expect(screen.getByText(caption)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['gallery', 'inline'],
+    ['qa', 'inline'],
+    ['quote', 'static'],
+    ['callout', 'static'],
+  ] as const)(
+    'renders %s %s as a compact navigable destination with chips when requested',
+    (type, displayMode) => {
+      const card = baseStory({
+        docId: `${type}-destination`,
+        type,
+        displayMode,
+        title: `${type} destination`,
+        content: '<p>Full inline or static body</p>',
+        coverImage: type === 'quote' || type === 'callout' ? undefined : baseStory().coverImage,
+      });
+
+      const { container } = render(
+        <V2ContentCard card={card} size="small" fullWidth destinationTile />
+      );
+
+      const link = screen.getByRole('link');
+      expect(link).toHaveAttribute('data-feed-tile-variant', 'rail');
+      expect(link).toHaveAttribute('href', expect.stringContaining(`/view/${type}-destination`));
+      expect(link.className).toContain('squareFeedTile');
+      expect(screen.getByText('Alan')).toBeInTheDocument();
+      expect(screen.getByText('Travel')).toBeInTheDocument();
+      expect(screen.queryByText('Full inline or static body')).not.toBeInTheDocument();
+      expect(container.querySelector('[class*="feedTileChipStrip"]')).toBeTruthy();
+    }
+  );
+
+  it('reveals and restores an inline Question answer while keeping chips on the question face', () => {
+    const { container } = render(
+      <V2ContentCard
+        card={baseStory({
+          docId: 'qa-reveal',
+          type: 'qa',
+          displayMode: 'inline',
+          title: 'What is your favorite ice cream?',
+          content: '<p>Vanilla</p>',
+          coverImage: undefined,
+        })}
+      />
+    );
+
+    const reveal = screen.getByRole('button', { name: 'Reveal answer' });
+    const revealCard = container.querySelector('[data-card-id="qa-reveal"]');
+    const questionFace = container.querySelector('[class*="qaQuestionFace"]');
+    const answerFace = container.querySelector('[class*="qaAnswerFace"]');
+    expect(revealCard?.className).toContain('squareFeedTile');
+    expect(revealCard).toHaveAttribute('data-feed-tile-variant', 'grid');
+    expect(questionFace).toContainElement(screen.getByText('Alan'));
+    expect(answerFace).not.toContainElement(screen.getByText('Alan'));
+    expect(answerFace).toHaveAttribute('aria-hidden', 'true');
+
+    fireEvent.click(reveal);
+    expect(screen.getByRole('button', { name: 'Show question' })).toHaveAttribute('aria-pressed', 'true');
+    expect(answerFace).toHaveAttribute('aria-hidden', 'false');
+    expect(screen.getByText('Vanilla')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show question' }));
+    expect(screen.getByRole('button', { name: 'Reveal answer' })).toHaveAttribute('aria-pressed', 'false');
   });
 });

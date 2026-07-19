@@ -33,26 +33,28 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user && 'role' in user) {
         token.role = (user as { role?: string }).role;
+        token.accessRevoked = false;
       }
-      // Legacy JWTs may omit `role`; backfill so admin layout and client session agree.
-      if (!token.role && token.sub) {
-        if (token.sub === 'admin') {
-          token.role = 'admin';
-        } else {
-          try {
-            const row = await getJournalUserByDocId(token.sub);
-            if (row?.role) token.role = row.role;
-          } catch {
-            /* ignore */
-          }
+      // JWT possession alone is not authorization. Refresh account truth on every
+      // server-backed session read so disabling an account revokes existing tokens.
+      if (token.sub) {
+        try {
+          const row = await getJournalUserByDocId(token.sub);
+          token.accessRevoked = !row || row.disabled;
+          token.role = row && !row.disabled ? row.role : undefined;
+        } catch {
+          // Fail closed while Firestore account truth cannot be established.
+          token.accessRevoked = true;
+          token.role = undefined;
         }
       }
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
-        const u = session.user as { role?: string; id?: string };
+        const u = session.user as { role?: string; id?: string; accessRevoked?: boolean };
         u.role = token.role as string | undefined;
+        u.accessRevoked = token.accessRevoked === true;
         if (token.sub) {
           u.id = token.sub;
         }

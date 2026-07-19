@@ -75,7 +75,7 @@
 }
 
 .bucketNote {
-  color: #b45309;
+  color: var(--admin-state-warning-text-color);
 }
 
 .suggestions {
@@ -129,7 +129,7 @@
   border: 1px solid var(--border1-color);
   border-radius: var(--radius-sm);
   background: var(--accent1-color);
-  color: var(--text-on-accent-color, #fff);
+  color: var(--admin-support-control-strong-text-color);
   font-size: var(--font-size-xs);
   padding: 0.35rem 0.65rem;
   cursor: pointer;
@@ -151,7 +151,7 @@
 
 .confirmWarn {
   margin: 0;
-  color: #b45309;
+  color: var(--admin-state-warning-text-color);
   font-size: var(--font-size-xs);
 }
 
@@ -160,4 +160,4 @@
   flex-wrap: wrap;
   gap: var(--spacing-xs);
 }
-
+

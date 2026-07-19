@@ -272,8 +272,12 @@ export async function GET(request: Request) {
     const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
     const includeDescendants = searchParams.get('includeDescendants') === 'true';
     const hydrationParam = searchParams.get('hydration');
-    const hydrationMode: 'full' | 'cover-only' =
-      hydrationParam === 'cover-only' ? 'cover-only' : 'full';
+    const hydrationMode: 'full' | 'cover-only' | 'reader-feed' =
+      hydrationParam === 'cover-only'
+        ? 'cover-only'
+        : hydrationParam === 'reader-feed'
+          ? 'reader-feed'
+          : 'full';
     const sortByRaw = searchParams.get('sortBy');
     const sortBy: 'when' | 'created' | 'title' | 'who' | 'what' | 'where' | 'random' | undefined =
       sortByRaw === 'created'
@@ -395,9 +399,10 @@ export async function GET(request: Request) {
         hasDimensionPresentFilters;
 
       // Only dispatch to Typesense for queries that actually need it: text search,
-      // multi-dimensional tag filters, or missing-dimension filters. Plain catalog
-      // listings (no `q`, no dim filter) skip Typesense and go directly to the
-      // Firestore path below — avoids a wasted (and `per_page>250`-rejected) roundtrip.
+      // multi-dimensional tag filters, missing-dimension filters, or dimension
+      // ordering. Who/What/Where ordering is projection-backed because equivalent
+      // Firestore list queries require composite indexes for each filter combination.
+      // Other plain catalog listings skip Typesense and use Firestore directly.
       // Mirrors the gate in `/api/media`. See docs/01-Vision-Architecture.md →
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
@@ -408,7 +413,10 @@ export async function GET(request: Request) {
             hasExactDimensionalFilters ||
             hasDimensionMissingFilters ||
             Boolean(tags?.length))) &&
-        (Boolean(q?.trim()) ||
+        (listSortBy === 'who' ||
+          listSortBy === 'what' ||
+          listSortBy === 'where' ||
+          Boolean(q?.trim()) ||
           Object.keys(dimensionalTags).length > 0 ||
           hasExactDimensionalFilters ||
           hasDimensionMissingFilters);

@@ -14,77 +14,55 @@ import baseTheme from '../../../theme-data.json';
 export type ThemePresetId = ReaderThemePresetId;
 export type ThemeAdminPresetId = AdminThemePresetId;
 
-type ReaderPresetRole =
-  | 'page'
-  | 'chrome'
-  | 'card'
-  | 'detail'
-  | 'typeTreatments'
-  | 'media'
-  | 'discovery'
-  | 'tags';
-
-type ReaderPresetAliasGroups = Record<ReaderPresetRole, Record<string, string>>;
-
 function cloneReaderRecipes(recipes: ReaderThemeRecipes): ReaderThemeRecipes {
   return JSON.parse(JSON.stringify(recipes)) as ReaderThemeRecipes;
 }
 
 const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   const recipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+  recipes.foundationTypography.displayFamily = 'font-family/serif1';
 
-  recipes.typography.title.family = 'font-family/serif1';
   recipes.typography.title.weight = 'font-weight/medium';
   recipes.typography.title.lineHeight = 'line-height/base';
 
-  recipes.typography.storyTitle.family = 'font-family/serif1';
   recipes.typography.storyTitle.size = 'font-size/lg';
   recipes.typography.storyTitle.weight = 'font-weight/medium';
   recipes.typography.storyTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyOverlayTitle.family = 'font-family/serif1';
   recipes.typography.storyOverlayTitle.size = 'font-size/lg';
   recipes.typography.storyOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.storyOverlayTitle.lineHeight = 'line-height/base';
 
   recipes.typography.storyExcerpt.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryTitle.family = 'font-family/serif1';
   recipes.typography.galleryTitle.weight = 'font-weight/medium';
   recipes.typography.galleryTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryOverlayTitle.family = 'font-family/serif1';
   recipes.typography.galleryOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.galleryOverlayTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryHeaderTitle.family = 'font-family/serif1';
   recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
   recipes.typography.galleryHeaderTitle.lineHeight = 'line-height/base';
 
   recipes.typography.titleCompact.weight = 'font-weight/medium';
   recipes.typography.titleCompact.lineHeight = 'line-height/base';
 
-  recipes.typography.detailTitle.family = 'font-family/serif1';
   recipes.typography.detailTitle.weight = 'font-weight/semibold';
   recipes.typography.detailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyDetailTitle.family = 'font-family/serif1';
   recipes.typography.storyDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.storyDetailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryDetailTitle.family = 'font-family/serif1';
   recipes.typography.galleryDetailTitle.size = 'font-size/2xl';
   recipes.typography.galleryDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.galleryDetailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.discoveryTitle.family = 'font-family/serif1';
   recipes.typography.discoveryTitle.weight = 'font-weight/medium';
   recipes.typography.discoveryTitle.lineHeight = 'line-height/base';
 
   recipes.typography.discoveryMeta.weight = 'font-weight/normal';
   recipes.typography.discoveryMeta.lineHeight = 'line-height/base';
 
-  recipes.typography.railSectionTitle.family = 'font-family/serif1';
   recipes.typography.railSectionTitle.weight = 'font-weight/medium';
   recipes.typography.railSectionTitle.lineHeight = 'line-height/base';
 
@@ -116,17 +94,14 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.quote.weight = 'font-weight/normal';
   recipes.typography.quote.lineHeight = 'line-height/relaxed';
 
-  recipes.typography.question.family = 'font-family/serif1';
   recipes.typography.question.size = 'font-size/xl';
   recipes.typography.question.weight = 'font-weight/medium';
   recipes.typography.question.lineHeight = 'line-height/base';
 
-  recipes.typography.questionOverlay.family = 'font-family/serif1';
   recipes.typography.questionOverlay.size = 'font-size/xl';
   recipes.typography.questionOverlay.weight = 'font-weight/medium';
   recipes.typography.questionOverlay.lineHeight = 'line-height/base';
 
-  recipes.typography.calloutTitle.family = 'font-family/serif1';
   recipes.typography.calloutTitle.weight = 'font-weight/medium';
   recipes.typography.calloutTitle.lineHeight = 'line-height/base';
 
@@ -140,8 +115,19 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.controls.supportControlStrong.hoverBackground = 'layout/background2Color';
   recipes.controls.feedbackAction.hoverBackground = 'layout/background1Color';
   recipes.controls.supportChip.hoverBackground = 'layout/background2Color';
+  recipes.controls.typeChip.background = 'palette/3';
+  recipes.controls.typeChip.text = 'component/button/solid/textColor';
+  recipes.controls.typeChip.border = 'palette/3';
+  recipes.controls.typeChip.hoverBackground = 'palette/4';
+  recipes.tags.who.text = 'component/button/solid/textColor';
+  recipes.tags.what.text = 'component/button/solid/textColor';
+  recipes.tags.when.text = 'component/button/solid/textColor';
+  recipes.tags.where.text = 'component/button/solid/textColor';
   recipes.controls.lightboxControl.background = 'layout/background2Color';
-  recipes.surfaces.chromeSidebar.background = 'layout/background2Color';
+  // Keep Journal chrome on the warm base paper. In Light this avoids a stark
+  // white sidebar; in Dark the deeper shell lets the lighter content cards
+  // retain hierarchy without changing the successful reading surface.
+  recipes.surfaces.chromeSidebar.background = 'layout/background1Color';
   recipes.surfaces.windowSurface.background = 'layout/background2Color';
 
   recipes.treatments.quoteWatermarkOpacity = '0.16';
@@ -153,44 +139,36 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
 
 const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   const recipes = cloneReaderRecipes(DEFAULT_READER_THEME_RECIPES);
+  recipes.foundationTypography.displayFamily = 'font-family/serif1';
 
-  recipes.typography.title.family = 'font-family/serif1';
   recipes.typography.title.weight = 'font-weight/medium';
   recipes.typography.title.lineHeight = 'line-height/base';
 
-  recipes.typography.storyTitle.family = 'font-family/serif1';
   recipes.typography.storyTitle.size = 'font-size/lg';
   recipes.typography.storyTitle.weight = 'font-weight/medium';
   recipes.typography.storyTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyOverlayTitle.family = 'font-family/serif1';
   recipes.typography.storyOverlayTitle.size = 'font-size/lg';
   recipes.typography.storyOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.storyOverlayTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryTitle.family = 'font-family/serif1';
   recipes.typography.galleryTitle.size = 'font-size/lg';
   recipes.typography.galleryTitle.weight = 'font-weight/medium';
   recipes.typography.galleryTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryOverlayTitle.family = 'font-family/serif1';
   recipes.typography.galleryOverlayTitle.size = 'font-size/lg';
   recipes.typography.galleryOverlayTitle.weight = 'font-weight/medium';
   recipes.typography.galleryOverlayTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.galleryHeaderTitle.family = 'font-family/serif1';
   recipes.typography.galleryHeaderTitle.weight = 'font-weight/medium';
   recipes.typography.galleryHeaderTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.titleCompact.family = 'font-family/serif1';
   recipes.typography.titleCompact.weight = 'font-weight/medium';
   recipes.typography.titleCompact.lineHeight = 'line-height/base';
 
-  recipes.typography.detailTitle.family = 'font-family/serif1';
   recipes.typography.detailTitle.weight = 'font-weight/semibold';
   recipes.typography.detailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.storyDetailTitle.family = 'font-family/serif1';
   recipes.typography.storyDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.storyDetailTitle.lineHeight = 'line-height/base';
 
@@ -198,11 +176,9 @@ const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.galleryDetailTitle.weight = 'font-weight/semibold';
   recipes.typography.galleryDetailTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.discoveryTitle.family = 'font-family/serif1';
   recipes.typography.discoveryTitle.weight = 'font-weight/semibold';
   recipes.typography.discoveryTitle.lineHeight = 'line-height/base';
 
-  recipes.typography.railSectionTitle.family = 'font-family/serif1';
   recipes.typography.railSectionTitle.weight = 'font-weight/medium';
   recipes.typography.railSectionTitle.lineHeight = 'line-height/base';
 
@@ -216,7 +192,6 @@ const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   recipes.typography.questionOverlay.weight = 'font-weight/semibold';
   recipes.typography.questionOverlay.lineHeight = 'line-height/base';
 
-  recipes.typography.calloutTitle.family = 'font-family/serif1';
   recipes.typography.calloutTitle.weight = 'font-weight/medium';
   recipes.typography.calloutTitle.lineHeight = 'line-height/base';
 
@@ -291,47 +266,6 @@ export const ADMIN_THEME_PRESET_META: Record<
     label: 'Admin',
     description:
       'Neutral, higher-contrast authoring theme for dense grids, forms, focus states, and long editing sessions.',
-  },
-};
-
-export const READER_PRESET_ALIAS_GROUPS: Record<ThemePresetId, ReaderPresetAliasGroups> = {
-  journal: {
-    page: {},
-    chrome: {},
-    card: {},
-    detail: {
-      '--reader-title-font-family': 'var(--font-family-serif)',
-      '--reader-detail-title-font-family': 'var(--font-family-serif)',
-      '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
-    },
-    typeTreatments: {
-      '--reader-quote-font-family': 'var(--font-family-serif)',
-      '--reader-quote-watermark-opacity': '0.16',
-      '--reader-question-watermark-opacity': '0.2',
-      '--reader-callout-watermark-opacity': '0.2',
-    },
-    media: {},
-    discovery: {},
-    tags: {},
-  },
-  editorial: {
-    page: {},
-    chrome: {},
-    card: {},
-    detail: {
-      '--reader-title-font-family': 'var(--font-family-serif)',
-      '--reader-detail-title-font-family': 'var(--font-family-serif)',
-      '--reader-detail-title-font-weight': 'var(--font-weight-semibold)',
-    },
-    typeTreatments: {
-      '--reader-quote-font-family': 'var(--font-family-serif)',
-      '--reader-quote-watermark-opacity': '0.16',
-      '--reader-question-watermark-opacity': '0.22',
-      '--reader-callout-watermark-opacity': '0.22',
-    },
-    media: {},
-    discovery: {},
-    tags: {},
   },
 };
 

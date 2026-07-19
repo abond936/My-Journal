@@ -33,7 +33,7 @@ import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { z } from 'zod';
-import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
+import { canReadCard, filterReadableCards, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -63,7 +63,7 @@ export async function GET(
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!isAuthenticatedSession(session)) {
       throw new AppError(
         ErrorCode.UNAUTHORIZED,
         'Authentication required to access this resource'

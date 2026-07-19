@@ -74,6 +74,22 @@
   align-self: center;
 }
 
+/* A large figure leaves no readable remainder column in the Reader body. Keep its authored
+   alignment, but always place following text below instead of wrapping one word per line. */
+.figureWrapper.large[data-wrap="on"].left {
+  float: none;
+  clear: both;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.figureWrapper.large[data-wrap="on"].right {
+  float: none;
+  clear: both;
+  margin-left: auto;
+  margin-right: 0;
+}
+
 /* Fix for subsequent content clearing the float */
 .figureWrapper:has(+ *) {
   margin-bottom: var(--spacing-md);

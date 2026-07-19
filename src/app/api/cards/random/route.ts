@@ -3,6 +3,7 @@ import { getCardsByIds } from '@/lib/services/cardService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -207,7 +208,7 @@ function getRandomCardIds(
  */
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!isAuthenticatedSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -316,4 +317,4 @@ export async function GET(request: Request) {
       500
     );
   }
-} 
+}

@@ -232,7 +232,7 @@ describe('V2ContentCard cover framing', () => {
     expect(screen.getByText('Callout body from rich text')).toBeInTheDocument();
   });
 
-  it('keeps closed callout tiles on the utility portrait frame while quote uses the square feed shell', () => {
+  it('keeps parked quote portrait framing while callout uses the square feed shell', () => {
     const { container } = render(
       <>
         <V2ContentCard
@@ -273,9 +273,9 @@ describe('V2ContentCard cover framing', () => {
     const quoteCard = container.querySelector('[data-card-id="quote-with-cover"]');
     const calloutCard = container.querySelector('[data-card-id="callout-with-cover"]');
 
-    expect(quoteCard?.className).toContain('squareFeedTile');
-    expect(quoteCard?.className).not.toContain('closedFeedPortrait');
-    expect(calloutCard?.className).toContain('closedFeedPortrait');
-    expect(calloutCard?.className).not.toContain('closedFeedLandscape');
+    expect(quoteCard?.className).toContain('closedFeedPortrait');
+    expect(quoteCard?.className).not.toContain('closedFeedLandscape');
+    expect(calloutCard?.className).toContain('squareFeedTile');
+    expect(calloutCard?.className).not.toContain('closedFeedPortrait');
   });
 });

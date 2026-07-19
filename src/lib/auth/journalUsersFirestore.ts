@@ -6,6 +6,7 @@ const COLLECTION = 'journal_users';
 const BCRYPT_ROUNDS = 12;
 
 export type JournalUserRole = 'admin' | 'viewer';
+export type ReaderThemeMode = 'light' | 'dark';
 
 export type JournalUserPublic = {
   docId: string;
@@ -13,6 +14,7 @@ export type JournalUserPublic = {
   role: JournalUserRole;
   displayName: string;
   disabled: boolean;
+  readerThemeMode?: ReaderThemeMode;
   createdAt: number;
   updatedAt: number;
 };
@@ -23,6 +25,7 @@ type JournalUserDoc = {
   role: JournalUserRole;
   displayName: string;
   disabled: boolean;
+  readerThemeMode?: ReaderThemeMode;
   createdAt: number;
   updatedAt: number;
 };
@@ -55,6 +58,7 @@ function toPublic(docId: string, data: JournalUserDoc): JournalUserPublic {
     role: data.role,
     displayName: data.displayName,
     disabled: data.disabled,
+    ...(data.readerThemeMode ? { readerThemeMode: data.readerThemeMode } : {}),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -163,6 +167,19 @@ export async function updateJournalUser(
   }
 
   await ref.update(payload as UpdateData<JournalUserDoc>);
+}
+
+export async function updateJournalUserThemeMode(
+  docId: string,
+  readerThemeMode: ReaderThemeMode
+): Promise<JournalUserPublic> {
+  const ref = db().collection(COLLECTION).doc(docId);
+  const cur = await ref.get();
+  if (!cur.exists) throw new Error('User not found');
+
+  await ref.update({ readerThemeMode, updatedAt: Date.now() });
+  const updated = await ref.get();
+  return toPublic(updated.id, updated.data() as JournalUserDoc);
 }
 
 /**

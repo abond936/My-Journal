@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 
 type Theme = 'light' | 'dark';
@@ -8,6 +9,7 @@ type Theme = 'light' | 'dark';
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setThemePreference: (theme: Theme) => Promise<boolean>;
   /** Reloads the page so SSR-injected theme tokens (after Theme admin save) apply. Prefer `router.refresh()` in admin when possible. */
   refreshTheme: () => Promise<void>;
   applyDraftThemeCss: (css: string) => void;
@@ -24,18 +26,10 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    const fromDataAttr = document.documentElement.getAttribute('data-theme');
-    if (fromDataAttr === 'light' || fromDataAttr === 'dark') {
-      return fromDataAttr;
-    }
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light' || savedTheme === 'dark') {
-      return savedTheme;
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const { status: sessionStatus } = useSession();
+  // Keep the first client render identical to SSR. The inline layout script sets
+  // the visual theme before paint; the effect below then synchronizes React state.
+  const [theme, setTheme] = useState<Theme>('dark');
   const [draftThemeCss, setDraftThemeCss] = useState('');
   const [isThemeAdminOpen, setIsThemeAdminOpen] = useState(false);
   const [lastNonThemeAdminPath, setLastNonThemeAdminPath] = useState('/view');
@@ -52,6 +46,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.setAttribute('data-theme', initialTheme);
     }
   }, []);
+
+  useEffect(() => {
+    if (sessionStatus !== 'authenticated') return;
+    let cancelled = false;
+    void fetch('/api/account/preferences')
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json() as Promise<{ readerThemeMode?: Theme | null }>;
+      })
+      .then((data) => {
+        const saved = data?.readerThemeMode;
+        if (cancelled || (saved !== 'light' && saved !== 'dark')) return;
+        setTheme(saved);
+        document.documentElement.setAttribute('data-theme', saved);
+        localStorage.setItem('theme', saved);
+      })
+      .catch(() => {
+        // Browser preference remains the temporary fallback when account settings are unavailable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionStatus]);
 
   const refreshTheme = useCallback(async () => {
     if (typeof window !== 'undefined') {
@@ -101,17 +118,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
+  const setThemePreference = useCallback(async (newTheme: Theme): Promise<boolean> => {
     setTheme(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-  }, [theme]);
+    if (sessionStatus !== 'authenticated') return true;
+    try {
+      const response = await fetch('/api/account/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ readerThemeMode: newTheme }),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, [sessionStatus]);
+
+  const toggleTheme = useCallback(() => {
+    void setThemePreference(theme === 'light' ? 'dark' : 'light');
+  }, [setThemePreference, theme]);
 
   const value = useMemo(
     () => ({
       theme,
       toggleTheme,
+      setThemePreference,
       refreshTheme,
       applyDraftThemeCss,
       clearDraftThemeCss,
@@ -122,7 +154,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       closeThemeAdmin,
       lastNonThemeAdminPath,
     }),
-    [theme, toggleTheme, refreshTheme, applyDraftThemeCss, clearDraftThemeCss, draftThemeCss, isThemeAdminOpen, openThemeAdmin, closeThemeAdmin, lastNonThemeAdminPath]
+    [theme, toggleTheme, setThemePreference, refreshTheme, applyDraftThemeCss, clearDraftThemeCss, draftThemeCss, isThemeAdminOpen, openThemeAdmin, closeThemeAdmin, lastNonThemeAdminPath]
   );
 
   return (

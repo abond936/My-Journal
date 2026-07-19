@@ -147,28 +147,11 @@
   color: var(--reader-feedback-action-hover-text-color);
 }
 
-.groupSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.groupHeading {
-  margin: 0;
-  font-family: var(--reader-discovery-title-font-family);
-  font-size: var(--reader-discovery-title-font-size);
-  font-weight: var(--reader-discovery-title-font-weight);
-  line-height: var(--reader-discovery-title-line-height);
-  color: var(--reader-page-text-color);
-  border-bottom: var(--border-width-thin) solid var(--reader-page-border-color);
-  padding-bottom: var(--spacing-xs);
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   align-items: start;
-  gap: var(--spacing-sm);
+  gap: var(--reader-content-grid-gap);
   min-width: 0;
 }
 
@@ -205,7 +188,7 @@
 
   .grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--spacing-sm);
+    gap: var(--reader-content-grid-gap);
   }
 
   .guidedGrid {

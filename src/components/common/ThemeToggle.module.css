@@ -1,10 +1,11 @@
 .themeToggle {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: var(--spacing-2xl);
-  height: var(--spacing-2xl);
-  border-radius: 50%;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-height: var(--spacing-2xl);
+  border-radius: var(--reader-card-border-radius);
   background-color: var(--reader-chrome-control-background-color);
   color: var(--reader-chrome-text-color);
   border: none !important;
@@ -12,7 +13,7 @@
   box-shadow: none !important;
   cursor: pointer;
   transition: all var(--transition-short) ease;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .themeToggle:hover {
@@ -26,6 +27,7 @@
 }
 
 .themeToggle svg {
+  flex: 0 0 auto;
   width: 1.15rem;
   height: 1.15rem;
   transition: transform var(--transition-short) ease;

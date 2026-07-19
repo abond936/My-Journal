@@ -17,6 +17,7 @@ import {
 } from '@/lib/utils/tagUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 
 type ExactDimensionalTagIdMap = Partial<Record<'who' | 'what' | 'when' | 'where', string[]>>;
 
@@ -166,7 +167,7 @@ async function fetchMediaByIdsInOrder(firestore: Firestore, ids: string[]): Prom
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!isAuthenticatedSession(session)) {
     return errorResponse('Authentication required.', 401);
   }
 

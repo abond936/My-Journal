@@ -35,6 +35,8 @@ import StudioCardFormChildren from '@/components/admin/studio/StudioCardFormChil
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
+import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedTilePreview';
+import { validateQuestionRevealContent } from '@/lib/utils/questionReveal';
 import {
   inheritedDimensionsChangedByTagEdit,
   newCardInheritanceOverrides,
@@ -161,6 +163,8 @@ const CardForm: React.FC = () => {
   const feedback = useAppFeedback();
   const [galleryInheritanceSettings, setGalleryInheritanceSettings] = useState<GalleryTagInheritanceToggles | null>(null);
   const [galleryInheritanceConfigured, setGalleryInheritanceConfigured] = useState<boolean | null>(null);
+  const [questionRevealFits, setQuestionRevealFits] = useState(true);
+  const [calloutFits, setCalloutFits] = useState(true);
 
   const editorRef = useRef<RichTextEditorRef>(null);
 
@@ -340,10 +344,22 @@ const CardForm: React.FC = () => {
   );
   const handleDisplayModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextDisplayMode = e.target.value as Card['displayMode'];
+    const revealValidation = validateQuestionRevealContent({
+      ...cardData,
+      content: editorRef.current?.getContent() ?? cardData.content,
+      displayMode: nextDisplayMode,
+    });
+    if (!revealValidation.valid || (cardData.type === 'qa' && nextDisplayMode === 'inline' && !questionRevealFits)) {
+      feedback.showError(
+        revealValidation.message ?? 'This answer does not fit on one Reveal card. Shorten it or use Open.',
+        'Reveal is not available'
+      );
+      return;
+    }
     setField('displayMode', nextDisplayMode);
     if (lastSavedState.cardData.displayMode === nextDisplayMode) return;
     void persistFieldPatch({ displayMode: nextDisplayMode });
-  }, [lastSavedState.cardData.displayMode, persistFieldPatch, setField]);
+  }, [cardData, feedback, lastSavedState.cardData.displayMode, persistFieldPatch, questionRevealFits, setField]);
   const handleContentChange = useCallback((content: string) => {
     setField('content', content);
   }, [setField]);
@@ -840,6 +856,21 @@ const CardForm: React.FC = () => {
       subtitle: subtitleDraft || null,
       excerpt: isExcerptAuto ? null : excerptDraft || null,
     };
+    const revealValidation = validateQuestionRevealContent({ ...cardData, ...overrides });
+    if (!revealValidation.valid || (cardData.type === 'qa' && cardData.displayMode === 'inline' && !questionRevealFits)) {
+      feedback.showError(
+        revealValidation.message ?? 'This answer does not fit on one Reveal card. Shorten it or use Open.',
+        'Question not saved'
+      );
+      return;
+    }
+    if (cardData.type === 'callout' && !calloutFits) {
+      feedback.showError(
+        'This Callout does not fit on one card. Shorten it or change it to a Story.',
+        'Callout not saved'
+      );
+      return;
+    }
     const saved = await handleSave(overrides);
     if (saved) {
       return;
@@ -848,7 +879,7 @@ const CardForm: React.FC = () => {
       'This card could not be saved. Your changes are still here. Review any highlighted fields and try again.',
       'Card not saved'
     );
-  }, [excerptDraft, feedback, handleSave, isExcerptAuto, subtitleDraft, titleDraft]);
+  }, [calloutFits, cardData, excerptDraft, feedback, handleSave, isExcerptAuto, questionRevealFits, subtitleDraft, titleDraft]);
 
   const handleAddImageToContent = useCallback(() => {
     setIsPhotoPickerOpen(true);
@@ -1129,6 +1160,36 @@ const CardForm: React.FC = () => {
 
   return (
     <>
+      {cardData.type === 'qa' ? (
+        <div className={styles.questionRevealFitProbe} aria-hidden="true">
+          <ComposeFeedTilePreview
+            card={{
+              ...cardData,
+              docId: cardData.docId ?? 'question-reveal-fit-probe',
+              title: titleDraft || cardData.title || 'Untitled question',
+              status: cardData.status ?? 'draft',
+              displayMode: 'inline',
+            } as Card}
+            allTags={allTags}
+            onQuestionRevealFitChange={setQuestionRevealFits}
+          />
+        </div>
+      ) : null}
+      {cardData.type === 'callout' ? (
+        <div className={styles.questionRevealFitProbe} aria-hidden="true">
+          <ComposeFeedTilePreview
+            card={{
+              ...cardData,
+              docId: cardData.docId ?? 'callout-fit-probe',
+              title: titleDraft || cardData.title || 'Untitled callout',
+              status: cardData.status ?? 'draft',
+              displayMode: 'static',
+            } as Card}
+            allTags={allTags}
+            onCalloutFitChange={setCalloutFits}
+          />
+        </div>
+      ) : null}
       {isPhotoPickerOpen && (
         <PhotoPicker
           isOpen={isPhotoPickerOpen}
@@ -1264,7 +1325,9 @@ const CardForm: React.FC = () => {
                     >
                       {allowedDisplayModes.map((mode) => (
                         <option key={mode} value={mode}>
-                          {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                          {cardData.type === 'qa'
+                            ? mode === 'inline' ? 'Reveal' : 'Open'
+                            : mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
                         </option>
                       ))}
                     </select>
@@ -1489,7 +1552,9 @@ const CardForm: React.FC = () => {
                 >
                   {allowedDisplayModes.map((mode) => (
                     <option key={mode} value={mode}>
-                      {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                      {cardData.type === 'qa'
+                        ? mode === 'inline' ? 'Reveal' : 'Open'
+                        : mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
                     </option>
                   ))}
                 </select>

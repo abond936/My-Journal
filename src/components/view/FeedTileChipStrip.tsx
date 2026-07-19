@@ -14,11 +14,13 @@ interface FeedTileChipStripProps {
   card: Card;
   /** When provided (admin grid), skip TagProvider lookup. */
   allTags?: Tag[];
+  /** Compact but readable treatment for narrow discovery rails. */
+  compact?: boolean;
   className?: string;
 }
 
 /** Fixed four-slot bottom tag row for square feed tiles (Who | What | When | Where). */
-export default function FeedTileChipStrip({ card, allTags: allTagsOverride, className }: FeedTileChipStripProps) {
+export default function FeedTileChipStrip({ card, allTags: allTagsOverride, compact = false, className }: FeedTileChipStripProps) {
   const { tags: contextTags, loading: tagsLoading } = useTag();
   const allTags = allTagsOverride ?? contextTags;
   const tagsLoadingEffective = allTagsOverride ? false : tagsLoading;
@@ -38,7 +40,7 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, clas
   }, [allTags, card, tagsLoadingEffective]);
 
   return (
-    <div className={clsx(styles.feedTileChipStrip, className)}>
+    <div className={clsx(styles.feedTileChipStrip, compact && styles.compact, className)}>
       <div className={styles.feedTileChipStripRow}>
         {slots.map((slot) => {
           const empty = !slot.label;

@@ -1,35 +1,35 @@
 import {
-  appendCoverOnlyFeedHydration,
-  shouldUseCoverOnlyFeedHydration,
-  withCoverOnlyFeedHydrationQuery,
+  appendReaderFeedHydration,
+  shouldUseReaderFeedHydration,
+  withReaderFeedHydrationQuery,
 } from '@/lib/utils/feedHydration';
 
 describe('feedHydration', () => {
-  it('uses cover-only hydration on reader feed and search routes', () => {
-    expect(shouldUseCoverOnlyFeedHydration('/view')).toBe(true);
-    expect(shouldUseCoverOnlyFeedHydration('/view/card-1')).toBe(true);
-    expect(shouldUseCoverOnlyFeedHydration('/search?q=story')).toBe(true);
-    expect(shouldUseCoverOnlyFeedHydration('/admin/studio')).toBe(false);
-    expect(shouldUseCoverOnlyFeedHydration('/')).toBe(false);
+  it('uses reader-feed hydration on reader feed and search routes', () => {
+    expect(shouldUseReaderFeedHydration('/view')).toBe(true);
+    expect(shouldUseReaderFeedHydration('/view/card-1')).toBe(true);
+    expect(shouldUseReaderFeedHydration('/search?q=story')).toBe(true);
+    expect(shouldUseReaderFeedHydration('/admin/studio')).toBe(false);
+    expect(shouldUseReaderFeedHydration('/')).toBe(false);
   });
 
-  it('appends hydration=cover-only to reader feed card queries', () => {
+  it('appends hydration=reader-feed to reader card queries', () => {
     const params = new URLSearchParams({ status: 'published', limit: '10' });
-    appendCoverOnlyFeedHydration(params, '/view');
-    expect(params.get('hydration')).toBe('cover-only');
+    appendReaderFeedHydration(params, '/view');
+    expect(params.get('hydration')).toBe('reader-feed');
   });
 
-  it('leaves admin routes without cover-only hydration', () => {
+  it('leaves admin routes without reader-feed hydration', () => {
     const params = new URLSearchParams({ status: 'all' });
-    appendCoverOnlyFeedHydration(params, '/admin/studio');
+    appendReaderFeedHydration(params, '/admin/studio');
     expect(params.get('hydration')).toBeNull();
   });
 
   it('rewrites feed URLs on reader routes only', () => {
-    expect(withCoverOnlyFeedHydrationQuery('/api/cards?status=published', '/view')).toBe(
-      '/api/cards?status=published&hydration=cover-only'
+    expect(withReaderFeedHydrationQuery('/api/cards?status=published', '/view')).toBe(
+      '/api/cards?status=published&hydration=reader-feed'
     );
-    expect(withCoverOnlyFeedHydrationQuery('/api/cards?status=all', '/admin/studio')).toBe(
+    expect(withReaderFeedHydrationQuery('/api/cards?status=all', '/admin/studio')).toBe(
       '/api/cards?status=all'
     );
   });

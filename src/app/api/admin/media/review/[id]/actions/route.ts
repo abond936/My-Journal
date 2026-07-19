@@ -10,12 +10,13 @@ import {
   acceptReviewClusterPile,
   acceptReviewClusterTags,
   dismissReviewCluster,
+  mergeReviewClusters,
   splitReviewCluster,
 } from '@/lib/services/provisionalClusterService';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const REVIEW_ACTIONS = ['accept-tags', 'accept-pile', 'dismiss', 'split'] as const;
+const REVIEW_ACTIONS = ['accept-tags', 'accept-pile', 'dismiss', 'split', 'merge'] as const;
 type ReviewAction = (typeof REVIEW_ACTIONS)[number];
 
 function isReviewAction(value: unknown): value is ReviewAction {
@@ -31,11 +32,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
     },
     async ({ request }) => {
       const { id } = await context.params;
-      const body = (await request.json()) as { action?: unknown; splitOffMediaIds?: unknown };
+      const body = (await request.json()) as {
+        action?: unknown;
+        splitOffMediaIds?: unknown;
+        targetClusterId?: unknown;
+      };
       if (!isReviewAction(body.action)) {
         return apiRouteError({
           code: 'REVIEW_ACTION_INVALID',
-          message: 'action must be one of: accept-tags, accept-pile, dismiss, split.',
+          message: 'action must be one of: accept-tags, accept-pile, dismiss, split, merge.',
           status: 400,
           retryable: false,
         });
@@ -55,6 +60,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
         if (body.action === 'dismiss') {
           const cluster = await dismissReviewCluster(id);
           return apiRouteSuccess({ ok: true, action: body.action, cluster });
+        }
+
+        if (body.action === 'merge') {
+          if (typeof body.targetClusterId !== 'string' || !body.targetClusterId.trim()) {
+            return apiRouteError({
+              code: 'REVIEW_MERGE_TARGET_REQUIRED',
+              message: 'targetClusterId is required for merge.',
+              status: 400,
+              retryable: false,
+            });
+          }
+          const result = await mergeReviewClusters({
+            sourceClusterId: id,
+            targetClusterId: body.targetClusterId,
+          });
+          return apiRouteSuccess({ ok: true, action: body.action, ...result });
         }
 
         const splitResult = validateStringIdArray(body.splitOffMediaIds, {
@@ -83,7 +104,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
             retryable: false,
           });
         }
-        if (message.includes('not pending') || message.includes('Split must')) {
+        if (
+          message.includes('not pending') ||
+          message.includes('Split must') ||
+          message.includes('cannot be merged into itself')
+        ) {
           return apiRouteError({
             code: 'REVIEW_CLUSTER_ACTION_CONFLICT',
             message,

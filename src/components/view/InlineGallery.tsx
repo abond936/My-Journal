@@ -22,6 +22,9 @@ interface InlineGalleryProps {
   media: HydratedGalleryMediaItem[];
   title?: string | null;
   variant?: 'default' | 'galleryDetail';
+  ariaLabel?: string;
+  /** Complete authored sequence when `media` is a deduplicated visible subset. */
+  sequenceMedia?: HydratedGalleryMediaItem[];
   editableCaptions?: boolean;
   cardId?: string;
   onGallerySaved?: (savedCard: Card) => void;
@@ -31,6 +34,8 @@ export default function InlineGallery({
   media,
   title = 'Gallery',
   variant = 'default',
+  ariaLabel,
+  sequenceMedia,
   editableCaptions = false,
   cardId,
   onGallerySaved,
@@ -43,8 +48,12 @@ export default function InlineGallery({
   const [captionSaving, setCaptionSaving] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const validMedia = useMemo(() => media.filter((item) => item.media), [media]);
+  const fullSequence = useMemo(
+    () => (sequenceMedia ?? media).filter((item) => item.media),
+    [media, sequenceMedia]
+  );
   const canEditCaptions = editableCaptions && Boolean(cardId) && Boolean(onGallerySaved);
-  const activeItem = validMedia[activeIndex];
+  const activeItem = fullSequence[activeIndex];
 
   const scrollToImage = useCallback((direction: 'left' | 'right') => {
     if (!scrollContainerRef.current) return;
@@ -69,12 +78,12 @@ export default function InlineGallery({
     }
   }, [scrollToImage]);
 
-  const openLightbox = useCallback((index: number) => {
-    setActiveIndex(index);
-    const item = validMedia[index];
+  const openLightbox = useCallback((item: HydratedGalleryMediaItem) => {
+    const sequenceIndex = Math.max(0, fullSequence.findIndex((entry) => entry.mediaId === item.mediaId));
+    setActiveIndex(sequenceIndex);
     setCaptionDraft(item ? getEffectiveGalleryCaption(item, item.media) : '');
     setLightboxOpen(true);
-  }, [validMedia]);
+  }, [fullSequence]);
 
   const saveCaptionForItem = useCallback(
     async (item: HydratedGalleryMediaItem, draft: string): Promise<boolean> => {
@@ -85,7 +94,7 @@ export default function InlineGallery({
 
       setCaptionSaving(true);
       try {
-        const saved = await patchReaderGalleryCaption(cardId, media, item.mediaId, trimmedDraft);
+        const saved = await patchReaderGalleryCaption(cardId, fullSequence, item.mediaId, trimmedDraft);
         if (saved) {
           onGallerySaved(saved);
         }
@@ -100,7 +109,7 @@ export default function InlineGallery({
         setCaptionSaving(false);
       }
     },
-    [canEditCaptions, cardId, feedback, media, onGallerySaved]
+    [canEditCaptions, cardId, feedback, fullSequence, onGallerySaved]
   );
 
   const closeLightbox = useCallback(async () => {
@@ -195,10 +204,12 @@ export default function InlineGallery({
           onKeyDown={handleKeyDown}
           tabIndex={0}
           role="region"
-          aria-label="Image gallery"
+          aria-label={ariaLabel || title || 'Image gallery'}
         >
           {validMedia.map((item, index) => {
             const displayCaption = getEffectiveGalleryCaption(item, item.media);
+            const sequenceIndex = fullSequence.findIndex((entry) => entry.mediaId === item.mediaId);
+            const displayIndex = sequenceIndex >= 0 ? sequenceIndex + 1 : index + 1;
             const ratioBucket = getAspectRatioBucket(item.media);
             const wrapperClass =
               ratioBucket === 'landscape'
@@ -211,18 +222,18 @@ export default function InlineGallery({
                 <button
                   type="button"
                   className={styles.imageWrapperButton}
-                  onClick={() => openLightbox(index)}
-                  aria-label={`Open image ${index + 1} fullscreen`}
+                  onClick={() => openLightbox(item)}
+                  aria-label={`Open image ${displayIndex} fullscreen`}
                 >
                   <div className={`${styles.imageWrapper} ${wrapperClass}`}>
                     {variant === 'galleryDetail' ? (
                       <span className={styles.imageSequencePill}>
-                        {index + 1}/{validMedia.length}
+                        {displayIndex}/{fullSequence.length}
                       </span>
                     ) : null}
                     <JournalImage
                       src={getReaderDisplayUrl(item.media)}
-                      alt={displayCaption.trim() ? displayCaption : `Image ${index + 1}`}
+                      alt={displayCaption.trim() ? displayCaption : `Image ${displayIndex}`}
                       className={styles.galleryImage}
                       width={300}
                       height={200}
@@ -255,7 +266,7 @@ export default function InlineGallery({
           tabIndex={-1}
         >
           <div className={styles.lightboxCounter}>
-            {activeIndex + 1} / {validMedia.length}
+            {activeIndex + 1} / {fullSequence.length}
           </div>
           <div className={styles.lightboxInner} onClick={(e) => e.stopPropagation()}>
             <button
@@ -291,7 +302,7 @@ export default function InlineGallery({
               }}
               className={styles.lightboxSwiper}
             >
-              {validMedia.map((item, index) => {
+              {fullSequence.map((item, index) => {
                 const displayCaption = getEffectiveGalleryCaption(item, item.media);
                 return (
                   <SwiperSlide key={`lightbox-${item.mediaId}-${index}`}>

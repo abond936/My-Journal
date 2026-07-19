@@ -8,6 +8,7 @@
   border: var(--reader-card-border-width) solid var(--reader-question-card-border-color);
   background: var(--reader-question-card-background-color);
   box-sizing: border-box;
+  container-type: inline-size;
 }
 
 .surface.question,
@@ -34,7 +35,7 @@
 
 .surface.question::before {
   content: '?';
-  font-size: clamp(4.75rem, 26vw, 7.75rem);
+  font-size: calc(100cqi * var(--reader-question-watermark-scale));
   font-weight: var(--font-weight-bold);
   line-height: 1;
   opacity: var(--reader-question-watermark-opacity);

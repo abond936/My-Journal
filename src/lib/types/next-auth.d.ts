@@ -5,6 +5,7 @@ declare module 'next-auth' {
     user: {
       id?: string;
       role?: string;
+      accessRevoked?: boolean;
     } & DefaultSession['user'];
     accessToken?: string;
     refreshToken?: string;
@@ -20,5 +21,6 @@ declare module 'next-auth/jwt' {
     accessToken?: string;
     refreshToken?: string;
     role?: string;
+    accessRevoked?: boolean;
   }
 }

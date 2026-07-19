@@ -186,13 +186,13 @@
 }
 
 .removeButton {
-    color: color-mix(in srgb, var(--admin-support-control-text-color) 78%, var(--state-error-text-color) 22%);
+    color: color-mix(in srgb, var(--admin-support-control-text-color) 78%, var(--admin-state-error-text-color) 22%);
 }
 
 .removeButton:hover {
-    background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--state-error-border-color) 16%);
-    border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--state-error-border-color) 46%);
-    color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--state-error-text-color) 46%);
+    background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--admin-state-error-border-color) 16%);
+    border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--admin-state-error-border-color) 46%);
+    color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--admin-state-error-text-color) 46%);
 }
 
 .manageButton {
@@ -226,7 +226,7 @@
 }
 
 .thumbnail:hover .thumbnailOverlay {
-    background-color: var(--state-error-background-color);
+    background-color: var(--admin-state-error-background-color);
 }
 
 .thumbnail img {
@@ -313,9 +313,9 @@
 
 .saveButton {
     padding: var(--spacing-sm);
-    background-color: var(--admin-support-control-strong-background-color);
-    color: var(--admin-support-control-strong-text-color);
-    border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+    background-color: var(--primary-action-background-color);
+    color: var(--primary-action-text-color);
+    border: var(--border-width-thin) solid var(--primary-action-border-color);
     border-radius: var(--border-radius-md);
     cursor: pointer;
     font-family: var(--admin-support-control-font-family);
@@ -328,7 +328,7 @@
 }
 
 .saveButton:hover {
-    background-color: var(--admin-support-control-strong-hover-background-color);
+    background-color: var(--primary-action-background-color-hover);
 }
 
 .saveButton:disabled {
@@ -489,7 +489,7 @@
 
 .pasteError {
     margin: 0 0 var(--spacing-sm);
-    color: var(--error-color, #b42318);
+    color: var(--admin-state-error-text-color);
     font-size: var(--font-size-sm);
 }
 

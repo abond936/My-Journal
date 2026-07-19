@@ -33,6 +33,36 @@ Theme decisions are in service of the reading experience: comfort, tone, and wil
 
 ---
 
+## 1.1 Author-facing control hierarchy
+
+The technical values → semantics → recipes → surfaces path remains authoritative, but technical resolution alone does not make a complete Theme Management product. The author must be able to make meaningful changes from centralized controls with predictable inheritance and disclosed impact.
+
+The authoring cascade is:
+
+1. **Foundation** — Broad materials and character: font families, type scale, palette, spacing scale, radii, shadows, and density.
+2. **Shared system** — Repeated visual jobs: primary and secondary actions, fields, selected and destructive controls, feedback, dimensional tags, Reader Type chips, captions, and media controls.
+3. **Component** — Concrete surfaces such as Canvas, Header, Sidebar, Content Grid, Story, Gallery, Question, Callout, detail, discovery, dialogs, and Administration grids.
+4. **Variant** — Meaningful component states or contexts such as closed, open, discovery, selected, disabled, error, Light, and Dark.
+5. **Guardrail** — Non-authorable behavioral protection: responsive breakpoints, content fitting, minimum readable type, touch targets, overflow prevention, and accessibility enforcement.
+
+Lower authoring levels inherit from higher levels unless they declare an intentional visible override. Theme Management must show whether the selected attribute inherits, what it overrides, which package/mode/scope it changes, and which surfaces consume it.
+
+Examples of required predictable control:
+
+| Author intent | Required control level | Required behavior |
+| --- | --- | --- |
+| Change the application font | Foundation | Update inherited typography roles while preserving visible component overrides. |
+| Change every primary action background | Shared system | Update true primary actions without conflating them with selected navigation or unrelated blue controls. |
+| Change the Reader tile Type chip | Shared system | Update the shared chip across grid and contextual tiles unless a deliberate variant override exists. |
+| Change Content Grid spacing | Layout component | Reflow the grid through governed spacing values while preserving minimum tile width and responsive behavior. |
+| Change Question watermark proportion | Component treatment | Update its relative visual scale while code continues to prevent prompt clipping and unreadable results. |
+
+**Completeness rule:** A generated CSS variable or selectable atomic value is not, by itself, a complete author control. Completion requires understandable naming, visible scope and inheritance, predictable consumption by every relevant surface, and retained guardrails.
+
+**Granularity rule:** Expose an attribute when it represents a meaningful design decision, not merely because an underlying CSS property can be changed. Theme Management must not recreate raw CSS through a more complicated interface.
+
+---
+
 ## 2. Product constraints (non-negotiable tensions)
 
 
@@ -61,7 +91,68 @@ Resolve conflicts with **type roles** and **presets**, not by mixing display fon
 
 **Rule:** Handwriting is a *display* choice bound to a preset or explicit component token — not the default `--body-font-family` for the whole app.
 
-### 3.1 Admin grid thumbnail overlays (card + media)
+### 3.1 Typography ownership and variation
+
+Typography is governed by product job, not by coincidentally identical current values and not automatically by card type.
+
+| Layer | Owner | Inheritance and legitimate variation |
+| --- | --- | --- |
+| Foundation | UI family, reading family, display family | Package and Reader/Administration scope may vary; Light/Dark does not independently select a family. |
+| Shared system | Content title and its compact/detail/discovery contexts | Context may change hierarchy or geometry; unchanged attributes inherit from the shared title. |
+| Shared system | Subtitle, body, excerpt, metadata, caption | Each is a distinct publishing job and inherits its family from the reading foundation. |
+| Shared system | Chrome, labels, hints, controls, feedback | These retain semantic size, weight, line-height, and color jobs while inheriting the UI family. |
+| Component | Story and Gallery title/prose slots | Preserve as override points for closed, overlay, header, and detail contexts; default to shared roles rather than becoming separate merely by type. |
+| Component | Question and Callout treatments | Distinct product meaning justifies component recipes. Covered Question contrast is a legitimate overlay variant. |
+| Component | Quote | Retain but do not expand while Quote is parked. |
+| Guardrail | Responsive fitting | Container sizing, length-aware fitting, clamps, overflow prevention, and minimum readability remain code-owned. |
+
+`ReaderThemeRecipes.foundationTypography` now owns UI, Reading, and Display family sources. Each typography role can reference its assigned Foundation family or retain a literal family as a visible local override; the compiler resolves both live drafts and saved themes through the same path. The editor reports assigned, inherited, and overridden role counts, offers an explicit `Use across assigned roles` action, and labels each role as inherited or overriding. Legacy fully materialized recipes retain their literal families as overrides, preventing normalization from silently changing saved appearance. Other typography attributes remain materialized until their shared-role inheritance is implemented only where it provides comparable predictable value.
+
+**Variation rule:** Package, scope, semantic job, contrast context, component geometry, and product-specific treatment can justify variation. Card type, Light/Dark mode, or a currently identical/different literal value does not by itself justify a new typography definition.
+
+### 3.2 Shared Primary action ownership
+
+Primary action means a genuine commit or proceed operation such as Save, apply, confirm, or load more. `controls.primaryAction` owns its background, text, border, and hover treatment and compiles one shared variable family consumed across Reader and Administration.
+
+Visual similarity does not establish shared ownership. Selected navigation, selected filters, neutral or selected support controls, feedback actions, contextual Edit, destructive Delete, resize handles, and media/lightbox controls must not consume Primary action merely because they currently use the same accent. This separation lets the author restyle every true Primary action without changing application state vocabulary or unrelated controls.
+
+### 3.3 Shared Reader Type chip ownership
+
+`controls.typeChip` owns the background, text, border, and hover identity for every Reader Type chip. The content grid, Explore More, Read More, opened-card context, covered and uncovered tiles, and inline Gallery header all consume the compiled `--reader-card-badge-*` identity variables.
+
+Context geometry is not a new semantic recipe. Base, compact, and rail contexts may retain proportional font size, padding, minimum height, and placement variables because their containers differ materially. Story, Gallery, Question, and other card types do not receive separate chip colors by default. A future card-type override requires an explicit semantic decision rather than incidental CSS.
+
+### 3.4 Content Grid spacing ownership
+
+`treatments.contentGridGap` owns only the gap between Content Grid tiles. Theme Management exposes it as Content → Content Grid → Tile spacing using curated values from the governed spacing scale. Both desktop and mobile grid rules consume `--reader-content-grid-gap` so the author receives a predictable density change.
+
+Tile fitting remains a guardrail. Minimum desktop tile width, Guided width limits, mobile single-column behavior, page padding, discovery-rail spacing, virtualization sizing, and overflow prevention are not derived from the gap recipe and must not become arbitrary author inputs as a side effect of changing density.
+
+### 3.5 Question watermark scale ownership
+
+Question's no-cover watermark has two authorable component treatments: opacity and proportional scale. Grid, Reveal face, opened detail, destination rails, and Compose preview consume the same compiled values. Scale defaults to 78% of the containing Question face and is bounded to 50–90% during compilation.
+
+The author control does not own fitting behavior. Container-relative units, the question glyph's optical offset, prompt-size adaptation, line clamps, stacking, and overflow protection remain component safeguards. Covered Questions retain their distinct compact cue rather than inheriting the no-cover watermark scale.
+
+### 3.6 Administration state ownership
+
+Success, error, warning, and information are shared semantic meanings but compile into explicit Administration aliases: `--admin-state-{state}-background-color`, hover background, border, and text. Administration components consume these names so their ownership remains clear even when Reader and Administration currently derive from the same atomic state palette.
+
+State vocabulary must not absorb unrelated visual meaning. Selected controls, destructive actions, Who/What/When/Where dimensional colors, brand accents, image-overlay action chrome, readiness stages, and evidence classifications remain separate jobs unless their product meaning is genuinely success, error, warning, or information. Undefined aliases and hard-coded state fallbacks are contract violations; deliberate non-state literals require explicit containment.
+
+### 3.7 Compatibility boundaries
+
+Journal and Editorial preset defaults are recipe data. The compiler must not append a preset-specific alias block after recipe output because that would give compatibility CSS precedence over the author's live or saved choices. Compiler canaries require the legacy block to remain absent.
+
+Theme Management workbench chrome consumes Administration aliases. Reader aliases are permitted inside explicit Reader preview surfaces and Compose's actual Reader preview because those surfaces deliberately demonstrate Reader output. The remaining compatibility paths are classified rather than implicit: static `theme.css` delivery safety and atomic modal-shell fallbacks are retained safety paths; Compose Reader preview aliases and fixed black/white image-action contrast are retained intentional paths. A retained path is not an alternate authoring source and may not expand without a new contract decision.
+
+### 3.8 Workbench authoring feedback
+
+The workbench keeps the established Foundation/Content → component → variant → attribute hierarchy. The editor repeats that complete active path immediately above the selected controls so the author need not reconstruct scope from separated tab rows. The path is compact navigation context, not instructional prose.
+
+A changed live draft displays Unsaved changes next to Save and Discard. Discard is consequential: it uses the shared confirmation system, states that the last saved Reader and Administration settings will be restored, and makes Keep editing the safe cancellation. Clean drafts do not display a redundant saved-status label.
+
+### 3.3 Admin grid thumbnail overlays (card + media)
 
 Dense metadata on **card** and **media** admin **grid** thumbnails (type, status, source, assignment, dimensional tag rail) uses **dedicated tokens** — **not** `--font-size-xs` / global admin UI scale. **Runtime:** `buildThemeTokensCss()` in `themeService.ts` emits these on `:root` with the rest of the theme (Firestore / `theme-data.json`). `**theme1.css`** mirrors the same names for authoring reference; `theme.css` includes fallbacks if injection is empty.
 
@@ -252,15 +343,15 @@ The table below is the **first-pass canonical author-facing component inventory*
 | **Gallery Card** | Gallery card in closed state, open reading state, supported discovery treatment, and media-adjacent framing | surface, title, subtitle, body, meta, border, radius, shadow, card padding, media frame background color, media frame border color |
 | **Question Card** | Question card in closed state, open reading state, and supported discovery treatment | surface, question, answer preview/body, meta, border, radius, shadow, card padding |
 | **Quote Card** | Quote card in closed state only | surface, quote text, attribution, watermark treatment |
-| **Callout Card** | Callout card in closed state only | surface, title, subtitle, body/excerpt, watermark treatment |
+| **Callout Card** | Callout card in closed, contextual destination, and open emphasized states | one shared surface, title, subtitle, body/excerpt, and centered watermark treatment across states |
 | **Lightbox** | Fullscreen or overlay media-viewing surface | scrim color, text color, control background color, control text color, control border color, caption color |
 
 #### Variant and discovery rules
 
 - **Closed-state rule** - All card types participate in Theme Management in their **closed** state.
-- **Open-state rule** - Only `Story Card`, `Gallery Card`, and `Question Card` participate in **open** state editing because those are the only card types that open in the reader.
+- **Open-state rule** - `Story Card`, `Gallery Card`, `Question Card`, and `Callout Card` participate in **open** state treatment. Callout expands its static visual contract rather than introducing a separate detail-panel design.
 - **Discovery rule** - Discovery is one **shared support surface** across the app, not a separate design system per card type. It may vary in bounded ways for `Story Card`, `Gallery Card`, and `Question Card` (for example title, excerpt, or framing treatment), but it should not become a different discovery UI per type.
-- **Discovery exclusions** - `Quote Card` and `Callout Card` do **not** participate in discovery.
+- **Discovery exclusions** - The parked `Quote Card` has no finalized discovery contract. `Callout Card` may appear as a compact contextual destination without expanding its Static body in the rail.
 
 #### Attribute typing for the initial set
 
@@ -309,7 +400,7 @@ The table below maps the initial author-facing component inventory to the curren
 | **Gallery Card** | `galleryCard -> closed/open/discovery` | `surfaces.card`, `surfaces.canvasDetail`, `surfaces.canvasMediaFrame`, `typography.galleryTitle`, `typography.galleryDetailTitle`, `typography.galleryHeaderTitle`, `typography.discoveryMeta`, `typography.caption`, `typography.body`, `controls.lightboxControl`, `overlays.galleryOverlay`, `overlays.lightboxBackdrop` | Card/detail/media/lightbox semantic families, overlay contrast text, media-control/lightbox-control semantics | Strong functional coverage, but it currently mixes card, media frame, and lightbox concerns across multiple recipe families instead of reading as one component with nested attributes. |
 | **Question Card** | `qaCard -> closed/open/discovery` | `surfaces.qaCardClosed`, `surfaces.canvasDetail`, `typography.question`, `typography.questionOverlay`, `typography.body`, `typography.excerpt`, `typography.caption` | Card/detail semantic families, tonal text, overlay contrast text | Functionally present, but still described partly in Q&A language and still needs the same component-first treatment as Story and Gallery. |
 | **Quote Card** | `quoteCard -> closed` | `surfaces.card`, `typography.quote`, `typography.caption`, `treatments.quoteWatermarkOpacity` | Shared card surface, quote/caption typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not be forced into the same open/detail model as other reader cards. |
-| **Callout Card** | `calloutCard -> closed` | `surfaces.card`, `typography.calloutTitle`, `typography.subtitle`, `typography.excerpt`, `typography.calloutBody`, `treatments.calloutWatermarkOpacity` | Shared card surface, callout typography, treatment values | Closed-state-only contract is clear, but it should remain outside discovery and should not inherit open/detail assumptions. |
+| **Callout Card** | `calloutCard -> closed/open/discovery` | `surfaces.card`, `typography.calloutTitle`, `typography.subtitle`, `typography.excerpt`, `typography.calloutBody`, `treatments.calloutWatermarkOpacity` | Shared card surface, callout typography, treatment values | Closed and open Callout treatments now share semantic roles; the future editor should expose those variants coherently. |
 | **Lightbox** | `lightbox -> fullscreen` | `controls.lightboxControl`, `overlays.lightboxBackdrop`, shared `typography.caption` | `semantic/reader/lightbox-control-surface`, `semantic/reader/lightbox-control-border`, `semantic/reader/overlay-scrim`, `semantic/reader/overlay-border`, overlay contrast text | Now promoted to a first-class editor component so fullscreen media is no longer hidden under Gallery authoring. Caption remains intentionally shared with the broader media-caption role. |
 
 #### What this mapping tells us
@@ -328,7 +419,7 @@ The first editor refactor should **not** try to invent everything from scratch. 
 - `Field` can be built from the current `field -> controls` binding set.
 - `Feedback Panel` can be built from the current `feedback` variants.
 - `Story Card`, `Gallery Card`, and `Question Card` can be built by grouping their current closed/open/discovery bindings under a component-first wrapper.
-- `Quote Card` and `Callout Card` should remain explicit closed-only components and should stay out of discovery.
+- `Quote Card` remains parked and closed-only. `Callout Card` should expose closed, open, and bounded contextual-destination variants without expanding Static content inside a rail.
 - `Lightbox` should remain split out from `galleryCard -> open` as its own author-facing component.
 - `Header` should remain a dedicated component entry rather than collapsing back into generic chrome naming.
 
@@ -393,7 +484,7 @@ These are the attributes the author should see first. Lower-frequency or more te
 Some components legitimately need variants. The editor should still keep the component as the primary unit and let variants sit **inside** it.
 
 - `Story Card`, `Gallery Card`, and `Question Card` should expose `Closed`, `Open`, and `Discovery` variants.
-- `Quote Card` and `Callout Card` should expose `Closed` only.
+- `Quote Card` should expose `Closed` only while parked; `Callout Card` should expose `Closed`, `Open`, and bounded `Discovery` variants.
 - `Discovery` remains one shared support surface family across the app and should not add separate quote/callout variants.
 
 First-pass variant structure:
@@ -808,7 +899,7 @@ The reader preview is no longer allowed to be an approximate mood board. It is t
 | Question card | Open | Question column -> open `CardDetailPage` | Canonical |
 | Question card | Explore More | `Explore More` section -> compact Q&A card | Canonical |
 | Quote card | Closed | Quote column -> closed `V2ContentCard` | Canonical |
-| Callout card | Closed | Callout column -> closed `V2ContentCard` | Canonical |
+| Callout card | Closed / Open / Discovery | Callout column -> `V2ContentCard`; detail emphasized panel; compact destination tile | Canonical |
 | Header | Reader chrome | Top navigation/header shell sample | Canonical for header surface and header-owned chrome framing |
 | Sidebar and controls | Reader chrome | Sidebar open sample | Canonical for sidebar surface, support typography, filter chips, icon color, active controls, and neutral controls |
 | Support UI | Tooling and selectors | `Support UI` sample with `SearchBar`, `PhotoPicker`, `TagSelector`, and `ImageToolbar` | Canonical |
@@ -878,7 +969,8 @@ Presets are **bundles** of assignments to the roles above (plus typography roles
 - **Typography:** Body/UI stay **neutral sans**, but Journal now leans more deliberately into **serif** for reader-facing story/gallery/detail hierarchy, with lighter title weight, roomier line height, and softer subtitle/support emphasis.
 - **Color:** Warmer paper-like neutrals for `--color1-*` / `theme-color/1`, warmer text values, and a less cold principal/accent family than the earlier blue-led Journal starting point.
 - **Shape:** Softer `--border-radius-lg` / card radius; moderate shadow, slightly roomier card/input padding, and gentler control density for a friendlier mobile feel.
-- **Current implementation direction (2026-04-25):** Journal is now being tuned toward a **warm literary premium** read: lighter type pressure, warmer surfaces, softer support chrome, stronger editorial hierarchy, and roomier rhythm before any new presentational roles such as a kicker are introduced.
+- **Current implementation direction:** Journal uses a **warm literary premium** read: lighter type pressure, warmer surfaces, softer support chrome, and strong editorial hierarchy. Open Story and Gallery now use their existing card-type role as a small Type kicker below the primary visual and above the title; this is a presentation of an owned role, not a new theme subsystem.
+- **Open long-form measure:** Story and Gallery detail prose uses a `68ch` maximum measure on wide screens while figures retain the wider detail canvas. This is a responsive layout rule built from existing reader typography and spacing roles, not a new theme subsystem or a constraint on print-oriented output.
 
 ### Preset B — **Editorial** (working name)
 

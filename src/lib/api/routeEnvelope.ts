@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import type { InputCapError } from '@/lib/api/inputCaps';
 import { AppError, ErrorCode, getStatusCodeForError, isAppError } from '@/lib/types/error';
 
@@ -64,7 +65,7 @@ export async function requireApiSession(
     return { session };
   }
 
-  if (!session) {
+  if (!isAuthenticatedSession(session)) {
     return {
       error: apiRouteError({
         code: 'AUTH_UNAUTHORIZED',

@@ -104,6 +104,14 @@
   padding-top: 0;
 }
 
+/* The open Gallery is one stable media-first viewport. Mixed source ratios must
+   not make the horizontal track reserve the height of its tallest slide. */
+.galleryDetailSection .imageWrapper.imagePortrait,
+.galleryDetailSection .imageWrapper.imageLandscape,
+.galleryDetailSection .imageWrapper.imageSquare {
+  aspect-ratio: 3 / 2;
+}
+
 .scrollContainer::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }

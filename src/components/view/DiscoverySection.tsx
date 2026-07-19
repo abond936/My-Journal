@@ -9,6 +9,7 @@ import {
   FEED_CARD_TYPES_ORDER,
 } from '@/components/providers/CardProvider';
 import styles from './DiscoverySection.module.css';
+import type { ReaderRouteMode } from '@/lib/utils/readerMode';
 
 interface DiscoverySectionProps {
   currentCard: Card;
@@ -18,12 +19,14 @@ interface DiscoverySectionProps {
    * `ChildCardsRail` on the detail page instead).
    */
   suppressChildCardsGroup?: boolean;
+  readerMode?: ReaderRouteMode;
 }
 
 export default function DiscoverySection({
   currentCard,
   childrenCards,
   suppressChildCardsGroup = false,
+  readerMode,
 }: DiscoverySectionProps) {
   const { feedCardTypes, isFeedCardTypesFilterActive } = useCardContext();
   const [filtered, setFiltered] = useState<Card[]>([]);
@@ -48,6 +51,7 @@ export default function DiscoverySection({
           when: currentCard.when || [],
           where: currentCard.where || [],
         };
+        const hasSharedDimensions = Object.values(sharedDimensions).some((tags) => tags.length > 0);
 
         const filteredParams = new URLSearchParams({
           count: '3',
@@ -97,11 +101,13 @@ export default function DiscoverySection({
         }
 
         const [filteredResponse, randomResponse] = await Promise.all([
-          fetch(`/api/cards/random?${filteredParams.toString()}`),
+          hasSharedDimensions
+            ? fetch(`/api/cards/random?${filteredParams.toString()}`)
+            : Promise.resolve(null),
           fetch(`/api/cards/random?${randomParams.toString()}`),
         ]);
 
-        if (!filteredResponse.ok) {
+        if (filteredResponse && !filteredResponse.ok) {
           const errorText = await filteredResponse.text();
           console.error('Filtered cards API error:', filteredResponse.status, errorText);
           throw new Error(`Filtered cards API failed: ${filteredResponse.status}`);
@@ -114,13 +120,24 @@ export default function DiscoverySection({
         }
 
         const [filteredCards, randomCards] = await Promise.all([
-          filteredResponse.json(),
+          filteredResponse ? filteredResponse.json() : Promise.resolve([] as Card[]),
           randomResponse.json(),
         ]);
 
         if (!cancelled) {
-          setFiltered(filteredCards);
-          setRandom(randomCards);
+          const excludedIds = new Set(excludeIds.filter((id): id is string => Boolean(id)));
+          const dedupedFiltered = (filteredCards as Card[]).filter((card) => {
+            if (!card.docId || excludedIds.has(card.docId)) return false;
+            excludedIds.add(card.docId);
+            return true;
+          });
+          const dedupedRandom = (randomCards as Card[]).filter((card) => {
+            if (!card.docId || excludedIds.has(card.docId)) return false;
+            excludedIds.add(card.docId);
+            return true;
+          });
+          setFiltered(dedupedFiltered);
+          setRandom(dedupedRandom);
         }
       } catch (err) {
         console.error('Error fetching discovery data:', err);
@@ -191,6 +208,8 @@ export default function DiscoverySection({
                   card={card}
                   size="small"
                   fullWidth
+                  destinationTile
+                  destinationReaderMode={readerMode}
                   adminEditReturnTo={detailReturnTo}
                 />
               </div>
@@ -221,6 +240,8 @@ export default function DiscoverySection({
                     card={card}
                     size="small"
                     fullWidth
+                    destinationTile
+                    destinationReaderMode={readerMode}
                     adminEditReturnTo={detailReturnTo}
                   />
                 </div>
@@ -246,6 +267,8 @@ export default function DiscoverySection({
                     card={card}
                     size="small"
                     fullWidth
+                    destinationTile
+                    destinationReaderMode={readerMode}
                     adminEditReturnTo={detailReturnTo}
                   />
                 </div>

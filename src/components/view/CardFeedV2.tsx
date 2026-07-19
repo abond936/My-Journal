@@ -7,15 +7,8 @@ import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './CardFeedV2.module.css';
 import V2ContentCard from './V2ContentCard';
 
-export interface CardFeedSection {
-  heading: string;
-  cards: Card[];
-}
-
 interface CardFeedProps {
   cards: Card[];
-  /** When set, render grouped sections instead of a flat grid. */
-  sections?: CardFeedSection[] | null;
   loading: boolean;
   refreshing?: boolean;
   loadMoreRef: (node?: Element | null | undefined) => void;
@@ -24,7 +17,6 @@ interface CardFeedProps {
 
 export default function CardFeedV2({
   cards,
-  sections,
   loading,
   refreshing = false,
   loadMoreRef,
@@ -41,7 +33,6 @@ export default function CardFeedV2({
     collectionId,
     collectionTreeCards,
     readerMode,
-    feedGroupBy,
     isGuidedCollectionTransition,
     guidedTransitionTitle,
     readerTagFilterScope,
@@ -100,17 +91,13 @@ export default function CardFeedV2({
     );
   }
 
-  const isEmpty =
-    sections && sections.length > 0
-      ? sections.every((s) => s.cards.length === 0)
-      : cards.length === 0;
+  const isEmpty = cards.length === 0;
 
   if (isEmpty) {
     const isCollectionsListMode = activeDimension === 'collections' && collectionId === null;
     const hasTagOrTypeFilters =
       selectedTags.length > 0 || isFeedCardTypesFilterActive || Boolean(searchTerm?.trim());
-    const hasCollectionOrGroup = collectionId !== null || feedGroupBy !== 'none';
-    const likelyFiltered = hasTagOrTypeFilters || hasCollectionOrGroup;
+    const likelyFiltered = hasTagOrTypeFilters || collectionId !== null;
 
     return (
       <main className={styles.feedMain}>
@@ -130,7 +117,7 @@ export default function CardFeedV2({
                 ? 'This guided section does not have visible cards yet.'
                 : readerTagFilterScope === 'subject'
                   ? 'Tag match is set to Subject only — only cards with a marked subject tag for the selected filter will appear. Try Any assigned, or mark subjects in Studio.'
-                  : 'Tag, type, search, collection, or "group by" may be limiting results.'}
+                  : 'Tag, type, search, or collection may be limiting results.'}
             </p>
           ) : !isAdmin ? (
             <p className={styles.emptyFeedHint}>
@@ -184,21 +171,7 @@ export default function CardFeedV2({
           </h2>
         </div>
       ) : null}
-      {sections && sections.length > 0 ? (
-        sections.map((section, idx) => {
-          const sid = `feed-grp-${idx}`;
-          return (
-            <section key={sid} className={styles.groupSection} aria-labelledby={sid}>
-              <h2 id={sid} className={styles.groupHeading}>
-                {section.heading}
-              </h2>
-              {renderGrid(section.cards)}
-            </section>
-          );
-        })
-      ) : (
-        renderGrid(cards)
-      )}
+      {renderGrid(cards)}
 
       <div ref={loadMoreRef} />
     </main>

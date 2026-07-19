@@ -80,12 +80,13 @@ function childStory(overrides: Partial<Card> = {}): Card {
 
 describe('ChildCardsRail', () => {
   it('renders main-feed medium tiles with chip strip for structural children', () => {
-    render(<ChildCardsRail cards={[childStory()]} title="In this year" />);
+    render(<ChildCardsRail cards={[childStory()]} title="In this year" readerMode="guided" />);
 
     expect(screen.getByRole('heading', { name: 'In this year' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '1972 Politics' })).toBeInTheDocument();
     expect(screen.getByText('Politics')).toBeInTheDocument();
     expect(screen.getByRole('link')).toHaveAttribute('data-feed-tile-variant', 'grid');
+    expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('mode=guided'));
   });
 
   it('forces square feed tiles for inline children with portrait covers', () => {
@@ -111,6 +112,33 @@ describe('ChildCardsRail', () => {
     expect(link?.className).toContain('squareFeedTile');
     expect(link).toHaveAttribute('data-feed-tile-variant', 'grid');
     expect(screen.queryByText('Inline body should not expand the rail tile.')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['quote', 'static'],
+    ['callout', 'static'],
+  ] as const)('renders %s %s children as linked square destinations', (type, displayMode) => {
+    const { container } = render(
+      <ChildCardsRail
+        cards={[
+          childStory({
+            type,
+            displayMode,
+            title: `${type} child`,
+            content: '<p>Complete static content</p>',
+            coverImage: undefined,
+          }),
+        ]}
+        adminEditReturnTo="/view/parent-1"
+      />
+    );
+
+    const link = screen.getByRole('link');
+    expect(link.className).toContain('squareFeedTile');
+    expect(link).toHaveAttribute('data-feed-tile-variant', 'grid');
+    expect(link).toHaveAttribute('href', expect.stringContaining('/view/child-1'));
+    expect(screen.queryByText('Complete static content')).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="feedTileChipStrip"]')).toBeTruthy();
   });
 
   it('renders nothing when no child cards have docIds', () => {

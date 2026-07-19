@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './fonts.css';
 import './theme.css';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -84,11 +85,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeProvider>
             <AppFeedbackProvider>
               <TagProvider>
-                  <CardProvider>
-                    <AppShell>
-                      {children}
-                    </AppShell>
-                  </CardProvider>
+                  <Suspense fallback={null}>
+                    <CardProvider>
+                      <AppShell>
+                        {children}
+                      </AppShell>
+                    </CardProvider>
+                  </Suspense>
               </TagProvider>
             </AppFeedbackProvider>
           </ThemeProvider>

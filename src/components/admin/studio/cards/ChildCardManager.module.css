@@ -93,8 +93,8 @@
 
 .removeButton {
     padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: var(--state-error-background-color);
-    color: var(--state-error-text-color);
+    background-color: var(--admin-state-error-background-color);
+    color: var(--admin-state-error-text-color);
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
@@ -104,11 +104,11 @@
 }
 
 .removeButton:hover {
-    background-color: var(--state-error-background-color-hover);
+    background-color: var(--admin-state-error-background-color-hover);
 }
 
 .error {
-    color: var(--state-error-text-color);
+    color: var(--admin-state-error-text-color);
     margin: var(--spacing-sm) 0;
     font-size: var(--font-size-xs);
 }

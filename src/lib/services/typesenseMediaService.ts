@@ -208,6 +208,15 @@ export async function syncMediaToTypesense(media: Media): Promise<void> {
   }
 }
 
+/** Strict import/recovery path: projection failures must remain observable to the caller. */
+export async function syncMediaToTypesenseStrict(media: Media): Promise<void> {
+  if (!isTypesenseConfigured()) return;
+  await withTypesenseRetry(
+    () => upsertMediaRecordToTypesense(media),
+    { entity: 'media', id: media.docId, operation: 'upsert' }
+  );
+}
+
 export async function syncMediaToTypesenseById(mediaId: string): Promise<void> {
   if (!isTypesenseConfigured()) return;
   try {

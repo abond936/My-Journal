@@ -1,22 +1,27 @@
-/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedTilePreview';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 
-jest.mock('@/components/admin/studio/cards/AdminClosedCardTileShell', () => ({
+jest.mock('@/components/view/V2ContentCard', () => ({
   __esModule: true,
-  default: function MockAdminClosedCardTileShell({
+  default: function MockV2ContentCard({
     card,
-    previewObjectPosition,
+    previewOnly,
+    previewCoverObjectPosition,
   }: {
-    card: { title?: string };
-    previewObjectPosition?: string;
+    card: { title?: string; type?: string; displayMode?: string };
+    previewOnly?: boolean;
+    previewCoverObjectPosition?: string;
   }) {
     return (
-      <div data-testid="admin-closed-card-tile-shell" data-object-position={previewObjectPosition}>
-        {card.title}
+      <div
+        data-testid="reader-content-card"
+        data-preview-only={String(previewOnly)}
+        data-object-position={previewCoverObjectPosition}
+      >
+        {card.type}:{card.displayMode}:{card.title}
       </div>
     );
   },
@@ -43,30 +48,38 @@ const baseCard: Card = {
 };
 
 describe('ComposeFeedTilePreview', () => {
-  it('renders shared closed tile shell for square-eligible cards', () => {
+  it('renders the actual Reader card in noninteractive preview mode', () => {
     render(<ComposeFeedTilePreview card={baseCard} allTags={tags} />);
     expect(screen.getByTestId('compose-feed-tile-preview')).toBeInTheDocument();
-    expect(screen.getByTestId('admin-closed-card-tile-shell')).toBeInTheDocument();
-    expect(screen.getByText('Summer trip')).toBeInTheDocument();
+    expect(screen.getByTestId('reader-content-card')).toHaveAttribute('data-preview-only', 'true');
+    expect(screen.getByText('story:navigate:Summer trip')).toBeInTheDocument();
   });
 
   it('passes live compose cover object position to the shell', () => {
     render(
       <ComposeFeedTilePreview card={baseCard} allTags={tags} coverObjectPosition="35% 62%" />
     );
-    expect(screen.getByTestId('admin-closed-card-tile-shell')).toHaveAttribute(
+    expect(screen.getByTestId('reader-content-card')).toHaveAttribute(
       'data-object-position',
       '35% 62%'
     );
   });
 
-  it('returns null for non-square feed types such as callout', () => {
-    const { container } = render(
+  it.each([
+    ['story', 'navigate'],
+    ['gallery', 'navigate'],
+    ['gallery', 'inline'],
+    ['qa', 'navigate'],
+    ['qa', 'inline'],
+    ['quote', 'static'],
+    ['callout', 'static'],
+  ] as const)('previews %s %s Reader presentation', (type, displayMode) => {
+    render(
       <ComposeFeedTilePreview
-        card={{ ...baseCard, type: 'callout', displayMode: 'navigate' }}
+        card={{ ...baseCard, type, displayMode }}
         allTags={tags}
       />
     );
-    expect(container.firstChild).toBeNull();
+    expect(screen.getByText(`${type}:${displayMode}:Summer trip`)).toBeInTheDocument();
   });
 });

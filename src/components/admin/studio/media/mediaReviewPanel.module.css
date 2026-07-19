@@ -37,7 +37,7 @@
 
 .modeToggleButtonActive {
   background: var(--accent1-color);
-  color: var(--text-on-accent-color, #fff);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .lensSelect {
@@ -126,7 +126,7 @@
 .pileOversized {
   margin: 0.25rem 0 0;
   font-size: var(--font-size-xs);
-  color: #b45309;
+  color: var(--admin-state-warning-text-color);
   font-weight: 500;
 }
 
@@ -150,11 +150,11 @@
 .pileActionButtonPrimary {
   background: var(--accent1-color);
   border-color: var(--accent1-color);
-  color: var(--text-on-accent-color, #fff);
+  color: var(--admin-support-control-strong-text-color);
 }
 
 .pileActionButtonDanger {
-  color: var(--danger-color, #b42318);
+  color: var(--admin-state-error-text-color);
 }
 
 .pileActionButton:disabled {
@@ -239,15 +239,15 @@
 }
 
 .tagChipWhat {
-  border-color: color-mix(in srgb, #7c3aed 35%, var(--border1-color));
+  border-color: color-mix(in srgb, var(--tag-what-bg-color) 35%, var(--border1-color));
 }
 
 .tagChipWhen {
-  border-color: color-mix(in srgb, #059669 35%, var(--border1-color));
+  border-color: color-mix(in srgb, var(--tag-when-bg-color) 35%, var(--border1-color));
 }
 
 .tagChipWhere {
-  border-color: color-mix(in srgb, #d97706 35%, var(--border1-color));
+  border-color: color-mix(in srgb, var(--tag-where-bg-color) 35%, var(--border1-color));
 }
 
 .tagChipRemove {

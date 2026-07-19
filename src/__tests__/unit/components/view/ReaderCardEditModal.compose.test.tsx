@@ -9,6 +9,11 @@ jest.mock('next/navigation', () => ({
     refresh: jest.fn(),
   }),
   usePathname: () => '/view/card-1',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: { user: { role: 'admin' } } }),
 }));
 
 jest.mock('swr', () => ({
@@ -29,12 +34,20 @@ jest.mock('@/components/providers/CardProvider', () => ({
   useOptionalCardContext: () => null,
   useCardContext: () => ({
     selectedTags: [],
+    readerMode: 'freeform',
+    patchVisibleCard: jest.fn(),
   }),
 }));
 
 jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({ tags: [] }),
 }));
+
+jest.mock('swiper/react', () => ({
+  Swiper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SwiperSlide: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+jest.mock('swiper/css', () => ({}), { virtual: true });
 
 jest.mock('@/components/common/RichTextEditor', () => ({
   __esModule: true,

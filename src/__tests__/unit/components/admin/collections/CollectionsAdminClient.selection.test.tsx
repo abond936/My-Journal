@@ -32,6 +32,9 @@ jest.mock('@/components/admin/studio/cards/curatedTreeDropHighlightContext', () 
 
 
 jest.mock('@/components/admin/studio/TagAdminStudioPane', () => () => null);
+jest.mock('@/components/providers/TagProvider', () => ({
+  useTag: () => ({ tags: [] }),
+}));
 jest.mock('@/lib/hooks/useDefaultDndSensors', () => ({
   DND_POINTER_IGNORE_ATTR: 'data-dnd-ignore',
   useDefaultDndSensors: () => [],

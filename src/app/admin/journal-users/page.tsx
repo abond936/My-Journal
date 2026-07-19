@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -28,25 +28,6 @@ export default function JournalUsersAdminPage() {
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [passwordErrorById, setPasswordErrorById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
-
-  const stickyTopRef = useRef<HTMLDivElement | null>(null);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const tabsEl = document.getElementById('admin-tabs-bar');
-      const stickyEl = stickyTopRef.current;
-      if (!tabsEl || !stickyEl) return;
-      const tabsHeight = tabsEl.getBoundingClientRect().height;
-      const stickyHeight = stickyEl.getBoundingClientRect().height;
-
-      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
-      document.documentElement.style.setProperty('--admin-table-header-top', `${tabsHeight + stickyHeight}px`);
-    };
-
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
 
   const load = useCallback(async () => {
     setListError(null);
@@ -119,6 +100,7 @@ export default function JournalUsersAdminPage() {
     }
     const updated = await patchUser(id, { password: pwd });
     if (!updated) return;
+    feedback.showSuccess('Temporary password updated.');
     setPasswordById(prev => {
       const next = { ...prev };
       delete next[id];
@@ -131,11 +113,29 @@ export default function JournalUsersAdminPage() {
     });
   };
 
+  const handleToggleDisabled = async (user: JournalUserPublic) => {
+    if (!user.disabled) {
+      const confirmed = await feedback.confirm({
+        title: 'Disable user?',
+        message: `${user.displayName} will lose access on their next request. Their account and content access can be restored by enabling the account again.`,
+        confirmLabel: 'Disable',
+        cancelLabel: 'Keep active',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+    }
+
+    const updated = await patchUser(user.docId, { disabled: !user.disabled });
+    if (updated) {
+      feedback.showSuccess(user.disabled ? 'User enabled.' : 'User disabled.');
+    }
+  };
+
   return (
     <div className={styles.container}>
-      <div className={styles.stickyTop} ref={stickyTopRef}>
+      <header className={styles.header}>
         <h1 className={styles.pageHeading}>User Management</h1>
-      </div>
+      </header>
 
       {listError && <div className={styles.error}>{listError}</div>}
 
@@ -213,7 +213,7 @@ export default function JournalUsersAdminPage() {
                             type="button"
                             className={styles.buttonSecondary}
                             disabled={rowBusy === u.docId}
-                            onClick={() => patchUser(u.docId, { disabled: !u.disabled })}
+                            onClick={() => void handleToggleDisabled(u)}
                           >
                             {u.disabled ? 'Enable' : 'Disable'}
                           </button>

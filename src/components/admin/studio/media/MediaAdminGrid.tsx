@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link2, Pencil, Trash2 } from 'lucide-react';
+import { Link2, Pencil } from 'lucide-react';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS as DndCss } from '@dnd-kit/utilities';
@@ -19,6 +19,7 @@ import MediaLinkedCardsModal from '@/components/admin/studio/media/MediaLinkedCa
 import useMediaReferenceSummaries from '@/components/admin/studio/media/useMediaReferenceSummaries';
 import { filterMediaForStackDisplay, getStackDisplayMeta } from '@/lib/utils/mediaStackDisplayUtils';
 import styles from './MediaAdminGrid.module.css';
+import { fetchAuthoritativeMediaReferenceSummaries } from '@/lib/utils/mediaReferenceSummaryClient';
 import AdminGridCellChrome from '@/components/admin/common/AdminGridCellChrome';
 import chromeStyles from '@/components/admin/common/AdminGridCellChrome.module.css';
 import { adminChromeSelector, ADMIN_GRID_CHROME } from '@/components/admin/common/adminGridChromeAttr';
@@ -111,12 +112,13 @@ function MediaAdminGridCell({
   const feedback = useAppFeedback();
   const studioShell = useStudioShellOptional();
   const core = useMemo(() => getCoreTagsByDimension(media), [media]);
-  const { deleteMedia } = useMedia();
+  const { deleteMedia, refreshMedia } = useMedia();
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [linkedCardsModalOpen, setLinkedCardsModalOpen] = useState(false);
   const [captionDraft, setCaptionDraft] = useState(media.caption || '');
   const [captionSaving, setCaptionSaving] = useState(false);
+  const [readinessRetrying, setReadinessRetrying] = useState(false);
   const captionInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const syncInlineCaptionHeight = useCallback(() => {
@@ -239,9 +241,23 @@ function MediaAdminGridCell({
     setLinkedCardsModalOpen(true);
   }, [relatedCardIds, router]);
   const handleDeleteMedia = useCallback(async () => {
+    let verifiedRelatedCardIds: string[];
+    try {
+      const summaries = await fetchAuthoritativeMediaReferenceSummaries([media.docId]);
+      verifiedRelatedCardIds = summaries[media.docId] ?? [];
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Could not verify linked-card consequences.',
+        'Delete blocked'
+      );
+      return;
+    }
+    const linkedConsequence = verifiedRelatedCardIds.length > 0
+      ? ` It is used by ${verifiedRelatedCardIds.length} card${verifiedRelatedCardIds.length === 1 ? '' : 's'}; deletion removes it from Cover, Gallery, and body placements on those cards before deleting the library record and files.`
+      : ' It is not used by any cards; deletion removes the library record and files.';
     const shouldDelete = await feedback.confirm({
       title: 'Delete media?',
-      message: `Delete "${media.filename}" from the library?`,
+      message: `Delete "${media.filename}"?${linkedConsequence}`,
       confirmLabel: 'Delete',
       cancelLabel: 'Cancel',
       tone: 'danger',
@@ -259,6 +275,28 @@ function MediaAdminGridCell({
       );
     }
   }, [deleteMedia, feedback, media.docId, media.filename, studioShell]);
+  const handleReadinessRetry = useCallback(async () => {
+    if (!media.docId || readinessRetrying) return;
+    setReadinessRetrying(true);
+    try {
+      const response = await fetch(`/api/admin/media/readiness/${encodeURIComponent(media.docId)}/retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      if (!response.ok) throw new Error(payload.message || 'Retry failed.');
+      await refreshMedia();
+      feedback.showSuccess('Failed media processing was retried.', 'Media ready');
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Failed to retry media processing.',
+        'Retry failed'
+      );
+    } finally {
+      setReadinessRetrying(false);
+    }
+  }, [feedback, media.docId, readinessRetrying, refreshMedia]);
   const studioRootExtras = studioDragBind
     ? {
         ref: studioDragBind.setNodeRef,
@@ -309,21 +347,12 @@ function MediaAdminGridCell({
         <div className={styles.overlayTopEndCluster} onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            className={styles.overlayEditButton}
-            onClick={() => setEditModalOpen(true)}
-            aria-label="Edit media"
-            title="Edit media"
-          >
-            <Pencil size={16} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
             className={chromeStyles.deleteBtn}
             onClick={() => void handleDeleteMedia()}
             aria-label="Delete media"
             title="Delete media"
           >
-            <Trash2 size={16} aria-hidden="true" />
+            🗑️
           </button>
         </div>
       }
@@ -363,9 +392,23 @@ function MediaAdminGridCell({
             {isAssignedToActiveCard ? (
               <span className={styles.assignedToCardBadge}>On card</span>
             ) : null}
+            {media.readiness?.overall === 'pending' ? (
+              <span className={styles.readinessPending}>Processing</span>
+            ) : null}
+            {media.readiness?.overall === 'failed' ? (
+              <button
+                type="button"
+                className={styles.readinessFailed}
+                onClick={() => void handleReadinessRetry()}
+                disabled={readinessRetrying}
+                title="Retry failed media processing"
+              >
+                {readinessRetrying ? 'Retrying…' : 'Needs retry'}
+              </button>
+            ) : null}
           </div>
           {linkedCardCount > 0 ? (
-            <div className={styles.overlayBottomEnd}>
+            <div className={styles.overlayBottomStart}>
               <button
                 type="button"
                 className={styles.overlayBottomLinkButton}
@@ -387,6 +430,20 @@ function MediaAdminGridCell({
             </div>
           ) : null}
         </div>
+      }
+      overlayBottomEnd={
+        <button
+          type="button"
+          className={styles.overlayEditButton}
+          onClick={(event) => {
+            event.stopPropagation();
+            setEditModalOpen(true);
+          }}
+          aria-label="Edit media"
+          title="Edit media"
+        >
+          <Pencil size={12} aria-hidden="true" />
+        </button>
       }
       belowMeta={undefined}
       thumbnail={
@@ -569,6 +626,7 @@ export default function MediaAdminGrid({
   onVisibleHighlightedCountChange,
   mediaOverride,
   emptyMessage = 'No media found matching the current filters.',
+  emptyState,
   gridTileMinPx,
   stackById,
   showAllStacks = false,
@@ -587,6 +645,7 @@ export default function MediaAdminGrid({
   onVisibleHighlightedCountChange?: (count: number) => void;
   mediaOverride?: Media[] | null;
   emptyMessage?: string;
+  emptyState?: React.ReactNode;
   gridTileMinPx?: number;
   stackById?: Map<string, import('@/lib/types/mediaStack').MediaStack>;
   showAllStacks?: boolean;
@@ -835,7 +894,7 @@ export default function MediaAdminGrid({
       </div>
       {displayMedia.length === 0 && (
         <div className={styles.emptyState}>
-          <p>{emptyMessage}</p>
+          {emptyState ?? <p>{emptyMessage}</p>}
         </div>
       )}
     </div>

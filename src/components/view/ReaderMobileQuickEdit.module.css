@@ -121,9 +121,13 @@
 }
 
 .primaryButton {
-  border: 0;
-  background: var(--reader-accent-color);
-  color: var(--reader-accent-contrast-color, #fff);
+  border: 1px solid var(--primary-action-border-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--primary-action-background-color-hover);
 }
 
 .primaryButton:disabled,

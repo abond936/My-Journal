@@ -26,7 +26,9 @@ export function resolveFeedTileDirectTagIds(
 }
 
 export function usesSquareFeedTile(cardType: string, displayMode: string): boolean {
-  if (displayMode === 'inline') return false;
+  // Question Reveal changes interaction, not the closed question-face geometry.
+  if (displayMode === 'inline') return cardType === 'qa';
+  if (displayMode === 'static') return cardType === 'callout';
   if (cardType === 'callout') return false;
   return cardType === 'story' || cardType === 'gallery' || cardType === 'quote' || cardType === 'qa';
 }

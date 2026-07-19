@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
-import { canReadCard, filterReadableCards } from '@/lib/auth/readerAccess';
+import { canReadCard, filterReadableCards, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 
 interface CardPageProps {
   params: Promise<{
@@ -49,7 +49,7 @@ export default async function CardPage({ params }: CardPageProps) {
   const { id } = await params;
   const session = (await getServerSession(authOptions)) as Session | null;
 
-  if (!session) {
+  if (!isAuthenticatedSession(session)) {
     redirect(buildLoginRedirectPath(`/view/${encodeURIComponent(id)}`));
   }
 
@@ -64,4 +64,4 @@ export default async function CardPage({ params }: CardPageProps) {
   const serializedChildren = pageData.children.map(child => serializeCardForClient(child));
 
   return <CardDetailPage card={serializedCard} childrenCards={serializedChildren} />;
-} 
+}

@@ -267,7 +267,7 @@
 
 .cardEditPlaceholderError {
   margin: 0;
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .studioCardEditChromeLink {
@@ -399,8 +399,8 @@
   min-width: 34px;
   padding: 0 0.55rem;
   background-color: transparent;
-  color: var(--admin-danger-text-color, #8a1f1f);
-  border: var(--border-width-thin) solid var(--admin-danger-border-color, #b84747);
+  color: var(--admin-state-error-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -414,7 +414,7 @@
 }
 
 .studioComposeDeleteButton:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--admin-danger-border-color, #b84747) 12%, transparent);
+  background-color: var(--admin-state-error-background-color);
 }
 
 .studioComposeDeleteButton:disabled {
@@ -1104,14 +1104,14 @@
 .studioQuestionDeleteButton {
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   background: var(--admin-support-control-background-color);
-  color: color-mix(in srgb, var(--admin-support-control-text-color) 76%, var(--state-error-text-color) 24%);
+  color: color-mix(in srgb, var(--admin-support-control-text-color) 76%, var(--admin-state-error-text-color) 24%);
   padding: 0 0.55rem;
 }
 
 .studioQuestionDeleteButton:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--state-error-border-color) 16%);
-  border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--state-error-border-color) 46%);
-  color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--state-error-text-color) 46%);
+  background-color: color-mix(in srgb, var(--admin-support-control-background-color) 84%, var(--admin-state-error-border-color) 16%);
+  border-color: color-mix(in srgb, var(--admin-support-control-border-color) 54%, var(--admin-state-error-border-color) 46%);
+  color: color-mix(in srgb, var(--admin-support-control-text-color) 54%, var(--admin-state-error-text-color) 46%);
 }
 
 .studioQuestionPrimaryButton:disabled,
@@ -1187,18 +1187,18 @@
   margin: 0;
   padding: 0.32rem 0.45rem;
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
-  background: color-mix(in srgb, var(--state-error-background-color) 88%, var(--admin-window-background-color));
-  color: var(--state-error-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
+  background: color-mix(in srgb, var(--admin-state-error-background-color) 88%, var(--admin-window-background-color));
+  color: var(--admin-state-error-text-color);
 }
 
 .metaInfo {
   margin: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid var(--state-success-border-color);
-  background: color-mix(in srgb, var(--state-success-background-color) 88%, var(--admin-window-background-color));
-  color: var(--state-success-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-success-border-color);
+  background: color-mix(in srgb, var(--admin-state-success-background-color) 88%, var(--admin-window-background-color));
+  color: var(--admin-state-success-text-color);
 }
 
 .relationshipShell {
@@ -1766,7 +1766,7 @@
 
 .studioGalleryPasteError {
   margin: 0 0 var(--spacing-xs);
-  color: var(--error-color, #b42318);
+  color: var(--admin-state-error-text-color);
   font-size: var(--font-size-sm);
 }
 

@@ -1,7 +1,9 @@
 import { getServerSession } from 'next-auth/next';
 import { getToken } from 'next-auth/jwt';
 import { redirect } from 'next/navigation';
-import { getCardById, getCards, getPaginatedCardsByIds } from '@/lib/services/cardService';
+import { getCardById, getCards, getCardsByIds, getPaginatedCardsByIds } from '@/lib/services/cardService';
+import { isTypesenseConfigured } from '@/lib/config/typesense';
+import { searchCardsFiltered } from '@/lib/services/typesenseService';
 import { GET as listCards } from '@/app/api/cards/route';
 import { cardMatchesExactTagScope } from '@/lib/utils/cardTagFilter';
 import { GET as getCard } from '@/app/api/cards/[id]/route';
@@ -83,6 +85,10 @@ jest.mock('@/lib/config/typesense', () => ({
   isTypesenseConfigured: jest.fn(() => false),
 }));
 
+jest.mock('@/lib/services/typesenseService', () => ({
+  searchCardsFiltered: jest.fn(),
+}));
+
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({
     firestore: jest.fn(() => ({
@@ -111,7 +117,10 @@ const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
 const mockedRedirect = redirect as jest.MockedFunction<typeof redirect>;
 const mockedGetCardById = getCardById as jest.MockedFunction<typeof getCardById>;
 const mockedGetCards = getCards as jest.MockedFunction<typeof getCards>;
+const mockedGetCardsByIds = getCardsByIds as jest.MockedFunction<typeof getCardsByIds>;
 const mockedGetPaginatedCardsByIds = getPaginatedCardsByIds as jest.MockedFunction<typeof getPaginatedCardsByIds>;
+const mockedIsTypesenseConfigured = isTypesenseConfigured as jest.MockedFunction<typeof isTypesenseConfigured>;
+const mockedSearchCardsFiltered = searchCardsFiltered as jest.MockedFunction<typeof searchCardsFiltered>;
 
 function makeRequest(url: string) {
   const parsed = new URL(url);
@@ -137,6 +146,7 @@ function makeRequest(url: string) {
 describe('reader access boundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedIsTypesenseConfigured.mockReturnValue(false);
   });
 
   it('redirects unauthenticated reader routes to login with callbackUrl', async () => {
@@ -170,6 +180,20 @@ describe('reader access boundary', () => {
     expect(searchRes.status).toBe(401);
     expect(randomRes.status).toBe(401);
     expect(mediaRes.status).toBe(401);
+  });
+
+  it('passes the Reader Gallery hydration tier through the card list route', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
+    mockedGetCards.mockResolvedValue({ items: [], hasMore: false });
+
+    const res = await listCards(
+      makeRequest('https://example.test/api/cards?status=published&hydration=reader-feed')
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockedGetCards).toHaveBeenCalledWith(
+      expect.objectContaining({ hydrationMode: 'reader-feed' })
+    );
   });
 
   it('scans additional ordered card batches before paginating subject-scoped results', async () => {
@@ -216,6 +240,38 @@ describe('reader access boundary', () => {
     expect(payload.lastDocId).toBe('card-2');
     expect(payload.hasMore).toBe(false);
   });
+
+  it.each(['who', 'what', 'where'] as const)(
+    'uses projection-backed archive ordering for plain %s sorts',
+    async (sortBy) => {
+      mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
+      mockedIsTypesenseConfigured.mockReturnValue(true);
+      mockedSearchCardsFiltered.mockResolvedValue({
+        docIds: ['card-2', 'card-1'],
+        totalFound: 2,
+      });
+      mockedGetCardsByIds.mockResolvedValue([
+        { docId: 'card-2', title: 'Second', status: 'published' } as never,
+        { docId: 'card-1', title: 'First', status: 'published' } as never,
+      ]);
+
+      const res = await listCards(
+        makeRequest(`https://example.test/api/cards?status=published&sortBy=${sortBy}&sortDir=asc&limit=20`)
+      );
+      const payload = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(mockedSearchCardsFiltered).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy, sortDir: 'asc', page: 0, perPage: 20 })
+      );
+      expect(mockedGetCardsByIds).toHaveBeenCalledWith(
+        ['card-2', 'card-1'],
+        { hydrationMode: 'full' }
+      );
+      expect(mockedGetCards).not.toHaveBeenCalled();
+      expect(payload.items.map((card: { docId: string }) => card.docId)).toEqual(['card-2', 'card-1']);
+    }
+  );
 
   it('treats exact dimensional filters as direct assignments rather than ancestor matches', () => {
     expect(

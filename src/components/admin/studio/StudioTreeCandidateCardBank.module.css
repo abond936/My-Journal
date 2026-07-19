@@ -327,8 +327,8 @@
 }
 
 .studioDeleteConfirmPrimary {
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--state-error-border-color) 70%, var(--admin-window-border-color) 30%);
-  background: color-mix(in srgb, var(--state-error-border-color) 58%, var(--admin-window-background-color) 42%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-state-error-border-color) 70%, var(--admin-window-border-color) 30%);
+  background: color-mix(in srgb, var(--admin-state-error-border-color) 58%, var(--admin-window-background-color) 42%);
   color: var(--admin-support-control-strong-text-color);
 }
 

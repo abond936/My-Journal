@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const reviewLensSchema = z.enum(['suggested', 'when', 'where', 'who', 'what']);
 export type ReviewLens = z.infer<typeof reviewLensSchema>;
 
-export const provisionalClusterStatusSchema = z.enum(['pending', 'accepted', 'dismissed']);
+export const provisionalClusterStatusSchema = z.enum(['pending', 'accepted', 'dismissed', 'merged']);
 export type ProvisionalClusterStatus = z.infer<typeof provisionalClusterStatusSchema>;
 
 export const suggestedTagIdsByDimensionSchema = z.object({
@@ -25,6 +25,8 @@ export const provisionalClusterSchema = z.object({
   memberMediaIds: z.array(z.string()),
   suggestedTagIds: suggestedTagIdsByDimensionSchema,
   coverageNote: z.string().optional(),
+  mergedIntoClusterId: z.string().optional(),
+  mergedAt: z.number().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

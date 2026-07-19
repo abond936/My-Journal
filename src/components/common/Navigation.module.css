@@ -186,9 +186,7 @@
 .themeRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: 0;
 }
 
 .signOutButton {

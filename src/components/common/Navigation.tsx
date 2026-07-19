@@ -8,6 +8,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
+import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
 import styles from './Navigation.module.css';
 
 interface NavigationProps {
@@ -15,36 +16,42 @@ interface NavigationProps {
   sidebarOpen?: boolean;
 }
 
-function useReaderBackTarget(pathname: string | null): { showBack: boolean; backHref: string } {
+function useReaderBackTarget(
+  pathname: string | null,
+  returnTo: string | null
+): { showBack: boolean; backHref: string } {
   return useMemo(() => {
     if (!pathname || pathname === '/' || pathname === '/view' || pathname.startsWith('/admin')) {
       return { showBack: false, backHref: '/view' };
     }
-    if (pathname.startsWith('/view/') || pathname === '/search') {
-      return { showBack: true, backHref: '/view' };
-    }
-    return { showBack: true, backHref: '/view' };
-  }, [pathname]);
+    return { showBack: true, backHref: getSafeReaderReturnTo(returnTo) ?? '/view' };
+  }, [pathname, returnTo]);
 }
 
 const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [returnTo, setReturnTo] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const isAdmin = session?.user?.role === 'admin';
-  const { showBack, backHref } = useReaderBackTarget(pathname);
+  const { showBack, backHref } = useReaderBackTarget(pathname, returnTo);
   const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
   const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
   const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
-  const isSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
+  const isArchiveSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
+  const isAccountRoute = pathname === '/account' || pathname === '/settings';
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setReturnTo(new URLSearchParams(window.location.search).get('returnTo'));
+  }, [pathname]);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -121,9 +128,6 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         </div>
 
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
-          <Link href="/view" className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}>
-            Content
-          </Link>
           <Link
             href="/"
             className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`}
@@ -131,28 +135,10 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             Home
           </Link>
           <Link
-            href="/my-stories/1"
-            className={`${styles.navLink} ${pathname === '/my-stories/1' ? styles.active : ''}`}
+            href="/view"
+            className={`${styles.navLink} ${pathname === '/view' ? styles.active : ''}`}
           >
-            Landing Page 1
-          </Link>
-          <Link
-            href="/my-stories/2"
-            className={`${styles.navLink} ${pathname === '/my-stories/2' ? styles.active : ''}`}
-          >
-            Landing Page 2
-          </Link>
-          <Link
-            href="/my-stories/3"
-            className={`${styles.navLink} ${pathname === '/my-stories/3' ? styles.active : ''}`}
-          >
-            Landing Page 3
-          </Link>
-          <Link
-            href="/my-stories/4"
-            className={`${styles.navLink} ${pathname === '/my-stories/4' ? styles.active : ''}`}
-          >
-            Landing Page 4
+            Reader
           </Link>
           {isAdmin ? (
             <>
@@ -170,7 +156,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               </Link>
               <Link
                 href="/admin/settings"
-                className={`${styles.navLink} ${isSettingsRoute ? styles.active : ''}`}
+                className={`${styles.navLink} ${isArchiveSettingsRoute ? styles.active : ''}`}
               >
                 Settings
               </Link>
@@ -188,9 +174,14 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             </>
           ) : null}
           <div className={styles.themeRow}>
-            <span>Theme</span>
             <ThemeToggle />
           </div>
+          <Link
+            href="/account"
+            className={`${styles.navLink} ${isAccountRoute ? styles.active : ''}`}
+          >
+            Account
+          </Link>
           <button
             type="button"
             className={styles.signOutButton}

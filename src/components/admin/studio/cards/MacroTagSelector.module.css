@@ -9,18 +9,18 @@
 }
 
 .container.hasError {
-  border-color: var(--state-error-border-color);
-  background-color: var(--state-error-background-color);
+  border-color: var(--admin-state-error-border-color);
+  background-color: var(--admin-state-error-background-color);
 }
 
 .container.isDirty {
-  border-color: var(--state-warning-border-color);
+  border-color: var(--admin-state-warning-border-color);
 }
 
 /* Optional error outline when `error` prop is set (class name used in JSX). */
 .error {
-  border-color: var(--state-error-border-color);
-  background-color: var(--state-error-background-color);
+  border-color: var(--admin-state-error-border-color);
+  background-color: var(--admin-state-error-background-color);
 }
 
 .header {
@@ -271,7 +271,7 @@
 
 .addTagError {
   font-size: var(--font-size-sm);
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   margin: 0 0 var(--spacing-sm);
 }
 
@@ -528,9 +528,9 @@
 }
 
 .saveButton {
-  background-color: var(--admin-support-control-strong-background-color);
-  border-color: var(--admin-support-control-strong-border-color);
-  color: var(--admin-support-control-strong-text-color);
+  background-color: var(--primary-action-background-color);
+  border-color: var(--primary-action-border-color);
+  color: var(--primary-action-text-color);
 }
 
 .saveButton.isDirty::after {
@@ -540,12 +540,12 @@
   right: calc(-1 * var(--spacing-xs));
   width: var(--spacing-sm);
   height: var(--spacing-sm);
-  background-color: var(--state-warning-border-color);
+  background-color: var(--admin-state-warning-border-color);
   border-radius: 50%;
 }
 
 .saveButton:hover {
-  background-color: var(--admin-support-control-strong-hover-background-color);
+  background-color: var(--primary-action-background-color-hover);
 }
 
 .saveButton:disabled {

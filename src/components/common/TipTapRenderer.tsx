@@ -92,6 +92,9 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({
       className={[
         styles.renderer,
         surface === 'transparent' ? styles.rendererTransparent : '',
+        headingVariant === 'storyDetail' || headingVariant === 'galleryDetail'
+          ? styles.rendererLongForm
+          : '',
         headingVariant === 'detail'
           ? styles.rendererDetailHeadings
           : headingVariant === 'storyDetail'

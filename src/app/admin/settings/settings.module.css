@@ -145,13 +145,13 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  border: var(--border-width-thin) solid var(--color3);
-  background: var(--color3);
-  color: var(--button-solid-text-color);
+  border: var(--border-width-thin) solid var(--primary-action-border-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
 }
 
 .saveButton:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: var(--primary-action-background-color-hover);
 }
 
 .saveButton:disabled {

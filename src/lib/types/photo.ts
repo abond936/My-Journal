@@ -21,6 +21,13 @@ const mediaContentIdentitySchema = z.object({
   basis: z.literal('source-bytes'),
 });
 
+const mediaContentIdentityAssessmentSchema = z.object({
+  status: z.enum(['local-original-not-found', 'source-original-not-retained']),
+  basis: z.literal('source-audit'),
+  assessmentVersion: z.literal(1),
+  assessedAt: z.number(),
+});
+
 const mediaSourceIdentitySchema = z.object({
   provider: z.enum(['local', 'upload', 'apple_photos']),
   assetId: z.string().min(1),
@@ -30,6 +37,26 @@ const mediaSourceIdentitySchema = z.object({
   caption: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
   importBatchId: z.string().optional(),
+});
+
+const mediaReadinessStageStatusSchema = z.enum(['pending', 'ready', 'failed']);
+const mediaReadinessStageSchema = z.object({
+  status: mediaReadinessStageStatusSchema,
+  attemptedAt: z.number(),
+  code: z.string().min(1).optional(),
+  retryable: z.boolean().optional(),
+  detail: z.string().max(240).optional(),
+});
+const mediaReadinessSchema = z.object({
+  overall: mediaReadinessStageStatusSchema,
+  stages: z.object({
+    source: mediaReadinessStageSchema,
+    metadata: mediaReadinessStageSchema,
+    studioRendition: mediaReadinessStageSchema,
+    readerRendition: mediaReadinessStageSchema,
+    searchIndex: mediaReadinessStageSchema,
+  }),
+  updatedAt: z.number(),
 });
 
 // Defines the canonical metadata for a single media asset in the system.
@@ -53,12 +80,16 @@ export const mediaSchema = z.object({
   storageUrl: z.string(), // Public, permanent URL from Firebase Storage.
   storagePath: z.string(), // The path to the file within the Storage bucket (e.g., 'images/uuid-filename.jpg').
   renditions: mediaRenditionsSchema.optional(),
+  /** Durable stage outcomes for new imports. Absence means a legacy record is unassessed. */
+  readiness: mediaReadinessSchema.optional(),
   
   // Details about the original source of the file.
   source: z.enum(['local', 'paste']),
   sourcePath: z.string(), // The original path/identifier from the source (e.g., '/2023/Vacation/IMG_1234.jpg').
   /** Exact identity of source bytes before normalization or rendition generation. */
   contentIdentity: mediaContentIdentitySchema.optional(),
+  /** Explicit reason exact source-byte evidence cannot currently be established. */
+  contentIdentityAssessment: mediaContentIdentityAssessmentSchema.optional(),
   /** Every known source identity for this canonical asset, including repeat imports. */
   sourceIdentities: z.array(mediaSourceIdentitySchema).optional(),
   
@@ -110,6 +141,9 @@ export const mediaSchema = z.object({
 export type Media = z.infer<typeof mediaSchema>;
 export type MediaContentIdentity = z.infer<typeof mediaContentIdentitySchema>;
 export type MediaSourceIdentity = z.infer<typeof mediaSourceIdentitySchema>;
+export type MediaReadiness = z.infer<typeof mediaReadinessSchema>;
+export type MediaReadinessStage = z.infer<typeof mediaReadinessStageSchema>;
+export type MediaReadinessStageName = keyof MediaReadiness['stages'];
 
 /** Local folder browser / picker preview item (not persisted as Media until import). */
 export interface PickerMedia {

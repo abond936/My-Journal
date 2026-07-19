@@ -131,10 +131,10 @@
 
 .saveButton {
   padding: 6px 10px;
-  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border: var(--border-width-thin) solid var(--primary-action-border-color);
   border-radius: var(--border-radius-md);
-  background-color: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
+  background-color: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
   cursor: pointer;
   font-family: var(--admin-support-control-font-family);
   font-size: var(--font-size-xs);
@@ -144,7 +144,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: var(--admin-support-control-strong-hover-background-color);
+  background-color: var(--primary-action-background-color-hover);
 }
 
 .saveButton:disabled {
@@ -153,7 +153,7 @@
 }
 
 .saveButton:disabled:not(:hover) {
-  background-color: var(--admin-support-control-strong-background-color);
+  background-color: var(--primary-action-background-color);
 }
 
 .secondaryActionButton {
@@ -171,7 +171,7 @@
 }
 
 .saveButtonActive {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-support-control-strong-background-color) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-action-background-color) 22%, transparent);
 }
 
 .secondaryActionButton:hover:not(:disabled) {
@@ -245,18 +245,18 @@
 }
 
 .saveNoticeSuccess {
-  background-color: var(--state-success-background-color);
-  border-color: var(--state-success-border-color);
+  background-color: var(--admin-state-success-background-color);
+  border-color: var(--admin-state-success-border-color);
 }
 
 .saveNoticeWarning {
-  background-color: var(--state-warning-background-color);
-  border-color: var(--state-warning-border-color);
+  background-color: var(--admin-state-warning-background-color);
+  border-color: var(--admin-state-warning-border-color);
 }
 
 .saveNoticeError {
-  background-color: var(--state-error-background-color);
-  border-color: var(--state-error-border-color);
+  background-color: var(--admin-state-error-background-color);
+  border-color: var(--admin-state-error-border-color);
 }
 
 .centered {
@@ -1461,8 +1461,8 @@
 }
 
 .colorInputError {
-  border-color: var(--state-error-border-color);
-  background-color: var(--state-error-background-color);
+  border-color: var(--admin-state-error-border-color);
+  background-color: var(--admin-state-error-background-color);
 }
 
 .colorPreview {
@@ -1475,7 +1475,7 @@
 
 .colorError {
   font-size: var(--font-size-xs);
-  color: var(--state-error-border-color);
+  color: var(--admin-state-error-border-color);
   margin-top: var(--spacing-xs);
   text-align: left;
   max-width: 120px;
@@ -2477,6 +2477,37 @@
   background-color: color-mix(in srgb, var(--admin-window-background-color) 96%, var(--admin-chrome-panel-color));
 }
 
+.activeEditPath {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: var(--spacing-xs);
+  border-bottom: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 72%, transparent);
+  color: var(--admin-support-meta-color);
+  font-size: var(--font-size-xs);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.activeEditPath strong {
+  color: var(--admin-support-label-color);
+  font-weight: var(--font-weight-semibold);
+}
+
+.draftStatus {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  background: var(--admin-state-warning-background-color);
+  color: var(--admin-state-warning-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-warning-border-color);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
 .componentGroupedEditor {
   display: grid;
   gap: var(--spacing-sm);
@@ -2707,14 +2738,14 @@
 .componentTable th,
 .componentTable td {
   padding: var(--spacing-sm);
-  border-top: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
   vertical-align: top;
   text-align: left;
 }
 
 .componentTable thead th {
   border-top: 0;
-  color: var(--reader-support-meta-color);
+  color: var(--admin-support-meta-color);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
@@ -2722,22 +2753,22 @@
 }
 
 .componentTable tbody tr:first-child td {
-  border-top: var(--border-width-thin) solid var(--reader-window-border-color);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
 .componentRowSelected td {
-  background-color: color-mix(in srgb, var(--reader-chrome-active-control-background-color) 8%, transparent);
+  background-color: color-mix(in srgb, var(--admin-chrome-active-control-background-color) 8%, transparent);
 }
 
 .componentElementLabel {
-  color: var(--reader-support-label-color);
+  color: var(--admin-support-label-color);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
 }
 
 .componentElementNote {
   margin-top: 4px;
-  color: var(--reader-support-meta-color);
+  color: var(--admin-support-meta-color);
   font-size: var(--font-size-xs);
   line-height: 1.4;
 }
@@ -2746,10 +2777,10 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
-  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-full);
-  background-color: var(--reader-window-background-color);
-  color: var(--reader-support-label-color);
+  background-color: var(--admin-window-background-color);
+  color: var(--admin-support-label-color);
   font-size: var(--font-size-xs);
   line-height: 1.3;
   white-space: nowrap;
@@ -2759,10 +2790,10 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
-  border: var(--border-width-thin) solid var(--reader-chrome-active-control-border-color);
+  border: var(--border-width-thin) solid var(--admin-chrome-active-control-border-color);
   border-radius: var(--border-radius-full);
-  background-color: var(--reader-chrome-active-control-background-color);
-  color: var(--reader-chrome-active-control-text-color);
+  background-color: var(--admin-chrome-active-control-background-color);
+  color: var(--admin-chrome-active-control-text-color);
   font-size: var(--font-size-xs);
   line-height: 1.3;
   white-space: nowrap;
@@ -2770,14 +2801,14 @@
 }
 
 .componentBindingButton:hover {
-  background-color: var(--reader-chrome-control-hover-background-color);
+  background-color: var(--admin-chrome-control-hover-background-color);
 }
 
 .componentBindingLabel {
   display: inline-flex;
   align-items: center;
   margin-left: var(--spacing-sm);
-  color: var(--reader-support-meta-color);
+  color: var(--admin-support-meta-color);
   font-size: var(--font-size-xs);
   line-height: 1.3;
 }
@@ -2793,20 +2824,20 @@
   width: min(220px, 100%);
   min-width: 0;
   padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
-  background-color: var(--reader-support-control-background-color);
-  color: var(--reader-support-control-text-color);
+  background-color: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
 }
 
 .previewStandby {
   padding: var(--spacing-md);
-  border: var(--border-width-thin) dashed var(--reader-window-border-color);
+  border: var(--border-width-thin) dashed var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
-  background-color: var(--reader-window-background-color);
-  color: var(--reader-support-meta-color);
+  background-color: var(--admin-window-background-color);
+  color: var(--admin-support-meta-color);
   font-size: var(--font-size-sm);
 }
 
@@ -2860,7 +2891,7 @@
   margin-bottom: 2px;
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
-  color: var(--reader-support-meta-color);
+  color: var(--admin-support-meta-color);
   letter-spacing: 0.04em;
 }
 
@@ -2893,7 +2924,7 @@
   margin-right: 0;
   min-width: 0;
   font-size: 11px;
-  color: var(--reader-support-label-color);
+  color: var(--admin-support-label-color);
 }
 
 .advancedPane .tokenInput input,
@@ -2956,7 +2987,7 @@
   width: 24px;
   height: 24px;
   grid-column: 2;
-  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
 }
 
@@ -3113,7 +3144,7 @@
 
 .adminPreviewCanvas {
   width: min(100%, 520px);
-  border: var(--border-width-thin) solid var(--reader-window-border-color);
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-md);
   overflow: hidden;
 }
@@ -3426,9 +3457,9 @@
   max-width: 2480px;
   margin-bottom: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--state-warning-border-color);
+  border: var(--border-width-thin) solid var(--admin-state-warning-border-color);
   border-radius: var(--border-radius-md);
-  background-color: var(--state-warning-background-color);
+  background-color: var(--admin-state-warning-background-color);
   color: var(--reader-feedback-title-color);
   font-size: var(--font-size-sm);
 }
@@ -3703,9 +3734,9 @@
 .adminPreviewNotice {
   margin-top: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width-thin) solid var(--state-success-border-color);
+  border: var(--border-width-thin) solid var(--admin-state-success-border-color);
   border-radius: var(--border-radius-md);
-  background-color: var(--state-success-background-color);
+  background-color: var(--admin-state-success-background-color);
   color: var(--admin-feedback-title-color);
   font-size: var(--font-size-sm);
 }

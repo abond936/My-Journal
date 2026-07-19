@@ -2,6 +2,7 @@
   padding: var(--spacing-sm) var(--spacing-md);
   max-width: 100%;
   margin: 0;
+  overflow-y: auto;
 }
 
 .pageHeading {
@@ -19,13 +20,7 @@
   max-width: 720px;
 }
 
-.stickyTop {
-  position: sticky;
-  top: var(--admin-tabs-height, 0px);
-  z-index: 55;
-  background: var(--layout-background1-color);
-  border-bottom: var(--border-width-thin) solid var(--border1-color);
-  padding-bottom: var(--spacing-sm);
+.header {
   margin-bottom: var(--spacing-md);
 }
 
@@ -92,13 +87,13 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  border: var(--border-width-thin) solid var(--color3);
-  background: var(--color3);
-  color: var(--button-solid-text-color);
+  border: var(--border-width-thin) solid var(--primary-action-border-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
 }
 
 .button:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: var(--primary-action-background-color-hover);
 }
 
 .button:disabled {
@@ -175,9 +170,9 @@
 .error {
   margin-top: var(--spacing-md);
   padding: var(--spacing-md);
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  color: var(--admin-state-error-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
 }
@@ -185,7 +180,7 @@
 .inlineError {
   min-width: 11rem;
   min-height: 1.25em;
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   font-size: var(--font-size-sm);
 }
 

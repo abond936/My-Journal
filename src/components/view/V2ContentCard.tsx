@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Pencil } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import JournalImage from '@/components/common/JournalImage';
 import { Card } from '@/lib/types/card';
 import { getReaderDisplayUrl } from '@/lib/utils/photoUtils'; // Corrected import path
@@ -21,6 +23,8 @@ import FeedTileMetaBand from '@/components/view/FeedTileMetaBand';
 import FeedTileChipStrip from '@/components/view/FeedTileChipStrip';
 import styles from './V2ContentCard.module.css';
 import { useCardContext } from '@/components/providers/CardProvider';
+import type { ReaderRouteMode } from '@/lib/utils/readerMode';
+import { getQuestionPromptLength } from '@/lib/utils/questionPromptPresentation';
 
 const ReaderCardEditEntry = dynamic(() => import('@/components/view/ReaderCardEditEntry'), {
   ssr: false,
@@ -66,6 +70,10 @@ function getCoverMediaId(card: Card): string | undefined {
 
 function getClosedFeedTypeBadgeLabel(cardType: Card['type']): 'Story' | 'Gallery' | null {
   return cardType === 'story' ? 'Story' : cardType === 'gallery' ? 'Gallery' : null;
+}
+
+function getUtilityFeedTypeBadgeLabel(cardType: Card['type']): 'Question' | 'Quote' | 'Callout' | null {
+  return cardType === 'qa' ? 'Question' : cardType === 'quote' ? 'Quote' : cardType === 'callout' ? 'Callout' : null;
 }
 
 // --- Card Type Renderers ---
@@ -252,7 +260,11 @@ const GalleryCardContent: React.FC<{
             </div>
           ) : null}
           {activeCaption ? (
-            <div className={styles.galleryCaptionOverlay}>
+            <div
+              className={styles.galleryCaptionOverlay}
+              aria-label={`Image caption: ${activeCaption}`}
+              title={activeCaption}
+            >
               <p>{activeCaption}</p>
             </div>
           ) : null}
@@ -328,7 +340,10 @@ const QACardContent: React.FC<{
   squareFeedTile: boolean;
   showChipStrip: boolean;
   previewCoverObjectPosition?: string;
-}> = ({ card, displayMode, squareFeedTile, showChipStrip, previewCoverObjectPosition }) => {
+  onRevealFitChange?: (fits: boolean) => void;
+}> = ({ card, displayMode, squareFeedTile, showChipStrip, previewCoverObjectPosition, onRevealFitChange }) => {
+  const [answerRevealed, setAnswerRevealed] = useState(false);
+  const answerFaceRef = useRef<HTMLDivElement>(null);
   const coverRatio = squareFeedTile ? SQUARE_FEED_TILE_ASPECT : getFeedCoverFrame(card.coverImage);
   const focalCoverAspect = squareFeedTile ? SQUARE_FEED_TILE_COVER_BAND_ASPECT : coverRatio;
   const coverObjectFit = getCoverObjectFitMode(card);
@@ -347,38 +362,88 @@ const QACardContent: React.FC<{
       : 'center');
 
   const questionText = (
-    <div className={styles.qaTextBlock}>
+    <div
+      className={styles.qaTextBlock}
+      data-question-prompt-length={getQuestionPromptLength(card.title)}
+    >
       <h3 className={styles.qaQuestion}>{card.title}</h3>
     </div>
   );
 
+  useEffect(() => {
+    if (displayMode !== 'inline' || !onRevealFitChange) return;
+    const answerFace = answerFaceRef.current;
+    if (!answerFace) return;
+
+    const measure = () => {
+      const fits =
+        answerFace.scrollHeight <= answerFace.clientHeight + 1 &&
+        answerFace.scrollWidth <= answerFace.clientWidth + 1;
+      onRevealFitChange(fits);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(answerFace);
+    const renderedContent = answerFace.querySelector<HTMLElement>('.ProseMirror');
+    if (renderedContent) observer.observe(renderedContent);
+    return () => observer.disconnect();
+  }, [card.content, displayMode, onRevealFitChange]);
+
   if (displayMode === 'inline') {
+    const toggleReveal = () => setAnswerRevealed((revealed) => !revealed);
+    const isEmbeddedInteractiveTarget = (target: EventTarget | null) =>
+      target instanceof Element && Boolean(target.closest('a, button, [data-type="cardMention"]'));
+
     return (
-      <>
-        {card.coverImage && (
-          <div className={styles.imageContainer} style={{ aspectRatio: coverRatio }}>
-            <JournalImage
-              src={getReaderDisplayUrl(card.coverImage)}
-              alt={card.title}
-              className={styles.image}
-              width={400}
-              height={300}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectFit: coverObjectFit, objectPosition }}
-            priority={false}
-          />
+      <div
+        className={styles.qaRevealShell}
+        role="button"
+        tabIndex={0}
+        aria-pressed={answerRevealed}
+        aria-label={answerRevealed ? 'Show question' : 'Reveal answer'}
+        onClick={(event) => {
+          if (!isEmbeddedInteractiveTarget(event.target)) toggleReveal();
+        }}
+        onKeyDown={(event) => {
+          if ((event.key === 'Enter' || event.key === ' ') && !isEmbeddedInteractiveTarget(event.target)) {
+            event.preventDefault();
+            toggleReveal();
+          }
+        }}
+      >
+        <div className={`${styles.qaRevealFace} ${styles.qaQuestionFace} ${answerRevealed ? styles.qaRevealFaceHidden : ''}`} aria-hidden={answerRevealed}>
+          {card.coverImage ? (
+            <div className={styles.imageContainer}>
+              <JournalImage
+                src={getReaderDisplayUrl(card.coverImage)}
+                alt={card.title}
+                className={styles.image}
+                width={400}
+                height={300}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                style={{ objectFit: coverObjectFit, objectPosition }}
+                priority={false}
+              />
+              <span className={styles.qaCoverBadge} aria-hidden="true">?</span>
+            </div>
+          ) : null}
+          <div className={styles.utilityTileHeroFullCenter}>
+            <div className={styles.content}>{questionText}</div>
+          </div>
+          {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
         </div>
-      )}
-      <div className={styles.content}>
-        {questionText}
-        {card.content && (
-            <div className={styles.inlineContent}>
+        <div
+          ref={answerFaceRef}
+          className={`${styles.qaRevealFace} ${styles.qaAnswerFace} ${answerRevealed ? '' : styles.qaRevealFaceHidden}`}
+          aria-hidden={!answerRevealed}
+        >
+          <div className={`${styles.inlineContent} ${styles.qaRevealAnswerContent}`}>
             <TipTapStaticContent content={card.content} surface="transparent" headingVariant="question" />
           </div>
-        )}
+        </div>
       </div>
-    </>
-  );
+    );
   }
 
   if (displayMode === 'static') {
@@ -416,6 +481,7 @@ const QACardContent: React.FC<{
               style={{ objectFit: coverObjectFit, objectPosition }}
               priority={false}
             />
+            <span className={styles.qaCoverBadge} aria-hidden="true">?</span>
           </div>
         ) : (
           <div className={styles.utilityTileHeroFullCenter}>
@@ -442,6 +508,7 @@ const QACardContent: React.FC<{
             style={{ objectFit: coverObjectFit, objectPosition }}
             priority={false}
           />
+          <span className={styles.qaCoverBadge} aria-hidden="true">?</span>
         </div>
       )}
       <div className={styles.content}>
@@ -451,20 +518,40 @@ const QACardContent: React.FC<{
   );
 };
 
-const CalloutCardContent: React.FC<{ card: Card }> = ({ card }) => {
+const CalloutCardContent: React.FC<{
+  card: Card;
+  destinationTile?: boolean;
+  showChipStrip?: boolean;
+}> = ({ card, destinationTile = false, showChipStrip = false }) => {
   /** Callouts are static-only in product rules; feed still shows TipTap like quote tiles. */
   const showBody = Boolean(card.content?.trim());
   const titleText = card.title?.trim() ?? '';
 
-  return (
-    <div className={styles.content}>
-      {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
-      {showBody ? (
-        <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
-          <TipTapRenderer content={card.content} surface="transparent" headingVariant="callout" />
+  if (destinationTile) {
+    return (
+      <>
+        <div className={styles.utilityTileHeroFullCenter}>
+          <div className={styles.content}>
+            {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
+          </div>
         </div>
-      ) : null}
-    </div>
+        {showChipStrip ? <FeedTileChipStrip card={card} compact /> : null}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.content}>
+        {titleText ? <h3 className={styles.calloutTitle}>{titleText}</h3> : null}
+        {showBody ? (
+          <div className={`${styles.inlineContent} ${styles.calloutBody}`}>
+            <TipTapRenderer content={card.content} surface="transparent" headingVariant="callout" />
+          </div>
+        ) : null}
+      </div>
+      {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
+    </>
   );
 };
 
@@ -488,8 +575,16 @@ interface V2ContentCardProps {
   adminEditReturnTo?: string;
   /** Non-interactive closed feed tile preview (Compose). */
   previewOnly?: boolean;
+  /** Compact discovery representation that always opens detail, regardless of feed presentation. */
+  destinationTile?: boolean;
+  /** Detail mode owned by the current route; falls back to the persisted feed preference. */
+  destinationReaderMode?: ReaderRouteMode;
   /** Live Compose override for closed-feed cover crop. */
   previewCoverObjectPosition?: string;
+  /** Compose-only measurement callback for the bounded Question Reveal answer face. */
+  onQuestionRevealFitChange?: (fits: boolean) => void;
+  /** Compose-only measurement callback for the bounded Callout tile. */
+  onCalloutFitChange?: (fits: boolean) => void;
 }
 
 const V2ContentCard: React.FC<V2ContentCardProps> = ({
@@ -501,20 +596,30 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
   onBeforeNavigateToAdminEdit,
   adminEditReturnTo = '/view',
   previewOnly = false,
+  destinationTile = false,
+  destinationReaderMode,
   previewCoverObjectPosition,
+  onQuestionRevealFitChange,
+  onCalloutFitChange,
 }) => {
+  const calloutFitRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { readerMode, patchVisibleCard } = useCardContext();
   const isAdmin = session?.user?.role === 'admin';
   const displayMode = normalizeDisplayModeForType(card.type, card.displayMode);
-  const tileDisplayMode =
-    forceSquareFeedTile && displayMode === 'inline' ? 'navigate' : displayMode;
+  const tileDisplayMode = destinationTile
+    ? 'navigate'
+    : forceSquareFeedTile && displayMode === 'inline'
+      ? 'navigate'
+      : displayMode;
 
   // Determine if card should be interactive based on display mode
   const isInteractive =
     !previewOnly &&
     tileDisplayMode === 'navigate' &&
-    (card.type === 'story' || card.type === 'gallery' || card.type === 'qa');
+    (destinationTile || card.type === 'story' || card.type === 'gallery' || card.type === 'qa');
 
   const cardTypeClass = styles[card.type] || styles.story;
   const sizeClass = styles[size] || styles.medium;
@@ -525,10 +630,16 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
     (tileDisplayMode === 'navigate' || tileDisplayMode === 'inline')
       ? styles.qaWithCover
       : '';
-  const squareFeedTile = forceSquareFeedTile
+  const squareFeedTile = destinationTile
+    ? true
+    : forceSquareFeedTile
     ? usesSquareFeedTile(card.type, tileDisplayMode)
     : usesSquareFeedTile(card.type, displayMode);
-  const chipStrip = showFeedTileChipStrip(squareFeedTile, size);
+  const chipStrip =
+    destinationTile ||
+    showFeedTileChipStrip(squareFeedTile, size) ||
+    (card.type === 'qa' && tileDisplayMode === 'inline') ||
+    (card.type === 'callout' && tileDisplayMode === 'static');
   const feedTileVariant = getFeedTileVariant(squareFeedTile, size);
   const closedFeedFrameClass =
     squareFeedTile || tileDisplayMode === 'inline'
@@ -537,6 +648,22 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         ? styles.closedFeedPortrait
         : styles.closedFeedLandscape;
   const className = `${styles.card} ${cardTypeClass} ${sizeClass} ${displayModeClass} ${qaWithCoverClass} ${closedFeedFrameClass} ${squareFeedTile ? styles.squareFeedTile : ''} ${fullWidth ? styles.fullWidth : ''}`.trim();
+
+  useEffect(() => {
+    if (card.type !== 'callout' || !onCalloutFitChange) return;
+    const tile = calloutFitRef.current;
+    if (!tile) return;
+    const measure = () => onCalloutFitChange(
+      tile.scrollHeight <= tile.clientHeight + 1 && tile.scrollWidth <= tile.clientWidth + 1
+    );
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(tile);
+    const renderedContent = tile.querySelector<HTMLElement>('.ProseMirror');
+    if (renderedContent) observer.observe(renderedContent);
+    return () => observer.disconnect();
+  }, [card.content, card.tags, card.title, card.type, onCalloutFitChange]);
 
   const addFocusCardToReturnTo = (returnTo: string, focusCardId: string): string => {
     const [pathAndQuery, hashFragment] = returnTo.split('#');
@@ -553,7 +680,16 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
       : adminEditReturnTo;
 
   const canEdit = !previewOnly && Boolean(card.docId && isAdmin);
-  const detailHref = card.docId ? `/view/${card.docId}?mode=${readerMode}` : '#';
+  const detailReturnTo = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('returnTo');
+    if (pathname === '/view' && card.docId) params.set('focusCardId', card.docId);
+    const query = params.toString();
+    return `${pathname || '/view'}${query ? `?${query}` : ''}`;
+  }, [card.docId, pathname, searchParams]);
+  const detailHref = card.docId
+    ? `/view/${card.docId}?mode=${destinationReaderMode ?? readerMode}&returnTo=${encodeURIComponent(detailReturnTo)}`
+    : '#';
   const quickEditMetadata = useMemo(
     () => ({
       title: card.title ?? '',
@@ -593,12 +729,13 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
             squareFeedTile={squareFeedTile}
             showChipStrip={chipStrip}
             previewCoverObjectPosition={previewCoverObjectPosition}
+            onRevealFitChange={onQuestionRevealFitChange}
           />
         );
       case 'callout':
         return (
           <>
-            <CalloutCardContent card={card} />
+            <CalloutCardContent card={card} destinationTile={destinationTile} showChipStrip={chipStrip} />
             <div className={styles.calloutPinOverlay} aria-hidden>
               <JournalImage
                 src="/images/pushpin.svg"
@@ -635,10 +772,16 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         data-feed-tile-variant={feedTileVariant}
       >
         {renderContent()}
+        {squareFeedTile && getUtilityFeedTypeBadgeLabel(card.type) ? (
+          <span className={styles.utilityTypeBadgeOverlay}>{getUtilityFeedTypeBadgeLabel(card.type)}</span>
+        ) : null}
       </Link>
     ) : (
-      <div className={className} data-card-id={card.docId} data-feed-tile-variant={feedTileVariant}>
+      <div ref={card.type === 'callout' ? calloutFitRef : undefined} className={className} data-card-id={card.docId} data-feed-tile-variant={feedTileVariant}>
         {renderContent()}
+        {squareFeedTile && getUtilityFeedTypeBadgeLabel(card.type) ? (
+          <span className={styles.utilityTypeBadgeOverlay}>{getUtilityFeedTypeBadgeLabel(card.type)}</span>
+        ) : null}
       </div>
     );
 
@@ -657,7 +800,8 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
         onBeforeOpen={onBeforeNavigateToAdminEdit}
         onCardSaved={handleCardSaved}
       >
-        Edit
+        <Pencil size={14} aria-hidden="true" />
+        <span className={styles.srOnly}>Edit</span>
       </ReaderCardEditEntry>
     </div>
   );

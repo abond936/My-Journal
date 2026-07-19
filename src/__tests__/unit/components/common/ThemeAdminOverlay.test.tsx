@@ -3,6 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import ThemeAdminOverlay from '@/components/common/ThemeAdminOverlay';
+import { readFileSync } from 'fs';
+import path from 'path';
 
 jest.mock('next/navigation', () => ({
   usePathname: jest.fn(),
@@ -50,5 +52,17 @@ describe('ThemeAdminOverlay shell boundary', () => {
 
     await waitFor(() => expect(screen.getByRole('dialog', { name: 'Theme Management workbench' })).toBeTruthy());
     expect(screen.getByTestId('desktop-gate')).toBeTruthy();
+  });
+
+  it('keeps Reader aliases out of the Administration workbench chrome', () => {
+    const css = readFileSync(path.join(
+      process.cwd(),
+      'src/components/admin/theme-admin/ThemeAdmin.module.css',
+    ), 'utf8');
+    const workbenchStart = css.indexOf('.architectureWorkbench {');
+    const readerPreviewStart = css.indexOf('.readerPreviewHeader {');
+    expect(workbenchStart).toBeGreaterThanOrEqual(0);
+    expect(readerPreviewStart).toBeGreaterThan(workbenchStart);
+    expect(css.slice(workbenchStart, readerPreviewStart)).not.toContain('var(--reader-');
   });
 });

@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTag } from '@/components/providers/TagProvider';
 import {
   useCardContext,
   FEED_CARD_TYPES_ORDER,
   type FeedSortOrder,
-  type FeedGroupBy,
 } from '@/components/providers/CardProvider';
 import TagTree from '@/components/common/TagTree';
 import { filterTreesBySearch } from '@/lib/utils/tagUtils';
 import { listCollectionRootCards, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
+import { resolveReaderRouteMode } from '@/lib/utils/readerMode';
 import {
   User,
   Square,
@@ -39,11 +40,12 @@ const CONTENT_VIEW_FOCUS_CARD_KEY = 'contentViewFocusCardId';
 
 interface GlobalSidebarProps {
   isOpen: boolean;
+  onRequestClose?: () => void;
 }
 
 type TagDimension = 'who' | 'what' | 'when' | 'where';
 
-export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
+export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarProps) {
   const [showFeedOptions, setShowFeedOptions] = useState(false);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const treeControlsRef = useRef<{ expandAll: () => void; collapseAll: () => void } | null>(null);
@@ -57,7 +59,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     studioCardFilterTagIds,
     setStudioCardFilterTagIds,
     dimensionTree,
-    updateTag,
   } = useTag();
 
   const [tagSearch, setTagSearch] = useState('');
@@ -78,8 +79,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     feedSort,
     setFeedSort,
     refreshRandomOrder,
-    feedGroupBy,
-    setFeedGroupBy,
     includeSubTagsInFeed,
     setIncludeSubTagsInFeed,
     readerTagFilterScope,
@@ -90,6 +89,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const isStudioRoute = pathname?.startsWith('/admin/studio') ?? false;
   const selectedFilterTagIds = isStudioRoute ? studioCardFilterTagIds : readerFilterTagIds;
@@ -98,9 +98,13 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   const isSearchRoute = pathname === '/search' || (pathname?.startsWith('/search/') ?? false);
   const isReaderFilterRoute = isViewRoute || isSearchRoute;
   const isViewDetailRoute = pathname?.startsWith('/view/') ?? false;
+  const effectiveReaderMode = resolveReaderRouteMode(pathname, searchParams.get('mode'), readerMode);
   const returnToFeedIfViewingDetail = useCallback(() => {
     if (isViewDetailRoute) {
-      router.push('/view');
+      const returnTo = typeof window === 'undefined'
+        ? null
+        : new URLSearchParams(window.location.search).get('returnTo');
+      router.push(getSafeReaderReturnTo(returnTo) ?? '/view');
     }
   }, [isViewDetailRoute, router]);
   const clearReaderReturnPosition = useCallback(() => {
@@ -109,12 +113,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
     window.sessionStorage.removeItem(CONTENT_VIEW_FOCUS_CARD_KEY);
   }, []);
 
-  const handleSetDefaultExpanded = useCallback(
-    (tagId: string, expanded: boolean) => {
-      updateTag(tagId, { defaultExpanded: expanded });
-    },
-    [updateTag]
-  );
+  const tagTreeExpansionStorageKey = `myjournal:tag-tree:expanded:${session?.user?.id ?? session?.user?.email ?? 'unknown'}`;
 
   const cardTypeLabels: Record<string, string> = {
     story: 'Story',
@@ -185,7 +184,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       ? activeDimension
       : 'who';
 
-  const isCollectionsMode = readerMode === 'guided';
+  const isCollectionsMode = effectiveReaderMode === 'guided';
   const isTagMode = !isCollectionsMode;
   const effectiveBrowseTarget = isCollectionsMode ? 'cards' : browseTarget;
   const isMediaBrowse = effectiveBrowseTarget === 'media';
@@ -247,12 +246,12 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
   );
 
   const handleClearFiltersClick = useCallback(() => {
-    if (!isStudioRoute && readerMode === 'guided') return;
+    if (!isStudioRoute && effectiveReaderMode === 'guided') return;
     if (isStudioRoute) setFilterTags([]);
     else clearFilters();
     setTagSearch('');
     returnToFeedIfViewingDetail();
-  }, [clearFilters, isStudioRoute, readerMode, returnToFeedIfViewingDetail, setFilterTags]);
+  }, [clearFilters, effectiveReaderMode, isStudioRoute, returnToFeedIfViewingDetail, setFilterTags]);
 
   const handleSetBrowseMode = useCallback(
     (nextMode: 'freeform' | 'guided') => {
@@ -299,13 +298,14 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
       const hasChildren = Boolean(nextCard && normalizeCuratedChildIds(nextCard.childrenIds).length > 0);
       if (!hasChildren) {
         router.push(`/view/${encodeURIComponent(nextCollectionId)}?mode=guided`);
+        onRequestClose?.();
         return;
       }
       setActiveDimension('collections');
       setCollectionId(nextCollectionId);
       returnToFeedIfViewingDetail();
     },
-    [clearReaderReturnPosition, collectionCardById, returnToFeedIfViewingDetail, router, setActiveDimension, setCollectionId]
+    [clearReaderReturnPosition, collectionCardById, onRequestClose, returnToFeedIfViewingDetail, router, setActiveDimension, setCollectionId]
   );
 
   const selectedTagsByDimension = useMemo(() => {
@@ -394,34 +394,18 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
             <div className={styles.headerTopRow}>
               <h2 className={styles.title}>Explore</h2>
             </div>
-            {isTagMode ? (
-              <div className={styles.browseTargetTabs} role="tablist" aria-label="Browse target">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={effectiveBrowseTarget === 'cards'}
-                  className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'cards' ? styles.browseTargetTabActive : ''}`}
-                  onClick={() => setBrowseTarget('cards')}
-                >
-                  Cards
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={effectiveBrowseTarget === 'media'}
-                  className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'media' ? styles.browseTargetTabActive : ''}`}
-                  onClick={() => setBrowseTarget('media')}
-                >
-                  Media
-                </button>
-              </div>
-            ) : null}
-            <div className={styles.modeTabs} role="tablist" aria-label="Browsing mode">
+            <div
+              className={`${styles.modeTabs} ${
+                isTagMode ? styles.modeTabsWithTwoActions : isStudioRoute ? styles.modeTabsWithClear : ''
+              }`}
+              role="tablist"
+              aria-label="Browsing mode"
+            >
               <button
                 type="button"
                 role="tab"
-                aria-selected={readerMode === 'guided'}
-                className={`${styles.modeTab} ${readerMode === 'guided' ? styles.modeTabActive : ''}`}
+                aria-selected={effectiveReaderMode === 'guided'}
+                className={`${styles.modeTab} ${effectiveReaderMode === 'guided' ? styles.modeTabActive : ''}`}
                 onClick={() => handleSetBrowseMode('guided')}
               >
                 Guided
@@ -429,99 +413,108 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               <button
                 type="button"
                 role="tab"
-                aria-selected={readerMode === 'freeform'}
-                className={`${styles.modeTab} ${readerMode === 'freeform' ? styles.modeTabActive : ''}`}
+                aria-selected={effectiveReaderMode === 'freeform'}
+                className={`${styles.modeTab} ${effectiveReaderMode === 'freeform' ? styles.modeTabActive : ''}`}
                 onClick={() => handleSetBrowseMode('freeform')}
               >
                 Freeform
               </button>
-              <button
-                type="button"
-                onClick={handleClearFiltersClick}
-                className={styles.clearButtonCompact}
-                aria-label="Clear filters"
-                title={!isStudioRoute && readerMode === 'guided' ? 'Clear filters disabled in Guided mode' : 'Clear filters'}
-                disabled={!isStudioRoute && readerMode === 'guided'}
-              >
-                <FunnelX strokeWidth={2} />
-                <span className={styles.srOnly}>Clear filters</span>
-              </button>
+              {isTagMode ? (
+                <button
+                  type="button"
+                  className={`${styles.iconActionButton} ${showFeedOptions ? styles.iconActionButtonActive : ''}`}
+                  onClick={() => setShowFeedOptions((current) => !current)}
+                  aria-expanded={showFeedOptions}
+                  aria-pressed={showFeedOptions}
+                  aria-label="More controls"
+                  title="More controls"
+                >
+                  <SlidersHorizontal strokeWidth={2} />
+                </button>
+              ) : null}
+              {isTagMode || isStudioRoute ? (
+                <button
+                  type="button"
+                  onClick={handleClearFiltersClick}
+                  className={styles.clearButtonCompact}
+                  aria-label="Clear filters"
+                  title="Clear filters"
+                >
+                  <FunnelX strokeWidth={2} />
+                  <span className={styles.srOnly}>Clear filters</span>
+                </button>
+              ) : null}
             </div>
             {isTagMode ? (
-              <div className={`${styles.sectionControlRow} ${styles.headerDimensionControls}`}>
-                <h3 className={styles.sectionHeading}>Tags</h3>
-                <div className={styles.sectionControlRowMain}>
-                  <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
-                    {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={browseDimension === id}
-                        title={label}
-                        className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`}
-                        onClick={() => setActiveDimension(id)}
-                      >
-                        <span className={styles.srOnly}>{label}</span>
-                        <span className={styles.dimensionTabIcon} aria-hidden>
-                          <Icon strokeWidth={2} />
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+              <>
+                <div className={styles.browseTargetTabs} role="tablist" aria-label="Browse target">
                   <button
                     type="button"
-                    className={styles.iconActionButton}
-                    onClick={() => setShowFeedOptions((current) => !current)}
-                    aria-expanded={showFeedOptions}
-                    aria-label="More controls"
-                    title="More controls"
+                    role="tab"
+                    aria-selected={effectiveBrowseTarget === 'cards'}
+                    className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'cards' ? styles.browseTargetTabActive : ''}`}
+                    onClick={() => setBrowseTarget('cards')}
                   >
-                    <SlidersHorizontal strokeWidth={2} />
+                    Cards
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={effectiveBrowseTarget === 'media'}
+                    className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'media' ? styles.browseTargetTabActive : ''}`}
+                    onClick={() => setBrowseTarget('media')}
+                  >
+                    Media
                   </button>
                 </div>
-              </div>
+                {!isMediaBrowse ? (
+                  <div className={`${styles.sectionControlRow} ${styles.headerTypeControls}`}>
+                    <h3 className={styles.sectionHeading}>Type</h3>
+                    <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
+                      {FEED_CARD_TYPES_ORDER.map((t) => {
+                        const on = feedCardTypes.has(t);
+                        const Icon = cardTypeIcons[t];
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`${styles.cardTypeChip} ${on ? styles.cardTypeChipActive : ''}`}
+                            aria-pressed={on}
+                            aria-label={cardTypeLabels[t] ?? t}
+                            title={cardTypeLabels[t] ?? t}
+                            onClick={() => {
+                              toggleFeedCardType(t);
+                              returnToFeedIfViewingDetail();
+                            }}
+                          >
+                            <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
+                            {Icon ? <span className={styles.cardTypeChipIcon} aria-hidden><Icon strokeWidth={2} /></span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                <div className={`${styles.sectionControlRow} ${styles.headerDimensionControls}`}>
+                  <h3 className={styles.sectionHeading}>Tags</h3>
+                  <div className={styles.sectionControlRowMain}>
+                    <div className={styles.dimensionTabs} role="tablist" aria-label="Tag dimensions">
+                      {FREEFORM_DIMENSION_TABS.map(({ id, label, Icon }) => (
+                        <button key={id} type="button" role="tab" aria-selected={browseDimension === id} title={label} className={`${styles.dimensionTab} ${browseDimension === id ? styles.dimensionTabActive : ''}`} onClick={() => setActiveDimension(id)}>
+                          <span className={styles.srOnly}>{label}</span>
+                          <span className={styles.dimensionTabIcon} aria-hidden><Icon strokeWidth={2} /></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
             ) : null}
           </div>
           <div className={styles.sidebarBody}>
 
           {isTagMode ? (
             <>
-              {!isMediaBrowse ? (
-              <div className={styles.sidebarSection}>
-                <div className={styles.sectionControlRow}>
-                  <h3 className={styles.sectionHeading}>Cards</h3>
-                  <div className={styles.cardTypeChips} role="group" aria-label="Filter by card type">
-                    {FEED_CARD_TYPES_ORDER.map((t) => {
-                      const on = feedCardTypes.has(t);
-                      const Icon = cardTypeIcons[t];
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          className={`${styles.cardTypeChip} ${on ? styles.cardTypeChipActive : ''}`}
-                          aria-pressed={on}
-                          aria-label={cardTypeLabels[t] ?? t}
-                          title={cardTypeLabels[t] ?? t}
-                          onClick={() => {
-                            toggleFeedCardType(t);
-                            returnToFeedIfViewingDetail();
-                          }}
-                        >
-                          <span className={styles.srOnly}>{cardTypeLabels[t] ?? t}</span>
-                          {Icon ? (
-                            <span className={styles.cardTypeChipIcon} aria-hidden>
-                              <Icon strokeWidth={2} />
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              ) : null}
-
               <div className={styles.sidebarSection}>
                 <>
                     {selectedFilterTagIds.length > 0 ? (
@@ -574,63 +567,72 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                           aria-label="Search tags in tree"
                         />
                       </div>
-                      <div className={styles.dualFieldRow}>
-                        <div className={`${styles.inlineFieldRow} ${styles.randomSortRow}`}>
-                          <select
-                            id="feed-sort-select"
-                            value={feedSort}
+                      <div className={styles.refinementRow}>
+                        <label className={styles.compactCheckboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={includeSubTagsInFeed}
                             onChange={(e) => {
-                              setFeedSort(e.target.value as FeedSortOrder);
+                              setIncludeSubTagsInFeed(e.target.checked);
                               returnToFeedIfViewingDetail();
                             }}
-                            className={`${styles.compactControl} ${styles.compactControlInline}`}
-                            aria-label="Sort card feed"
-                          >
-                            <option value="random">Sort by Random</option>
-                            <option value="whenDesc">Sort by When (Desc)</option>
-                            <option value="whenAsc">Sort by When (Asc)</option>
-                            <option value="createdDesc">Sort by Created (Desc)</option>
-                            <option value="createdAsc">Sort by Created (Asc)</option>
-                            <option value="titleAsc">Sort by Title (A-Z)</option>
-                            <option value="titleDesc">Sort by Title (Z-A)</option>
-                            <option value="whoAsc">Sort by Who (A-Z)</option>
-                            <option value="whoDesc">Sort by Who (Z-A)</option>
-                            <option value="whatAsc">Sort by What (A-Z)</option>
-                            <option value="whatDesc">Sort by What (Z-A)</option>
-                            <option value="whereAsc">Sort by Where (A-Z)</option>
-                            <option value="whereDesc">Sort by Where (Z-A)</option>
-                          </select>
-                          {feedSort === 'random' ? (
-                            <button
-                              type="button"
-                              className={styles.iconActionButton}
-                              onClick={refreshRandomOrder}
-                              aria-label="Refresh random order"
-                              title="Refresh random order"
-                            >
-                              <RefreshCw strokeWidth={2} />
-                            </button>
-                          ) : null}
-                        </div>
-                        {!isMediaBrowse ? (
-                          <div className={styles.inlineFieldRow}>
+                          />
+                          <span>Subtags</span>
+                        </label>
+                        {isReaderFilterRoute ? (
+                          <div className={styles.matchControlRow}>
+                            <label htmlFor="reader-tag-filter-scope">Match</label>
                             <select
-                              id="feed-group-select"
-                              value={feedGroupBy}
+                              id="reader-tag-filter-scope"
+                              value={readerTagFilterScope}
                               onChange={(e) => {
-                                setFeedGroupBy(e.target.value as FeedGroupBy);
+                                setReaderTagFilterScope(e.target.value as 'all' | 'subject');
                                 returnToFeedIfViewingDetail();
                               }}
                               className={`${styles.compactControl} ${styles.compactControlInline}`}
-                              aria-label="Group card feed"
+                              aria-label="Tag match scope"
                             >
-                              <option value="none">Group by None</option>
-                              <option value="when">Group by When</option>
-                              <option value="who">Group by Who</option>
-                              <option value="where">Group by Where</option>
-                              <option value="what">Group by What</option>
+                              <option value="all">Any assigned</option>
+                              <option value="subject">Subject only</option>
                             </select>
                           </div>
+                        ) : null}
+                      </div>
+                      <div className={`${styles.inlineFieldRow} ${styles.randomSortRow}`}>
+                        <select
+                          id="feed-sort-select"
+                          value={feedSort}
+                          onChange={(e) => {
+                            setFeedSort(e.target.value as FeedSortOrder);
+                            returnToFeedIfViewingDetail();
+                          }}
+                          className={`${styles.compactControl} ${styles.compactControlInline}`}
+                          aria-label="Sort card feed"
+                        >
+                          <option value="random">Sort: Random</option>
+                          <option value="whoAsc">Sort: Who ↑</option>
+                          <option value="whoDesc">Sort: Who ↓</option>
+                          <option value="whatAsc">Sort: What ↑</option>
+                          <option value="whatDesc">Sort: What ↓</option>
+                          <option value="whenDesc">Sort: When ↓</option>
+                          <option value="whenAsc">Sort: When ↑</option>
+                          <option value="whereAsc">Sort: Where ↑</option>
+                          <option value="whereDesc">Sort: Where ↓</option>
+                          <option value="titleAsc">Sort: Title ↑</option>
+                          <option value="titleDesc">Sort: Title ↓</option>
+                          <option value="createdDesc">Sort: Created ↓</option>
+                          <option value="createdAsc">Sort: Created ↑</option>
+                        </select>
+                        {feedSort === 'random' ? (
+                          <button
+                            type="button"
+                            className={styles.iconActionButton}
+                            onClick={refreshRandomOrder}
+                            aria-label="Refresh random order"
+                            title="Refresh random order"
+                          >
+                            <RefreshCw strokeWidth={2} />
+                          </button>
                         ) : null}
                       </div>
                     </>
@@ -639,18 +641,7 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
               ) : null}
 
               <div className={styles.sidebarSection}>
-                <div className={styles.feedToggleRow}>
-                  <label className={styles.feedToggleLabel}>
-                    <input
-                      type="checkbox"
-                      checked={includeSubTagsInFeed}
-                      onChange={(e) => {
-                        setIncludeSubTagsInFeed(e.target.checked);
-                        returnToFeedIfViewingDetail();
-                      }}
-                    />
-                    <span>Include sub-tags</span>
-                  </label>
+                <div className={styles.treeActionRow}>
                   <div className={styles.treeActions}>
                     <button
                       type="button"
@@ -672,24 +663,6 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     </button>
                   </div>
                 </div>
-                {isReaderFilterRoute ? (
-                  <div className={styles.inlineFieldRow}>
-                    <label htmlFor="reader-tag-filter-scope">Tag match</label>
-                    <select
-                      id="reader-tag-filter-scope"
-                      value={readerTagFilterScope}
-                      onChange={(e) => {
-                        setReaderTagFilterScope(e.target.value as 'all' | 'subject');
-                        returnToFeedIfViewingDetail();
-                      }}
-                      className={`${styles.compactControl} ${styles.compactControlInline}`}
-                      aria-label="Tag match scope"
-                    >
-                      <option value="all">Any assigned</option>
-                      <option value="subject">Subject only</option>
-                    </select>
-                  </div>
-                ) : null}
               </div>
 
               <nav className={styles.navigation}>
@@ -704,10 +677,9 @@ export default function GlobalSidebar({ isOpen }: GlobalSidebarProps) {
                     onSelectionChange={handleSelectionChange}
                     loading={tagsLoading}
                     forceExpandAll={!!tagSearch.trim()}
-                    onSetDefaultExpanded={handleSetDefaultExpanded}
-                    showDefaultExpandControl={isAdmin}
                     showTreeControls={false}
                     onControlsReady={handleTreeControlsReady}
+                    expansionStorageKey={tagTreeExpansionStorageKey}
                     emptyMessage={
                       tagSearch.trim()
                         ? 'No tags match your search.'

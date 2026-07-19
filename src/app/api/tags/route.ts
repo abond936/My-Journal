@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '@/lib/auth/authOptions';
 import { projectTagsForApiResponse } from '@/lib/api/tagApiProjection';
-import { isAdminSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getAllTags, createTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
@@ -44,7 +44,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
  */
 export async function GET() {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!isAuthenticatedSession(session)) {
         return errorResponse(
             {
                 ok: false,

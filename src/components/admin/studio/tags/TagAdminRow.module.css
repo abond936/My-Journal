@@ -126,7 +126,7 @@
 }
 
 .destructiveActionButton {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .actionMenu {
@@ -164,7 +164,7 @@
 }
 
 .actionMenu .destructiveMenuItem {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .addChildForm {

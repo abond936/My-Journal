@@ -277,13 +277,13 @@
 .dangerButton {
   border: 1px solid var(--admin-support-control-border-color);
   background: var(--admin-support-control-background-color);
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .primaryButton {
-  border: 1px solid var(--admin-support-control-strong-border-color);
-  background: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
+  border: 1px solid var(--primary-action-border-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
 }
 
 .secondaryButton:hover,
@@ -293,7 +293,7 @@
 }
 
 .primaryButton:hover {
-  background: var(--admin-support-control-strong-hover-background-color);
+  background: var(--primary-action-background-color-hover);
 }
 
 .relationshipButton:focus-visible,
@@ -301,7 +301,7 @@
 .dangerButton:focus-visible,
 .primaryButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-support-control-strong-background-color) 18%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-action-background-color) 18%, transparent);
 }
 
 .emptyState {

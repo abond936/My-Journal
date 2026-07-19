@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
 import SearchRootClientPage from './SearchRootClientPage';
 
@@ -34,7 +35,7 @@ function buildCallbackUrl(
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const session = (await getServerSession(authOptions)) as Session | null;
 
-  if (!session) {
+  if (!isAuthenticatedSession(session)) {
     const callbackUrl = buildCallbackUrl('/search', await searchParams);
     redirect(buildLoginRedirectPath(callbackUrl));
   }

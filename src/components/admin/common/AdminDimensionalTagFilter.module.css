@@ -38,8 +38,8 @@
   min-height: 15px;
   padding: 0 3px;
   border-radius: 999px;
-  background: var(--admin-feedback-warning-background-color, var(--admin-chrome-active-control-background-color));
-  color: var(--admin-feedback-warning-color, var(--admin-support-control-strong-text-color));
+  background: var(--admin-state-warning-background-color);
+  color: var(--admin-state-warning-text-color);
   font-size: 0.625rem;
   line-height: 15px;
   text-align: center;

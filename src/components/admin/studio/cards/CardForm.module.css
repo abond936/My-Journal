@@ -51,14 +51,14 @@
 }
 
 .saveNoticeSuccess {
-  background: var(--state-success-background-color);
-  border: var(--border-width-thin) solid var(--state-success-border-color);
+  background: var(--admin-state-success-background-color);
+  border: var(--border-width-thin) solid var(--admin-state-success-border-color);
   color: var(--admin-feedback-title-color);
 }
 
 .saveNoticeError {
-  background: var(--state-error-background-color);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
   color: var(--admin-feedback-title-color);
 }
 
@@ -355,7 +355,7 @@
 
 .aiAssistError {
   margin: var(--spacing-sm) 0 0;
-  color: var(--state-error-border-color);
+  color: var(--admin-state-error-border-color);
   font-size: var(--font-size-sm);
 }
 
@@ -485,7 +485,7 @@
 }
 
 .statusSelect.inputError {
-  border-color: var(--state-error-border-color);
+  border-color: var(--admin-state-error-border-color);
 }
 
 .statusToggleGroup {
@@ -639,11 +639,11 @@
 }
 
 .inputError {
-  border-color: var(--state-error-border-color) !important;
+  border-color: var(--admin-state-error-border-color) !important;
 }
 
 .errorText {
-  color: var(--state-text-color);
+  color: var(--admin-state-text-color);
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-sm);
 }
@@ -791,4 +791,14 @@
   color: var(--admin-support-control-strong-text-color);
   text-decoration: underline;
   text-underline-offset: 0.14em;
+}
+.questionRevealFitProbe {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 280px;
+  height: 280px;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }

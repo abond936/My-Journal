@@ -17,6 +17,7 @@ interface TagTreeProps {
   showDefaultExpandControl?: boolean;
   showTreeControls?: boolean;
   onControlsReady?: (controls: { expandAll: () => void; collapseAll: () => void }) => void;
+  expansionStorageKey?: string;
 }
 
 export default function TagTree({
@@ -30,6 +31,7 @@ export default function TagTree({
   showDefaultExpandControl = false,
   showTreeControls = true,
   onControlsReady,
+  expansionStorageKey = 'myjournal:tag-tree:expanded',
 }: TagTreeProps) {
   const {
     expandedIds,
@@ -37,7 +39,7 @@ export default function TagTree({
     initializeIfEmpty,
     expandAll,
     collapseAll,
-  } = usePersistentTreeExpansion('myjournal:tag-tree:expanded');
+  } = usePersistentTreeExpansion(expansionStorageKey);
 
   const forceExpandedIds = useMemo(() => getAllExpandableTagIds(tree), [tree]);
   const effectiveExpanded = forceExpandAll ? forceExpandedIds : expandedIds;

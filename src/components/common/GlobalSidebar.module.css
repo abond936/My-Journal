@@ -64,13 +64,25 @@
     padding: 2px 0;
   }
 
+  .headerTypeControls {
+    padding: 2px 0;
+  }
+
   .modeTabs {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr;
     gap: var(--spacing-xs);
     margin-bottom: 0;
     flex: 1 1 auto;
     max-width: 16rem;
+  }
+
+  .modeTabsWithClear {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .modeTabsWithTwoActions {
+    grid-template-columns: 1fr 1fr auto auto;
   }
 
   .modeTab {
@@ -137,6 +149,12 @@
 
   .searchBlock {
     margin-bottom: var(--spacing-xs);
+  }
+
+  .searchBlock .compactControl {
+    min-height: 1.9rem;
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
 
 .searchTagsLabel {
@@ -637,22 +655,10 @@
     flex: 1 1 auto;
   }
 
-  .dualFieldRow {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--spacing-sm);
-  }
-
   .compactControlInline {
     min-width: 0;
     padding-top: 2px;
     padding-bottom: 2px;
-  }
-
-  @media (max-width: 520px) {
-    .dualFieldRow {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
 
 .feedToggleRow {
@@ -665,6 +671,49 @@
   font-weight: var(--reader-chrome-text-font-weight);
   line-height: var(--reader-chrome-text-line-height);
   color: var(--reader-chrome-text-color);
+}
+
+.refinementRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+.compactCheckboxLabel,
+.matchControlRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
+  color: var(--reader-support-control-text-color);
+}
+
+.compactCheckboxLabel {
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.matchControlRow {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.matchControlRow .compactControlInline {
+  width: auto;
+  flex: 0 1 10rem;
+}
+
+.treeActionRow {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .feedToggleLabel {
@@ -726,6 +775,13 @@
   border-color: var(--reader-support-control-hover-border-color);
 }
 
+.iconActionButtonActive,
+.iconActionButtonActive:hover {
+  background-color: var(--reader-chrome-active-control-background-color);
+  color: var(--reader-chrome-active-control-text-color);
+  border-color: var(--reader-chrome-active-control-border-color);
+}
+
 .disclosureButton {
   width: 100%;
   justify-content: space-between;
@@ -766,3 +822,14 @@
     color: var(--reader-chrome-active-control-text-color);
     border-color: var(--reader-chrome-active-control-border-color);
   }
+
+@media (max-width: 520px) {
+  .refinementRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .matchControlRow {
+    justify-content: space-between;
+  }
+}

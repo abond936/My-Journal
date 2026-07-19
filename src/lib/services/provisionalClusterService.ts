@@ -11,6 +11,7 @@ import {
   type SuggestedTagIdsByDimension,
 } from '@/lib/types/provisionalCluster';
 import { buildReviewClustersForLens } from '@/lib/utils/reviewClusterHeuristics';
+import { buildReviewClusterMerge } from '@/lib/utils/provisionalClusterMerge';
 
 const COLLECTION = 'provisional_clusters';
 
@@ -300,7 +301,7 @@ export async function moveReviewClusterMembers(opts: {
       const isTarget = opts.targetClusterId != null && cluster.docId === opts.targetClusterId;
       if (!hasMovingMember && !isTarget) continue;
 
-      let nextMembers = cluster.memberMediaIds.filter((id) => !mediaSet.has(id));
+      const nextMembers = cluster.memberMediaIds.filter((id) => !mediaSet.has(id));
       if (isTarget && opts.targetClusterId) {
         for (const id of mediaIds) {
           if (!nextMembers.includes(id)) {
@@ -319,6 +320,45 @@ export async function moveReviewClusterMembers(opts: {
         });
       }
     }
+  });
+}
+
+export async function mergeReviewClusters(opts: {
+  sourceClusterId: string;
+  targetClusterId: string;
+}): Promise<{ source: ProvisionalCluster; target: ProvisionalCluster }> {
+  const sourceClusterId = opts.sourceClusterId.trim();
+  const targetClusterId = opts.targetClusterId.trim();
+  if (!sourceClusterId || !targetClusterId) throw new Error('Source and target piles are required');
+  if (sourceClusterId === targetClusterId) throw new Error('A pile cannot be merged into itself');
+
+  const firestore = getAdminApp().firestore();
+  const sourceRef = firestore.collection(COLLECTION).doc(sourceClusterId);
+  const targetRef = firestore.collection(COLLECTION).doc(targetClusterId);
+
+  return firestore.runTransaction(async (txn) => {
+    const [sourceSnap, targetSnap] = await Promise.all([txn.get(sourceRef), txn.get(targetRef)]);
+    if (!sourceSnap.exists) throw new Error('Source pile not found');
+    if (!targetSnap.exists) throw new Error('Target pile not found');
+
+    const source = normalizeCluster(sourceSnap.data(), sourceSnap.id);
+    const target = normalizeCluster(targetSnap.data(), targetSnap.id);
+    const merged = buildReviewClusterMerge(source, target);
+    const targetUpdate = {
+      memberMediaIds: merged.target.memberMediaIds,
+      updatedAt: merged.target.updatedAt,
+    };
+    const sourceUpdate = {
+      status: merged.source.status,
+      mergedIntoClusterId: merged.source.mergedIntoClusterId,
+      mergedAt: merged.source.mergedAt,
+      updatedAt: merged.source.updatedAt,
+    };
+
+    txn.update(targetRef, targetUpdate);
+    txn.update(sourceRef, sourceUpdate);
+
+    return merged;
   });
 }
 

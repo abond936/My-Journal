@@ -11,8 +11,6 @@ import type { Tag } from '@/lib/types/tag';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
 import { getAspectRatioBucket, getAspectRatioValue } from '@/lib/utils/objectPositionUtils';
-import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
-import { usesSquareFeedTile } from '@/lib/reader/readerFeedPresentation';
 import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedTilePreview';
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -214,13 +212,7 @@ export default function CoverPhotoContainer({
             : feedPreviewCard.coverImageFocalPoint,
       }
     : null;
-  const feedPreviewDisplayMode = resolvedFeedPreviewCard
-    ? normalizeDisplayModeForType(resolvedFeedPreviewCard.type ?? 'story', resolvedFeedPreviewCard.displayMode)
-    : 'navigate';
-  const showFeedPreviewPanel = Boolean(
-    resolvedFeedPreviewCard &&
-      usesSquareFeedTile(resolvedFeedPreviewCard.type ?? 'story', feedPreviewDisplayMode)
-  );
+  const showFeedPreviewPanel = Boolean(resolvedFeedPreviewCard);
 
   /** Compose preview: same raw focal % as the main cover frame so sliders track live. */
   const feedPreviewCoverObjectPosition = useMemo(() => {
@@ -328,6 +320,38 @@ export default function CoverPhotoContainer({
     </div>
   );
 
+  const readerPreviewPanel = showFeedPreviewPanel ? (
+    <div className={styles.feedPreviewPanel}>
+      <button
+        type="button"
+        className={styles.feedPreviewToggle}
+        aria-expanded={feedPreviewOpen}
+        onClick={() => setFeedPreviewOpen((open) => !open)}
+      >
+        <span>Reader preview</span>
+        {feedPreviewOpen ? (
+          <ChevronUp size={16} aria-hidden="true" />
+        ) : (
+          <ChevronDown size={16} aria-hidden="true" />
+        )}
+      </button>
+      {feedPreviewOpen ? (
+        <div
+          className={`${styles.feedPreviewRow} ${layoutMode === 'studioCompact' ? styles.feedPreviewRowStudioCompact : styles.feedPreviewRowDefault}`}
+        >
+          {resolvedFeedPreviewCard ? (
+            <ComposeFeedTilePreview
+              card={resolvedFeedPreviewCard}
+              allTags={feedPreviewTags}
+              coverObjectPosition={feedPreviewCoverObjectPosition}
+            />
+          ) : null}
+          {coverImage ? repositionControls : null}
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
   return (
     <div
       ref={pasteAreaRef}
@@ -407,66 +431,37 @@ export default function CoverPhotoContainer({
               </button>
             </div>
           </div>
-          {showFeedPreviewPanel ? (
-            <div className={styles.feedPreviewPanel}>
-              <button
-                type="button"
-                className={styles.feedPreviewToggle}
-                aria-expanded={feedPreviewOpen}
-                onClick={() => setFeedPreviewOpen((open) => !open)}
-              >
-                <span>Feed tile preview</span>
-                {feedPreviewOpen ? (
-                  <ChevronUp size={16} aria-hidden="true" />
-                ) : (
-                  <ChevronDown size={16} aria-hidden="true" />
-                )}
-              </button>
-              {feedPreviewOpen ? (
-                <div
-                  className={`${styles.feedPreviewRow} ${layoutMode === 'studioCompact' ? styles.feedPreviewRowStudioCompact : styles.feedPreviewRowDefault}`}
-                >
-                  {resolvedFeedPreviewCard ? (
-                    <ComposeFeedTilePreview
-                      card={resolvedFeedPreviewCard}
-                      allTags={feedPreviewTags}
-                      coverObjectPosition={feedPreviewCoverObjectPosition}
-                    />
-                  ) : null}
-                  {repositionControls}
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            repositionControls
-          )}
+          {readerPreviewPanel ?? repositionControls}
         </>
       ) : (
-        <div
-          className={`${styles.placeholder} ${isDragActive ? styles.placeholderDragActive : ''}`}
-          style={{ cursor: isUploading ? 'wait' : 'pointer', outline: 'none' }}
-        >
-          {isUploading ? (
-            <>
-              <LoadingSpinner />
-              <span>Uploading...</span>
-            </>
-          ) : (
-            <>
-              <p className={styles.dropHint}>
-                {isDragActive ? 'Drop the image here' : 'Drag and drop or paste image'}
-              </p>
-              <button
-                onMouseDown={swallowButtonEvent}
-                onClick={handleOpenPicker}
-                className={styles.addButton}
-                type="button"
-              >
-                Or browse folders
-              </button>
-            </>
-          )}
-        </div>
+        <>
+          <div
+            className={`${styles.placeholder} ${isDragActive ? styles.placeholderDragActive : ''}`}
+            style={{ cursor: isUploading ? 'wait' : 'pointer', outline: 'none' }}
+          >
+            {isUploading ? (
+              <>
+                <LoadingSpinner />
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <p className={styles.dropHint}>
+                  {isDragActive ? 'Drop the image here' : 'Drag and drop or paste image'}
+                </p>
+                <button
+                  onMouseDown={swallowButtonEvent}
+                  onClick={handleOpenPicker}
+                  className={styles.addButton}
+                  type="button"
+                >
+                  Or browse folders
+                </button>
+              </>
+            )}
+          </div>
+          {readerPreviewPanel}
+        </>
       )}
       </div>
 

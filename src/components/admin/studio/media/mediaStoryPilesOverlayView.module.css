@@ -126,8 +126,8 @@
 }
 
 .sectionActionButtonDanger {
-  border-color: color-mix(in srgb, var(--error-color, #c0392b) 45%, var(--border1-color));
-  color: var(--error-color, #c0392b);
+  border-color: color-mix(in srgb, var(--admin-state-error-border-color) 45%, var(--border1-color));
+  color: var(--admin-state-error-text-color);
 }
 
 .tagChipRow {
@@ -149,19 +149,19 @@
 }
 
 .tagChipWho {
-  background: color-mix(in srgb, var(--who-color, #4a90d9) 18%, transparent);
+  background: color-mix(in srgb, var(--tag-who-bg-color) 18%, transparent);
 }
 
 .tagChipWhat {
-  background: color-mix(in srgb, var(--what-color, #6a9f4f) 18%, transparent);
+  background: color-mix(in srgb, var(--tag-what-bg-color) 18%, transparent);
 }
 
 .tagChipWhen {
-  background: color-mix(in srgb, var(--when-color, #c9a227) 18%, transparent);
+  background: color-mix(in srgb, var(--tag-when-bg-color) 18%, transparent);
 }
 
 .tagChipWhere {
-  background: color-mix(in srgb, var(--where-color, #9b6bb8) 18%, transparent);
+  background: color-mix(in srgb, var(--tag-where-bg-color) 18%, transparent);
 }
 
 .sectionBody {
@@ -171,7 +171,7 @@
 .oversizedNote {
   margin: 0 0.55rem 0.35rem;
   font-size: var(--font-size-xs);
-  color: var(--error-color, #c0392b);
+  color: var(--admin-state-error-text-color);
 }
 
 .emptySection {
@@ -242,4 +242,20 @@
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.mergePileField {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.mergePileField select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--surface1-color, var(--bg-color));
+  color: var(--text1-color);
 }

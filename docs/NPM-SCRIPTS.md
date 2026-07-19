@@ -177,6 +177,7 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 | `npm run backfill:media-metadata` | Backfill media metadata |
 | `npm run backfill:media-studio-renditions` | Create the optional smaller `renditions.studio` preview on existing media docs. Default = dry run; append `-- --apply` to write, `-- --force` to refresh existing rendition records too. |
 | `npm run backfill:media-reader-renditions` | Create the feed-optimized `renditions.reader` preview (640px WebP) on existing media docs. Default = dry run; append `-- --apply` to write, `-- --force` to refresh existing reader rendition records too. |
+| `npm run classify:media-identity-evidence` | Classify Media records lacking exact original-byte evidence. Default writes only a fingerprinted local manifest (`temp/media-content-identity-classification.json`); `--audit` verifies complete, exclusive accounting. Production `--apply` or `--rollback` also requires `--confirm-project=my-journal-936`, unchanged manifest state, and a complete paired backup less than 24 hours old. Stored renditions are never treated as original bytes. |
 | `npm run typecheck:strict-api` | TypeScript strict check on `src/lib/api` and selected utils (incremental step **11** gate). |
 | `npm run regenerate:storage-urls` | Regenerate Storage URLs on media docs |
 | `npm run seed:journal-users` | Seed `journal_users` for auth |
@@ -185,6 +186,8 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 | `npm run sync:typesense:fresh` | Same, drop `cards` index first (`--fresh`). **Use after Typesense card schema changes** (new facet/sort fields) so the collection is recreated before import. |
 | `npm run sync:typesense:media` | Firestore media → Typesense `media` collection (search/facets for `/api/media`) |
 | `npm run sync:typesense:media:fresh` | Same, drop media index first (`--fresh`) |
+| `npm run audit:card-text-encoding` | Read-only scan of authored Card text for Unicode replacement characters; emits context-classified findings. Add `-- --summary` for counts only. |
+| `npm run repair:card-text-encoding` | Apply the guarded, context-aware repair for approved Unicode replacement-character corruption. Run the underlying script without `--apply` for dry-run verification first. |
 
 **HTTP maintenance API** (admin-auth only): `POST` routes under `/api/admin/maintenance/` (`reconcile`, `cleanup`, `backfill`, `diagnose-cover`) plus **`GET /api/admin/maintenance/typesense-status`** (Typesense projection health: counts, sample drift, recent sync failures). Same repair operations are often easier via `npm run …` from a machine with Firebase Admin env.
 

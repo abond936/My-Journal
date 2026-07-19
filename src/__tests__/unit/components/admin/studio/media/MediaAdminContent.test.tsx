@@ -253,10 +253,15 @@ describe('MediaAdminContent', () => {
       selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
       selectedDetail: null,
     });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ summaries: { 'media-1': ['card-1'], 'media-2': [] } }),
+    } as Response);
 
     render(<MediaAdminContent embedded />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(await screen.findByText(/1 selected media item is used by 1 card/)).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1]!);
 
     await waitFor(() => expect(deleteMultipleMedia).toHaveBeenCalledWith(['media-1', 'media-2']));

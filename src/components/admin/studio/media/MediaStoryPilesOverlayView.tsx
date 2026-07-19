@@ -225,6 +225,8 @@ export default function MediaStoryPilesOverlayView(props: MediaStoryPilesOverlay
   const [editingCluster, setEditingCluster] = useState<ProvisionalCluster | null>(null);
   const [draftPileTagIds, setDraftPileTagIds] = useState<string[]>([]);
   const [savingPileTags, setSavingPileTags] = useState(false);
+  const [mergingCluster, setMergingCluster] = useState<ProvisionalCluster | null>(null);
+  const [mergeTargetClusterId, setMergeTargetClusterId] = useState('');
   const tagById = new Map(allTags.filter((tag) => tag.docId).map((tag) => [tag.docId!, tag]));
   const mediaById = new Map(allLoadedMedia.map((item) => [item.docId, item]));
 
@@ -474,6 +476,70 @@ export default function MediaStoryPilesOverlayView(props: MediaStoryPilesOverlay
     [allTags, draftPileTagIds]
   );
 
+  const mergeTargetOptions = useMemo(
+    () =>
+      sections
+        .filter(
+          (section) =>
+            section.cluster?.docId &&
+            section.cluster.docId !== mergingCluster?.docId &&
+            !section.isUnsorted
+        )
+        .map((section) => ({
+          clusterId: section.cluster!.docId!,
+          title: section.title,
+          memberCount: section.memberMediaIds.length,
+        })),
+    [mergingCluster?.docId, sections]
+  );
+
+  const openMergePile = useCallback((cluster: ProvisionalCluster) => {
+    setMergingCluster(cluster);
+    setMergeTargetClusterId('');
+  }, []);
+
+  const closeMergePile = useCallback(() => {
+    if (busyClusterId) return;
+    setMergingCluster(null);
+    setMergeTargetClusterId('');
+  }, [busyClusterId]);
+
+  const mergePile = useCallback(async () => {
+    if (!mergingCluster?.docId || !mergeTargetClusterId) return;
+    const target = mergeTargetOptions.find((option) => option.clusterId === mergeTargetClusterId);
+    if (!target) return;
+    const confirmed = await feedback.confirm({
+      title: 'Merge these piles?',
+      message: `Move ${mergingCluster.memberMediaIds.length} photos from “${mergingCluster.title}” into “${target.title}” (${target.memberCount} photos). “${target.title}” keeps its name and pile tags. Source pile tags are not transferred.`,
+      confirmLabel: 'Merge piles',
+      cancelLabel: 'Cancel',
+    });
+    if (!confirmed) return;
+
+    setBusyClusterId(mergingCluster.docId);
+    try {
+      const response = await fetch(
+        `/api/admin/media/review/${encodeURIComponent(mergingCluster.docId)}/actions`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ action: 'merge', targetClusterId: mergeTargetClusterId }),
+        }
+      );
+      const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+      if (!response.ok) throw new Error(payload.message || `HTTP ${response.status}`);
+      setMergingCluster(null);
+      setMergeTargetClusterId('');
+      await onClustersChanged();
+      feedback.showSuccess(`Merged into “${target.title}”.`, 'Piles merged');
+    } catch (error) {
+      feedback.showError(error instanceof Error ? error.message : 'Failed to merge piles.', 'Merge failed');
+    } finally {
+      setBusyClusterId(null);
+    }
+  }, [feedback, mergeTargetClusterId, mergeTargetOptions, mergingCluster, onClustersChanged]);
+
   const createCardFromPile = useCallback(
     async (cluster: ProvisionalCluster) => {
       if (!cluster.docId || cluster.memberMediaIds.length === 0) return;
@@ -609,6 +675,14 @@ export default function MediaStoryPilesOverlayView(props: MediaStoryPilesOverlay
                   onClick={() => void applyTagsToPhotos(cluster)}
                 >
                   Apply to photos
+                </button>
+                <button
+                  type="button"
+                  className={styles.sectionActionButton}
+                  disabled={isBusy || pileOptions.length < 2}
+                  onClick={() => openMergePile(cluster)}
+                >
+                  Merge
                 </button>
                 <button
                   type="button"
@@ -751,6 +825,42 @@ export default function MediaStoryPilesOverlayView(props: MediaStoryPilesOverlay
           onNewPile={() => void handleContextNewPile()}
         />
       ) : null}
+
+      <EditModal
+        isOpen={Boolean(mergingCluster)}
+        onClose={closeMergePile}
+        title={mergingCluster ? `Merge pile — ${mergingCluster.title}` : 'Merge pile'}
+      >
+        <label className={styles.mergePileField}>
+          <span>Merge into</span>
+          <select
+            value={mergeTargetClusterId}
+            onChange={(event) => setMergeTargetClusterId(event.target.value)}
+            disabled={Boolean(busyClusterId)}
+            aria-label="Merge into pile"
+          >
+            <option value="">Select a pile</option>
+            {mergeTargetOptions.map((option) => (
+              <option key={option.clusterId} value={option.clusterId}>
+                {option.title} ({option.memberCount} photos)
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className={styles.pileTagEditActions}>
+          <button type="button" className={styles.sectionActionButton} onClick={closeMergePile} disabled={Boolean(busyClusterId)}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`${styles.sectionActionButton} ${styles.sectionActionButtonPrimary}`}
+            onClick={() => void mergePile()}
+            disabled={!mergeTargetClusterId || Boolean(busyClusterId)}
+          >
+            {busyClusterId ? 'Merging…' : 'Review merge'}
+          </button>
+        </div>
+      </EditModal>
 
       <EditModal
         isOpen={Boolean(editingCluster)}

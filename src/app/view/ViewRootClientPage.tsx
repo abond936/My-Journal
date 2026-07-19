@@ -26,7 +26,6 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 function ViewPageContent() {
   const {
     visibleCards,
-    visibleFeedSections,
     loadingMore,
     hasMore,
     loadMore,
@@ -144,9 +143,7 @@ function ViewPageContent() {
   }
 
   if (error) {
-    const hasFeedContent =
-      visibleCards.length > 0 ||
-      Boolean(visibleFeedSections?.some((section) => section.cards.length > 0));
+    const hasFeedContent = visibleCards.length > 0;
     if (!hasFeedContent && !isInitialLoading) {
       return (
         <div className={`${styles.page} ${styles.errorState}`} role="alert">
@@ -164,7 +161,6 @@ function ViewPageContent() {
     <div className={styles.page}>
       <CardFeedV2
         cards={visibleCards}
-        sections={visibleFeedSections}
         loading={isInitialLoading}
         refreshing={isRefreshing}
         loadMoreRef={loadMoreRef}
@@ -181,7 +177,6 @@ function ViewPageFallback() {
     <div className={styles.page}>
       <CardFeedV2
         cards={[]}
-        sections={null}
         loading
         refreshing={false}
         loadMoreRef={() => {}}

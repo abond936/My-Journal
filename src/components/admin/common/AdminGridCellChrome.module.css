@@ -105,6 +105,65 @@
   pointer-events: auto;
 }
 
+.overlayBottomStart,
+.overlayBottomEnd {
+  position: absolute;
+  bottom: 4px;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: calc(100% - 48px);
+  pointer-events: auto;
+}
+
+.overlayBottomStart {
+  left: 6px;
+}
+
+.overlayBottomEnd {
+  right: 6px;
+}
+
+.editBtn {
+  min-width: 44px;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: var(--border-width-thin) solid var(--admin-window-border-color);
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
+  color: var(--admin-chrome-text-color);
+  cursor: pointer;
+  font: var(--admin-grid-overlay-font);
+  font-weight: var(--font-weight-semibold);
+  backdrop-filter: blur(4px);
+}
+
+.editBtn:hover {
+  border-color: var(--admin-chrome-active-control-border-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 84%, var(--admin-chrome-active-control-background-color) 16%);
+}
+
+.editIconBtn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width-thin) solid rgb(255 255 255 / 0.28);
+  border-radius: var(--border-radius-md);
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.editIconBtn:hover {
+  background: #171717;
+  color: #fff;
+}
+
 .belowThumb {
   flex: 1 1 auto;
   display: flex;
@@ -183,9 +242,9 @@
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--state-warning-border-color) 18%);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 76%, var(--state-warning-text-color) 24%);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 52%, var(--state-warning-border-color) 48%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-state-warning-border-color) 18%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 76%, var(--admin-state-warning-text-color) 24%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 52%, var(--admin-state-warning-border-color) 48%);
   backdrop-filter: blur(4px);
 }
 
@@ -195,9 +254,9 @@
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--state-success-border-color) 18%);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 74%, var(--state-success-text-color) 26%);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 52%, var(--state-success-border-color) 48%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-state-success-border-color) 18%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 74%, var(--admin-state-success-text-color) 26%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 52%, var(--admin-state-success-border-color) 48%);
   backdrop-filter: blur(4px);
 }
 
@@ -207,9 +266,9 @@
   font: var(--admin-grid-overlay-font);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, var(--admin-window-background-color) 84%, var(--state-success-border-color) 16%);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 76%, var(--state-success-text-color) 24%);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 56%, var(--state-success-border-color) 44%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 84%, var(--admin-state-success-border-color) 16%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 76%, var(--admin-state-success-text-color) 24%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 56%, var(--admin-state-success-border-color) 44%);
   backdrop-filter: blur(4px);
 }
 
@@ -232,7 +291,7 @@
   border: var(--border-width-thin) solid var(--admin-window-border-color);
   border-radius: var(--border-radius-sm);
   background: color-mix(in srgb, var(--admin-window-background-color) 90%, transparent);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 72%, var(--state-error-text-color) 28%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 72%, var(--admin-state-error-text-color) 28%);
   cursor: pointer;
   font-size: 12px;
   line-height: 1;
@@ -250,9 +309,9 @@
 
 .deleteBtn:hover {
   opacity: 1;
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--state-error-border-color) 18%);
-  border-color: color-mix(in srgb, var(--admin-window-border-color) 54%, var(--state-error-border-color) 46%);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 56%, var(--state-error-text-color) 44%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-state-error-border-color) 18%);
+  border-color: color-mix(in srgb, var(--admin-window-border-color) 54%, var(--admin-state-error-border-color) 46%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 56%, var(--admin-state-error-text-color) 44%);
 }
 
 .curatedDragHandle {

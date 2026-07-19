@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
 import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 import { DIMENSION_LABEL, DIMENSION_ORDER, formatCoreTagsTooltipLines } from '@/lib/utils/tagDisplay';
@@ -83,7 +84,8 @@ function gridImageSizes(compactStudioGrid: boolean): string {
 
 function renderCardOverlayBottom(
   card: Card,
-  secondaryMeta?: { label: string; title?: string } | null
+  secondaryMeta?: { label: string; title?: string } | null,
+  onEdit?: () => void
 ): React.ReactNode {
   const unreviewedDimensions = (['who', 'what', 'when', 'where'] as const).filter(
     (dimension) => card.galleryTagRollupStatuses?.[dimension] === 'unreviewed'
@@ -108,11 +110,18 @@ function renderCardOverlayBottom(
           </span>
         ) : null}
       </div>
-      {secondaryMeta ? (
+      {secondaryMeta || onEdit ? (
         <div className={styles.overlayBottomEnd}>
-          <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
-            {secondaryMeta.label}
-          </span>
+          {secondaryMeta ? (
+            <span className={styles.overlayParentBadge} title={secondaryMeta.title ?? secondaryMeta.label}>
+              {secondaryMeta.label}
+            </span>
+          ) : null}
+          {onEdit ? (
+            <button type="button" className={chromeStyles.editIconBtn} onClick={onEdit} aria-label="Edit card" title="Edit card">
+              <Pencil size={14} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -341,7 +350,7 @@ function CardAdminGridPlainCell({
           previewObjectPosition={previewObjectPosition}
           renderUtilityPreview={renderUtilityPreview}
           pendingFocus={pendingFocus}
-          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta)}
+          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta, () => onEdit(card.docId))}
           onCoverClick={onImageColumnClick}
           thumbnailTooltip={thumbnailTooltip}
           imageSizes={gridImageSizes(compactStudioGrid)}
@@ -617,7 +626,7 @@ function CardAdminGridStudioCell({
           previewObjectPosition={previewObjectPosition}
           renderUtilityPreview={renderUtilityPreview}
           pendingFocus={pendingFocus}
-          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta)}
+          overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta, () => onEdit(card.docId))}
           onCoverClick={onImageColumnClick}
           thumbnailTooltip={thumbnailTooltip}
           imageSizes={gridImageSizes(compactStudioGrid)}

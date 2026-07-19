@@ -91,6 +91,7 @@ jest.mock('@/components/admin/studio/cards/AdminClosedCardTileShell', () => ({
     return (
       <div data-testid="admin-closed-tile-shell">
         {(props.card as { title?: string })?.title}
+        {props.overlayCoverBottom as React.ReactNode}
       </div>
     );
   },
@@ -129,6 +130,7 @@ jest.mock('@/components/admin/common/AdminGridCellChrome', () => ({
           {props.belowThumbnail as React.ReactNode}
         </div>
         {props.overlayTopEnd as React.ReactNode}
+        {props.overlayBottomEnd as React.ReactNode}
       </div>
     );
   },
@@ -156,6 +158,28 @@ describe('CardAdminGrid', () => {
     mockChrome.mockClear();
     mockJournalImage.mockClear();
     dragListeners.onPointerDown.mockClear();
+  });
+
+  it('places the explicit edit action in the lower-right chrome slot', () => {
+    const onSaveScrollPosition = jest.fn();
+    render(
+      <CardAdminGrid
+        cards={[baseCard]}
+        selectedCardIds={new Set()}
+        allTags={[]}
+        onSelectCard={jest.fn()}
+        onSelectAll={jest.fn()}
+        onSaveScrollPosition={onSaveScrollPosition}
+        onUpdateCard={jest.fn(async () => {})}
+        onDeleteCard={jest.fn(async () => {})}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Delete card' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit card' })).toBeInTheDocument();
+    expect(mockChrome.mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ overlayTopEnd: expect.anything(), thumbnail: expect.anything() })
+    );
   });
 
   it('registers Studio curated-tree drag on the full grid tile instead of requiring a handle', () => {

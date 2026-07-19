@@ -30,6 +30,9 @@ export type AdminRouteBoundaryCase = {
 export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'GET', path: '/api/auth/[...nextauth]', access: 'public-auth', anonymousStatus: null, viewer: 'allowed', notes: 'NextAuth handler' },
 
+  { method: 'GET', path: '/api/account/preferences', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Current account only' },
+  { method: 'PATCH', path: '/api/account/preferences', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Current account only' },
+
   { method: 'GET', path: '/api/cards', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
   { method: 'POST', path: '/api/cards', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'GET', path: '/api/cards/search', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
@@ -98,6 +101,8 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'GET', path: '/api/admin/media/duplicates', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/duplicates', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/media/readiness/audit', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/media/readiness/[id]/retry', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
   { method: 'GET', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/review', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -186,6 +191,8 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
   { id: 'admin-media-duplicates-get', method: 'GET', path: '/api/admin/media/duplicates', modulePath: '@/app/api/admin/media/duplicates/route', requestUrl: 'https://example.test/api/admin/media/duplicates?status=unresolved' },
   { id: 'admin-media-duplicates-post', method: 'POST', path: '/api/admin/media/duplicates', modulePath: '@/app/api/admin/media/duplicates/route', requestUrl: 'https://example.test/api/admin/media/duplicates', body: { mediaIds: ['m1', 'm2'], decision: 'defer' } },
+  { id: 'admin-media-readiness-audit', method: 'GET', path: '/api/admin/media/readiness/audit', modulePath: '@/app/api/admin/media/readiness/audit/route', requestUrl: 'https://example.test/api/admin/media/readiness/audit' },
+  { id: 'admin-media-readiness-retry', method: 'POST', path: '/api/admin/media/readiness/[id]/retry', modulePath: '@/app/api/admin/media/readiness/[id]/retry/route', requestUrl: 'https://example.test/api/admin/media/readiness/media-1/retry', params: Promise.resolve({ id: 'media-1' }), body: {} },
 
   { id: 'admin-media-review-get', method: 'GET', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review?lens=suggested' },
   { id: 'admin-media-review-post', method: 'POST', path: '/api/admin/media/review', modulePath: '@/app/api/admin/media/review/route', requestUrl: 'https://example.test/api/admin/media/review', body: { lens: 'suggested' } },

@@ -161,8 +161,8 @@
 }
 
 .chipUnreviewed {
-  border-color: var(--admin-feedback-warning-border-color, var(--admin-support-control-strong-border-color));
-  color: var(--admin-feedback-warning-color, var(--admin-support-control-strong-text-color));
+  border-color: var(--admin-state-warning-border-color);
+  color: var(--admin-state-warning-text-color);
   font-weight: var(--font-weight-semibold, 600);
 }
 
@@ -294,12 +294,12 @@
 .wrapError {
   padding: var(--spacing-xs);
   border-radius: var(--border-radius-md);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
-  background-color: var(--state-error-background-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
+  background-color: var(--admin-state-error-background-color);
 }
 
 .errorMessage {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   font-size: var(--font-size-sm);
 }
 

@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import type { Card } from '@/lib/types/card';
 import V2ContentCard from '@/components/view/V2ContentCard';
 import styles from './ChildCardsRail.module.css';
+import type { ReaderRouteMode } from '@/lib/utils/readerMode';
 
 export interface ChildCardsRailProps {
   cards: Card[];
@@ -11,12 +12,14 @@ export interface ChildCardsRailProps {
   title?: string;
   /** `returnTo` for admin edit Back link from detail-page child tiles. */
   adminEditReturnTo?: string;
+  readerMode?: ReaderRouteMode;
 }
 
 export default function ChildCardsRail({
   cards,
   title = 'More...',
   adminEditReturnTo = '/view',
+  readerMode,
 }: ChildCardsRailProps) {
   const [showNavButtons, setShowNavButtons] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -96,7 +99,8 @@ export default function ChildCardsRail({
                 card={child}
                 size="medium"
                 fullWidth
-                forceSquareFeedTile
+                destinationTile
+                destinationReaderMode={readerMode}
                 adminEditReturnTo={adminEditReturnTo}
               />
             </div>

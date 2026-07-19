@@ -179,11 +179,40 @@
   min-height: 20px;
   padding: 0 6px;
   border-radius: var(--border-radius-full);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 56%, var(--state-success-border-color) 44%);
-  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--state-success-border-color) 18%);
-  color: color-mix(in srgb, var(--admin-chrome-text-color) 74%, var(--state-success-text-color) 26%);
+  border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 56%, var(--admin-state-success-border-color) 44%);
+  background: color-mix(in srgb, var(--admin-window-background-color) 82%, var(--admin-state-success-border-color) 18%);
+  color: color-mix(in srgb, var(--admin-chrome-text-color) 74%, var(--admin-state-success-text-color) 26%);
   font: var(--admin-grid-overlay-font);
   line-height: 1;
+}
+
+.readinessPending,
+.readinessFailed {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-full);
+  font: var(--admin-grid-overlay-font);
+  line-height: 1;
+}
+
+.readinessPending {
+  border: var(--border-width-thin) solid var(--admin-state-warning-border-color);
+  background: var(--admin-state-warning-background-color);
+  color: var(--admin-state-warning-text-color);
+}
+
+.readinessFailed {
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  color: var(--admin-state-error-text-color);
+  cursor: pointer;
+}
+
+.readinessFailed:disabled {
+  cursor: progress;
+  opacity: 0.72;
 }
 
 .overlayTopEndCluster {
@@ -193,16 +222,16 @@
 }
 
 .overlayEditButton {
-  min-height: 30px;
-  min-width: 34px;
+  height: 28px;
+  width: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: var(--border-width-thin) solid color-mix(in srgb, var(--admin-window-border-color) 88%, transparent);
-  background: color-mix(in srgb, var(--admin-window-background-color) 92%, transparent);
-  color: var(--admin-support-control-text-color);
+  background: #000;
+  color: #fff;
   border-radius: var(--border-radius-md);
-  padding: 0 0.55rem;
+  padding: 0;
   font-family: var(--admin-support-control-font-family);
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
@@ -248,7 +277,8 @@
 }
 
 .overlayEditButton:hover {
-  background: color-mix(in srgb, var(--admin-window-background-color) 88%, var(--admin-chrome-active-control-background-color) 12%);
+  background: #171717;
+  color: #fff;
 }
 
 .overlayBottomLinkButton {
@@ -336,7 +366,7 @@
 .saveNotice {
   margin: 0 var(--spacing-sm) var(--spacing-sm);
   font-size: var(--font-size-xs);
-  color: var(--state-success-border-color);
+  color: var(--admin-state-success-border-color);
 }
 
 .editDialogBody {

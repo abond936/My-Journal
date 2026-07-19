@@ -652,7 +652,7 @@
 .treeMissingChildRow {
   margin-left: calc(var(--spacing-xl) + var(--spacing-sm));
   padding: 0 var(--spacing-xs);
-  color: var(--state-warning-text-color);
+  color: var(--admin-state-warning-text-color);
   font-size: var(--font-size-xs);
   font-style: italic;
 }
@@ -708,7 +708,7 @@
 }
 
 .destructiveSmallButton {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .listRowWrap {
@@ -738,7 +738,7 @@
 }
 
 .draggingStatusReparent {
-  border-left: 4px solid var(--state-warning-border-color);
+  border-left: 4px solid var(--admin-state-warning-border-color);
 }
 
 .dragSourceActive {
@@ -849,12 +849,12 @@
 }
 
 .error {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   margin-bottom: var(--spacing-sm);
 }
 
 .warning {
-  color: var(--state-warning-text-color);
+  color: var(--admin-state-warning-text-color);
   margin-bottom: var(--spacing-sm);
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilterX } from 'lucide-react';
+import { FilterX, X } from 'lucide-react';
 import { getMediaErrorSeverity, useMedia, type MediaFilters } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import BulkEditMediaTagsModal from '@/components/admin/studio/media/BulkEditMediaTagsModal';
@@ -28,6 +28,7 @@ import {
   groupSelectedTagIdsByDimension,
   mergeDimensionalTagMaps,
 } from '@/lib/utils/tagUtils';
+import { fetchAuthoritativeMediaReferenceSummaries } from '@/lib/utils/mediaReferenceSummaryClient';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
   DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES,
@@ -135,6 +136,35 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const errorSeverity = getMediaErrorSeverity(error);
   const loadMoreErrorSeverity = getMediaErrorSeverity(loadMoreError);
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteChecking, setBulkDeleteChecking] = useState(false);
+  const [bulkDeleteConsequences, setBulkDeleteConsequences] = useState({
+    selectedCount: 0,
+    linkedMediaCount: 0,
+    linkedCardCount: 0,
+  });
+
+  const handleOpenBulkDelete = async () => {
+    if (selectedMediaIds.length === 0 || bulkDeleteChecking) return;
+    setBulkDeleteChecking(true);
+    try {
+      const summaries = await fetchAuthoritativeMediaReferenceSummaries(selectedMediaIds);
+      const linkedCardIds = new Set(Object.values(summaries).flat());
+      const linkedMediaCount = Object.values(summaries).filter(ids => ids.length > 0).length;
+      setBulkDeleteConsequences({
+        selectedCount: selectedMediaIds.length,
+        linkedMediaCount,
+        linkedCardCount: linkedCardIds.size,
+      });
+      setBulkDeleteModalOpen(true);
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Could not verify linked-card consequences.',
+        'Delete blocked'
+      );
+    } finally {
+      setBulkDeleteChecking(false);
+    }
+  };
 
   const handleBulkDelete = async () => {
     if (selectedMediaIds.length === 0) return;
@@ -722,6 +752,18 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     [allTags]
   );
   const reconcileFilterActive = Boolean(embedded && organizeReconcileSourceTagId);
+  const hasActiveMediaStructuralFilters =
+    filters.source !== 'all' ||
+    filters.hasCaption !== 'all' ||
+    filters.dimensions !== 'all' ||
+    filters.assignment !== 'all' ||
+    filters.tagScope !== 'all' ||
+    studioSelectedFilterTagIds.length > 0 ||
+    Object.values(dimensionFilters).some(state => state.mode !== 'any') ||
+    browseImportBatchFilter !== '' ||
+    browseImportFolderFilter !== 'all' ||
+    mediaPopulation === 'this_card' ||
+    reconcileFilterActive;
   const prevReconcileSourceTagIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -890,6 +932,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     });
   };
 
+  const handleClearSearch = () => handleSearchCommit('');
+
   const stickyTopRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
@@ -1003,6 +1047,19 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           onVisibleHighlightedCountChange={setVisibleAssignedCount}
           gridTileMinPx={gridTileMinPx}
           mediaOverride={browseScopedMedia.length !== media.length ? browseScopedMedia : undefined}
+          emptyState={
+            filters.search.trim() ? (
+              <div className={styles.studioEmptyRecovery}>
+                <p>No media match &ldquo;{filters.search.trim()}&rdquo;.</p>
+                <button type="button" onClick={handleClearSearch}>Clear search</button>
+              </div>
+            ) : hasActiveMediaStructuralFilters ? (
+              <div className={styles.studioEmptyRecovery}>
+                <p>No media match the current filters.</p>
+                <button type="button" onClick={handleClearFilters}>Clear filters</button>
+              </div>
+            ) : undefined
+          }
           {...stackGridProps}
         />
         )
@@ -1204,15 +1261,28 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               htmlFor="media-admin-search-studio"
               aria-label="Search media"
             >
-              <DebouncedSearchInput
-                id="media-admin-search-studio"
-                placeholder="Search"
-                value={filters.search}
-                onCommit={handleSearchCommit}
-                className={styles.studioMediaSearchInput}
-                autoComplete="off"
-                aria-label="Search media (filename, caption, path, tag names)"
-              />
+              <span className={styles.studioMediaSearchControl} data-active={filters.search.trim() ? 'true' : 'false'}>
+                <DebouncedSearchInput
+                  id="media-admin-search-studio"
+                  placeholder="Search media"
+                  value={filters.search}
+                  onCommit={handleSearchCommit}
+                  className={styles.studioMediaSearchInput}
+                  autoComplete="off"
+                  aria-label="Search media (filename, caption, path, tag names)"
+                />
+                {filters.search.trim() ? (
+                  <button
+                    type="button"
+                    className={styles.studioMediaSearchClear}
+                    onClick={handleClearSearch}
+                    aria-label="Clear media search"
+                    title="Clear media search"
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                ) : null}
+              </span>
             </label>
             <label className={styles.studioInlineLabel} aria-label="Filter by source">
               <select
@@ -1420,14 +1490,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 Edit tags...
               </button>
               <button type="button" onClick={selectNone} className={cardAdminStyles.actionButton}>
-                Clear Selection
+                Clear selection
               </button>
               <button
                 type="button"
-                onClick={() => setBulkDeleteModalOpen(true)}
+                onClick={() => void handleOpenBulkDelete()}
+                disabled={bulkDeleteChecking}
                 className={`${cardAdminStyles.actionButton} ${cardAdminStyles.deleteButton}`}
               >
-                Delete
+                {bulkDeleteChecking ? 'Checking…' : 'Delete'}
               </button>
             </div>
           </div>
@@ -1441,10 +1512,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       >
         <div className={styles.deleteDialogBody}>
           <p className={styles.deleteDialogLead}>
-            Delete {selectedMediaIds.length} selected media item{selectedMediaIds.length === 1 ? '' : 's'}?
+            Delete {bulkDeleteConsequences.selectedCount} selected media item{bulkDeleteConsequences.selectedCount === 1 ? '' : 's'}?
           </p>
           <p className={styles.deleteDialogText}>
-            This will remove the selected media records and their files from the library.
+            {bulkDeleteConsequences.linkedCardCount > 0
+              ? `${bulkDeleteConsequences.linkedMediaCount} selected media item${bulkDeleteConsequences.linkedMediaCount === 1 ? '' : 's'} ${bulkDeleteConsequences.linkedMediaCount === 1 ? 'is' : 'are'} used by ${bulkDeleteConsequences.linkedCardCount} card${bulkDeleteConsequences.linkedCardCount === 1 ? '' : 's'}. Deletion removes ${bulkDeleteConsequences.linkedMediaCount === 1 ? 'it' : 'them'} from Cover, Gallery, and body placements on those cards before deleting the library records and files.`
+              : 'None of the selected media are used by cards. Deletion removes the library records and files.'}
           </p>
           <div className={styles.deleteDialogActions}>
             <button

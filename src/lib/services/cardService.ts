@@ -744,6 +744,55 @@ async function _hydrateCoverImagesOnly(cards: Card[]): Promise<Card[]> {
 }
 
 /**
+ * Hydrates the media required by Reader list cards without hydrating Story body media.
+ * Every card receives its cover; Gallery cards additionally receive their complete,
+ * authored Gallery sequence so feed swipe, captions, and position remain truthful.
+ */
+async function _hydrateReaderFeedCards(cards: Card[]): Promise<Card[]> {
+  if (!cards?.length) {
+    return [];
+  }
+
+  const mediaIds = new Set<string>();
+  for (const card of cards) {
+    if (card.coverImageId) mediaIds.add(card.coverImageId);
+    if (card.type === 'gallery') {
+      card.galleryMedia?.forEach((item) => item.mediaId && mediaIds.add(item.mediaId));
+    }
+  }
+
+  const mediaMap = await loadMediaMapByIds(mediaIds);
+  return cards.map((card) => {
+    const hydratedCard = { ...card };
+    hydratedCard.coverImage = card.coverImageId ? mediaMap.get(card.coverImageId) ?? null : null;
+    if (hydratedCard.coverImage && !hydratedCard.coverImageFocalPoint) {
+      hydratedCard.coverImageFocalPoint = deriveFocalPointFromObjectPosition(
+        hydratedCard.coverImage.objectPosition || '50% 50%',
+        hydratedCard.coverImage.width,
+        hydratedCard.coverImage.height
+      );
+    }
+
+    if (card.type === 'gallery') {
+      hydratedCard.galleryMedia = (card.galleryMedia ?? []).map((item) => ({
+        ...item,
+        media: mediaMap.get(item.mediaId),
+      }));
+    }
+
+    const firstGalleryMedia =
+      card.type === 'gallery' ? hydratedCard.galleryMedia?.find((item) => item.media)?.media ?? null : null;
+    hydratedCard.displayThumbnail = hydratedCard.coverImage ?? firstGalleryMedia;
+    hydratedCard.displayThumbnailSource = hydratedCard.coverImage
+      ? 'cover'
+      : firstGalleryMedia
+        ? 'gallery'
+        : null;
+    return hydratedCard;
+  });
+}
+
+/**
  * For gallery cards with no cover, hydrate only the first gallery slide so feed-style tiles can show a thumbnail.
  */
 async function _hydrateFirstGallerySlideWhereNoCover(cards: Card[]): Promise<Card[]> {
@@ -2493,9 +2542,11 @@ export async function getCardById(id: string): Promise<Card | null> {
  * @param ids - An array of card IDs to retrieve.
  * @returns An array of found cards.
  */
+export type CardHydrationMode = 'full' | 'cover-only' | 'reader-feed';
+
 export type GetCardsByIdsOptions = {
-  /** `cover-only`: fewer Firestore reads; enough for discovery thumbnails. Default `full`. */
-  hydrationMode?: 'full' | 'cover-only';
+  /** `reader-feed`: covers plus complete Gallery media; `cover-only`: thumbnails only. Default `full`. */
+  hydrationMode?: CardHydrationMode;
 };
 
 export async function getCardsByIds(
@@ -2535,6 +2586,9 @@ export async function getCardsByIds(
     const withCovers = await _hydrateCoverImagesOnly(orderedCards);
     return _hydrateFirstGallerySlideWhereNoCover(withCovers);
   }
+  if (mode === 'reader-feed') {
+    return _hydrateReaderFeedCards(orderedCards);
+  }
 
   return await _hydrateCards(orderedCards);
 }
@@ -2548,7 +2602,7 @@ export async function getCardsByIds(
  */
 export async function expandFeedItemsWithChildren(
   items: Card[],
-  options: { status: Card['status'] | 'all'; hydrationMode: 'full' | 'cover-only' }
+  options: { status: Card['status'] | 'all'; hydrationMode: CardHydrationMode }
 ): Promise<Card[]> {
   if (!items.length) return items;
   const { status, hydrationMode } = options;
@@ -2637,7 +2691,7 @@ export async function getCardsByCollectionId(
     limit?: number;
     lastDocId?: string;
     status?: Card['status'] | 'all';
-    hydrationMode?: 'full' | 'cover-only';
+    hydrationMode?: CardHydrationMode;
   } = {}
 ): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const collectionCard = await getCardById(collectionId);
@@ -2723,7 +2777,7 @@ export async function getSeededRandomCards(options: {
   };
   limit?: number;
   lastDocId?: string;
-  hydrationMode?: 'full' | 'cover-only';
+  hydrationMode?: CardHydrationMode;
 }): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const {
     seed,
@@ -2814,7 +2868,7 @@ export async function getCollectionCards(
   status: Card['status'] | 'all' = 'published',
   options: {
     limit?: number;
-    hydrationMode?: 'full' | 'cover-only';
+    hydrationMode?: CardHydrationMode;
     includeDescendants?: boolean;
   } = {}
 ): Promise<Card[]> {
@@ -2894,6 +2948,9 @@ export async function getCollectionCards(
 
   if (options.hydrationMode === 'cover-only') {
     return _hydrateCoverImagesOnly(cards);
+  }
+  if (options.hydrationMode === 'reader-feed') {
+    return _hydrateReaderFeedCards(cards);
   }
   return _hydrateCards(cards);
 }
@@ -3413,7 +3470,7 @@ export async function getCards(options: {
   childrenIds_contains?: string;
   limit?: number;
   lastDocId?: string;
-  hydrationMode?: 'full' | 'cover-only';
+  hydrationMode?: CardHydrationMode;
   /** When `q` is set, title prefix search uses `orderBy('title_lowercase')` and this is ignored. */
   sortBy?: 'when' | 'created' | 'title' | 'who' | 'what' | 'where';
   sortDir?: 'asc' | 'desc';
@@ -3618,6 +3675,8 @@ export async function getCards(options: {
   // --- HYDRATION STEP - Use selective hydration based on mode ---
   if (hydrationMode === 'cover-only') {
     cards = await _hydrateCoverImagesOnly(cards);
+  } else if (hydrationMode === 'reader-feed') {
+    cards = await _hydrateReaderFeedCards(cards);
   } else {
     cards = await _hydrateCards(cards);
   }
@@ -3722,7 +3781,9 @@ export async function getCards(options: {
     if (fallbackItems.length > 0) {
       cards = hydrationMode === 'cover-only'
         ? await _hydrateCoverImagesOnly(fallbackItems)
-        : await _hydrateCards(fallbackItems);
+        : hydrationMode === 'reader-feed'
+          ? await _hydrateReaderFeedCards(fallbackItems)
+          : await _hydrateCards(fallbackItems);
       lastDocIdResult = cards[cards.length - 1]?.docId;
       hasMore = false;
     }
@@ -3740,7 +3801,7 @@ export async function getParentCardsByChildId(
   options: {
     status?: Card['status'] | 'all';
     limit?: number;
-    hydrationMode?: 'full' | 'cover-only';
+    hydrationMode?: CardHydrationMode;
   } = {}
 ): Promise<Card[]> {
   const { status = 'all', limit = 200, hydrationMode = 'cover-only' } = options;
@@ -3754,7 +3815,11 @@ export async function getParentCardsByChildId(
 
   const snap = await query.limit(limit).get();
   let cards = snap.docs.map((doc) => ({ docId: doc.id, ...doc.data() } as Card));
-  cards = hydrationMode === 'cover-only' ? await _hydrateCoverImagesOnly(cards) : await _hydrateCards(cards);
+  cards = hydrationMode === 'cover-only'
+    ? await _hydrateCoverImagesOnly(cards)
+    : hydrationMode === 'reader-feed'
+      ? await _hydrateReaderFeedCards(cards)
+      : await _hydrateCards(cards);
   return cards;
 }
 

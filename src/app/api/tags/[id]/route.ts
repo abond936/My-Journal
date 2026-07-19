@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '@/lib/auth/authOptions';
 import { projectTagForApiResponse } from '@/lib/api/tagApiProjection';
-import { isAdminSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getTagById, updateTag, deleteTag } from '@/lib/firebase/tagService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
@@ -53,7 +53,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
  */
 export async function GET(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!isAuthenticatedSession(session)) {
         return errorResponse(
             {
                 ok: false,
@@ -422,4 +422,4 @@ export async function DELETE(request: NextRequest, { params }: { params: RoutePa
             500
         );
     }
-} 
+}

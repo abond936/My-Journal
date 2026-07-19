@@ -175,7 +175,7 @@
 .saveNotice {
   margin: 0 6px 6px;
   font-size: var(--font-size-xs);
-  color: var(--state-success-border-color);
+  color: var(--admin-state-success-border-color);
 }
 
 .emptyState {

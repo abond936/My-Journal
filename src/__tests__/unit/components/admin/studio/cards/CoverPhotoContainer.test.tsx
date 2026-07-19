@@ -124,9 +124,26 @@ describe('CoverPhotoContainer', () => {
       } as never,
     });
 
-    expect(screen.getByRole('button', { name: /feed tile preview/i })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /reader preview/i })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('compose-feed-tile-preview')).toBeInTheDocument();
     expect(screen.getByLabelText('Horizontal:')).toBeInTheDocument();
+  });
+
+  it('renders Reader preview without a cover for Inline and Static presentations', () => {
+    renderWithProps({
+      feedPreviewCard: {
+        docId: 'card-1',
+        type: 'callout',
+        title: 'A short note',
+        status: 'draft',
+        displayMode: 'static',
+        tags: [],
+      } as never,
+    });
+
+    expect(screen.getByRole('button', { name: /reader preview/i })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('compose-feed-tile-preview')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Horizontal:')).not.toBeInTheDocument();
   });
 
   it('passes live slider object-position to the feed tile preview', () => {
@@ -175,8 +192,8 @@ describe('CoverPhotoContainer', () => {
       } as never,
     });
 
-    await user.click(screen.getByRole('button', { name: /feed tile preview/i }));
-    expect(screen.getByRole('button', { name: /feed tile preview/i })).toHaveAttribute('aria-expanded', 'false');
+    await user.click(screen.getByRole('button', { name: /reader preview/i }));
+    expect(screen.getByRole('button', { name: /reader preview/i })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByTestId('compose-feed-tile-preview')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Horizontal:')).not.toBeInTheDocument();
     expect(screen.queryByText('Framing:')).not.toBeInTheDocument();

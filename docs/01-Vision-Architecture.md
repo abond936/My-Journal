@@ -42,6 +42,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 
 - **Two halves** — Administration and Reader must both be strong; neither carries the product alone.
 - **Story purpose** — Import and organization exist to help create and preserve stories, not to become a digital asset manager.
+- **Layered storytelling** — Media carry concise story through their captions; Cards carry longer-form story through optional authored content. Media-led and narrative-led cards may share a reading structure without requiring the same amount of prose.
 - **Archive scale** — Large archives should feel manageable through clear workflows, immediate feedback, and honest background progress.
 - **Private** — The archive is family-private and author-controlled.
 - **Mobile reading** — Reader is mobile-first; Administration may remain desktop-primary.
@@ -102,6 +103,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Durability** — Success is not reported until required Storage, media, and same-operation card writes are durable or safely recoverable.
 - **Readiness** — Upload, rendition, metadata, indexing, and video processing expose truthful ready, pending, and failed states.
 - **Renditions** — Preserve originals and generate surface-appropriate Reader and Studio derivatives.
+- **External libraries** — The v1 web application cannot depend on continuous read or synchronization access to a user's complete Apple Photos or Google Photos library. Provider exports, explicitly selected assets, local folders, or future native companions are ingestion paths into the canonical media bank; imported assets must become durable application-owned media rather than remote-library references.
 
 ### Tags and suggestions
 

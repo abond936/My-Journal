@@ -73,13 +73,14 @@
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   cursor: pointer;
-  background: var(--button-solid-background-color);
-  color: var(--button-solid-text-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
+  border-color: var(--primary-action-border-color);
   transition: background-color 0.2s;
 }
 
 .button:hover {
-  background: var(--button-solid-background-color-hover);
+  background: var(--primary-action-background-color-hover);
 }
 
 .button.secondary {
@@ -167,14 +168,14 @@
 }
 
 .deleteButton {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  color: var(--admin-state-error-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
 }
 
 .deleteButton:hover {
-  background: var(--state-error-background-color-hover);
-  color: var(--state-error-text-color);
+  background: var(--admin-state-error-background-color-hover);
+  color: var(--admin-state-error-text-color);
 }
 
 .addTagForm {
@@ -223,7 +224,7 @@
 .error {
   text-align: center;
   padding: var(--spacing-xl);
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 /* Drag and Drop Visual Feedback */
@@ -312,15 +313,15 @@
 /* Invalid drop zone indication */
 .rowWrapper[data-valid-drop="false"] {
   opacity: 0.6;
-  background-color: color-mix(in srgb, var(--state-error-border-color) 8%, transparent);
+  background-color: color-mix(in srgb, var(--admin-state-error-border-color) 8%, transparent);
 }
 
 /* Reparenting visual feedback */
 .rowWrapper[data-reparent-target="true"] {
-  background-color: var(--state-success-background-color);
-  border: var(--border-width-medium) solid var(--state-success-border-color);
+  background-color: var(--admin-state-success-background-color);
+  border: var(--border-width-medium) solid var(--admin-state-success-border-color);
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--state-success-border-color) 30%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--admin-state-success-border-color) 30%, transparent);
 }
 
 .rowWrapper[data-reparent-target="true"]::before {

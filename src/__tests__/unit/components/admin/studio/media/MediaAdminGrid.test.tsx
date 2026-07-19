@@ -98,6 +98,9 @@ jest.mock('@/components/admin/common/AdminGridCellChrome', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => (
     <div data-testid="media-grid-root">
+      {props.overlayTopEnd as React.ReactNode}
+      {props.overlayBottom as React.ReactNode}
+      {props.overlayBottomEnd as React.ReactNode}
       {props.thumbnail as React.ReactNode}
       {props.belowThumbnail as React.ReactNode}
     </div>
@@ -126,6 +129,13 @@ describe('MediaAdminGrid', () => {
 
     const input = screen.getByTestId('media-inline-caption-media-1') as HTMLTextAreaElement;
     expect(input.rows).toBe(1);
+  });
+
+  it('separates delete and edit into the upper-right and lower-right chrome slots', () => {
+    render(<MediaAdminGrid dimensionFilters={DEFAULT_DIMENSION_FILTERS} />);
+
+    expect(screen.getByRole('button', { name: 'Delete media' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit media' })).toBeInTheDocument();
   });
 
   it('grows the inline caption field when the caption wraps beyond one row', () => {

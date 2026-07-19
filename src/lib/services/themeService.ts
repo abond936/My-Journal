@@ -22,7 +22,7 @@ import {
   type CanvasTextureToken,
   type ScopedThemeSettings,
 } from '@/lib/types/theme';
-import { getDefaultScopedThemeDocument, READER_PRESET_ALIAS_GROUPS } from '@/lib/theme/themePresets';
+import { getDefaultScopedThemeDocument } from '@/lib/theme/themePresets';
 import { DEFAULT_READER_THEME_RECIPES, normalizeReaderThemeRecipes } from '@/lib/theme/readerThemeSystem';
 import { scopeThemeTokensCss } from '@/lib/theme/scopeThemeTokensCss';
 
@@ -286,26 +286,6 @@ const generatePaletteColorHslAliases = (palette: StructuredThemeData['palette'])
   return css;
 };
 
-function generateReaderPresetAliasCss(activePresetId?: string): string {
-  if (activePresetId !== 'journal' && activePresetId !== 'editorial') return '';
-
-  const groups = READER_PRESET_ALIAS_GROUPS[activePresetId];
-  let css = `
-  /* Reader preset role aliases (${activePresetId}) */
-`;
-
-  Object.entries(groups).forEach(([role, aliases]) => {
-    const entries = Object.entries(aliases);
-    if (!entries.length) return;
-    css += `  /* ${role} */\n`;
-    entries.forEach(([name, value]) => {
-      css += `  ${name}: ${value};\n`;
-    });
-  });
-
-  return css;
-}
-
 /**
  * CSS variable blocks for :root and [data-theme="dark"] only (no global element rules).
  * Injected in RootLayout so tokens work on serverless without writing the repo.
@@ -344,6 +324,18 @@ function getThemeRecipeRefValue(
       if (familyKey === 'serif') return themeData.typography.fontFamilies.serif1;
       if (familyKey === 'handwriting') return themeData.typography.fontFamilies.handwriting1;
       return themeData.typography.fontFamilies[familyKey as keyof StructuredThemeData['typography']['fontFamilies']];
+    }
+    case 'foundation': {
+      const activeRecipes = recipes ?? activeReaderRecipeResolutionContext;
+      if (parts[1] !== 'typography' || !activeRecipes) return '';
+      const fieldByRef = {
+        'ui-family': 'uiFamily',
+        'reading-family': 'readingFamily',
+        'display-family': 'displayFamily',
+      } as const;
+      const field = fieldByRef[parts[2] as keyof typeof fieldByRef];
+      const foundationRef = field ? activeRecipes.foundationTypography[field] : undefined;
+      return foundationRef ? getThemeRecipeRefValue(themeData, foundationRef, activeRecipes) : '';
     }
     case 'font-size':
       return themeData.typography.fontSizes[parts[1] as keyof StructuredThemeData['typography']['fontSizes']];
@@ -496,6 +488,7 @@ function mergeReaderThemeRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecip
   return {
     ...DEFAULT_READER_THEME_RECIPES,
     ...normalized,
+    foundationTypography: { ...DEFAULT_READER_THEME_RECIPES.foundationTypography, ...normalized?.foundationTypography },
     typography: { ...DEFAULT_READER_THEME_RECIPES.typography, ...normalized?.typography },
     surfaces: { ...DEFAULT_READER_THEME_RECIPES.surfaces, ...normalized?.surfaces },
     controls: { ...DEFAULT_READER_THEME_RECIPES.controls, ...normalized?.controls },
@@ -801,6 +794,10 @@ export function buildThemeTokensCss(
   --button-solid-background-color-hover: ${tokenValue(themeData.components.button.solid.backgroundColorHover, 'color3')};
   --button-solid-border-color: ${tokenValue(themeData.components.button.solid.borderColor, 'color3')};
   --button-solid-text-color: ${tokenValue(themeData.components.button.solid.textColor, 'theme-color/2/dark')};
+  --primary-action-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.primaryAction.background)};
+  --primary-action-background-color-hover: ${getThemeRecipeRefValue(themeData, recipes.controls.primaryAction.hoverBackground ?? recipes.controls.primaryAction.background)};
+  --primary-action-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.primaryAction.border)};
+  --primary-action-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.primaryAction.text)};
   
   /* Button: Outline */
   --button-outline-background-color: ${tokenValue(themeData.components.button.outline.backgroundColor, 'transparent')};
@@ -1007,9 +1004,10 @@ export function buildThemeTokensCss(
   --reader-card-overlay-background: var(--reader-covered-fade-background);
   --reader-card-overlay-strong-background: var(--reader-gallery-overlay-background);
   --reader-card-overlay-text-color: ${getThemeRecipeRefValue(themeData, recipes.overlays.coveredFade.text)};
-  --reader-card-badge-background-color: var(--reader-support-control-background-color);
-  --reader-card-badge-text-color: var(--reader-support-control-text-color);
-  --reader-card-badge-border-color: var(--reader-support-control-border-color);
+  --reader-card-badge-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.typeChip.background)};
+  --reader-card-badge-text-color: ${getThemeRecipeRefValue(themeData, recipes.controls.typeChip.text)};
+  --reader-card-badge-border-color: ${getThemeRecipeRefValue(themeData, recipes.controls.typeChip.border)};
+  --reader-card-badge-hover-background-color: ${getThemeRecipeRefValue(themeData, recipes.controls.typeChip.hoverBackground ?? recipes.controls.typeChip.background)};
   --reader-card-badge-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.family)};
   --reader-card-badge-font-size: calc(${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.size)} * 0.88);
   --reader-card-badge-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.weight)};
@@ -1023,6 +1021,7 @@ export function buildThemeTokensCss(
   --reader-card-badge-compact-padding-block: 0.0625rem;
   --reader-card-badge-compact-padding-inline: 0.375rem;
   --reader-card-badge-compact-min-height: 1.0625rem;
+  --reader-content-grid-gap: ${getThemeRecipeRefValue(themeData, recipes.treatments.contentGridGap)};
   --reader-feed-tile-chip-font-size: var(--studio-tag-chip-font-size);
   --reader-feed-tile-chip-font-family: var(--body-font-family);
   --reader-feed-tile-chip-font-weight: var(--font-weight-medium);
@@ -1093,6 +1092,7 @@ export function buildThemeTokensCss(
   --reader-question-overlay-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.questionOverlay.lineHeight)};
   --reader-question-watermark-color: var(--reader-title-color);
   --reader-question-watermark-opacity: ${recipes.treatments.questionWatermarkOpacity};
+  --reader-question-watermark-scale: ${Math.min(0.9, Math.max(0.5, Number.parseFloat(recipes.treatments.questionWatermarkScale) || 0.78))};
   --reader-callout-watermark-opacity: ${recipes.treatments.calloutWatermarkOpacity};
   --reader-quote-color: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.color)};
   --reader-quote-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.quote.family)};
@@ -1271,6 +1271,22 @@ export function buildThemeTokensCss(
   --admin-feedback-error-panel-border-color: var(--reader-feedback-error-panel-border-color);
   --admin-feedback-info-panel-background-color: var(--reader-feedback-info-panel-background-color);
   --admin-feedback-info-panel-border-color: var(--reader-feedback-info-panel-border-color);
+  --admin-state-success-background-color: var(--state-success-background-color);
+  --admin-state-success-background-color-hover: var(--state-success-background-color-hover);
+  --admin-state-success-border-color: var(--state-success-border-color);
+  --admin-state-success-text-color: var(--state-success-text-color);
+  --admin-state-error-background-color: var(--state-error-background-color);
+  --admin-state-error-background-color-hover: var(--state-error-background-color-hover);
+  --admin-state-error-border-color: var(--state-error-border-color);
+  --admin-state-error-text-color: var(--state-error-text-color);
+  --admin-state-warning-background-color: var(--state-warning-background-color);
+  --admin-state-warning-background-color-hover: var(--state-warning-background-color-hover);
+  --admin-state-warning-border-color: var(--state-warning-border-color);
+  --admin-state-warning-text-color: var(--state-warning-text-color);
+  --admin-state-info-background-color: var(--state-info-background-color);
+  --admin-state-info-background-color-hover: var(--state-info-background-color-hover);
+  --admin-state-info-border-color: var(--state-info-border-color);
+  --admin-state-info-text-color: var(--state-info-text-color);
   --reader-callout-title-color: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.color)};
   --reader-callout-title-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.family)};
   --reader-callout-title-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.calloutTitle.size)};
@@ -1284,7 +1300,7 @@ export function buildThemeTokensCss(
   --reader-callout-body-font-style: ${resolveTypographyFontStyle(themeData, recipes.typography.calloutBody.fontStyle)};
   --reader-callout-body-list-line-height: ${getThemeRecipeRefValue(themeData, recipes.treatments.calloutBodyListLineHeight)};
   --reader-tag-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
-  --reader-tag-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
+  --reader-tag-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.who.text)};
   --reader-tag-border-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.border)};
   --reader-tag-muted-background-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.background)};
   --reader-tag-muted-text-color: ${getThemeRecipeRefValue(themeData, recipes.tags.muted.text)};
@@ -1309,7 +1325,6 @@ export function buildThemeTokensCss(
   --reader-discovery-card-border-color: var(--reader-discovery-border-color);
   --reader-discovery-card-hover-border-color: var(--reader-accent-color);
 `;
-    cssContent += generateReaderPresetAliasCss(themeData.activePresetId);
     cssContent += `}
 
 /*
@@ -1593,8 +1608,18 @@ export async function syncThemeFromJsonToFirestore(): Promise<void> {
 }
 
 async function writeThemeBackupFile(themeData: PersistedThemeDocumentData): Promise<void> {
-  const jsonPath = path.join(process.cwd(), 'theme-data.json');
-  await fs.writeFile(jsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
+  // `theme-data.json` is part of the development module graph because preset
+  // builders import it. Rewriting it while Turbopack is running causes an HMR
+  // module-pattern error even though Firestore persistence succeeds. Keep the
+  // recoverable development snapshot under ignored `.next`; production keeps
+  // the repository fallback path used by the deployed save contract.
+  const jsonPath = process.env.NODE_ENV === 'development'
+    ? path.join(process.cwd(), '.next', 'theme-data.backup.json')
+    : path.join(process.cwd(), 'theme-data.json');
+  const temporaryJsonPath = `${jsonPath}.tmp`;
+  await fs.mkdir(path.dirname(jsonPath), { recursive: true });
+  await fs.writeFile(temporaryJsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
+  await fs.rename(temporaryJsonPath, jsonPath);
 }
 
 export type ThemeSaveResult = {

@@ -24,23 +24,23 @@
 }
 
 .toastSuccess {
-  background: var(--admin-feedback-success-panel-background-color, var(--state-success-background-color));
-  border-color: var(--admin-feedback-success-panel-border-color, var(--state-success-border-color));
+  background: var(--admin-feedback-success-panel-background-color, var(--admin-state-success-background-color));
+  border-color: var(--admin-feedback-success-panel-border-color, var(--admin-state-success-border-color));
 }
 
 .toastError {
-  background: var(--admin-feedback-error-panel-background-color, var(--state-error-background-color));
-  border-color: var(--admin-feedback-error-panel-border-color, var(--state-error-border-color));
+  background: var(--admin-feedback-error-panel-background-color, var(--admin-state-error-background-color));
+  border-color: var(--admin-feedback-error-panel-border-color, var(--admin-state-error-border-color));
 }
 
 .toastWarning {
-  background: var(--admin-feedback-warning-panel-background-color, var(--state-warning-background-color));
-  border-color: var(--admin-feedback-warning-panel-border-color, var(--state-warning-border-color));
+  background: var(--admin-feedback-warning-panel-background-color, var(--admin-state-warning-background-color));
+  border-color: var(--admin-feedback-warning-panel-border-color, var(--admin-state-warning-border-color));
 }
 
 .toastInfo {
-  background: var(--admin-feedback-info-panel-background-color, var(--state-info-background-color));
-  border-color: var(--admin-feedback-info-panel-border-color, var(--state-info-border-color));
+  background: var(--admin-feedback-info-panel-background-color, var(--admin-state-info-background-color));
+  border-color: var(--admin-feedback-info-panel-border-color, var(--admin-state-info-border-color));
 }
 
 .toastIcon {
@@ -53,19 +53,19 @@
 }
 
 .toastSuccess .toastIcon {
-  color: var(--state-success-text-color);
+  color: var(--admin-state-success-text-color);
 }
 
 .toastError .toastIcon {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
 }
 
 .toastWarning .toastIcon {
-  color: var(--state-warning-text-color);
+  color: var(--admin-state-warning-text-color);
 }
 
 .toastInfo .toastIcon {
-  color: var(--state-info-text-color);
+  color: var(--admin-state-info-text-color);
 }
 
 .toastBody {
@@ -156,8 +156,8 @@
 }
 
 .dialogTitle {
-  color: var(--admin-feedback-title-color);
-  font-family: var(--admin-feedback-title-font-family);
+  color: var(--admin-chrome-text-color);
+  font-family: var(--admin-chrome-text-font-family);
   font-size: var(--admin-feedback-title-font-size);
   font-weight: var(--admin-feedback-title-font-weight);
   line-height: var(--admin-feedback-title-line-height);
@@ -165,8 +165,8 @@
 
 .dialogMessage {
   white-space: pre-line;
-  color: var(--admin-feedback-meta-color);
-  font-family: var(--admin-feedback-meta-font-family);
+  color: var(--admin-chrome-text-color);
+  font-family: var(--admin-chrome-text-font-family);
   font-size: var(--admin-feedback-meta-font-size);
   font-weight: var(--admin-feedback-meta-font-weight);
   line-height: var(--admin-feedback-meta-line-height);
@@ -210,11 +210,11 @@
 }
 
 .dialogDanger {
-  background: var(--state-error-background-color);
-  color: var(--state-error-text-color);
-  border-color: var(--state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  color: var(--admin-state-error-text-color);
+  border-color: var(--admin-state-error-border-color);
 }
 
 .dialogDanger:hover:not(:disabled) {
-  background: var(--state-error-background-color-hover);
+  background: var(--admin-state-error-background-color-hover);
 }

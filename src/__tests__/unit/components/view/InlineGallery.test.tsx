@@ -176,4 +176,30 @@ describe('InlineGallery focal contract', () => {
     fireEvent.blur(caption);
     expect(patchReaderGalleryCaption).not.toHaveBeenCalled();
   });
+
+  it('keeps global numbering and the complete lightbox sequence for a deduplicated subset', () => {
+    const sequence = [1, 2, 3].map((number, index) => ({
+      mediaId: `media-${number}`,
+      order: index,
+      media: {
+        docId: `media-${number}`,
+        filename: `${number}.jpg`,
+        storageUrl: `https://example.com/${number}.jpg`,
+      },
+    } as HydratedGalleryMediaItem));
+
+    render(
+      <InlineGallery
+        media={[sequence[1], sequence[2]]}
+        sequenceMedia={sequence}
+        variant="galleryDetail"
+      />
+    );
+
+    expect(screen.getByText('2/3')).toBeInTheDocument();
+    expect(screen.getByText('3/3')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Open image 2 fullscreen' }));
+    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(5);
+  });
 });

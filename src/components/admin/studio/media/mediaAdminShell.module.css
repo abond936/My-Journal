@@ -167,6 +167,11 @@
   max-width: 18rem;
 }
 
+.studioMediaSearchControl {
+  position: relative;
+  display: block;
+}
+
 /* Single-line search (replaces overly tall flex-stretched input) */
 .studioMediaSearchInput {
   width: 100%;
@@ -684,13 +689,13 @@
 }
 
 .bulkButton.deleteButton {
-  background: color-mix(in srgb, var(--layout-background1-color) 82%, var(--state-error-border-color) 18%);
-  color: color-mix(in srgb, var(--text1-color) 54%, var(--state-error-text-color) 46%);
-  border-color: color-mix(in srgb, var(--border1-color) 48%, var(--state-error-border-color) 52%);
+  background: color-mix(in srgb, var(--layout-background1-color) 82%, var(--admin-state-error-border-color) 18%);
+  color: color-mix(in srgb, var(--text1-color) 54%, var(--admin-state-error-text-color) 46%);
+  border-color: color-mix(in srgb, var(--border1-color) 48%, var(--admin-state-error-border-color) 52%);
 }
 
 .bulkButton.deleteButton:hover {
-  background: color-mix(in srgb, var(--layout-background1-color) 74%, var(--state-error-border-color) 26%);
+  background: color-mix(in srgb, var(--layout-background1-color) 74%, var(--admin-state-error-border-color) 26%);
 }
 
 .mediaList {
@@ -764,13 +769,13 @@
 }
 
 .statusBadge.temporary {
-  background: var(--state-warning-background-color);
-  color: var(--state-warning-border-color);
+  background: var(--admin-state-warning-background-color);
+  color: var(--admin-state-warning-border-color);
 }
 
 .statusBadge.active {
-  background: var(--state-success-background-color);
-  color: var(--state-success-border-color);
+  background: var(--admin-state-success-background-color);
+  color: var(--admin-state-success-border-color);
 }
 
 .pagination {
@@ -814,19 +819,19 @@
 }
 
 .error {
-  color: var(--state-error-text-color);
+  color: var(--admin-state-error-text-color);
   padding: var(--spacing-md);
-  background: var(--state-error-background-color);
-  border: var(--border-width-thin) solid var(--state-error-border-color);
+  background: var(--admin-state-error-background-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
   border-radius: var(--border-radius-sm);
   margin: var(--spacing-md) 0;
 }
 
 .warning {
-  color: var(--state-warning-text-color);
+  color: var(--admin-state-warning-text-color);
   padding: var(--spacing-md);
-  background: var(--state-warning-background-color);
-  border: var(--border-width-thin) solid var(--state-warning-border-color);
+  background: var(--admin-state-warning-background-color);
+  border: var(--border-width-thin) solid var(--admin-state-warning-border-color);
   border-radius: var(--border-radius-sm);
   margin: var(--spacing-md) 0;
 }
@@ -904,4 +909,46 @@
   margin-top: var(--spacing-lg);
   display: flex;
   justify-content: flex-end;
+}
+
+.studioMediaSearchControl[data-active='true'] .studioMediaSearchInput {
+  padding-right: 1.75rem;
+}
+
+.studioMediaSearchClear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+}
+
+.studioMediaSearchClear:hover,
+.studioMediaSearchClear:focus-visible {
+  background: var(--admin-support-control-background-color-hover);
+}
+
+.studioEmptyRecovery p {
+  margin: 0 0 var(--spacing-sm);
+}
+
+.studioEmptyRecovery button {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 3px var(--spacing-xs);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  font: inherit;
+  font-style: normal;
+  cursor: pointer;
 }

@@ -232,10 +232,6 @@
       background: transparent;
     }
 
-    .sidebarToggle {
-      display: none;
-    }
-
     .appShell::before,
     .appShell::after {
       opacity: 0.14;

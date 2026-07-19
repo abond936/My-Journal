@@ -109,6 +109,7 @@ describe('adminFilters preferences', () => {
     });
 
     expect(readStoredMediaAdminLocalFilterPreferences(storage)).toEqual({
+      ...DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES,
       duplicateTriageMode: true,
       dimensionFilters: {
         who: DEFAULT_ADMIN_DIMENSION_FILTERS.who,

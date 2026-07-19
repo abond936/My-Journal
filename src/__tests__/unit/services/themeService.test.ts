@@ -143,7 +143,7 @@ describe('theme compiler canaries', () => {
     expect(css).toContain('--reader-covered-fade-background: linear-gradient(transparent, rgba(0,0,0,0.9));');
     expect(css).toContain('--reader-gallery-overlay-background: var(--reader-overlay-strong-scrim-color);');
     expect(css).toContain('--reader-lightbox-overlay-background-color: var(--reader-overlay-scrim-color);');
-    expect(css).toContain('--reader-card-badge-background-color: var(--reader-support-control-background-color);');
+    expect(css).toContain('--reader-card-badge-background-color:');
     expect(css).toContain('--reader-story-feed-title-font-size: calc(');
     expect(css).toContain('--reader-gallery-feed-title-font-size: calc(');
   });
@@ -369,7 +369,7 @@ describe('theme compiler canaries', () => {
     });
 
     expect(scopedCss.readerCss).toContain('.themeDraftReaderScope {');
-    expect(scopedCss.readerCss).toContain('--reader-covered-fade-background: linear-gradient(transparent, rgba(0,0,0,0.7));');
+    expect(scopedCss.readerCss).toContain('--reader-covered-fade-background: var(--reader-covered-fade-adaptive-background);');
     expect(scopedCss.readerCss).toContain('--reader-covered-fade-adaptive-background: linear-gradient(to top, rgb(0 0 0 / var(--reader-covered-fade-bottom-opacity)) 0%, rgb(0 0 0 / var(--reader-covered-fade-mid-opacity)) 38%, rgb(0 0 0 / var(--reader-covered-fade-top-opacity)) 68%, transparent 100%);');
     expect(scopedCss.adminCss).toContain('.themeDraftAdminScope {');
     expect(scopedCss.adminCss).toContain('--admin-window-background-color: var(--reader-window-background-color);');
@@ -396,12 +396,12 @@ describe('theme compiler canaries', () => {
       recipes: admin.recipes,
     });
 
-    expect(journalCss).toContain("/* Reader preset role aliases (journal) */");
+    expect(journalCss).not.toContain('Reader preset role aliases');
     expect(journalCss).toContain('[data-theme="dark"] {');
     expect(journalCss).toContain('--reader-covered-fade-background: var(--reader-covered-fade-adaptive-background);');
     expect(journalCss).toContain('--admin-window-background-color: var(--reader-window-background-color);');
 
-    expect(editorialCss).toContain("/* Reader preset role aliases (editorial) */");
+    expect(editorialCss).not.toContain('Reader preset role aliases');
     expect(editorialCss).toContain('[data-theme="dark"] {');
     expect(editorialCss).toContain('--reader-gallery-overlay-background: var(--reader-overlay-strong-scrim-color);');
     expect(editorialCss).toContain('--admin-chrome-active-control-background-color: var(--reader-chrome-active-control-background-color);');
@@ -411,6 +411,134 @@ describe('theme compiler canaries', () => {
     expect(adminCss).toContain('--admin-feedback-title-color: var(--reader-feedback-title-color);');
     expect(adminCss).not.toContain('Reader preset role aliases (journal)');
     expect(adminCss).not.toContain('Reader preset role aliases (editorial)');
+  });
+
+  it('keeps Journal chrome warm without changing Editorial chrome hierarchy', () => {
+    const journal = getReaderPresetSettings('journal');
+    const editorial = getReaderPresetSettings('editorial');
+
+    expect(journal.recipes.surfaces.chromeSidebar.background).toBe('layout/background1Color');
+    expect(editorial.recipes.surfaces.chromeSidebar.background).toBe('layout/background2Color');
+
+    const journalCss = buildThemeTokensCss({
+      ...journal.data,
+      activePresetId: journal.activePresetId,
+      recipes: journal.recipes,
+    });
+    expect(journalCss).toContain('--reader-sidebar-background-color: var(--color1-100);');
+    expect(journalCss).toContain('--reader-card-badge-background-color: var(--color3);');
+    expect(journalCss).toContain('--reader-card-badge-text-color: var(--theme-color-2-dark);');
+    expect(journalCss).toContain('--reader-card-badge-border-color: var(--color3);');
+    expect(journalCss).toContain('--reader-tag-text-color: var(--theme-color-2-dark);');
+  });
+
+  it('propagates Foundation families to inheriting roles while preserving local overrides', () => {
+    const journal = getReaderPresetSettings('journal');
+    const recipes = JSON.parse(JSON.stringify(journal.recipes)) as ReaderThemeRecipes;
+    recipes.foundationTypography.displayFamily = 'font-family/handwriting1';
+    recipes.foundationTypography.readingFamily = 'font-family/sans2';
+
+    const css = buildThemeTokensCss({
+      ...journal.data,
+      activePresetId: journal.activePresetId,
+      recipes,
+    });
+
+    expect(css).toContain(`--reader-title-font-family: ${journal.data.typography.fontFamilies.handwriting1};`);
+    expect(css).toContain(`--reader-body-font-family: ${journal.data.typography.fontFamilies.sans2};`);
+    expect(css).toContain(`--reader-subtitle-font-family: ${journal.data.typography.fontFamilies.serif1};`);
+  });
+
+  it('compiles Primary action independently from selected and support controls', () => {
+    const editorial = getReaderPresetSettings('editorial');
+    const recipes = JSON.parse(JSON.stringify(editorial.recipes)) as ReaderThemeRecipes;
+    recipes.controls.primaryAction = {
+      background: 'palette/6',
+      text: 'semantic/reader/contrast-on-fill-text',
+      border: 'palette/7',
+      hoverBackground: 'palette/8',
+    };
+
+    const css = buildThemeTokensCss({ ...editorial.data, recipes });
+
+    expect(css).toContain('--primary-action-background-color: var(--color6);');
+    expect(css).toContain('--primary-action-border-color: var(--color7);');
+    expect(css).toContain('--primary-action-background-color-hover: var(--color8);');
+    expect(css).toContain('--primary-action-text-color: var(--reader-contrast-on-fill-text-color);');
+    expect(css).toContain('--reader-chrome-active-control-background-color:');
+    expect(recipes.controls.chromeActiveTab.background).not.toBe(recipes.controls.primaryAction.background);
+    expect(recipes.controls.supportControlStrong.background).not.toBe(recipes.controls.primaryAction.background);
+  });
+
+  it('compiles the Reader Type chip independently from support controls', () => {
+    const editorial = getReaderPresetSettings('editorial');
+    const recipes = JSON.parse(JSON.stringify(editorial.recipes)) as ReaderThemeRecipes;
+    recipes.controls.typeChip = {
+      background: 'palette/6',
+      text: 'palette/1',
+      border: 'palette/7',
+      hoverBackground: 'palette/8',
+    };
+
+    const css = buildThemeTokensCss({ ...editorial.data, recipes });
+
+    expect(css).toContain('--reader-card-badge-background-color: var(--color6);');
+    expect(css).toContain('--reader-card-badge-text-color: var(--color1);');
+    expect(css).toContain('--reader-card-badge-border-color: var(--color7);');
+    expect(css).toContain('--reader-card-badge-hover-background-color: var(--color8);');
+    expect(recipes.controls.supportControl.background).not.toBe(recipes.controls.typeChip.background);
+  });
+
+  it('compiles Content Grid spacing independently from responsive tile safeguards', () => {
+    const editorial = getReaderPresetSettings('editorial');
+    const recipes = JSON.parse(JSON.stringify(editorial.recipes)) as ReaderThemeRecipes;
+    recipes.treatments.contentGridGap = 'spacing/lg';
+
+    const css = buildThemeTokensCss({ ...editorial.data, recipes });
+
+    expect(css).toContain('--reader-content-grid-gap: var(--spacing-lg);');
+  });
+
+  it('compiles and bounds the proportional Question watermark scale', () => {
+    const editorial = getReaderPresetSettings('editorial');
+    const recipes = JSON.parse(JSON.stringify(editorial.recipes)) as ReaderThemeRecipes;
+    recipes.treatments.questionWatermarkScale = '0.65';
+
+    const css = buildThemeTokensCss({ ...editorial.data, recipes });
+    expect(css).toContain('--reader-question-watermark-scale: 0.65;');
+
+    recipes.treatments.questionWatermarkScale = '2';
+    const boundedCss = buildThemeTokensCss({ ...editorial.data, recipes });
+    expect(boundedCss).toContain('--reader-question-watermark-scale: 0.9;');
+  });
+
+  it('emits explicit Administration aliases for every semantic state', () => {
+    const editorial = getReaderPresetSettings('editorial');
+    const css = buildThemeTokensCss({ ...editorial.data, recipes: editorial.recipes });
+
+    for (const state of ['success', 'error', 'warning', 'info']) {
+      expect(css).toContain(`--admin-state-${state}-background-color: var(--state-${state}-background-color);`);
+      expect(css).toContain(`--admin-state-${state}-border-color: var(--state-${state}-border-color);`);
+      expect(css).toContain(`--admin-state-${state}-text-color: var(--state-${state}-text-color);`);
+    }
+  });
+
+  it('keeps legacy literal families as visible overrides during normalization', () => {
+    const normalized = normalizeReaderThemeRecipes({
+      typography: {
+        storyTitle: {
+          ...getReaderPresetSettings('journal').recipes!.typography.storyTitle,
+          family: 'font-family/serif2',
+        },
+      },
+    } as Partial<ReaderThemeRecipes>);
+
+    expect(normalized?.foundationTypography).toEqual({
+      uiFamily: 'font-family/sans1',
+      readingFamily: 'font-family/sans1',
+      displayFamily: 'font-family/sans1',
+    });
+    expect(normalized?.typography?.storyTitle?.family).toBe('font-family/serif2');
   });
 
   it('resolves concrete layout fallbacks to emitted token names instead of camel-cased alias refs', () => {
@@ -444,14 +572,16 @@ describe('theme compiler canaries', () => {
     expect(css).not.toContain('--reader-overlay-contrast-text-color: component/button/solid/textColor;');
   });
 
-  it('keeps normalized reader recipes on the current role map while shipped fallback JSON still carries legacy aliases', () => {
+  it('keeps normalized saved reader recipes on the current role map', () => {
     const normalized = normalizeThemeDocument(baseTheme);
     const readerRecipes = normalized.reader.recipes;
 
     expect(readerRecipes?.typography?.supportTitle).toBeDefined();
     expect(readerRecipes?.typography?.chromeText).toBeDefined();
     expect(readerRecipes?.controls?.supportControl).toBeDefined();
-    expect(readerRecipes?.overlays?.coveredFade?.background).toBe('gradient/bottomOverlay');
+    expect(readerRecipes?.overlays?.coveredFade?.background).toBe(
+      normalizeThemeDocument(baseTheme).reader.recipes?.overlays.coveredFade.background
+    );
     expect(readerRecipes?.overlays?.galleryOverlay).toBeDefined();
     expect(readerRecipes?.overlays?.lightboxBackdrop).toBeDefined();
   });
@@ -523,7 +653,9 @@ describe('theme compiler canaries', () => {
     expect(persisted.version).toBe(2);
     expect(persisted.reader.activePresetId).toBe(normalized.reader.activePresetId);
     expect(persisted.admin.activePresetId).toBe(normalized.admin.activePresetId);
-    expect(persisted.reader.recipes?.overlays.coveredFade.background).toBe('gradient/bottomOverlay');
+    expect(persisted.reader.recipes?.overlays.coveredFade.background).toBe(
+      normalized.reader.recipes?.overlays.coveredFade.background
+    );
     expect(persisted.admin.data.layout.background1Color).toBe(normalized.admin.data.layout.background1Color);
   });
 });

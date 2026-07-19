@@ -109,9 +109,9 @@
 }
 
 .primaryButton {
-  border: 1px solid var(--admin-support-control-strong-border-color);
-  background: var(--admin-support-control-strong-background-color);
-  color: var(--admin-support-control-strong-text-color);
+  border: 1px solid var(--primary-action-border-color);
+  background: var(--primary-action-background-color);
+  color: var(--primary-action-text-color);
 }
 
 .secondaryButton:hover:not(:disabled) {
@@ -120,7 +120,7 @@
 }
 
 .primaryButton:hover:not(:disabled) {
-  background: var(--admin-support-control-strong-hover-background-color);
+  background: var(--primary-action-background-color-hover);
 }
 
 .secondaryButton:disabled,

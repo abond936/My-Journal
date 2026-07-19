@@ -31,6 +31,10 @@ jest.mock('@/components/providers/MediaProvider', () => ({
   useMedia: () => ({ media: [] }),
 }));
 
+jest.mock('@/components/providers/TagProvider', () => ({
+  useTag: () => ({ tags: [] }),
+}));
+
 jest.mock('@/components/admin/studio/TagAdminStudioPane', () => ({
   __esModule: true,
   default: () => <div data-testid="tag-pane" />,

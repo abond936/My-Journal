@@ -16,6 +16,12 @@ jest.mock('react-dnd-html5-backend', () => ({
   HTML5Backend: {},
 }));
 
+jest.mock('swiper/react', () => ({
+  Swiper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SwiperSlide: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+jest.mock('swiper/css', () => ({}), { virtual: true });
+
 jest.mock('@/components/admin/studio/cards/CoverPhotoContainer', () => {
   return function MockCoverPhotoContainer(props: {
     onCommit?: (media: null, position?: string) => void;

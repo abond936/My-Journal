@@ -882,6 +882,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, []);
 
   const studioDrag = Boolean(curatedTreeDnd);
+  const hasActiveCardStructuralFilters =
+    statusFilter !== 'all' ||
+    typeFilter !== 'all' ||
+    displayModeFilter !== 'all' ||
+    filterTagIds.length > 0 ||
+    Object.values(dimensionFilters).some(state => state.mode !== 'any');
   const handleStudioFocusCard = useCallback(
     (card: Card) => {
       if (!card.docId) return;
@@ -1076,7 +1082,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               onClick={() => setBulkSelectedCardIds(new Set())}
               className={cardAdminStyles.actionButton}
             >
-              Clear
+              Clear selection
             </button>
             <button
               type="button"
@@ -1115,6 +1121,13 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
                 <p>No cards match &ldquo;{trimmedSearch}&rdquo;.</p>
                 <button type="button" onClick={() => setSearch('')}>
                   Clear search
+                </button>
+              </div>
+            ) : hasActiveCardStructuralFilters ? (
+              <div className={styles.studioSearchEmptyState}>
+                <p>No cards match the current filters.</p>
+                <button type="button" onClick={handleClearAllFilters}>
+                  Clear filters
                 </button>
               </div>
             ) : undefined

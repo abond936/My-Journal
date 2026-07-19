@@ -25,6 +25,7 @@ import {
 import {
   CURRENT_READER_THEME_COMPONENTS,
   DEFAULT_READER_THEME_RECIPES,
+  getTypographyFoundationFamilyForRole,
   normalizeReaderThemeRecipes,
 } from '@/lib/theme/readerThemeSystem';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -201,6 +202,13 @@ const formatEditorOptionLabel = (value: ThemeRecipeTokenRef | string): string =>
     'shared/card/shadow': 'Use General',
     'shared/card/shadowHover': 'Use General',
     'shared/card/padding': 'Use General',
+    'foundation/typography/ui-family': 'Use Foundation UI',
+    'foundation/typography/reading-family': 'Use Foundation Reading',
+    'foundation/typography/display-family': 'Use Foundation Display',
+    'component/button/solid/backgroundColor': 'Current Solid Background',
+    'component/button/solid/backgroundColorHover': 'Current Solid Hover',
+    'component/button/solid/borderColor': 'Current Solid Border',
+    'component/button/solid/textColor': 'Current Solid Text',
     'layout/bodyBackgroundColor': 'Color 1-100',
     'layout/background1Color': 'Color 1-100',
     'layout/background2Color': 'Color 1-200',
@@ -569,6 +577,7 @@ const COMPONENT_ORDER = [
   'window',
   'field',
   'feedback',
+  'contentGrid',
   'cardGeneral',
   'storyCard',
   'galleryCard',
@@ -580,7 +589,7 @@ const COMPONENT_ORDER = [
 ] as const;
 
 const FOUNDATION_COMPONENT_IDS = ['canvas', 'header', 'sidebar', 'field', 'window', 'feedback'] as const;
-const CONTENT_COMPONENT_IDS = ['cardGeneral', 'storyCard', 'galleryCard', 'qaCard', 'quoteCard', 'calloutCard', 'lightbox'] as const;
+const CONTENT_COMPONENT_IDS = ['contentGrid', 'cardGeneral', 'storyCard', 'galleryCard', 'qaCard', 'quoteCard', 'calloutCard', 'lightbox'] as const;
 
 const getNavigatorSectionForComponent = (componentId: string): NavigatorSectionId => {
   if (FOUNDATION_COMPONENT_IDS.includes(componentId as (typeof FOUNDATION_COMPONENT_IDS)[number])) return 'foundation';
@@ -836,6 +845,24 @@ const FOUNDATION_COMPONENT_SPEC: DisplayComponentSpec = {
           description: 'Shared focus treatment for interactive elements.',
           binding: { kind: 'control', key: 'focusRing' },
         },        
+        {
+          id: 'uiFamily',
+          label: 'UI font',
+          description: 'Application chrome, controls, labels, feedback, and tags that inherit the UI family.',
+          binding: { kind: 'token', key: 'foundationUiFamily' },
+        },
+        {
+          id: 'readingFamily',
+          label: 'Reading font',
+          description: 'Body, excerpts, metadata, captions, and other prose roles that inherit the reading family.',
+          binding: { kind: 'token', key: 'foundationReadingFamily' },
+        },
+        {
+          id: 'displayFamily',
+          label: 'Display font',
+          description: 'Titles, Questions, and emphasized headings that inherit the display family.',
+          binding: { kind: 'token', key: 'foundationDisplayFamily' },
+        },
         {
           id: 'bodyText',
           label: 'Primary text',
@@ -1127,6 +1154,14 @@ const PADDING_OPTIONS: ThemeRecipeTokenRef[] = [
   'component/card/padding',
 ];
 
+const GRID_GAP_OPTIONS: ThemeRecipeTokenRef[] = [
+  'spacing/xs',
+  'spacing/sm',
+  'spacing/md',
+  'spacing/lg',
+  'spacing/xl',
+];
+
 const CARD_GENERAL_PADDING_OPTION: ThemeRecipeTokenRef[] = [
   'shared/card/padding',
 ];
@@ -1258,18 +1293,23 @@ const getSurfacePaddingOptions = (role: keyof ReaderThemeRecipes['surfaces']): T
 );
 
 const getControlBackgroundOptions = (role: keyof ReaderThemeRecipes['controls']): ThemeRecipeTokenRef[] => {
+  if (role === 'primaryAction') return ['component/button/solid/backgroundColor', 'component/button/solid/backgroundColorHover', ...EMPHASIS_BACKGROUND_OPTIONS];
+  if (role === 'typeChip') return [...FOUNDATION_SURFACE_OPTIONS, ...EMPHASIS_BACKGROUND_OPTIONS];
   if (role === 'lightboxControl') return OVERLAY_BACKGROUND_OPTIONS;
   if (role === 'supportControl') return FOUNDATION_SURFACE_OPTIONS;
   return EMPHASIS_BACKGROUND_OPTIONS;
 };
 
 const getControlBorderOptions = (role: keyof ReaderThemeRecipes['controls']): ThemeRecipeTokenRef[] => {
+  if (role === 'primaryAction') return ['component/button/solid/borderColor', ...EMPHASIS_BORDER_OPTIONS];
+  if (role === 'typeChip') return [...FOUNDATION_BORDER_OPTIONS, ...EMPHASIS_BORDER_OPTIONS];
   if (role === 'lightboxControl') return FOUNDATION_BORDER_OPTIONS;
   if (role === 'supportControl') return FOUNDATION_BORDER_OPTIONS;
   return EMPHASIS_BORDER_OPTIONS;
 };
 
 const getControlTextOptions = (role: keyof ReaderThemeRecipes['controls']): ThemeRecipeTokenRef[] => {
+  if (role === 'primaryAction') return ['component/button/solid/textColor', ...CONTROL_TEXT_OPTIONS];
   if (role === 'inlineLink') return LINK_COLOR_OPTIONS;
   if (role === 'lightboxControl') return OVERLAY_TEXT_OPTIONS;
   return CONTROL_TEXT_OPTIONS;
@@ -1293,18 +1333,15 @@ const getTagBorderOptions = (role: keyof ReaderThemeRecipes['tags']): ThemeRecip
   role === 'muted' ? FOUNDATION_BORDER_OPTIONS : PALETTE_ACCENT_OPTIONS
 );
 
-const INHERITED_FAMILY_ROLES: Array<keyof ReaderThemeRecipes['typography']> = [
-  'supportLabel',
-  'supportMeta',
-  'supportHint',
-  'supportControlText',
-];
-
 const mergeReaderRecipes = (recipes?: Partial<ReaderThemeRecipes> | null): ReaderThemeRecipes => {
   const normalized = normalizeReaderThemeRecipes(recipes);
   return {
     ...DEFAULT_READER_THEME_RECIPES,
     ...normalized,
+    foundationTypography: {
+      ...DEFAULT_READER_THEME_RECIPES.foundationTypography,
+      ...(normalized?.foundationTypography ?? {}),
+    },
     typography: {
       ...DEFAULT_READER_THEME_RECIPES.typography,
       ...(normalized?.typography ?? {}),
@@ -1662,7 +1699,7 @@ export default function ThemeAdminPage() {
     return false;
   };
 
-  const saveTheme = async () => {
+  const saveTheme = async ({ refresh = true }: { refresh?: boolean } = {}) => {
     if (!themeData || !adminThemeData) return false;
 
     if (!THEME_SAVE_ENABLED) {
@@ -1716,7 +1753,7 @@ export default function ThemeAdminPage() {
           message: 'Theme saved successfully.',
         }))) as ThemeSaveApiResponse;
         setSavedThemeDocument(dataToSave);
-        router.refresh();
+        if (refresh) router.refresh();
         setSaveNotice({
           type: result.backupSaved === false ? 'warning' : 'success',
           message: result.message || 'Theme saved successfully.',
@@ -1754,6 +1791,18 @@ export default function ThemeAdminPage() {
     clearDraftThemeCss();
     setSaveNotice(null);
   }, [applyThemeDocument, clearDraftThemeCss, savedThemeDocument]);
+
+  const confirmDiscardDraft = useCallback(async () => {
+    if (!savedThemeDocument) return;
+    const confirmed = await feedback.confirm({
+      title: 'Discard theme changes?',
+      message: 'This restores the last saved Reader and Administration theme settings.',
+      confirmLabel: 'Discard changes',
+      cancelLabel: 'Keep editing',
+      tone: 'danger',
+    });
+    if (confirmed) discardDraft();
+  }, [discardDraft, feedback, savedThemeDocument]);
 
   const currentDraftDocument = useMemo<PersistedThemeDocumentData | null>(() => {
     if (!themeData || !adminThemeData) return null;
@@ -1793,7 +1842,10 @@ export default function ThemeAdminPage() {
       tone: 'danger',
     });
     if (!shouldSave) return true;
-    return await saveTheme();
+    // The selected preset is applied immediately after this save completes.
+    // Refreshing here can reconcile the component against the just-saved old
+    // preset before that transition lands, leaving the UI on the wrong preset.
+    return await saveTheme({ refresh: false });
   };
 
   useEffect(() => {
@@ -1893,6 +1945,30 @@ export default function ThemeAdminPage() {
         },
       },
     }));
+  };
+
+  const updateFoundationTypographyFamily = (
+    field: keyof ReaderThemeRecipes['foundationTypography'],
+    value: ThemeRecipeTokenRef,
+  ) => {
+    setReaderRecipes((prev) => ({
+      ...prev,
+      foundationTypography: {
+        ...prev.foundationTypography,
+        [field]: value,
+      },
+    }));
+  };
+
+  const adoptFoundationTypographyFamily = (foundationRef: ThemeRecipeTokenRef) => {
+    setReaderRecipes((prev) => {
+      const typography = { ...prev.typography };
+      (Object.keys(DEFAULT_READER_THEME_RECIPES.typography) as Array<keyof ReaderThemeRecipes['typography']>).forEach((role) => {
+        if (getTypographyFoundationFamilyForRole(role) !== foundationRef) return;
+        typography[role] = { ...typography[role], family: foundationRef };
+      });
+      return { ...prev, typography };
+    });
   };
 
   const updateSurfaceRecipe = <K extends keyof ReaderThemeRecipes['surfaces']>(
@@ -2146,11 +2222,16 @@ export default function ThemeAdminPage() {
 
   const renderTypographyEditor = (role: keyof ReaderThemeRecipes['typography']) => {
     const recipe = readerRecipes.typography[role];
+    const inheritedFamily = getTypographyFoundationFamilyForRole(role);
+    const familyOptions = [inheritedFamily, ...FONT_FAMILY_OPTIONS.filter((option) => option !== inheritedFamily)];
     return (
       <div className={styles.componentRecipeEditor}>
-        {!INHERITED_FAMILY_ROLES.includes(role) ? (
-          renderSelectField('Family', recipe.family, (value) => updateTypographyRecipe(role, 'family', value as ThemeRecipeTokenRef), FONT_FAMILY_OPTIONS, 'typography')
-        ) : null}
+        {renderSelectField('Family', recipe.family, (value) => updateTypographyRecipe(role, 'family', value as ThemeRecipeTokenRef), familyOptions, 'typography')}
+        <span className={styles.architectureEmptyState}>
+          {recipe.family === inheritedFamily
+            ? `${formatEditorOptionLabel(inheritedFamily)} · inherited`
+            : `Overrides ${formatEditorOptionLabel(inheritedFamily)}`}
+        </span>
         {renderSelectField('Size', recipe.size, (value) => updateTypographyRecipe(role, 'size', value as ThemeRecipeTokenRef), FONT_SIZE_OPTIONS, 'typography')}
         {renderSelectField('Weight', recipe.weight, (value) => updateTypographyRecipe(role, 'weight', value as ThemeRecipeTokenRef), FONT_WEIGHT_OPTIONS, 'typography')}
         {renderSelectField('Line height', recipe.lineHeight, (value) => updateTypographyRecipe(role, 'lineHeight', value as ThemeRecipeTokenRef), LINE_HEIGHT_OPTIONS, 'lineHeight')}
@@ -2310,19 +2391,54 @@ export default function ThemeAdminPage() {
     </div>
   );
 
-  const renderTreatmentEditor = (role: keyof ReaderThemeRecipes['treatments']) => (
-    <div className={styles.componentRecipeEditor}>
-      <label className={styles.architectureField}>
-        <span>Value</span>
-        <input
-          type="text"
-          value={readerRecipes.treatments[role]}
-          onChange={(e) => updateTreatmentRecipe(role, e.target.value)}
-          className={styles.componentRecipeInput}
-        />
-      </label>
-    </div>
-  );
+  const renderTreatmentEditor = (role: keyof ReaderThemeRecipes['treatments']) => {
+    if (role === 'contentGridGap') {
+      return (
+        <div className={styles.componentRecipeEditor}>
+          {renderSelectField(
+            'Tile spacing',
+            readerRecipes.treatments.contentGridGap,
+            (value) => updateTreatmentRecipe(role, value),
+            GRID_GAP_OPTIONS,
+            'padding',
+          )}
+        </div>
+      );
+    }
+
+    if (role === 'questionWatermarkScale') {
+      return (
+        <div className={styles.componentRecipeEditor}>
+          <label className={styles.architectureField}>
+            <span>Scale (50%–90%)</span>
+            <input
+              type="number"
+              min="0.5"
+              max="0.9"
+              step="0.05"
+              value={readerRecipes.treatments.questionWatermarkScale}
+              onChange={(e) => updateTreatmentRecipe(role, e.target.value)}
+              className={styles.componentRecipeInput}
+            />
+          </label>
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.componentRecipeEditor}>
+        <label className={styles.architectureField}>
+          <span>Value</span>
+          <input
+            type="text"
+            value={readerRecipes.treatments[role]}
+            onChange={(e) => updateTreatmentRecipe(role, e.target.value)}
+            className={styles.componentRecipeInput}
+          />
+        </label>
+      </div>
+    );
+  };
 
   const renderLayoutEditor = (key: string) => {
     if (!activeThemeData || key !== 'sidebarWidth') {
@@ -2581,6 +2697,44 @@ export default function ThemeAdminPage() {
     kind: string,
     key: string,
   ) => {
+    const foundationFamilyFieldByElement = {
+      uiFamily: { field: 'uiFamily', ref: 'foundation/typography/ui-family' },
+      readingFamily: { field: 'readingFamily', ref: 'foundation/typography/reading-family' },
+      displayFamily: { field: 'displayFamily', ref: 'foundation/typography/display-family' },
+    } as const;
+    const foundationFamily = componentId === 'canvas'
+      ? foundationFamilyFieldByElement[elementId as keyof typeof foundationFamilyFieldByElement]
+      : undefined;
+    if (foundationFamily) {
+      const assignedRoles = (Object.keys(DEFAULT_READER_THEME_RECIPES.typography) as Array<keyof ReaderThemeRecipes['typography']>)
+        .filter((role) => getTypographyFoundationFamilyForRole(role) === foundationFamily.ref);
+      const inheritedCount = assignedRoles.filter((role) => readerRecipes.typography[role].family === foundationFamily.ref).length;
+      const overrideCount = assignedRoles.length - inheritedCount;
+      return (
+        <div className={styles.componentRecipeEditor}>
+          {renderSelectField(
+            'Family',
+            readerRecipes.foundationTypography[foundationFamily.field],
+            (value) => updateFoundationTypographyFamily(foundationFamily.field, value as ThemeRecipeTokenRef),
+            FONT_FAMILY_OPTIONS,
+            'typography',
+          )}
+          <span className={styles.architectureEmptyState}>
+            {inheritedCount} of {assignedRoles.length} assigned roles inherit this family; {overrideCount} retain a local override.
+          </span>
+          {overrideCount > 0 ? (
+            <button
+              type="button"
+              className={styles.secondaryActionButton}
+              onClick={() => adoptFoundationTypographyFamily(foundationFamily.ref)}
+            >
+              Use across assigned roles
+            </button>
+          ) : null}
+        </div>
+      );
+    }
+
     if (componentId === 'canvas' && variantId === 'reader' && elementId === 'pageSurface') {
       const recipe = readerRecipes.surfaces.canvasPage;
       return (
@@ -2821,6 +2975,24 @@ export default function ThemeAdminPage() {
     if (selectedComponent.id === 'field' && selectedVariant.id === 'controls') {
       return [
         {
+          id: 'primaryAction',
+          label: 'Primary action',
+          description: 'Shared commit and proceed treatment; selected navigation and filters remain separate.',
+          binding: {
+            kind: 'control',
+            key: 'primaryAction',
+          },
+        },
+        {
+          id: 'typeChip',
+          label: 'Type chip',
+          description: 'Shared Type-chip identity; grid, rail, and compact contexts retain proportional geometry.',
+          binding: {
+            kind: 'control',
+            key: 'typeChip',
+          },
+        },
+        {
           id: 'control',
           label: 'Control surface',
           description: 'Shared background and border for neutral field-style controls.',
@@ -2904,6 +3076,9 @@ export default function ThemeAdminPage() {
   const selectedElement = selectedRecipeId
     ? selectedVariantElements.find((element) => `${element.binding.kind}:${element.binding.key}` === selectedRecipeId) ?? null
     : null;
+  const selectedAttributeLabel = selectedComponent && selectedVariant && selectedElement
+    ? getAttributeLabel(selectedComponent.id, selectedVariant.id, selectedElement.id, selectedElement.label)
+    : '';
   const workspaceColumns = valuesPaneVisible
     ? `minmax(${MIN_SYSTEM_PANE_WIDTH}px, 0.75fr) minmax(${MIN_ADVANCED_PANE_WIDTH}px, 1.25fr)`
     : 'minmax(0, 1fr)';
@@ -3080,16 +3255,19 @@ export default function ThemeAdminPage() {
             <h1 className={styles.headerTitle}>Theme Management</h1>
           </div>
           <div className={styles.headerActions}>
+            {isDraftDirty ? (
+              <span className={styles.draftStatus} role="status">Unsaved changes</span>
+            ) : null}
             <button
               type="button"
-              onClick={discardDraft}
+              onClick={() => { void confirmDiscardDraft(); }}
               disabled={!isDraftDirty}
               className={`${styles.secondaryActionButton} ${isDraftDirty ? styles.secondaryActionButtonActive : ''}`}
             >
               Discard
             </button>
             <button 
-              onClick={saveTheme}
+              onClick={() => { void saveTheme(); }}
               disabled={saving || !THEME_SAVE_ENABLED || !isDraftDirty}
               className={`${styles.saveButton} ${isDraftDirty ? styles.saveButtonActive : ''}`}
             >
@@ -3254,6 +3432,21 @@ export default function ThemeAdminPage() {
                     })}
                   </div>
                   <div className={styles.componentActiveEditor}>
+                    {selectedComponent && selectedVariant && selectedAttributeLabel ? (
+                      <div className={styles.activeEditPath} aria-label="Active theme attribute">
+                        <span>{selectedNavigatorSection === 'foundation' ? 'Foundation' : 'Content'}</span>
+                        <span aria-hidden="true">/</span>
+                        <strong>{COMPONENT_TAB_LABELS[selectedComponent.id] ?? selectedComponent.label}</strong>
+                        {displayedVariants.length > 1 ? (
+                          <>
+                            <span aria-hidden="true">/</span>
+                            <span>{getVariantLabel(selectedComponent.id, selectedVariant.id, selectedVariant.label)}</span>
+                          </>
+                        ) : null}
+                        <span aria-hidden="true">/</span>
+                        <span>{selectedAttributeLabel}</span>
+                      </div>
+                    ) : null}
                     {selectedComponent && selectedVariant && selectedElement
                       ? renderSelectedAttributeEditor(
                         selectedComponent.id,

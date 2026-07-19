@@ -6,11 +6,11 @@ import {
   organizeTagsByDimension,
   updateTagCountsForMedia,
 } from '@/lib/firebase/tagService';
-import { Media, type MediaSourceIdentity } from '@/lib/types/photo';
+import { Media, type MediaReadinessStageName, type MediaSourceIdentity } from '@/lib/types/photo';
 import type { Tag } from '@/lib/types/tag';
 import {
-  syncMediaToTypesense,
   syncMediaToTypesenseById,
+  syncMediaToTypesenseStrict,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { normalizeSubjectTagId, normalizeSubjectTagIds, resolveSubjectTagState } from '@/lib/utils/subjectTag';
@@ -28,6 +28,13 @@ import {
   buildMediaSourceIdentity,
   sha256SourceBytes,
 } from '@/lib/utils/mediaDuplicateEvidence';
+import {
+  buildMediaReadiness,
+  failedStage,
+  getRetryableMediaStages,
+  pendingStage,
+  readyStage,
+} from '@/lib/utils/mediaReadiness';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 const STUDIO_RENDITION_MAX_WIDTH = 960;
@@ -351,6 +358,20 @@ async function createMediaAsset(
 
   // 5. Construct the canonical Media object
   const now = Date.now();
+  const readiness = buildMediaReadiness(
+    {
+      source: readyStage(now),
+      metadata: readyStage(now),
+      studioRendition: studioRendition
+        ? readyStage(now)
+        : failedStage(now, 'STUDIO_RENDITION_FAILED', true),
+      readerRendition: readerRendition
+        ? readyStage(now)
+        : failedStage(now, 'READER_RENDITION_FAILED', true),
+      searchIndex: pendingStage(now),
+    },
+    now
+  );
   const baseFields = {
     docId: docId,
     filename: originalFilename,
@@ -377,6 +398,7 @@ async function createMediaAsset(
     createdAt: now,
     updatedAt: now,
     ...(importBatchId ? { importBatchId } : {}),
+    readiness,
   };
 
   const newMedia: Media = derived
@@ -477,9 +499,154 @@ async function createMediaAsset(
       : existing;
   }
 
-  void syncMediaToTypesense(newMedia);
+  let indexedMedia = newMedia;
+  try {
+    await syncMediaToTypesenseStrict(newMedia);
+    const indexedAt = Date.now();
+    const indexedReadiness = buildMediaReadiness(
+      { ...newMedia.readiness!.stages, searchIndex: readyStage(indexedAt) },
+      indexedAt
+    );
+    await mediaRef.update({ readiness: indexedReadiness, updatedAt: indexedAt });
+    indexedMedia = { ...newMedia, readiness: indexedReadiness, updatedAt: indexedAt };
+  } catch (error) {
+    const failedAt = Date.now();
+    const failedReadiness = buildMediaReadiness(
+      {
+        ...newMedia.readiness!.stages,
+        searchIndex: failedStage(
+          failedAt,
+          'SEARCH_INDEX_FAILED',
+          true,
+          error instanceof Error ? error.message : 'Search indexing failed'
+        ),
+      },
+      failedAt
+    );
+    await mediaRef.update({ readiness: failedReadiness, updatedAt: failedAt });
+    indexedMedia = { ...newMedia, readiness: failedReadiness, updatedAt: failedAt };
+  }
 
-  return newMedia;
+  return indexedMedia;
+}
+
+export async function retryMediaReadiness(
+  mediaId: string,
+  requestedStages?: MediaReadinessStageName[]
+): Promise<Media> {
+  const app = getAdminApp();
+  const firestore = app.firestore();
+  const bucket = app.storage().bucket();
+  const ref = firestore.collection('media').doc(mediaId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error('Media not found');
+
+  let media = { ...snap.data(), docId: snap.id } as Media;
+  if (!media.readiness) throw new Error('Legacy media readiness is unassessed');
+  const retryable = getRetryableMediaStages(media);
+  const stages = requestedStages?.length
+    ? retryable.filter(stage => requestedStages.includes(stage))
+    : retryable;
+  if (stages.length === 0) throw new Error('No retryable readiness stages');
+
+  let sourceBuffer: Buffer | null = null;
+  const readSource = async () => {
+    if (!sourceBuffer) {
+      [sourceBuffer] = await bucket.file(media.storagePath).download();
+    }
+    return sourceBuffer;
+  };
+  const nextStages = { ...media.readiness.stages };
+  const nextRenditions = { ...(media.renditions ?? {}) };
+
+  if (stages.includes('studioRendition')) {
+    const attemptedAt = Date.now();
+    try {
+      nextRenditions.studio = await persistStudioMediaRendition(bucket, mediaId, await readSource());
+      nextStages.studioRendition = readyStage(attemptedAt);
+    } catch (error) {
+      nextStages.studioRendition = failedStage(
+        attemptedAt,
+        'STUDIO_RENDITION_FAILED',
+        true,
+        error instanceof Error ? error.message : 'Studio rendition failed'
+      );
+    }
+  }
+
+  if (stages.includes('readerRendition')) {
+    const attemptedAt = Date.now();
+    try {
+      nextRenditions.reader = await persistReaderMediaRendition(bucket, mediaId, await readSource());
+      nextStages.readerRendition = readyStage(attemptedAt);
+    } catch (error) {
+      nextStages.readerRendition = failedStage(
+        attemptedAt,
+        'READER_RENDITION_FAILED',
+        true,
+        error instanceof Error ? error.message : 'Reader rendition failed'
+      );
+    }
+  }
+
+  media = {
+    ...media,
+    renditions: nextRenditions,
+    readiness: buildMediaReadiness(nextStages, Date.now()),
+    updatedAt: Date.now(),
+  };
+
+  if (stages.includes('searchIndex')) {
+    const attemptedAt = Date.now();
+    try {
+      await syncMediaToTypesenseStrict(media);
+      nextStages.searchIndex = readyStage(attemptedAt);
+    } catch (error) {
+      nextStages.searchIndex = failedStage(
+        attemptedAt,
+        'SEARCH_INDEX_FAILED',
+        true,
+        error instanceof Error ? error.message : 'Search indexing failed'
+      );
+    }
+  }
+
+  const updatedAt = Date.now();
+  const readiness = buildMediaReadiness(nextStages, updatedAt);
+  const updates = { renditions: nextRenditions, readiness, updatedAt };
+  await ref.update(updates);
+  return { ...media, ...updates };
+}
+
+export async function auditLegacyMediaReadiness(): Promise<{
+  total: number;
+  assessed: number;
+  unassessed: number;
+  ready: number;
+  pending: number;
+  failed: number;
+}> {
+  const snapshot = await getAdminApp().firestore().collection('media').get();
+  let assessed = 0;
+  let ready = 0;
+  let pending = 0;
+  let failed = 0;
+  for (const doc of snapshot.docs) {
+    const readiness = (doc.data() as Partial<Media>).readiness;
+    if (!readiness) continue;
+    assessed += 1;
+    if (readiness.overall === 'ready') ready += 1;
+    if (readiness.overall === 'pending') pending += 1;
+    if (readiness.overall === 'failed') failed += 1;
+  }
+  return {
+    total: snapshot.size,
+    assessed,
+    unassessed: snapshot.size - assessed,
+    ready,
+    pending,
+    failed,
+  };
 }
 
 /** Built from Firestore tags — maps display names to tag doc IDs for embedded keyword resolution. */

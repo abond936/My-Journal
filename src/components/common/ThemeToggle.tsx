@@ -17,15 +17,19 @@ export function ThemeToggle() {
     return null;
   }
 
+  const switchToLight = theme === 'dark';
+  const actionLabel = switchToLight ? 'Light' : 'Dark';
+
   return (
     <button
       type="button"
       onClick={toggleTheme}
       className={styles.themeToggle}
-      aria-label="Toggle theme"
-      title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      aria-label={`Switch to ${actionLabel}`}
+      title={`Switch to ${actionLabel}`}
     >
-      {theme === 'dark' ? <Sun strokeWidth={2} /> : <Moon strokeWidth={2} />}
+      {switchToLight ? <Sun strokeWidth={2} aria-hidden="true" /> : <Moon strokeWidth={2} aria-hidden="true" />}
+      <span>{actionLabel}</span>
     </button>
   );
 }
