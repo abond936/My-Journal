@@ -25,6 +25,7 @@ import styles from './V2ContentCard.module.css';
 import { useCardContext } from '@/components/providers/CardProvider';
 import type { ReaderRouteMode } from '@/lib/utils/readerMode';
 import { getQuestionPromptLength } from '@/lib/utils/questionPromptPresentation';
+import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
 
 const ReaderCardEditEntry = dynamic(() => import('@/components/view/ReaderCardEditEntry'), {
   ssr: false,
@@ -481,14 +482,13 @@ const QACardContent: React.FC<{
               style={{ objectFit: coverObjectFit, objectPosition }}
               priority={false}
             />
-            <span className={styles.qaCoverBadge} aria-hidden="true">?</span>
           </div>
         ) : (
           <div className={styles.utilityTileHeroFullCenter}>
             <div className={styles.content}>{questionText}</div>
           </div>
         )}
-        {card.coverImage ? <div className={styles.content}>{questionText}</div> : null}
+        {card.coverImage ? <FeedTileMetaBand card={card} titleClassName={styles.title} /> : null}
         {showChipStrip ? <FeedTileChipStrip card={card} /> : null}
       </>
     );
@@ -681,12 +681,16 @@ const V2ContentCard: React.FC<V2ContentCardProps> = ({
 
   const canEdit = !previewOnly && Boolean(card.docId && isAdmin);
   const detailReturnTo = useMemo(() => {
+    const inheritedReturnTo = getSafeReaderReturnTo(searchParams.get('returnTo'));
+    if (destinationTile && pathname?.startsWith('/view/') && inheritedReturnTo) {
+      return inheritedReturnTo;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.delete('returnTo');
     if (pathname === '/view' && card.docId) params.set('focusCardId', card.docId);
     const query = params.toString();
     return `${pathname || '/view'}${query ? `?${query}` : ''}`;
-  }, [card.docId, pathname, searchParams]);
+  }, [card.docId, destinationTile, pathname, searchParams]);
   const detailHref = card.docId
     ? `/view/${card.docId}?mode=${destinationReaderMode ?? readerMode}&returnTo=${encodeURIComponent(detailReturnTo)}`
     : '#';

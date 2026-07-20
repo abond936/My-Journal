@@ -174,6 +174,16 @@ describe('V2ContentCard square feed tile', () => {
     expect(screen.queryByText('Alan')).not.toBeInTheDocument();
   });
 
+  it('uses the standard title band for a covered Question card', () => {
+    const { container } = render(
+      <V2ContentCard card={baseStory({ docId: 'question-cover', type: 'qa', title: 'Who was your grandfather?' })} />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Who was your grandfather?' })).toBeInTheDocument();
+    expect(container.querySelector('[class*="qaCoverBadge"]')).toBeNull();
+    expect(container.querySelector('[class*="feedTileMetaBand"]')).toBeTruthy();
+  });
+
   it('uses the same long-prompt fitting marker in grid and rail Question tiles', () => {
     const card = baseStory({
       docId: 'qa-long',

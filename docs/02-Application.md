@@ -179,7 +179,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Chips** — Subject, single-tag, Mixed, empty, and full-assignment disclosure.
 - **Tile chrome** — Shared corner grammar keeps selection or Reader identity upper-left, deletion upper-right, editing lower-right, and surface-specific status/content lower-left. Studio uses upper-left for Select; Reader, which has no Select or Delete, uses upper-left for Type and Gallery `x/y`, leaving the image bottom for a bounded active-slide caption. Unsupported controls remain absent.
 - **Reader Gallery data** — Reader feed and search cards receive covers plus the complete authored Gallery sequence required for image peeking, swiping, captions, and truthful `x/y` position. Lightweight Administration lists may remain cover-only; feed efficiency may not reduce a Gallery to a thumbnail.
-- **Gallery image chrome** — Type and `x/y` share the image upper-left. An active caption uses at most three feed lines at the image bottom, retains its full accessible text and full detail presentation, and reserves the administrator Edit corner. Image chrome uses a paired theme foreground/background treatment whose contrast remains stable in Light and Dark.
+- **Gallery image chrome** — Type and `x/y` share the image upper-left and the same Type-chip visual recipe. An active caption uses at most three feed lines at the image bottom, retains its full accessible text and full detail presentation, and reserves the administrator Edit corner. Image chrome uses paired theme foreground/background treatments whose contrast remains stable in Light and Dark.
 - **Alignment** — Content Grid, detail, Compose preview, Explore More, and Read More share the Reader renderer while retaining their legitimate contextual differences.
 - **Legibility** — Story titles remain below imagery; image badges, Gallery position, Gallery captions, administrator Edit, and the covered Question cue use stable contrast treatments.
 - **Large RTE figures** — Large authored figures place following text below the image; medium, small, and extra-small figures retain optional side wrapping.
@@ -189,13 +189,13 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ✅ **Explore destination tiles**
 
 - Explore More includes every published card type as a compact linked destination, including cards authored as Inline or Static in the Content Grid.
-- Explore tiles use a readable compact Who, What, When, and Where chip row, open detail directly, and preserve the originating detail page as the return destination.
+- Explore tiles use a readable compact Who, What, When, and Where chip row and open detail directly. Chained exploration inherits the original safe feed or collection return destination instead of trapping Back navigation one detail page at a time.
 - For a card with at least one Who, What, When, or Where tag, **Related** uses the existing shared-dimension discovery behavior. A card with no dimensional tags does not show a meaningless Related rail; **Unrelated** remains available for broad exploration. Generated Related and Unrelated results must not repeat the current card, its excluded children, or one another.
 - Administrator Edit uses the compact tile image's lower-right corner without changing the destination, child eligibility, or stored presentation.
 
 ✅ **Question Open and Reveal**
 
-- Question remains visibly distinct with a question-mark cue whether or not it has a cover. No-cover Content Grid, Reveal, Compose preview, open detail, Explore More, and Read More Question faces use one container-relative watermark and prompt scale; longer prompts receive bounded fitting without changing the surrounding tile.
+- Question remains visibly distinct. No-cover Content Grid, Reveal, Compose preview, open detail, Explore More, and Read More Question faces use one container-relative watermark and prompt scale in the shared Question accent family; longer prompts receive bounded fitting without changing the surrounding tile. Covered Questions use the standard image-first tile and opened-card identity hierarchy rather than repeating a framed prompt treatment.
 - Question authoring presents its stored Navigate and Inline modes as **Open** and **Reveal**. Open uses the prompt-led tile and opens the complete answer detail.
 - Reveal is one bounded card with two dissolving faces. The initial question face owns the cover, question cue, prompt, and dimensional chips. Reader activation reveals the RTE answer as one vertically and horizontally centered content group without chips; activating the answer background restores the question.
 - A Reveal answer may contain concise rich text, one embedded image with caption, and card mentions. Mention activation navigates to the referenced card rather than restoring the question.
@@ -235,7 +235,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Story** — Full narrative and authored media.
 - **Gallery** — Ordered gallery with captions, Swiper, and lightbox.
-- **Question** — Prompt and answer detail.
+- **Question** — A no-cover Question opens with its framed prompt, followed by Type and then dimensional Tags on a separate row. A covered Question opens image-first, followed by Type, Title, optional Subtitle, Tags, and answer without an additional framed prompt.
 - **Callout** — Expanded destination that preserves the static Callout's surface, typography, spacing, and centered pushpin watermark while providing room for the complete authored title, subtitle, and body.
 - **Guided** — Read More with authored children.
 - **Freeform** — Related and broader discovery rails.

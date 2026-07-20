@@ -413,11 +413,11 @@ describe('theme compiler canaries', () => {
     expect(adminCss).not.toContain('Reader preset role aliases (editorial)');
   });
 
-  it('keeps Journal chrome warm without changing Editorial chrome hierarchy', () => {
+  it('keeps Journal chrome warm and distinct from its canvas', () => {
     const journal = getReaderPresetSettings('journal');
     const editorial = getReaderPresetSettings('editorial');
 
-    expect(journal.recipes.surfaces.chromeSidebar.background).toBe('layout/background1Color');
+    expect(journal.recipes.surfaces.chromeSidebar.background).toBe('layout/background2Color');
     expect(editorial.recipes.surfaces.chromeSidebar.background).toBe('layout/background2Color');
 
     const journalCss = buildThemeTokensCss({
@@ -425,11 +425,23 @@ describe('theme compiler canaries', () => {
       activePresetId: journal.activePresetId,
       recipes: journal.recipes,
     });
-    expect(journalCss).toContain('--reader-sidebar-background-color: var(--color1-100);');
+    expect(journalCss).toContain('--reader-sidebar-background-color: var(--color1-200);');
     expect(journalCss).toContain('--reader-card-badge-background-color: var(--color3);');
     expect(journalCss).toContain('--reader-card-badge-text-color: var(--theme-color-2-dark);');
     expect(journalCss).toContain('--reader-card-badge-border-color: var(--color3);');
     expect(journalCss).toContain('--reader-tag-text-color: var(--theme-color-2-dark);');
+  });
+
+  it('keeps Editorial chips, watermarks, and media controls legible', () => {
+    const editorial = getReaderPresetSettings('editorial');
+
+    expect(editorial.recipes.controls.typeChip.border).toBe(
+      editorial.recipes.controls.typeChip.background
+    );
+    expect(editorial.recipes.controls.mediaControl.text).toBe('component/input/textColor');
+    expect(editorial.recipes.treatments.questionWatermarkOpacity).toBe('0.3');
+    expect(editorial.recipes.treatments.quoteWatermarkOpacity).toBe('0.3');
+    expect(editorial.recipes.treatments.calloutWatermarkOpacity).toBe('0.3');
   });
 
   it('propagates Foundation families to inheriting roles while preserving local overrides', () => {

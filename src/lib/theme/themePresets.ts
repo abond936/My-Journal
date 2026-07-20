@@ -127,9 +127,8 @@ const JOURNAL_READER_RECIPES: ReaderThemeRecipes = (() => {
   // Keep Journal chrome on the warm base paper. In Light this avoids a stark
   // white sidebar; in Dark the deeper shell lets the lighter content cards
   // retain hierarchy without changing the successful reading surface.
-  recipes.surfaces.chromeSidebar.background = 'layout/background1Color';
+  recipes.surfaces.chromeSidebar.background = 'layout/background2Color';
   recipes.surfaces.windowSurface.background = 'layout/background2Color';
-
   recipes.treatments.quoteWatermarkOpacity = '0.16';
   recipes.treatments.questionWatermarkOpacity = '0.2';
   recipes.treatments.calloutWatermarkOpacity = '0.2';
@@ -233,11 +232,14 @@ const EDITORIAL_READER_RECIPES: ReaderThemeRecipes = (() => {
     padding: 'spacing/xl',
   };
 
+  recipes.controls.typeChip.border = recipes.controls.typeChip.background;
+  recipes.controls.mediaControl.text = 'component/input/textColor';
+
   recipes.overlays.coveredFade.background = 'semantic/reader/covered-fade-strong';
 
-  recipes.treatments.quoteWatermarkOpacity = '0.16';
-  recipes.treatments.questionWatermarkOpacity = '0.22';
-  recipes.treatments.calloutWatermarkOpacity = '0.22';
+  recipes.treatments.quoteWatermarkOpacity = '0.3';
+  recipes.treatments.questionWatermarkOpacity = '0.3';
+  recipes.treatments.calloutWatermarkOpacity = '0.3';
 
   return recipes;
 })();
@@ -311,7 +313,7 @@ export function buildJournalPreset(): ThemeDocumentData {
   t.activePresetId = 'journal';
   t.gradients.canvasTexture = 'none';
   // Warmer “paper” surfaces (light); keep dark mode readable
-  patchThemeColor(t, 1, 'light', '#f3eadf');
+  patchThemeColor(t, 1, 'light', '#ead6c2');
   patchThemeColor(t, 1, 'dark', '#1b1613');
   patchThemeColor(t, 2, 'light', '#31261f');
   patchThemeColor(t, 2, 'dark', '#f5ede4');

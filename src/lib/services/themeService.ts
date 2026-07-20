@@ -1012,7 +1012,7 @@ export function buildThemeTokensCss(
   --reader-card-badge-font-size: calc(${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.size)} * 0.88);
   --reader-card-badge-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.titleCompact.weight)};
   --reader-card-badge-line-height: 1.1;
-  --reader-card-badge-radius: var(--border-radius-full);
+  --reader-card-badge-radius: var(--border-radius-sm);
   --reader-card-badge-padding-block: 0.0625rem;
   --reader-card-badge-padding-inline: 0.4375rem;
   --reader-card-badge-min-height: 1.25rem;

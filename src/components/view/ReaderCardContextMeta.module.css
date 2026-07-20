@@ -85,7 +85,7 @@
 }
 
 .inline .chip {
-  color: var(--reader-body-color);
+  color: var(--reader-tag-text-color);
 }
 
 .detail {
@@ -101,7 +101,7 @@
 }
 
 .detail .chip {
-  color: var(--reader-body-color);
+  color: var(--reader-tag-text-color);
 }
 
 .detail .chips,
@@ -115,7 +115,7 @@
 }
 
 .feed .chip {
-  color: var(--reader-body-color);
+  color: var(--reader-tag-text-color);
 }
 
 .feed .chips {
@@ -127,37 +127,37 @@
 }
 
 .chip[data-dimension='who'] {
-  background: color-mix(in srgb, var(--tag-who-bg-color) 35%, var(--admin-window-background-color, white) 65%);
-  border-color: color-mix(in srgb, var(--tag-who-bg-color) 45%, transparent);
+  background: var(--tag-who-bg-color);
+  border-color: transparent;
 }
 
 .chip[data-dimension='what'] {
-  background: color-mix(in srgb, var(--tag-what-bg-color) 35%, var(--admin-window-background-color, white) 65%);
-  border-color: color-mix(in srgb, var(--tag-what-bg-color) 45%, transparent);
+  background: var(--tag-what-bg-color);
+  border-color: transparent;
 }
 
 .chip[data-dimension='when'] {
-  background: color-mix(in srgb, var(--tag-when-bg-color) 35%, var(--admin-window-background-color, white) 65%);
-  border-color: color-mix(in srgb, var(--tag-when-bg-color) 45%, transparent);
+  background: var(--tag-when-bg-color);
+  border-color: transparent;
 }
 
 .chip[data-dimension='where'] {
-  background: color-mix(in srgb, var(--tag-where-bg-color) 35%, var(--admin-window-background-color, white) 65%);
-  border-color: color-mix(in srgb, var(--tag-where-bg-color) 45%, transparent);
+  background: var(--tag-where-bg-color);
+  border-color: transparent;
 }
 
 .overlay .chip[data-dimension='who'] {
-  background: color-mix(in srgb, var(--tag-who-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+  background: var(--tag-who-bg-color);
 }
 
 .overlay .chip[data-dimension='what'] {
-  background: color-mix(in srgb, var(--tag-what-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+  background: var(--tag-what-bg-color);
 }
 
 .overlay .chip[data-dimension='when'] {
-  background: color-mix(in srgb, var(--tag-when-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+  background: var(--tag-when-bg-color);
 }
 
 .overlay .chip[data-dimension='where'] {
-  background: color-mix(in srgb, var(--tag-where-bg-color) 42%, var(--reader-overlay-scrim-color) 58%);
+  background: var(--tag-where-bg-color);
 }

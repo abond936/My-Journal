@@ -37,6 +37,9 @@
 .readerBody {
   display: flex;
   flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
   overflow: hidden;
   padding-top: var(--spacing-sm);
@@ -51,15 +54,22 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 0;
   text-align: left;
   min-height: 0;
+  overflow: hidden;
 }
 
 .modalHeader {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: var(--spacing-xs);
   margin-bottom: 0;
   padding-bottom: var(--spacing-sm);
@@ -115,6 +125,7 @@
 .titleBarTitle {
   margin: 0;
   flex: 1;
+  min-width: 0;
   font-family: var(--reader-chrome-text-font-family);
   font-size: var(--reader-chrome-text-font-size);
   font-weight: var(--font-weight-semibold);
@@ -152,10 +163,15 @@
 
 .modalActions {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .modalScroll {
   flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;

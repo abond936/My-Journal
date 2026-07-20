@@ -244,7 +244,7 @@
   font-size: calc(100cqi * var(--reader-question-watermark-scale));
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  color: var(--reader-title-color);
+  color: var(--reader-question-watermark-color);
   opacity: var(--reader-question-watermark-opacity);
   pointer-events: none;
   transform: translateY(-0.04em);
@@ -270,6 +270,17 @@
 
 .questionDetailMeta {
   margin-top: var(--spacing-sm);
+}
+
+.questionDetailTags {
+  margin-top: var(--spacing-xs);
+}
+
+.questionCoveredIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: var(--spacing-md);
 }
 
 .calloutDetailPanel {

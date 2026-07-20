@@ -125,6 +125,9 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
       variant="detail"
     />
   ) : null;
+  const detailType = readerCardPresentation.badgeLabel ? (
+    <ReaderCardContextMeta badgeLabel={readerCardPresentation.badgeLabel} chips={[]} variant="detail" />
+  ) : null;
   const detailTags = readerCardPresentation.chips.length > 0 ? (
     <ReaderCardContextMeta chips={readerCardPresentation.chips} variant="detail" />
   ) : null;
@@ -165,6 +168,16 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
         </h1>
         {displayCard.subtitle && !isQuote ? <p className={styles.subtitle}>{displayCard.subtitle}</p> : null}
       </div>
+    </div>
+  );
+  const coveredQuestionIdentity = (
+    <div className={styles.questionCoveredIdentity}>
+      {detailType}
+      <h1 className={`${styles.title} ${displayCard.subtitle ? styles.titleWithSubtitle : ''}`}>
+        {displayCard.title}
+      </h1>
+      {displayCard.subtitle ? <p className={styles.subtitle}>{displayCard.subtitle}</p> : null}
+      {detailTags ? <div className={styles.detailTags}>{detailTags}</div> : null}
     </div>
   );
 
@@ -228,10 +241,13 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
           </div>
         )}
         {isQa ? (
-          <>
-            {questionHeaderIntro}
-            {detailMeta ? <div className={styles.questionDetailMeta}>{detailMeta}</div> : null}
-          </>
+          displayCard.coverImage ? coveredQuestionIdentity : (
+            <>
+              {questionHeaderIntro}
+              {detailType ? <div className={styles.questionDetailMeta}>{detailType}</div> : null}
+              {detailTags ? <div className={styles.questionDetailTags}>{detailTags}</div> : null}
+            </>
+          )
         ) : displayCard.type === 'story' ? (
           storyGalleryIdentity
         ) : (

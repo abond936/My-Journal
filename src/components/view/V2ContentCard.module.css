@@ -329,6 +329,11 @@
   backdrop-filter: blur(6px);
 }
 
+.squareFeedTile.qa .utilityTypeBadgeOverlay {
+  top: var(--spacing-sm);
+  bottom: auto;
+}
+
 .cardTypeBadgeInline {
   align-self: flex-start;
 }
@@ -433,8 +438,8 @@
   min-height: var(--reader-card-badge-active-min-height);
   padding: var(--reader-card-badge-active-padding-block) calc(var(--reader-card-badge-active-padding-inline) - 0.125rem);
   border-radius: var(--reader-card-badge-radius);
-  background: var(--reader-support-control-strong-background-color);
-  color: var(--reader-support-control-strong-text-color);
+  background: var(--reader-card-badge-background-color);
+  color: var(--reader-card-badge-text-color);
   border: var(--border-width-thin) solid var(--reader-card-badge-border-color);
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(6px);
@@ -500,8 +505,8 @@
   font-size: clamp(8.4rem, 58.8vw, 19.6rem);
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
-  color: var(--reader-title-color);
-  opacity: var(--reader-question-watermark-opacity);
+  color: var(--reader-quote-watermark-color);
+  opacity: var(--reader-quote-watermark-opacity);
   /* Opening-quote glyph sits high in its own em box, so optical centering needs a proportional downward shift. */
   transform: translateY(0.18em);
 }
@@ -606,7 +611,7 @@
   font-size: calc(100cqi * var(--reader-question-watermark-scale));
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  color: var(--reader-title-color);
+  color: var(--reader-question-watermark-color);
   opacity: var(--reader-question-watermark-opacity);
   pointer-events: none;
   transform: translateY(-0.04em);
@@ -752,7 +757,7 @@
   font-size: calc(100cqi * var(--reader-question-watermark-scale));
   font-weight: var(--font-weight-bold);
   line-height: 1;
-  color: var(--reader-title-color);
+  color: var(--reader-question-watermark-color);
   opacity: var(--reader-question-watermark-opacity);
   z-index: 1;
   pointer-events: none;

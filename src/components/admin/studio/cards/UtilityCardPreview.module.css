@@ -30,7 +30,6 @@
   place-items: center;
   pointer-events: none;
   z-index: 1;
-  color: var(--reader-title-color);
 }
 
 .surface.question::before {
@@ -39,6 +38,7 @@
   font-weight: var(--font-weight-bold);
   line-height: 1;
   opacity: var(--reader-question-watermark-opacity);
+  color: var(--reader-question-watermark-color);
   transform: translateY(-0.04em);
 }
 
@@ -48,7 +48,8 @@
   font-weight: var(--font-weight-bold);
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1;
-  opacity: var(--reader-question-watermark-opacity);
+  opacity: var(--reader-quote-watermark-opacity);
+  color: var(--reader-quote-watermark-color);
   transform: translateY(0.18em);
 }
 

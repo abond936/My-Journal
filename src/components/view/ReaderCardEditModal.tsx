@@ -131,6 +131,7 @@ function ModalActions({
         title={isSaving ? 'Saving card' : 'Save card'}
       >
         <Save size={16} aria-hidden="true" />
+        <span>Save</span>
       </button>
     </div>
   );
