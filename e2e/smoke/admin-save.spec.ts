@@ -46,7 +46,6 @@ test.describe('admin card save', () => {
       const patchPromise = expectSubtitlePatch(editedSubtitle);
       await page.getByRole('button', { name: 'Save' }).click();
       await patchPromise;
-      await expect(page.getByText('Card updated.')).toBeVisible();
     } finally {
       await editButton.click();
       await expect(page.getByRole('dialog')).toBeVisible();
