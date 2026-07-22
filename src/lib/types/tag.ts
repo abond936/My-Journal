@@ -19,6 +19,12 @@ export const tagSchema = z.object({
   order: z.number().optional(),
   description: z.string().optional(),
 
+  /** Optional relationship-label aid for an individual Who tag. */
+  gender: z.enum(['female', 'male', 'nonbinary', 'unknown']).optional(),
+
+  /** False only for navigational vocabulary nodes; existing tags remain assignable by default. */
+  assignable: z.boolean().optional(),
+
   /** When false, this tag is collapsed by default in the Explore tag tree. When true or undefined, expanded. */
   defaultExpanded: z.boolean().optional(),
 
@@ -40,6 +46,14 @@ export const tagSchema = z.object({
   // Timestamps
   createdAt: z.any().optional(), // Using any() for now to accommodate Firestore Timestamps
   updatedAt: z.any().optional(), // Using any() for now to accommodate Firestore Timestamps
+}).superRefine((value, ctx) => {
+  if (value.gender && value.dimension !== 'who') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['gender'],
+      message: 'Relationship gender applies only to Who tags.',
+    });
+  }
 });
 
 /**
@@ -62,4 +76,4 @@ export interface OrganizedTags {
   what: string[];
   when: string[];
   where: string[];
-} 
+}

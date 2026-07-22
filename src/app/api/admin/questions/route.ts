@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { createQuestion, listQuestions } from '@/lib/services/questionService';
 import { createQuestionSchema } from '@/lib/types/question';
 
@@ -20,7 +21,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -54,7 +55,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

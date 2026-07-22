@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
+import { updateCard } from '@/lib/services/cards/cardBroadMutationService';
+import { updateCardContent } from '@/lib/services/cards/cardContentMutationService';
+import { updateCardCover } from '@/lib/services/cards/cardCoverMutationService';
 import {
-  deleteCard,
-  getCardById,
-  updateCard,
-  updateCardCover,
   updateCardGallery,
+  updateCardGalleryInheritanceOverrides,
   updateCardGalleryOrder,
-  isGalleryOnlyPayload,
-  isGalleryReorderOnlyPayload,
+} from '@/lib/services/cards/cardGalleryMutationService';
+import {
   updateCardChildren,
   updateCardChildrenOrder,
   updateCardCollectionRoot,
-  updateCardMetadata,
-  updateCardTags,
-  updateCardStatus,
-  updateCardContent,
+} from '@/lib/services/cards/cardHierarchyMutationService';
+import { deleteCard } from '@/lib/services/cards/cardLifecycleService';
+import { updateCardMetadata } from '@/lib/services/cards/cardMetadataMutationService';
+import {
+  isGalleryOnlyPayload,
+  isGalleryReorderOnlyPayload,
   isCardMetadataOnlyPayload,
   isChildrenOnlyPayload,
   isChildrenReorderOnlyPayload,
@@ -24,10 +27,11 @@ import {
   isContentOnlyPayload,
   isTagsOnlyPayload,
   isGalleryInheritanceOverridesOnlyPayload,
-  updateCardGalleryInheritanceOverrides,
   isStatusOnlyPayload,
-  getPaginatedCardsByIds,
-} from '@/lib/services/cardService';
+} from '@/lib/services/cards/cardMutationClassifiers';
+import { getCardById, getPaginatedCardsByIds } from '@/lib/services/cards/cardReadService';
+import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
+import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
 import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
@@ -156,7 +160,7 @@ export async function PUT(
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminSession(session)) {
       throw new AppError(
         ErrorCode.FORBIDDEN,
         'Admin access required to update cards'
@@ -194,7 +198,7 @@ export async function PATCH(
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminSession(session)) {
       throw new AppError(
         ErrorCode.FORBIDDEN,
         'Admin access required to update cards'
@@ -281,7 +285,7 @@ export async function DELETE(
 ) {
   return withErrorHandler(request, async () => {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminSession(session)) {
       throw new AppError(
         ErrorCode.FORBIDDEN,
         'Admin access required to delete cards'

@@ -3,7 +3,7 @@
  *
  * Usage: npm run seed:theme-firestore
  */
-import { syncThemeFromJsonToFirestore } from '@/lib/services/themeService';
+import { syncThemeFromJsonToFirestore } from '@/lib/services/theme/themePersistenceService';
 
 async function main() {
   await syncThemeFromJsonToFirestore();

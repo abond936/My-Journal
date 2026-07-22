@@ -9,6 +9,11 @@ import styles from '@/components/view/CardFeedV2.module.css';
 import type { Card } from '@/lib/types/card';
 import type { PaginatedResult } from '@/lib/types/services';
 
+type CardSearchResult = PaginatedResult<Card> & {
+  searchMode: 'full-text' | 'title-prefix';
+  degraded: boolean;
+};
+
 const fetcher = (url: string) =>
   fetch(url).then((res) => {
     if (!res.ok) throw new Error('Search failed');
@@ -25,7 +30,7 @@ export default function SearchResultsClientPage() {
       ? `/api/cards/search?q=${encodeURIComponent(query)}&limit=50`
       : null;
 
-  const { data, error, isLoading } = useSWR<PaginatedResult<Card>>(searchUrl, fetcher);
+  const { data, error, isLoading, mutate } = useSWR<CardSearchResult>(searchUrl, fetcher);
 
   if (!query) {
     if (typeof window !== 'undefined') {
@@ -37,7 +42,10 @@ export default function SearchResultsClientPage() {
   if (error) {
     return (
       <div className={styles.page}>
-        <p role="alert">Could not load search results.</p>
+        <p role="alert">Search results could not be loaded.</p>
+        <button type="button" className={styles.emptyClearButton} onClick={() => void mutate()}>
+          Try again
+        </button>
       </div>
     );
   }
@@ -49,6 +57,9 @@ export default function SearchResultsClientPage() {
       <header className={styles.header}>
         <h1>Search Results for &quot;{query}&quot;</h1>
       </header>
+      {data?.degraded ? (
+        <p role="status">Full search is temporarily unavailable. Results are limited to matching titles.</p>
+      ) : null}
       {isLoading ? (
         <LoadingSpinner />
       ) : cards.length === 0 ? (

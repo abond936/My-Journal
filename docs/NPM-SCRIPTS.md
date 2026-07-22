@@ -103,7 +103,7 @@ This is the current **commercial-readiness restore contract**. **Firestore + Sto
 - **Viewer password reset** - Use **Admin > Users** (`/admin/journal-users`) and set a new password for the affected viewer.
 - **Viewer access repair** - Use **Admin > Users** to re-enable a disabled viewer or create a replacement viewer account.
 - **Admin password reset** - If an admin can still sign in, use **Admin > Users** to set a new password on the target admin row.
-- **Admin lockout** - If no admin can sign in but Firebase Admin credentials still work locally, restore from backup first if needed, then use a controlled Firestore/admin script path to repair the existing admin row or, if `journal_users` is empty, run `npm run seed:journal-users`.
+- **Admin lockout** - If no admin can sign in but Firebase Admin credentials still work locally, restore from backup first if needed. Preview the exact account with `npm run recover:journal-admin -- --username=<username>`. To apply, set `JOURNAL_RECOVERY_PASSWORD` in the current process and rerun with `--apply --confirm-project=<exactProjectId>`; the command resets the password, re-enables that existing administrator, and never accepts the password as a CLI argument. If `journal_users` is empty, use `npm run seed:journal-users` instead.
 - **Last-admin protection** - The product already blocks disabling the only enabled admin account; do not bypass that safeguard casually during recovery.
 
 ## Incident response (v1 operator)
@@ -151,7 +151,7 @@ This is the current **commercial-readiness restore contract**. **Firestore + Sto
 
 Use **dedicated test accounts** (rotatable), not personal logins. After adding secrets, run **Actions → E2E Smoke → Run workflow** once to confirm green, then open a PR to confirm the PR gate E2E job. Failed runs upload `playwright-report` and `test-results` artifacts (14-day retention).
 | `npm run backup-codebase` | **Local secrets only** — zips **repo root** files Git does not track: `.env*`, `service-account.json`, `*-firebase-adminsdk-*.json`. Output dir: `CODEBASE_SECRETS_BACKUP_DIR` or `C:\Users\alanb\CodeBase Backups\`; keeps 5 zips. **Not** a second copy of the source tree (use Git remote). If none of those files exist, writes a log only. |
-| `npm run backup:run` | **Preferred paired backup** — one `run-<timestamp>/` with Firestore + Storage manifest in the same folder. Storage is dry-run by default; **`--apply`** downloads bytes, writes `run-manifest.json`, and updates `latest-complete-run.json`. Optional: `--limit=N`, `--progress-every=N` (storage leg). |
+| `npm run backup:run` | **Preferred paired backup** — one `run-<timestamp>/` with Firestore + Storage manifest in the same folder. Storage is dry-run by default; **`--apply`** downloads bytes, writes `run-manifest.json`, updates `latest-complete-run.json`, retains the newest three runs, and requests OneDrive Files On-Demand `Free up space` for the completed run on Windows. Optional: `--limit=N`, `--progress-every=N` (storage leg). After an interrupted apply, `--resume-run=<existing-run-directory-name>` revalidates completed local objects and downloads only missing or mismatched bytes. |
 | `npm run backup:database` | Firestore-only backup (legacy / partial). Same run layout as before; use `backup:run` for new paired snapshots. |
 | `npm run backup:storage` | Storage-only backup (legacy / partial). Creates its own `run-*` folder unless invoked via `backup:run`. |
 | `npm run restore:database -- --backup="<path>"` | Guarded Firestore restore for **disposable recovery targets**. Dry-run by default; `--apply` requires `--confirm-project=<targetProjectId>`. |
@@ -181,6 +181,7 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 | `npm run typecheck:strict-api` | TypeScript strict check on `src/lib/api` and selected utils (incremental step **11** gate). |
 | `npm run regenerate:storage-urls` | Regenerate Storage URLs on media docs |
 | `npm run seed:journal-users` | Seed `journal_users` for auth |
+| `npm run recover:journal-admin -- --username=<username>` | Guarded existing-admin lockout recovery. Dry-run by default; apply requires `JOURNAL_RECOVERY_PASSWORD` (12+ characters) and `--confirm-project=<exactProjectId>`. |
 | `npm run seed:theme-firestore` | Copy `theme-data.json` → Firestore `app_settings/theme` (aligns hosted SSR tokens with repo) |
 | `npm run sync:typesense` | Firestore cards → Typesense `cards` collection |
 | `npm run sync:typesense:fresh` | Same, drop `cards` index first (`--fresh`). **Use after Typesense card schema changes** (new facet/sort fields) so the collection is recreated before import. |

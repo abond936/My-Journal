@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import {
   deleteQuestion,
   getQuestionById,
@@ -32,7 +33,7 @@ type RouteParams = Promise<{ id: string }>;
 
 export async function PATCH(request: NextRequest, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -105,7 +106,7 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
 
 export async function DELETE(_request: NextRequest, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -154,7 +155,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: RouteP
 
 export async function POST(request: NextRequest, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest, { params }: { params: RoutePara
 
 export async function PUT(request: NextRequest, { params }: { params: RouteParams }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

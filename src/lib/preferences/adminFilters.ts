@@ -22,6 +22,7 @@ export type AdminDimensionFilterState = Record<
 export type StudioCardBankStatusFilter = 'all' | 'draft' | 'published';
 export type StudioCardBankCardTypeFilter = 'all' | NonNullable<Card['type']>;
 export type StudioCardBankDisplayModeFilter = 'all' | NonNullable<Card['displayMode']>;
+export type StudioCardBankCodificationFilter = 'all' | 'complete' | 'incomplete';
 
 export type StudioCardBankSharedFilterPreferences = {
   search: string;
@@ -31,6 +32,7 @@ export type StudioCardBankSharedFilterPreferences = {
 export type StudioCardBankLocalFilterPreferences = {
   typeFilter: StudioCardBankCardTypeFilter;
   displayModeFilter: StudioCardBankDisplayModeFilter;
+  codificationFilter: StudioCardBankCodificationFilter;
   filterTagIds: string[];
   tagFilterScope: AdminTagFilterScope;
   dimensionFilters: AdminDimensionFilterState;
@@ -43,6 +45,12 @@ export type MediaAdminStoredFilters = {
   hasCaption: string;
   search: string;
   assignment: string;
+  matchStatus: 'all' | 'matches' | 'no_matches';
+  codification: 'all' | 'complete' | 'incomplete';
+  unresolvedDimension: 'all' | 'who' | 'what' | 'when' | 'where';
+  importBatchId: string;
+  importFolder: string;
+  metadataOutcome: 'all' | 'found' | 'none' | 'error' | 'not_requested' | 'unknown';
   tagScope: AdminTagFilterScope;
 };
 
@@ -54,7 +62,7 @@ export type MediaAdminStoredFilterPreferences = {
 export type MediaAdminLocalFilterPreferences = {
   duplicateTriageMode: boolean;
   dimensionFilters: AdminDimensionFilterState;
-  browseGroupBy: 'none' | 'folder' | 'day' | 'batch' | 'suggested';
+  browseGroupBy: 'none' | 'folder' | 'day' | 'batch' | 'metadata';
   browseImportBatchFilter: string;
   browseImportFolderFilter: string;
   gridTileMinPx: number;
@@ -84,10 +92,19 @@ const STUDIO_CARD_BANK_DISPLAY_MODE_VALUES = new Set<StudioCardBankDisplayModeFi
   'navigate',
   'static',
 ]);
+const STUDIO_CARD_BANK_CODIFICATION_VALUES = new Set<StudioCardBankCodificationFilter>([
+  'all',
+  'complete',
+  'incomplete',
+]);
 const MEDIA_ADMIN_SOURCE_VALUES = new Set(['all', 'local', 'paste']);
 const MEDIA_ADMIN_DIMENSION_VALUES = new Set(['all', 'portrait', 'landscape', 'square']);
 const MEDIA_ADMIN_CAPTION_VALUES = new Set(['all', 'with', 'without']);
 const MEDIA_ADMIN_ASSIGNMENT_VALUES = new Set(['all', 'unassigned', 'assigned']);
+const MEDIA_ADMIN_MATCH_STATUS_VALUES = new Set<MediaAdminStoredFilters['matchStatus']>(['all', 'matches', 'no_matches']);
+const MEDIA_ADMIN_CODIFICATION_VALUES = new Set<MediaAdminStoredFilters['codification']>(['all', 'complete', 'incomplete']);
+const MEDIA_ADMIN_UNRESOLVED_VALUES = new Set<MediaAdminStoredFilters['unresolvedDimension']>(['all', 'who', 'what', 'when', 'where']);
+const MEDIA_ADMIN_METADATA_VALUES = new Set<MediaAdminStoredFilters['metadataOutcome']>(['all', 'found', 'none', 'error', 'not_requested', 'unknown']);
 const ADMIN_TAG_FILTER_SCOPE_VALUES = new Set<AdminTagFilterScope>(['all', 'subject']);
 const ADMIN_DIMENSION_FILTER_MODE_VALUES = new Set<AdminDimensionFilterMode>(['any', 'hasAny', 'isEmpty', 'matches']);
 
@@ -106,6 +123,7 @@ export const DEFAULT_STUDIO_CARD_BANK_SHARED_FILTER_PREFERENCES: StudioCardBankS
 export const DEFAULT_STUDIO_CARD_BANK_LOCAL_FILTER_PREFERENCES: StudioCardBankLocalFilterPreferences = {
   typeFilter: 'all',
   displayModeFilter: 'all',
+  codificationFilter: 'all',
   filterTagIds: [],
   tagFilterScope: 'all',
   dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
@@ -118,6 +136,12 @@ export const DEFAULT_MEDIA_ADMIN_STORED_FILTERS: MediaAdminStoredFilters = {
   hasCaption: 'all',
   search: '',
   assignment: 'all',
+  matchStatus: 'all',
+  codification: 'all',
+  unresolvedDimension: 'all',
+  importBatchId: '',
+  importFolder: 'all',
+  metadataOutcome: 'all',
   tagScope: 'all',
 };
 
@@ -210,6 +234,11 @@ function parseStudioCardBankLocalFilterPreferences(value: unknown): StudioCardBa
   return {
     typeFilter: normalizeEnumValue(candidate.typeFilter, STUDIO_CARD_BANK_TYPE_VALUES, 'all'),
     displayModeFilter: normalizeEnumValue(candidate.displayModeFilter, STUDIO_CARD_BANK_DISPLAY_MODE_VALUES, 'all'),
+    codificationFilter: normalizeEnumValue(
+      candidate.codificationFilter,
+      STUDIO_CARD_BANK_CODIFICATION_VALUES,
+      'all'
+    ),
     filterTagIds: normalizeStringArray(candidate.filterTagIds),
     tagFilterScope: normalizeEnumValue(candidate.tagFilterScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
     dimensionFilters: normalizeAdminDimensionFilters(candidate.dimensionFilters),
@@ -227,6 +256,8 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
     candidate.filters && typeof candidate.filters === 'object'
       ? (candidate.filters as Partial<Record<keyof MediaAdminStoredFilters, unknown>>)
       : {};
+  const codification = normalizeEnumValue(rawFilters.codification, MEDIA_ADMIN_CODIFICATION_VALUES, 'all');
+  const incompleteSelected = codification === 'incomplete';
 
   return {
     filters: {
@@ -235,6 +266,16 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
       hasCaption: normalizeEnumValue(rawFilters.hasCaption, MEDIA_ADMIN_CAPTION_VALUES, 'all'),
       search: normalizeString(rawFilters.search),
       assignment: normalizeEnumValue(rawFilters.assignment, MEDIA_ADMIN_ASSIGNMENT_VALUES, 'all'),
+      matchStatus: normalizeEnumValue(rawFilters.matchStatus, MEDIA_ADMIN_MATCH_STATUS_VALUES, 'all'),
+      codification,
+      unresolvedDimension: incompleteSelected
+        ? normalizeEnumValue(rawFilters.unresolvedDimension, MEDIA_ADMIN_UNRESOLVED_VALUES, 'all')
+        : 'all',
+      importBatchId: incompleteSelected ? normalizeString(rawFilters.importBatchId) : '',
+      importFolder: incompleteSelected ? normalizeString(rawFilters.importFolder, 'all') : 'all',
+      metadataOutcome: incompleteSelected
+        ? normalizeEnumValue(rawFilters.metadataOutcome, MEDIA_ADMIN_METADATA_VALUES, 'all')
+        : 'all',
       tagScope: normalizeEnumValue(rawFilters.tagScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
     },
     dimensionalQueryOverlay: normalizeDimensionalTagIdMap(candidate.dimensionalQueryOverlay),
@@ -259,7 +300,7 @@ function parseMediaAdminLocalFilterPreferences(value: unknown): MediaAdminLocalF
   const candidate = value as Partial<Record<keyof MediaAdminLocalFilterPreferences, unknown>>;
   const groupBy = candidate.browseGroupBy;
   const browseGroupBy =
-    groupBy === 'folder' || groupBy === 'day' || groupBy === 'batch' || groupBy === 'suggested'
+    groupBy === 'folder' || groupBy === 'day' || groupBy === 'batch' || groupBy === 'metadata'
       ? groupBy
       : 'none';
   const tilePx =

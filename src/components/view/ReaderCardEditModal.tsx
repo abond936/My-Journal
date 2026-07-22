@@ -4,12 +4,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { Copy, Save, Trash2, Undo2, X } from 'lucide-react';
 import CardForm from '@/components/admin/studio/cards/CardForm';
-import { CardFormProvider, useCardForm } from '@/components/providers/CardFormProvider';
+import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { useOptionalCardContext } from '@/components/providers/CardProvider';
 import { MediaProvider } from '@/components/providers/MediaProvider';
-import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
+import { CardFormSurfaceProvider } from '@/components/authoring/CardFormSurfaceContext';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Card, CardUpdate } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
@@ -23,7 +22,11 @@ import {
   fetchCardDeleteParents,
 } from '@/lib/utils/cardDeleteWarnings';
 import styles from './ReaderCardEditModal.module.css';
-import studioStyles from '@/components/admin/studio/StudioWorkspace.module.css';
+import {
+  ReaderCardEditActions,
+  ReaderCardEditBaselineSync,
+  ReaderCardEditTitleBar,
+} from './ReaderCardEditChrome';
 
 const fetcher = (url: string) =>
   fetch(url, { cache: 'no-store', credentials: 'same-origin' }).then((res) => res.json());
@@ -34,161 +37,6 @@ type ModalFrame = {
   x: number;
   y: number;
 };
-
-function ModalActions({
-  onClose,
-  onDelete,
-  onDuplicate,
-  isDeleting,
-  isDuplicating,
-}: {
-  onClose: () => void;
-  onDelete: () => Promise<void>;
-  onDuplicate: () => Promise<void>;
-  isDeleting: boolean;
-  isDuplicating: boolean;
-}) {
-  const { confirmLeaveIfDirtyAsync, isDirty, resetForm, formState } = useCardForm();
-  const feedback = useAppFeedback();
-  const { isSaving } = formState;
-
-  const handleClose = async () => {
-    if (!(await confirmLeaveIfDirtyAsync())) return;
-    onClose();
-  };
-
-  const handleCancel = async () => {
-    if (!isDirty || isSaving) return;
-    const shouldDiscard = await feedback.confirm({
-      title: 'Discard unsaved changes?',
-      message: 'Discard your unsaved changes and reset the form?',
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
-      tone: 'danger',
-    });
-    if (!shouldDiscard) return;
-    resetForm();
-  };
-
-  const handleDelete = async () => {
-    if (!(await confirmLeaveIfDirtyAsync())) return;
-    await onDelete();
-  };
-
-  const handleDuplicate = async () => {
-    if (!(await confirmLeaveIfDirtyAsync())) return;
-    await onDuplicate();
-  };
-
-  return (
-    <div className={studioStyles.studioComposeFormActions}>
-      <button
-        type="button"
-        onClick={() => void handleDelete()}
-        className={studioStyles.studioComposeDeleteButton}
-        disabled={isDeleting}
-        aria-label={isDeleting ? 'Deleting card' : 'Delete card'}
-        title={isDeleting ? 'Deleting card' : 'Delete card'}
-      >
-        <Trash2 size={16} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={() => void handleDuplicate()}
-        className={studioStyles.studioComposeCancelButton}
-        disabled={isDuplicating}
-        aria-label={isDuplicating ? 'Duplicating card' : 'Duplicate card'}
-        title={isDuplicating ? 'Duplicating card' : 'Duplicate card'}
-      >
-        <Copy size={16} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={() => void handleClose()}
-        className={studioStyles.studioComposeCancelButton}
-        disabled={isSaving}
-        aria-label="Close compose window"
-        title="Close compose window"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        onClick={() => void handleCancel()}
-        className={studioStyles.studioComposeCancelButton}
-        disabled={!isDirty || isSaving}
-        aria-label="Discard changes"
-        title="Discard changes"
-      >
-        <Undo2 size={16} aria-hidden="true" />
-      </button>
-      <button
-        type="submit"
-        form="card-form"
-        className={studioStyles.studioComposeSaveButton}
-        disabled={!isDirty || isSaving}
-        aria-label={isSaving ? 'Saving card' : 'Save card'}
-        title={isSaving ? 'Saving card' : 'Save card'}
-      >
-        <Save size={16} aria-hidden="true" />
-        <span>Save</span>
-      </button>
-    </div>
-  );
-}
-
-function ModalTitleBar({
-  title,
-  onDragStart,
-  onClose,
-}: {
-  title: string;
-  onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onClose: () => void;
-}) {
-  const { confirmLeaveIfDirtyAsync, formState } = useCardForm();
-  const { isSaving } = formState;
-
-  const handleClose = useCallback(() => {
-    void (async () => {
-      if (!(await confirmLeaveIfDirtyAsync())) return;
-      onClose();
-    })();
-  }, [confirmLeaveIfDirtyAsync, onClose]);
-
-  return (
-    <div className={styles.titleBar} onPointerDown={onDragStart}>
-      <div className={styles.titleBarDragAffordance} aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <h2 className={styles.titleBarTitle}>{title}</h2>
-      <button
-        type="button"
-        className={styles.titleBarCloseButton}
-        onClick={handleClose}
-        disabled={isSaving}
-        aria-label="Close compose window"
-      >
-        ×
-      </button>
-    </div>
-  );
-}
-
-function ReaderModalBaselineSync({ syncKey }: { syncKey: string }) {
-  const { syncPersistableBaseline } = useCardForm();
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      syncPersistableBaseline();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [syncKey, syncPersistableBaseline]);
-
-  return null;
-}
 
 export default function ReaderCardEditModal({
   cardId,
@@ -475,16 +323,16 @@ export default function ReaderCardEditModal({
     return (
       <CardFormProvider key={activeCardId} initialCard={card} allTags={tags} onSave={handleSave}>
         <MediaProvider>
-          <ReaderModalBaselineSync syncKey={activeCardId} />
+          <ReaderCardEditBaselineSync syncKey={activeCardId} />
           <div className={styles.modalShell}>
             <div className={styles.modalHeader}>
-              <ModalTitleBar
+              <ReaderCardEditTitleBar
                 title={editingDuplicate ? 'Compose — New draft' : 'Compose'}
                 onDragStart={handleDragStart}
                 onClose={closeModal}
               />
               <div className={styles.modalActions}>
-                <ModalActions
+                <ReaderCardEditActions
                   onClose={closeModal}
                   onDelete={handleDelete}
                   onDuplicate={handleDuplicate}
@@ -494,9 +342,9 @@ export default function ReaderCardEditModal({
               </div>
             </div>
             <div className={styles.modalScroll}>
-              <StudioCardFormStudioProvider value={{ studioShellCardForm: true }}>
+              <CardFormSurfaceProvider value={{ compact: true }}>
                 <CardForm />
-              </StudioCardFormStudioProvider>
+              </CardFormSurfaceProvider>
             </div>
           </div>
         </MediaProvider>

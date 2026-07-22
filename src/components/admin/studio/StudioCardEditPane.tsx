@@ -7,7 +7,7 @@ import { CardFormProvider } from '@/components/providers/CardFormProvider';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import StudioCardFormShellSync from '@/components/admin/studio/StudioCardFormShellSync';
 import StudioComposeFormActions from '@/components/admin/studio/StudioComposeFormActions';
-import { StudioCardFormStudioProvider } from '@/components/admin/studio/studioCardFormStudioContext';
+import { CardFormSurfaceProvider } from '@/components/authoring/CardFormSurfaceContext';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import PanelActivityOverlay from '@/components/admin/studio/PanelActivityOverlay';
 import type { StudioCardContext } from '@/components/admin/studio/studioCardTypes';
@@ -70,6 +70,9 @@ export default function StudioCardEditPane({
     cardError,
     setSelectedDetail,
     upsertCollectionsCardList,
+    loadSelectedCard,
+    openSelectedCardMediaEditor,
+    registerBodyMediaInsert,
   } = useStudioShell();
   const { tags: allTags } = useTag();
   const handleSave = useCallback(
@@ -168,10 +171,17 @@ export default function StudioCardEditPane({
           <StudioComposeFormActions />
         </div>
         <div className={styles.studioCardEditScroll}>
-          <StudioCardFormStudioProvider value={{ studioShellCardForm: true, enableStudioShellDnd: true }}>
+          <CardFormSurfaceProvider value={{
+            compact: true,
+            enableStudioRelationshipDnd: true,
+            activeCardId: selectedCardId,
+            reloadCard: (cardId) => void loadSelectedCard(cardId, { quiet: true }),
+            openMediaEditor: openSelectedCardMediaEditor,
+            registerBodyMediaInsert,
+          }}>
             <StudioCardFormShellSync />
             <CardForm />
-          </StudioCardFormStudioProvider>
+          </CardFormSurfaceProvider>
         </div>
       </CardFormProvider>
     </aside>

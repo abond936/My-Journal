@@ -305,7 +305,8 @@ async function createMediaAsset(
   tagIds?: string[],
   importBatchId?: string,
   sourceContentDigest?: string,
-  sourceIdentity?: MediaSourceIdentity
+  sourceIdentity?: MediaSourceIdentity,
+  metadataImport?: Media['metadataImport']
 ): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
@@ -398,6 +399,7 @@ async function createMediaAsset(
     createdAt: now,
     updatedAt: now,
     ...(importBatchId ? { importBatchId } : {}),
+    ...(metadataImport ? { metadataImport } : {}),
     readiness,
   };
 
@@ -723,6 +725,10 @@ export async function importFromLocalDrive(
 
     let caption: string | undefined;
     let resolvedTagIds: string[] | undefined;
+    let metadataImport: Media['metadataImport'] = {
+      attempted: options?.readMetadata === true,
+      outcome: options?.readMetadata ? 'none' : 'not_requested',
+    };
     if (options?.readMetadata) {
       const exifT0 = Date.now();
       const meta = await readEmbeddedCaptionAndKeywords(fullPath);
@@ -734,11 +740,22 @@ export async function importFromLocalDrive(
       }
       if (meta.infrastructureError) {
         options.collectMetadataReadIssue?.(sourcePath, meta.infrastructureError);
+        metadataImport = { attempted: true, outcome: 'error' };
       }
       caption = meta.caption || undefined;
       if (meta.keywordStrings.length > 0) {
         const maps = options.tagNameMaps ?? (await getCachedTagNameMaps());
         resolvedTagIds = resolveKeywordStringsToTagIds(meta.keywordStrings, maps);
+      }
+      if (!meta.infrastructureError && (caption || meta.keywordStrings.length > 0)) {
+        metadataImport = {
+          attempted: true,
+          outcome: 'found',
+          foundFields: [
+            ...(caption ? (['caption'] as const) : []),
+            ...(meta.keywordStrings.length > 0 ? (['keywords'] as const) : []),
+          ],
+        };
       }
     }
 
@@ -798,7 +815,8 @@ export async function importFromLocalDrive(
       resolvedTagIds,
       options?.importBatchId,
       sourceContentDigest,
-      sourceIdentity
+      sourceIdentity,
+      metadataImport
     );
     if (traceStages) {
       console.info(
@@ -872,7 +890,8 @@ export async function importFromBuffer(
       undefined,
       undefined,
       sourceContentDigest,
-      sourceIdentity
+      sourceIdentity,
+      { attempted: false, outcome: 'not_requested' }
     );
 
     // Return the hydrated object that the client expects

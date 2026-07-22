@@ -31,6 +31,7 @@ import {
   groupSelectedTagIdsByDimension,
 } from '@/lib/utils/tagUtils';
 import { applyModifierSelection } from '@/lib/utils/adminListSelection';
+import { cardMatchesCodificationFilter } from '@/lib/utils/cardCodification';
 import cardAdminStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 import type { StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
@@ -42,6 +43,7 @@ import {
   type AdminTagFilterScope,
   type AdminDimensionFilterMode,
   type AdminDimensionFilterState,
+  type StudioCardBankCodificationFilter,
 } from '@/lib/preferences/adminFilters';
 import styles from './StudioTreeCandidateCardBank.module.css';
 
@@ -172,6 +174,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>(
     initialLocalFilterPrefsRef.current.displayModeFilter
   );
+  const [codificationFilter, setCodificationFilter] = useState<StudioCardBankCodificationFilter>(
+    initialLocalFilterPrefsRef.current.codificationFilter
+  );
   const [dimensionFilters, setDimensionFilters] = useState<AdminDimensionFilterState>(
     initialLocalFilterPrefsRef.current.dimensionFilters
   );
@@ -188,6 +193,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const deferredFilterTagIds = useDeferredValue(filterTagIds);
   const deferredTypeFilter = useDeferredValue(typeFilter);
   const deferredDisplayModeFilter = useDeferredValue(displayModeFilter);
+  const deferredCodificationFilter = useDeferredValue(codificationFilter);
   const deferredDimensionFilters = useDeferredValue(dimensionFilters);
   const deferredStatusFilter = useDeferredValue(statusFilter);
   const deferredSortMode = useDeferredValue(sortMode);
@@ -209,12 +215,13 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     writeStoredStudioCardBankLocalFilterPreferences({
       typeFilter,
       displayModeFilter,
+      codificationFilter,
       filterTagIds,
       tagFilterScope,
       dimensionFilters,
       gridTileMinPx,
     });
-  }, [dimensionFilters, displayModeFilter, filterTagIds, gridTileMinPx, studioCardFiltersHydrated, tagFilterScope, typeFilter]);
+  }, [codificationFilter, dimensionFilters, displayModeFilter, filterTagIds, gridTileMinPx, studioCardFiltersHydrated, tagFilterScope, typeFilter]);
 
   // Workspace query owner: the Studio card bank owns a server-shaped card query
   // rather than filtering a large local mega-catalog. Results still append in
@@ -241,6 +248,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       if (trimmedSearch) params.set('q', trimmedSearch);
       if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
       if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
+      if (deferredCodificationFilter !== 'all') params.set('codification', deferredCodificationFilter);
       const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
         titleAsc: { sortBy: 'title', sortDir: 'asc' },
         titleDesc: { sortBy: 'title', sortDir: 'desc' },
@@ -316,6 +324,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [
     allTags,
     deferredDimensionFilters,
+    deferredCodificationFilter,
     deferredDisplayModeFilter,
     deferredFilterTagIds,
     deferredSearch,
@@ -353,6 +362,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     if (trimmedSearch) params.set('q', trimmedSearch);
     if (deferredTypeFilter !== 'all') params.set('type', deferredTypeFilter);
     if (deferredDisplayModeFilter !== 'all') params.set('displayMode', deferredDisplayModeFilter);
+    if (deferredCodificationFilter !== 'all') params.set('codification', deferredCodificationFilter);
     const sortMap: Record<CandidateSort, { sortBy: string; sortDir: 'asc' | 'desc' }> = {
       titleAsc: { sortBy: 'title', sortDir: 'asc' },
       titleDesc: { sortBy: 'title', sortDir: 'desc' },
@@ -368,6 +378,8 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         params.set(`exact${dimension.charAt(0).toUpperCase()}${dimension.slice(1)}`, state.tagId);
       } else if (state.mode === 'isEmpty') {
         params.set(`${dimension}Missing`, 'true');
+      } else if (state.mode === 'hasAny') {
+        params.set(`${dimension}Present`, 'true');
       }
     }
     const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
@@ -425,6 +437,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     }
   }, [
     allTags,
+    deferredCodificationFilter,
     deferredDimensionFilters,
     deferredDisplayModeFilter,
     deferredFilterTagIds,
@@ -480,6 +493,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       if (q && !(card.title || '').toLowerCase().includes(q)) return false;
       if (deferredTypeFilter !== 'all' && card.type !== deferredTypeFilter) return false;
       if (deferredDisplayModeFilter !== 'all' && cardDisplayMode(card) !== deferredDisplayModeFilter) return false;
+      if (!cardMatchesCodificationFilter(card, deferredCodificationFilter)) return false;
       if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap, tagFilterScope)) return false;
       for (const dimension of DIMENSION_KEYS) {
         const state = deferredDimensionFilters[dimension];
@@ -502,6 +516,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       deferredSearch,
       deferredTypeFilter,
       deferredDisplayModeFilter,
+      deferredCodificationFilter,
       onCardTagDimensionalMap,
       deferredDimensionFilters,
       tagFilterScope,
@@ -514,6 +529,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     setSortMode('titleAsc');
     setTypeFilter('all');
     setDisplayModeFilter('all');
+    setCodificationFilter('all');
     setFilterTagIds([]);
     setTagFilterScope('all');
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
@@ -938,6 +954,18 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         </label>
         <label className={styles.studioCardField}>
           <select
+            value={codificationFilter}
+            onChange={(e) => setCodificationFilter(e.target.value as StudioCardBankCodificationFilter)}
+            className={styles.studioCardSelect}
+            aria-label="Filter by codification"
+          >
+            <option value="all">All Codification</option>
+            <option value="complete">Complete</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
+        </label>
+        <label className={styles.studioCardField}>
+          <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as CardTypeFilter)}
             className={styles.studioCardSelect}
@@ -1097,7 +1125,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       </div>
 
       <div ref={resultsScrollRef} className={styles.resultsScroll}>
-        <CardAdminGrid
+        {!loadingWorkspaceCards ? <CardAdminGrid
           cards={candidateCards}
           selectedCardIds={bulkSelectedCardIds}
           allTags={allTags || []}
@@ -1132,7 +1160,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
               </div>
             ) : undefined
           }
-        />
+        /> : null}
         {(workspaceHasMore || isStreamingMore || workspaceLoadMoreError) ? (
           <div className={styles.loadMoreFooter}>
             {workspaceHasMore ? (

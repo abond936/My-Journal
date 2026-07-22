@@ -1,12 +1,11 @@
 import type { Media } from '@/lib/types/photo';
-import type { ProvisionalCluster } from '@/lib/types/provisionalCluster';
 import {
   dayKeyFromTimestamp,
   folderLabelFromSourcePath,
   formatDayTitle,
 } from '@/lib/utils/reviewClusterHeuristics';
 
-export type MediaBrowseGroupMode = 'none' | 'folder' | 'day' | 'batch' | 'suggested';
+export type MediaBrowseGroupMode = 'none' | 'folder' | 'day' | 'batch' | 'metadata';
 
 export type MediaBrowseGroup = {
   id: string;
@@ -28,56 +27,21 @@ export function dayLabelFromMedia(item: Pick<Media, 'createdAt'>): string {
 
 export function groupMediaForBrowse(
   mediaItems: Media[],
-  mode: MediaBrowseGroupMode,
-  clusters: ProvisionalCluster[] = []
+  mode: MediaBrowseGroupMode
 ): MediaBrowseGroup[] {
   if (mode === 'none' || mediaItems.length === 0) return [];
-
-  if (mode === 'suggested') {
-    const assigned = new Set<string>();
-    const groups: MediaBrowseGroup[] = [];
-    for (const cluster of clusters) {
-      const members = cluster.memberMediaIds.filter((id) =>
-        mediaItems.some((item) => item.docId === id)
-      );
-      if (members.length === 0) continue;
-      members.forEach((id) => assigned.add(id));
-      groups.push({
-        id: cluster.docId ?? cluster.title,
-        title: cluster.title,
-        subtitle: cluster.reason,
-        memberMediaIds: members,
-        clusterId: cluster.docId,
-        oversized: members.length > 40,
-      });
-    }
-    const ungrouped = mediaItems
-      .map((item) => item.docId)
-      .filter((id) => !assigned.has(id));
-    if (ungrouped.length > 0) {
-      groups.push({
-        id: 'ungrouped',
-        title: 'Not in a suggested pile',
-        subtitle: 'Import or refresh suggested piles in Review',
-        memberMediaIds: ungrouped,
-      });
-    }
-    return groups;
-  }
 
   const map = new Map<string, Media[]>();
   for (const item of mediaItems) {
     let key: string;
-    let title: string;
     if (mode === 'folder') {
       key = importFolderLabelFromMedia(item);
-      title = key;
     } else if (mode === 'day') {
       key = item.createdAt ? dayKeyFromTimestamp(item.createdAt) : 'unknown-date';
-      title = dayLabelFromMedia(item);
-    } else {
+    } else if (mode === 'batch') {
       key = item.importBatchId?.trim() || 'no-batch';
-      title = item.importBatchId ? `Import ${item.importBatchId.slice(0, 8)}…` : 'No import batch';
+    } else {
+      key = item.metadataImport?.outcome ?? 'unknown';
     }
     const list = map.get(key) ?? [];
     list.push(item);
@@ -94,6 +58,16 @@ export function groupMediaForBrowse(
             ? members[0]
               ? dayLabelFromMedia(members[0])
               : key
+            : mode === 'metadata'
+              ? key === 'found'
+                ? 'Metadata found'
+                : key === 'none'
+                  ? 'No metadata found'
+                  : key === 'error'
+                    ? 'Metadata read error'
+                    : key === 'not_requested'
+                      ? 'Metadata not requested'
+                      : 'Legacy / unknown'
             : key === 'no-batch'
               ? 'No import batch'
               : `Batch ${key.slice(0, 8)}…`,

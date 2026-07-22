@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
-import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
+import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cards/cardMediaLifecycleService';
 import { API_INPUT_CAPS, isInputCapFailure, validateStringIdArray } from '@/lib/api/inputCaps';
 import {
   apiRouteError,

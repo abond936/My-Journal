@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import {
   getTagSet0Status,
   installTagSet0Generic,
@@ -21,7 +22,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

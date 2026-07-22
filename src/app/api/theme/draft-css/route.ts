@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
-import { buildScopedDraftThemeCss, normalizeThemeDocument } from '@/lib/services/themeService';
+import { isAdminSession } from '@/lib/auth/readerAccess';
+import { buildScopedDraftThemeCss } from '@/lib/services/theme/themeCssCompiler';
+import { normalizeThemeDocument } from '@/lib/services/theme/themeDocumentService';
 import type { ResolvedScopedThemeDocumentData, ScopedThemeDocumentData } from '@/lib/types/theme';
 
 const READER_DRAFT_SCOPE = '.themeDraftReaderScope';
@@ -23,7 +25,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as { role?: string }).role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

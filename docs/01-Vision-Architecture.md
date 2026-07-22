@@ -44,7 +44,9 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Story purpose** — Import and organization exist to help create and preserve stories, not to become a digital asset manager.
 - **Layered storytelling** — Media carry concise story through their captions; Cards carry longer-form story through optional authored content. Media-led and narrative-led cards may share a reading structure without requiring the same amount of prose.
 - **Archive scale** — Large archives should feel manageable through clear workflows, immediate feedback, and honest background progress.
-- **Private** — The archive is family-private and author-controlled.
+- **Variable starting points** — Intake must accommodate differently organized folders, exports, filenames, dates, embedded metadata, existing tags, captions, duplicates, and missing information without assuming one clean source structure.
+- **Learnable without the designer** — A first-time reader and a first-time administrator must understand the next meaningful action from the product itself; essential workflows cannot depend on oral explanation from the original author.
+- **Private first** — An author's workspace and imported media are private and author-controlled; any future family sharing is explicit and limited to selected stories and their referenced media.
 - **Mobile reading** — Reader is mobile-first; Administration may remain desktop-primary.
 - **Author control** — Assistance may suggest; it never silently publishes, deletes, tags, or replaces author judgment.
 - **Durability** — Backup, restore, and integrity are product requirements.
@@ -54,7 +56,8 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Customer** — v1 serves one author first, then others with similar archive and storytelling needs.
 - **Roles** — One author-administrator; individual reader accounts for family and friends.
 - **Hosting** — Initial commercial shape is a private hosted application.
-- **Tenancy** — v1 is single-tenant; multi-tenant isolation is Future.
+- **Tenancy** — v1 is one private author-controlled archive with named readers. Personal workspaces, shared family spaces, and multi-tenant isolation are Future and must not expand the active v1 scope.
+- **v1 boundary** — Establish a stable, recoverable authoring and reading baseline before adding onboarding, face assistance, new media types, external-library adapters, commercial packaging, or platform expansion. Once that baseline is released, authoring the archive's content takes precedence over discretionary product expansion.
 
 ---
 
@@ -76,8 +79,9 @@ It is not a generic journal, a photo manager with captions, or public social med
 
 ⭕2 **Future**
 
-- **Tenancy** — Isolate multiple customer archives without weakening current integrity guarantees.
-- **Sharing** — Expand access models beyond private named readers.
+- **Tenancy** — Isolate private personal workspaces and shared family spaces without weakening current integrity guarantees.
+- **Sharing** — Let an author explicitly publish selected Cards and only their referenced Media into an authorized family space; never treat the author's complete Media library as shared by default.
+- **Family feed** — Present recently published family stories chronologically as one view of the durable shared archive, not as an engagement-ranked social network or the product's primary authority.
 - **History** — Add content versioning and recovery beyond operational backups.
 - **Observability** — Add tracing and operational dashboards beyond baseline monitoring.
 - **Storage** — Abstract storage operations when migration or multi-provider needs justify it.
@@ -112,15 +116,17 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Acceptance** — Accepted suggestions use the same accounting path as manual assignment.
 - **Hierarchy authority** — `parentId` owns taxonomy structure; stored paths, counts, dimensional fields, and search data are projections that must agree with it.
 - **Identity** — Each named Who subject, human or non-human, has one stable identity; names and aliases describe that identity rather than creating duplicates.
-- **Relationships** — Family roles between people are relationships interpreted from an explicit human perspective, not substitutes for stable identities.
+- **Family structure** — Stable Who identities may be connected by parent and partner facts to support a family-tree view. Father, grandmother, cousin, and similar perspective-relative words are optional derived descriptions, not assignable tags, story truth, or a reason to reorganize authored content for each viewer.
 - **Migration** — Existing assignments remain authoritative until an author-approved, auditable migration replaces them.
 - **Subject** — Subject is metadata on an assigned tag, not a fifth dimension or separate count source.
 - **Subject removal** — Removing the assigned subject tag clears the subject in the same authoritative write.
 - **Inheritance** — Gallery-to-card inheritance updates card work truth only through the explicit per-dimension policy in `02`.
+- **Face evidence** — Face regions, embeddings, provider person clusters, and proposed matches may be imported from supported exports or generated by an approved recognition service, but remain provisional evidence until the author confirms a stable Who identity.
+- **Role separation** — Face recognition may suggest a person identity; it must not infer or assign Mother, Father, Grandparent, spouse, or another perspective-relative role as identity truth.
 
 ❓ **Open**
 
-- **Suggestion storage** — Per-media tag suggestions, face payloads, and retention remain undefined beyond the delivered provisional cluster model.
+- **Suggestion storage** — The bounded schema, retention, deletion, provider provenance, and reprocessing rules for per-media tag suggestions and face evidence remain undefined beyond the delivered provisional cluster model.
 
 ### Authentication
 
@@ -140,13 +146,13 @@ It is not a generic journal, a photo manager with captions, or public social med
 
 ### Structural boundaries
 
-⭕1 **Planned**
+✅ **Complete**
 
-- **Services** — Split responsibility-heavy `cardService` and `themeService` into explicit domain operations without duplicating integrity rules.
-- **Components** — Split `StudioWorkspace`, `MediaAdminContent`, and `CardForm` by coordination, domain operation, and presentation responsibilities.
-- **Reader edit** — Reuse focused editing capabilities without loading the full Studio form architecture.
-- **Theme service** — Separate Theme workspace composition from schema, transformation, compilation, and persistence.
-- **Legacy routes** — Retire redirect-only and compatibility paths after callers are verified.
+- **Services** — Card and Theme responsibilities use explicit domain operations without duplicated integrity rules; later service seams must extend that ownership model only when proven.
+- **Components** — `StudioWorkspace`, `MediaAdminContent`, and `CardForm` separate coordination, domain operation, and presentation responsibilities through focused controllers and components.
+- **Reader edit** — Focused Reader editing reuses the authoring capability contract without loading Studio shell architecture.
+- **Theme service** — Theme schema, transformation, compilation, persistence, and workspace composition have explicit owners.
+- **Legacy routes** — Compatibility paths are retained only when they remain intentional entry points; obsolete service facades are retired after zero-caller proof.
 
 ### Operations
 
@@ -156,9 +162,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Source** — Remote Git is the code source of truth; secrets are backed up outside Git.
 - **Recovery** — Restore procedures and drills are documented in `docs/NPM-SCRIPTS.md`.
 
-⭕1 **Planned**
-
-- **Closeout** — Prove backup, restore, account recovery, release readiness, and incident response before commercial release.
+- **Closeout** — Backup, guarded restore, account recovery, release/rollback, and incident procedures are verified at the operating-system level. Each release revision must still pass those gates on its exact committed and pushed revision.
 
 ⭕2 **Future**
 

@@ -222,6 +222,20 @@ export const CURRENT_READER_THEME_SYSTEM: ReaderThemeSummarySystem = {
         lineHeight: 'line-height/base',
         color: 'semantic/reader/tonal-text-primary',
       },
+      sidebarLabel: {
+        family: 'font-family/sans1',
+        size: 'font-size/sm',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-primary',
+      },
+      sidebarCount: {
+        family: 'font-family/sans1',
+        size: 'font-size/xs',
+        weight: 'font-weight/medium',
+        lineHeight: 'line-height/base',
+        color: 'semantic/reader/tonal-text-secondary',
+      },
       chromeMeta: {
         family: 'font-family/sans1',
         size: 'font-size/sm',
@@ -834,6 +848,8 @@ export const CURRENT_READER_THEME_COMPONENTS: ReaderThemeComponentSpec[] = [
         elements: [
           { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chromeSidebar' } },
           { id: 'text', label: 'Sidebar text', binding: { kind: 'typography', key: 'chromeText' } },
+          { id: 'label', label: 'Sidebar label', binding: { kind: 'typography', key: 'sidebarLabel' } },
+          { id: 'count', label: 'Sidebar count', binding: { kind: 'typography', key: 'sidebarCount' } },
           { id: 'meta', label: 'Sidebar meta', binding: { kind: 'typography', key: 'chromeMeta' } },
           { id: 'activeTab', label: 'Active tab', binding: { kind: 'control', key: 'chromeActiveTab' } },
           { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'inlineLink' } },
@@ -963,6 +979,8 @@ const TYPOGRAPHY_FOUNDATION_FAMILY_BY_ROLE: Record<keyof ReaderThemeRecipes['typ
   meta: 'foundation/typography/reading-family',
   caption: 'foundation/typography/reading-family',
   chromeText: 'foundation/typography/ui-family',
+  sidebarLabel: 'foundation/typography/ui-family',
+  sidebarCount: 'foundation/typography/ui-family',
   chromeMeta: 'foundation/typography/ui-family',
   supportTitle: 'foundation/typography/ui-family',
   supportLabel: 'foundation/typography/ui-family',

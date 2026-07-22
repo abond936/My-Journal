@@ -10,6 +10,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import {
   pruneOldBackupRuns,
@@ -149,6 +150,17 @@ function verifyManifestEntries(
   return { verified, failed };
 }
 
+function localFileMatches(localPath: string, size: number, md5: string | null): boolean {
+  if (!fs.existsSync(localPath) || fs.statSync(localPath).size !== size) {
+    return false;
+  }
+  if (!md5) {
+    return true;
+  }
+  const digest = crypto.createHash('md5').update(fs.readFileSync(localPath)).digest('base64');
+  return digest === md5;
+}
+
 export async function runStorageBackup(options: StorageBackupOptions): Promise<StorageBackupResult> {
   const lines: string[] = [];
   const log = (message: string) => {
@@ -195,6 +207,7 @@ export async function runStorageBackup(options: StorageBackupOptions): Promise<S
     const contentType = typeof metadata.contentType === 'string' ? metadata.contentType : null;
     const localPath = localStorageObjectPath(runDir, storagePath);
     const prior = priorIndex.get(storagePath);
+    const canResumeCurrent = options.apply && localFileMatches(localPath, size, md5);
     const canCopyPrior =
       prior &&
       prior.md5 === md5 &&
@@ -203,7 +216,17 @@ export async function runStorageBackup(options: StorageBackupOptions): Promise<S
 
     if (options.apply) {
       fs.mkdirSync(path.dirname(localPath), { recursive: true });
-      if (canCopyPrior) {
+      if (canResumeCurrent) {
+        copied += 1;
+        manifest.push({
+          storagePath,
+          size,
+          md5,
+          contentType,
+          action: 'copied',
+          sourceRunId: runId,
+        });
+      } else if (canCopyPrior) {
         fs.copyFileSync(prior.localPath, localPath);
         copied += 1;
         manifest.push({

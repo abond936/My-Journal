@@ -77,23 +77,51 @@ jest.mock('@/lib/config/typesense', () => ({
   isTypesenseConfigured: jest.fn(() => false),
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
+jest.mock('@/lib/services/cards/cardReadService', () => ({
   getCardById: jest.fn(),
-  getCards: jest.fn(),
   getCardsByIds: jest.fn(),
-  getCardsReferencingMedia: jest.fn(),
+  getPaginatedCardsByIds: jest.fn(),
+  getCardsByCollectionId: jest.fn(),
+  getParentCardsByChildId: jest.fn(),
+  searchCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardListQueryService', () => ({ getCards: jest.fn() }));
+jest.mock('@/lib/services/cards/cardArchiveQueryService', () => ({
+  getCollectionCards: jest.fn(), getSeededRandomCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardLifecycleService', () => ({
   createCard: jest.fn(),
-  updateCard: jest.fn(),
   deleteCard: jest.fn(),
   duplicateCard: jest.fn(),
-  bulkApplyTagDelta: jest.fn(),
-  bulkUpdateTags: jest.fn(),
   createQuestionCardFromQuestion: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardBroadMutationService', () => ({ updateCard: jest.fn() }));
+jest.mock('@/lib/services/cards/cardBulkMutationService', () => ({
+  bulkApplyTagDelta: jest.fn(), bulkUpdateTags: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardMediaLifecycleService', () => ({
+  getCardsReferencingMedia: jest.fn(),
   deleteMediaWithCardCleanup: jest.fn(),
   recomputeCardsMediaSignalsForMedia: jest.fn(),
   recomputeCardsMediaSignalsForMediaIds: jest.fn(),
-  getPaginatedCardsByIds: jest.fn(),
-  searchCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardCoverMutationService', () => ({ updateCardCover: jest.fn() }));
+jest.mock('@/lib/services/cards/cardGalleryMutationService', () => ({
+  updateCardGallery: jest.fn(), updateCardGalleryOrder: jest.fn(), updateCardGalleryInheritanceOverrides: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardHierarchyMutationService', () => ({
+  updateCardChildren: jest.fn(), updateCardChildrenOrder: jest.fn(), updateCardCollectionRoot: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardMetadataMutationService', () => ({ updateCardMetadata: jest.fn() }));
+jest.mock('@/lib/services/cards/cardTagMutationService', () => ({ updateCardTags: jest.fn() }));
+jest.mock('@/lib/services/cards/cardStatusMutationService', () => ({ updateCardStatus: jest.fn() }));
+jest.mock('@/lib/services/cards/cardContentMutationService', () => ({ updateCardContent: jest.fn() }));
+jest.mock('@/lib/services/cards/cardMutationClassifiers', () => ({
+  isGalleryOnlyPayload: jest.fn(), isGalleryReorderOnlyPayload: jest.fn(),
+  isCardMetadataOnlyPayload: jest.fn(), isChildrenOnlyPayload: jest.fn(),
+  isChildrenReorderOnlyPayload: jest.fn(), isCollectionRootOnlyPayload: jest.fn(),
+  isContentOnlyPayload: jest.fn(), isTagsOnlyPayload: jest.fn(),
+  isGalleryInheritanceOverridesOnlyPayload: jest.fn(), isStatusOnlyPayload: jest.fn(),
 }));
 
 jest.mock('@/lib/firebase/tagService', () => ({
@@ -150,12 +178,18 @@ jest.mock('@/lib/services/importFolderAsCard', () => ({
   getImportFolderPreview: jest.fn(),
 }));
 
-jest.mock('@/lib/services/themeService', () => ({
+jest.mock('@/lib/services/theme/themePersistenceService', () => ({
   getResolvedScopedThemeDocument: jest.fn(),
-  isPersistedThemeDocument: jest.fn(),
   saveThemeData: jest.fn(),
-  buildScopedDraftThemeCss: jest.fn(),
+}));
+
+jest.mock('@/lib/services/theme/themeDocumentService', () => ({
+  isPersistedThemeDocument: jest.fn(),
   normalizeThemeDocument: jest.fn(),
+}));
+
+jest.mock('@/lib/services/theme/themeCssCompiler', () => ({
+  buildScopedDraftThemeCss: jest.fn(),
 }));
 
 jest.mock('@/lib/services/typesenseMediaService', () => ({

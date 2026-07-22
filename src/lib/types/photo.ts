@@ -132,6 +132,13 @@ export const mediaSchema = z.object({
   /** Set on import batch requests so Browse can filter recent uploads. */
   importBatchId: z.string().optional(),
 
+  /** Truth about the embedded-metadata request and what the importer actually found. */
+  metadataImport: z.object({
+    attempted: z.boolean(),
+    outcome: z.enum(['found', 'none', 'error', 'not_requested']),
+    foundFields: z.array(z.enum(['caption', 'keywords'])).optional(),
+  }).optional(),
+
   /** Canonical burst/manual stack membership (hero + alternates). */
   stackId: z.string().optional().nullable(),
   stackRole: z.enum(['hero', 'member']).optional().nullable(),

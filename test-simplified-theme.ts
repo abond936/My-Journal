@@ -1,4 +1,7 @@
-import { getThemeData, saveThemeData } from './src/lib/services/themeService';
+import {
+  getPersistedThemeDocumentFromJson,
+  saveThemeData,
+} from './src/lib/services/theme/themePersistenceService';
 
 async function testSimplifiedTheme() {
   try {
@@ -6,7 +9,8 @@ async function testSimplifiedTheme() {
     
     // Read current theme data
     console.log('📖 Reading theme data from theme-data.json...');
-    const themeData = await getThemeData();
+    const themeDocument = await getPersistedThemeDocumentFromJson();
+    const themeData = themeDocument.reader.data;
     console.log('✅ Theme data loaded successfully');
     
     // Check if themeColors exist
@@ -24,7 +28,7 @@ async function testSimplifiedTheme() {
     
     // Generate CSS with new system
     console.log('\n🔄 Generating CSS with simplified theme system...');
-    await saveThemeData(themeData);
+    await saveThemeData(themeDocument);
     console.log('✅ CSS generated successfully');
     
     console.log('\n🎯 Changes made:');
@@ -43,4 +47,4 @@ async function testSimplifiedTheme() {
   }
 }
 
-testSimplifiedTheme(); 
+testSimplifiedTheme();

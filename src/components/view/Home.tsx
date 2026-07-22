@@ -10,20 +10,14 @@ import { useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
+import { safeInternalCallbackPath } from '@/lib/utils/marketingRoutes';
 import styles from '@/components/view/Home.module.css';
-
-function safeCallbackPath(raw: string | null): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/view';
-  }
-  return raw;
-}
 
 const Home: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const afterLogin = useMemo(
-    () => safeCallbackPath(searchParams.get('callbackUrl')),
+    () => safeInternalCallbackPath(searchParams.get('callbackUrl')),
     [searchParams]
   );
   const { status } = useSession();

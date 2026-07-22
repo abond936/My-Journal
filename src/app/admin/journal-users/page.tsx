@@ -35,7 +35,7 @@ export default function JournalUsersAdminPage() {
     try {
       setUsers(await fetchUsers());
     } catch (e) {
-      setListError(e instanceof Error ? e.message : 'Failed to load');
+      setListError(e instanceof Error ? e.message : 'Users could not be loaded. Try again.');
     } finally {
       setLoading(false);
     }
@@ -256,7 +256,7 @@ export default function JournalUsersAdminPage() {
               </table>
             </div>
             {users.length === 0 && !loading && (
-              <p className={styles.intro}>No Firestore users yet. Use the seed script or legacy env login.</p>
+              <p className={styles.intro}>No users have been added yet. Use Add User above to create the first reader account.</p>
             )}
           </>
         )}

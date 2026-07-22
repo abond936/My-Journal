@@ -11,11 +11,13 @@ import AppShell from '@/components/common/AppShell';
 import {
   buildScopedThemeTokensCss,
   buildThemeTokensCss,
+  themeDataForCssGeneration,
+} from '@/lib/services/theme/themeCssCompiler';
+import { normalizeThemeDocument } from '@/lib/services/theme/themeDocumentService';
+import {
   getPersistedThemeDocumentFromJson,
   getResolvedScopedThemeDocument,
-  normalizeThemeDocument,
-  themeDataForCssGeneration,
-} from '@/lib/services/themeService';
+} from '@/lib/services/theme/themePersistenceService';
 
 export const metadata: Metadata = {
   title: 'My Journal',

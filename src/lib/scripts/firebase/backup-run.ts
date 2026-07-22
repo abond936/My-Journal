@@ -10,6 +10,7 @@ import { runFullBackup } from './full-database-backup';
 import { parseStorageBackupArgs, runStorageBackup } from './full-storage-backup';
 import {
   pruneOldBackupRuns,
+  requestOnlineOnlyBackupRun,
   resolveBackupRootPath,
   safeBackupTimestamp,
 } from './recoveryConstants';
@@ -63,8 +64,23 @@ export async function runPairedBackup(argv: string[]): Promise<RunManifest> {
     fs.mkdirSync(backupRoot, { recursive: true });
   }
 
-  const runId = `run-${safeBackupTimestamp()}`;
+  const resumeArg = argv.find((arg) => arg.startsWith('--resume-run='));
+  const requestedRunId = resumeArg?.slice('--resume-run='.length).trim();
+  if (requestedRunId && !/^run-[A-Za-z0-9-]+$/.test(requestedRunId)) {
+    throw new Error('Invalid --resume-run value. Expected an existing run-* directory name.');
+  }
+  const runId = requestedRunId || `run-${safeBackupTimestamp()}`;
   const runDir = path.join(backupRoot, runId);
+  if (requestedRunId && !fs.existsSync(runDir)) {
+    throw new Error(`Cannot resume missing backup run: ${requestedRunId}`);
+  }
+  const existingManifestPath = path.join(runDir, 'run-manifest.json');
+  if (requestedRunId && fs.existsSync(existingManifestPath)) {
+    const existing = JSON.parse(fs.readFileSync(existingManifestPath, 'utf8')) as { complete?: boolean };
+    if (existing.complete) {
+      throw new Error(`Backup run is already complete: ${requestedRunId}`);
+    }
+  }
   fs.mkdirSync(runDir, { recursive: true });
 
   console.log('=== Paired backup run ===');
@@ -111,6 +127,7 @@ export async function runPairedBackup(argv: string[]): Promise<RunManifest> {
   if (storageOptions.apply) {
     writeLatestCompleteRunPointer(backupRoot, manifest);
     pruneOldBackupRuns(backupRoot, (message) => console.log(message));
+    requestOnlineOnlyBackupRun(runDir, (message) => console.log(message));
   }
 
   console.log('Wrote run-manifest.json');

@@ -916,6 +916,8 @@ const SIDEBAR_COMPONENT_SPEC: DisplayComponentSpec = {
       elements: [
         { id: 'surface', label: 'Sidebar surface', binding: { kind: 'surface', key: 'chromeSidebar' } },
         { id: 'text', label: 'Sidebar text', binding: { kind: 'typography', key: 'chromeText' } },
+        { id: 'label', label: 'Sidebar label', binding: { kind: 'typography', key: 'sidebarLabel' } },
+        { id: 'count', label: 'Sidebar count', binding: { kind: 'typography', key: 'sidebarCount' } },
         { id: 'meta', label: 'Sidebar meta', binding: { kind: 'typography', key: 'chromeMeta' } },
         { id: 'width', label: 'Sidebar width', binding: { kind: 'layout', key: 'sidebarWidth' } },
         { id: 'inlineLink', label: 'Inline link', binding: { kind: 'control', key: 'inlineLink' } },
@@ -1389,6 +1391,8 @@ export default function ThemeAdminPage() {
   const [valuesPaneVisible, setValuesPaneVisible] = useState(false);
   const [isNarrowWorkspace, setIsNarrowWorkspace] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
   const [activePresetId, setActivePresetId] = useState<ThemePresetId | 'custom'>('custom');
@@ -1497,6 +1501,8 @@ export default function ThemeAdminPage() {
 
   useEffect(() => {
     const fetchThemeData = async () => {
+      setLoading(true);
+      setLoadError(null);
       try {
         const response = await fetch('/api/theme');
         const data = await response.json();
@@ -1546,13 +1552,14 @@ export default function ThemeAdminPage() {
         }
       } catch (error) {
         console.error('Failed to fetch theme data:', error);
+        setLoadError(error instanceof Error ? error.message : 'Theme data could not be loaded.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchThemeData();
-  }, [applyThemeDocument]);
+  }, [applyThemeDocument, loadAttempt]);
 
   const handleColorChange = (id: number, field: keyof BaseColor | keyof ThemeColor, value: string, variant?: 'light' | 'dark') => {
     if (!activeThemeData) return;
@@ -1908,10 +1915,18 @@ export default function ThemeAdminPage() {
     );
   }
 
-  if (!themeData || !adminThemeData) {
+  if (loadError || !themeData || !adminThemeData) {
     return (
       <div className={styles.centered}>
-        <div>Failed to load theme data</div>
+        <div role="alert">Theme Management could not load.</div>
+        <div>{loadError ?? 'The saved theme data is unavailable.'}</div>
+        <button
+          type="button"
+          className={styles.secondaryActionButton}
+          onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+        >
+          Try again
+        </button>
       </div>
     );
   }

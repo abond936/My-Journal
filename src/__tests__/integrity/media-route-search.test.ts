@@ -257,4 +257,102 @@ describe('GET /api/media fallback text search', () => {
     expect(res.status).toBe(200);
     expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['media-with-who']);
   });
+
+  it('applies codification, unresolved, batch, folder, and metadata filters on the server', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('matching-media', {
+            source: 'local',
+            sourcePath: '/Trips/Charleston/photo.jpg',
+            importBatchId: 'batch-1',
+            metadataImport: { attempted: true, outcome: 'found', foundFields: ['caption'] },
+            hasWho: true,
+            hasWhat: false,
+            hasWhen: true,
+            hasWhere: true,
+            createdAt: 2,
+          }),
+          makeMediaDoc('complete-media', {
+            source: 'local',
+            sourcePath: '/Trips/Charleston/complete.jpg',
+            importBatchId: 'batch-1',
+            metadataImport: { attempted: true, outcome: 'found', foundFields: ['caption'] },
+            hasWho: true,
+            hasWhat: true,
+            hasWhen: true,
+            hasWhere: true,
+            createdAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest(
+        'https://example.test/api/media?limit=40&codification=incomplete&unresolvedDimension=what&importBatchId=batch-1&importFolder=Charleston&metadataOutcome=found'
+      )
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['matching-media']);
+  });
+
+  it('filters the complete media population by exact source-byte matches', async () => {
+    const identityQuery = {
+      get: jest.fn().mockResolvedValue({
+        docs: [
+          makeMediaDoc('match-a', { contentIdentity: { algorithm: 'sha256', basis: 'source-bytes', digest: 'same' } }),
+          makeMediaDoc('match-b', { contentIdentity: { algorithm: 'sha256', basis: 'source-bytes', digest: 'same' } }),
+          makeMediaDoc('unique', { contentIdentity: { algorithm: 'sha256', basis: 'source-bytes', digest: 'different' } }),
+        ],
+      }),
+    };
+    const mediaQuery = {
+      select: jest.fn().mockReturnValue(identityQuery),
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('match-a', { createdAt: 3 }),
+          makeMediaDoc('match-b', { createdAt: 2 }),
+          makeMediaDoc('unique', { createdAt: 1 }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(makeRequest('https://example.test/api/media?limit=40&matchStatus=matches'));
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['match-a', 'match-b']);
+    expect(mediaQuery.select).toHaveBeenCalledWith('contentIdentity');
+  });
 });

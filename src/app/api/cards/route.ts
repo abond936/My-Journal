@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getCollectionCards, getSeededRandomCards } from '@/lib/services/cards/cardArchiveQueryService';
+import { createCard } from '@/lib/services/cards/cardLifecycleService';
+import { getCards } from '@/lib/services/cards/cardListQueryService';
 import {
-  createCard,
-  getCards,
   getCardsByIds,
   getCardsByCollectionId,
-  getCollectionCards,
   getParentCardsByChildId,
-  getSeededRandomCards,
-} from '@/lib/services/cardService';
+} from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
@@ -23,6 +22,12 @@ import {
   requireApiSession,
 } from '@/lib/api/routeEnvelope';
 import { cardMatchesExactTagScope } from '@/lib/utils/cardTagFilter';
+import { isAdminSession } from '@/lib/auth/readerAccess';
+import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
+import {
+  cardMatchesCodificationFilter,
+  type CardCodificationFilter,
+} from '@/lib/utils/cardCodification';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
@@ -48,14 +53,16 @@ function cardMatchesDimensionTagScope(
   card: Pick<Card, 'filterTags' | 'subjectFilterTags' | 'who' | 'what' | 'when' | 'where' | 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds'>,
   dimension: 'who' | 'what' | 'when' | 'where',
   required: string[] | undefined,
-  tagScope: 'all' | 'subject'
+  tagScope: 'all' | 'subject',
+  tagSelectionMode: TagSelectionMode = 'any'
 ): boolean {
   if (!required || required.length === 0) return true;
   if (tagScope === 'subject') {
-    return required.some((tagId) => Boolean(card.subjectFilterTags?.[tagId]));
+    const subjects = Object.keys(card.subjectFilterTags ?? {}).filter((tagId) => card.subjectFilterTags?.[tagId]);
+    return matchesSelectedTags(subjects, required, tagSelectionMode);
   }
   const idsOnCard = (card[dimension] as string[] | undefined) ?? [];
-  return required.some((tagId) => idsOnCard.includes(tagId));
+  return matchesSelectedTags(idsOnCard, required, tagSelectionMode);
 }
 
 const CARD_TYPES_QUERY = new Set<string>(['story', 'qa', 'quote', 'callout', 'gallery']);
@@ -129,13 +136,14 @@ export async function GET(request: Request) {
     return auth.error;
   }
   const session = auth.session;
-  const isAdmin = session.user?.role === 'admin';
+  const isAdmin = isAdminSession(session);
 
   try {
     const { searchParams } = new URL(request.url);
 
     const tags = searchParams.get('tags')?.split(',');
     const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
+    const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
 
     // Parse dimensional tags from query parameters
     const dimensionalTags: {
@@ -247,6 +255,11 @@ export async function GET(request: Request) {
     let displayMode: Card['displayMode'] | 'all' =
       (searchParams.get('displayMode') as Card['displayMode'] | 'all') || 'all';
     if (displayMode !== 'all' && !CARD_DISPLAY_MODES_QUERY.has(displayMode)) displayMode = 'all';
+    const codificationParam = searchParams.get('codification');
+    const codification: CardCodificationFilter =
+      codificationParam === 'complete' || codificationParam === 'incomplete'
+        ? codificationParam
+        : 'all';
 
     let typesForService: Card['type'][] | undefined;
     if (typesListParsed?.length) {
@@ -320,7 +333,7 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
       }
 
-      if (sortBy === 'random' && !q?.trim() && !hasDimensionPresentFilters) {
+      if (sortBy === 'random' && !q?.trim() && !hasDimensionPresentFilters && codification === 'all') {
         const result = await getSeededRandomCards({
           seed: searchParams.get('randomSeed') || 'default',
           status,
@@ -331,6 +344,7 @@ export async function GET(request: Request) {
           exactDimensionalTags:
             Object.keys(exactDimensionalTags).length > 0 ? exactDimensionalTags : undefined,
           dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
+          tagSelectionMode,
           limit,
           lastDocId,
           hydrationMode,
@@ -363,20 +377,21 @@ export async function GET(request: Request) {
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
           if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
+          if (!cardMatchesCodificationFilter(card, codification)) return false;
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
           if (tags && tags.length > 0) {
             for (const tag of tags) {
               if (!cardMatchesTagScope(card, tag, tagScope)) return false;
             }
           }
-          if (!cardMatchesDimensionTagScope(card, 'who', dimensionalTags.who, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'what', dimensionalTags.what, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'when', dimensionalTags.when, tagScope)) return false;
-          if (!cardMatchesDimensionTagScope(card, 'where', dimensionalTags.where, tagScope)) return false;
-          if (!cardMatchesExactTagScope(card, exactDimensionalTags.who, tagScope)) return false;
-          if (!cardMatchesExactTagScope(card, exactDimensionalTags.what, tagScope)) return false;
-          if (!cardMatchesExactTagScope(card, exactDimensionalTags.when, tagScope)) return false;
-          if (!cardMatchesExactTagScope(card, exactDimensionalTags.where, tagScope)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'who', dimensionalTags.who, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'what', dimensionalTags.what, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'when', dimensionalTags.when, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesDimensionTagScope(card, 'where', dimensionalTags.where, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.who, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.what, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.when, tagScope, tagSelectionMode)) return false;
+          if (!cardMatchesExactTagScope(card, exactDimensionalTags.where, tagScope, tagSelectionMode)) return false;
           if (dimensionMissing.who && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'who') : !cardDimEmpty(card.who))) return false;
           if (dimensionMissing.what && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'what') : !cardDimEmpty(card.what))) return false;
           if (dimensionMissing.when && (tagScope === 'subject' ? cardHasSubjectInDimension(card, 'when') : !cardDimEmpty(card.when))) return false;
@@ -396,7 +411,9 @@ export async function GET(request: Request) {
             hasExactDimensionalFilters ||
             hasDimensionMissingFilters ||
             hasDimensionPresentFilters)) ||
-        hasDimensionPresentFilters;
+        hasDimensionPresentFilters ||
+        codification !== 'all' ||
+        (tagSelectionMode === 'all' && (Object.keys(dimensionalTags).length > 0 || hasExactDimensionalFilters));
 
       // Only dispatch to Typesense for queries that actually need it: text search,
       // multi-dimensional tag filters, missing-dimension filters, or dimension
@@ -419,7 +436,8 @@ export async function GET(request: Request) {
           Boolean(q?.trim()) ||
           Object.keys(dimensionalTags).length > 0 ||
           hasExactDimensionalFilters ||
-          hasDimensionMissingFilters);
+          hasDimensionMissingFilters ||
+          codification !== 'all');
 
       if (wantTypesense) {
         try {
@@ -434,6 +452,7 @@ export async function GET(request: Request) {
             types:
               typesForService && typesForService.length > 1 ? typesForService : undefined,
             status,
+            codification,
             tags: tags?.filter((t): t is string => Boolean(t?.trim())),
             dimensionalTags:
               Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,
@@ -441,6 +460,7 @@ export async function GET(request: Request) {
               Object.keys(exactDimensionalTags).length > 0 ? exactDimensionalTags : undefined,
             childrenIds_contains,
             dimensionMissing: hasDimensionMissingFilters ? dimensionMissing : undefined,
+            tagSelectionMode,
             page: pageIdx,
             perPage: limit,
             sortBy: sortByResolved,
@@ -537,6 +557,7 @@ export async function GET(request: Request) {
         status,
         type,
         displayMode,
+        codification,
         types: typesForService,
         tags,
         dimensionalTags: Object.keys(dimensionalTags).length > 0 ? dimensionalTags : undefined,

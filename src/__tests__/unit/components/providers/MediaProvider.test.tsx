@@ -81,6 +81,20 @@ function MediaHarness() {
       </button>
       <button
         type="button"
+        onClick={() =>
+          void fetchMedia(1, {
+            codification: 'incomplete',
+            unresolvedDimension: 'what',
+            importBatchId: 'batch-1',
+            importFolder: 'Charleston',
+            metadataOutcome: 'found',
+          })
+        }
+      >
+        Load Incomplete Workflow
+      </button>
+      <button
+        type="button"
         onClick={() => {
           setDimensionalQueryOverlay(siblingsOverlay);
           void fetchMedia(1, { tagScope: 'subject' });
@@ -166,6 +180,41 @@ describe('MediaProvider', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/api/media?limit=100'),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
+    });
+  });
+
+  it('sends the complete server workflow filter contract', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [],
+          pagination: {
+            page: 1,
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(<MediaProvider><MediaHarness /></MediaProvider>);
+    fireEvent.click(screen.getByText('Load Incomplete Workflow'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'codification=incomplete&unresolvedDimension=what&importBatchId=batch-1&importFolder=Charleston&metadataOutcome=found'
+        ),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });

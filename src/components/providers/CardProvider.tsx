@@ -40,6 +40,11 @@ import {
   readStoredReaderTagFilterScope,
   type ReaderTagFilterScope,
 } from '@/lib/utils/readerTagFilterScope';
+import {
+  appendTagSelectionModeParam,
+  readTagSelectionMode,
+  type TagSelectionMode,
+} from '@/lib/utils/tagSelectionMode';
 
 export type { ReaderTagFilterScope };
 
@@ -85,6 +90,9 @@ export interface ICardContext {
   collectionId: string | null;
   collectionCards: Card[]; // Flat list of collection parent cards
   collectionTreeCards: Card[]; // Full curated hierarchy payload for sidebar/tree views
+  collectionsLoading: boolean;
+  collectionsReady: boolean;
+  collectionsError: unknown;
   feedSort: FeedSortOrder;
   cardDimensionMissing: CardDimensionMissing;
   visibleCards: Card[];
@@ -115,6 +123,8 @@ export interface ICardContext {
   /** Reader sidebar tag match mode: any assigned tag vs subject marker only. */
   readerTagFilterScope: ReaderTagFilterScope;
   setReaderTagFilterScope: (scope: ReaderTagFilterScope) => void;
+  tagSelectionMode: TagSelectionMode;
+  setTagSelectionMode: (mode: TagSelectionMode) => void;
   
   // Data state
   cards: Card[];
@@ -137,6 +147,7 @@ const FEED_SORT_KEY = 'myjournal-feed-sort';
 const LEGACY_FEED_GROUP_KEY = 'myjournal-feed-group';
 const FEED_INCLUDE_SUBTAGS_KEY = 'myjournal-feed-include-subtags';
 const FEED_TAG_SCOPE_KEY = 'myjournal-feed-tag-scope';
+const FEED_TAG_OPERATOR_KEY = 'myjournal-feed-tag-operator';
 const FEED_CARD_TYPES_KEY = 'myjournal-feed-card-types';
 const BROWSE_TARGET_KEY = 'myjournal-browse-target';
 const RANDOM_FEED_SEEDS_KEY = 'myjournal-feed-random-seeds';
@@ -304,6 +315,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>('random');
   const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(false);
   const [readerTagFilterScope, setReaderTagFilterScopeState] = useState<ReaderTagFilterScope>('all');
+  const [tagSelectionMode, setTagSelectionModeState] = useState<TagSelectionMode>('any');
   const [cardDimensionMissing, setCardDimensionMissingState] = useState<CardDimensionMissing>({
     who: false,
     what: false,
@@ -337,6 +349,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     window.sessionStorage.removeItem(LEGACY_FEED_GROUP_KEY);
     setIncludeSubTagsInFeedState(readStoredIncludeSubTagsInFeed());
     setReaderTagFilterScopeState(readPersistedReaderTagFilterScope());
+    setTagSelectionModeState(readTagSelectionMode(readStoredValue(FEED_TAG_OPERATOR_KEY)));
     setHasHydratedPersistedReaderState(true);
   }, []);
 
@@ -358,6 +371,13 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     if (typeof window === 'undefined') return;
     if (scope === 'subject') window.localStorage.setItem(FEED_TAG_SCOPE_KEY, 'subject');
     else window.localStorage.removeItem(FEED_TAG_SCOPE_KEY);
+  }, []);
+
+  const setTagSelectionMode = useCallback((mode: TagSelectionMode) => {
+    setTagSelectionModeState(mode);
+    if (typeof window === 'undefined') return;
+    if (mode === 'all') window.localStorage.setItem(FEED_TAG_OPERATOR_KEY, 'all');
+    else window.localStorage.removeItem(FEED_TAG_OPERATOR_KEY);
   }, []);
 
   const setCardDimensionMissing = useCallback(
@@ -485,6 +505,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       cardDimensionMissing,
       includeSubTagsInFeed,
       readerTagFilterScope,
+      tagSelectionMode,
     });
   }, [
     cardDimensionMissing,
@@ -492,6 +513,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     feedCardTypes,
     includeSubTagsInFeed,
     readerTagFilterScope,
+    tagSelectionMode,
     selectedFilterTagIds,
     status,
   ]);
@@ -537,7 +559,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
         pathname
       )
     : null;
-  const { data: collectionListData, isLoading: collectionsLoading } = useSWR<{ items: Card[] }>(
+  const {
+    data: collectionListData,
+    error: collectionsError,
+    isLoading: collectionsLoading,
+  } = useSWR<{ items: Card[] }>(
     collectionsUrl,
     (url) => {
       return fetch(withReaderFeedHydrationQuery(url, pathname)).then((r) =>
@@ -546,6 +572,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     },
     { revalidateOnFocus: false }
   );
+  const collectionsReady = shouldFetchCollections && collectionListData !== undefined;
   const collectionCards = useMemo(() => collectionListData?.items ?? [], [collectionListData]);
   const collectionTreeUrl = shouldFetchCollections
     ? withReaderFeedHydrationQuery(
@@ -625,6 +652,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       if (pageIndex > 0 && previousPageData?.lastDocId) params.set('lastDocId', previousPageData.lastDocId);
       if (isReaderListRoute) {
         appendReaderTagScopeParam(params, readerTagFilterScope);
+        appendTagSelectionModeParam(params, tagSelectionMode);
       }
       appendReaderFeedHydration(params, pathname);
       if (!searchTerm?.trim()) {
@@ -815,6 +843,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSort('random');
     setIncludeSubTagsInFeed(false);
     setReaderTagFilterScope('all');
+    setTagSelectionMode('any');
     setCardDimensionMissingState({ who: false, what: false, when: false, where: false });
   }, [
     activeDimension,
@@ -826,6 +855,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setFeedSort,
     setIncludeSubTagsInFeed,
     setReaderTagFilterScope,
+    setTagSelectionMode,
   ]);
 
   const value = useMemo(
@@ -851,6 +881,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionId,
       collectionCards,
       collectionTreeCards,
+      collectionsLoading,
+      collectionsReady,
+      collectionsError,
       feedSort,
       cardDimensionMissing,
       isGuidedCollectionTransition,
@@ -876,6 +909,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setIncludeSubTagsInFeed,
       readerTagFilterScope,
       setReaderTagFilterScope,
+      tagSelectionMode,
+      setTagSelectionMode,
     }),
     [
       cards,
@@ -899,6 +934,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       collectionId,
       collectionCards,
       collectionTreeCards,
+      collectionsLoading,
+      collectionsReady,
+      collectionsError,
       feedSort,
       cardDimensionMissing,
       isGuidedCollectionTransition,
@@ -924,6 +962,8 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setIncludeSubTagsInFeed,
       readerTagFilterScope,
       setReaderTagFilterScope,
+      tagSelectionMode,
+      setTagSelectionMode,
     ]
   );
 

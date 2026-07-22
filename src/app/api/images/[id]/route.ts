@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cardService';
+import { deleteMediaWithCardCleanup, recomputeCardsMediaSignalsForMedia } from '@/lib/services/cards/cardMediaLifecycleService';
 import type { Media } from '@/lib/types/photo';
 import { applyPublicStorageUrlsToMedia } from '@/lib/utils/storageUrl';
 
@@ -22,7 +23,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -128,7 +129,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -319,7 +320,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
  */
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

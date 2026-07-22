@@ -168,6 +168,12 @@ export interface MediaFilters {
   search: string;
   /** all | unassigned | assigned — unassigned/assigned use seek pagination (forward-only). */
   assignment: string;
+  matchStatus: 'all' | 'matches' | 'no_matches';
+  codification: 'all' | 'complete' | 'incomplete';
+  unresolvedDimension: 'all' | 'who' | 'what' | 'when' | 'where';
+  importBatchId: string;
+  importFolder: string;
+  metadataOutcome: 'all' | 'found' | 'none' | 'error' | 'not_requested' | 'unknown';
   tagScope: 'all' | 'subject';
   dimensionPresence?: Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
 }
@@ -488,6 +494,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (mediaFilters.hasCaption !== 'all') params.append('hasCaption', mediaFilters.hasCaption);
     if (mediaFilters.search) params.append('search', mediaFilters.search);
     if (mediaFilters.assignment !== 'all') params.append('assignment', mediaFilters.assignment);
+    if (mediaFilters.matchStatus !== 'all') params.append('matchStatus', mediaFilters.matchStatus);
+    if (mediaFilters.codification !== 'all') params.append('codification', mediaFilters.codification);
+    if (mediaFilters.unresolvedDimension !== 'all') params.append('unresolvedDimension', mediaFilters.unresolvedDimension);
+    if (mediaFilters.importBatchId) params.append('importBatchId', mediaFilters.importBatchId);
+    if (mediaFilters.importFolder !== 'all') params.append('importFolder', mediaFilters.importFolder);
+    if (mediaFilters.metadataOutcome !== 'all') params.append('metadataOutcome', mediaFilters.metadataOutcome);
     if (mediaFilters.tagScope === 'subject') params.append('tagScope', 'subject');
     for (const dimension of ['who', 'what', 'when', 'where'] as const) {
       const presence = mediaFilters.dimensionPresence?.[dimension];

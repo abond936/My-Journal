@@ -1,18 +1,24 @@
-import { getCards, getCardsByIds } from '@/lib/services/cardService';
+import { getCards } from '@/lib/services/cards/cardListQueryService';
+import { getCardsByIds } from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { searchCardsFiltered } from '@/lib/services/typesenseService';
 import { isInputCapFailure, parseListPageLimit } from '@/lib/api/inputCaps';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import {
   apiRouteError,
-  apiRouteInternalError,
   apiRouteListLimitError,
   apiRouteSuccess,
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
 
 export const dynamic = 'force-dynamic';
+
+export type CardSearchResult = PaginatedResult<Card> & {
+  searchMode: 'full-text' | 'title-prefix';
+  degraded: boolean;
+};
 
 export async function GET(request: Request) {
   return withApiRouteHandler(
@@ -40,30 +46,47 @@ export async function GET(request: Request) {
       }
       const limit = limitResult.value;
       const lastDocId = searchParams.get('lastDocId') || undefined;
-      const status = session.user?.role === 'admin' ? 'all' : 'published';
+      const status = isAdminSession(session) ? 'all' : 'published';
 
       let result: PaginatedResult<Card>;
+      let searchMode: CardSearchResult['searchMode'] = 'title-prefix';
+      let degraded = !isTypesenseConfigured();
 
       if (isTypesenseConfigured()) {
-        const page = searchParams.has('page') ? parseInt(searchParams.get('page')!, 10) : 0;
-        const searchResult = await searchCardsFiltered({
-          textQuery: q.trim(),
-          status,
-          page: Number.isFinite(page) && page >= 0 ? page : 0,
-          perPage: limit,
-          sortBy: 'title',
-          sortDir: 'asc',
-        });
+        try {
+          const page = searchParams.has('page') ? parseInt(searchParams.get('page')!, 10) : 0;
+          const normalizedPage = Number.isFinite(page) && page >= 0 ? page : 0;
+          const searchResult = await searchCardsFiltered({
+            textQuery: q.trim(),
+            status,
+            page: normalizedPage,
+            perPage: limit,
+            sortBy: 'title',
+            sortDir: 'asc',
+          });
 
-        if (searchResult.docIds.length === 0) {
-          result = { items: [], hasMore: false, lastDocId: undefined };
-        } else {
-          const items = await getCardsByIds(searchResult.docIds);
-          result = {
-            items,
-            lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
-            hasMore: ((Number.isFinite(page) && page >= 0 ? page : 0) + 1) * limit < searchResult.totalFound,
-          };
+          if (searchResult.docIds.length === 0) {
+            result = { items: [], hasMore: false, lastDocId: undefined };
+          } else {
+            const items = await getCardsByIds(searchResult.docIds);
+            result = {
+              items,
+              lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
+              hasMore: (normalizedPage + 1) * limit < searchResult.totalFound,
+            };
+          }
+          searchMode = 'full-text';
+          degraded = false;
+        } catch {
+          result = await getCards({
+            q,
+            status,
+            limit,
+            lastDocId,
+            sortBy: 'title',
+            sortDir: 'asc',
+          });
+          degraded = true;
         }
       } else {
         result = await getCards({
@@ -76,7 +99,7 @@ export async function GET(request: Request) {
         });
       }
 
-      return apiRouteSuccess(result);
+      return apiRouteSuccess<CardSearchResult>({ ...result, searchMode, degraded });
     }
   );
 }

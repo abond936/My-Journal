@@ -1,4 +1,4 @@
-import { getCardsReferencingMedia } from '@/lib/services/cardService';
+import { getCardsReferencingMedia } from '@/lib/services/cards/cardMediaLifecycleService';
 import { API_INPUT_CAPS, isInputCapFailure, validateRepeatedIdQueryParams } from '@/lib/api/inputCaps';
 import {
   apiRouteInputCapError,

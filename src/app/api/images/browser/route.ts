@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { importFromBuffer } from '@/lib/services/images/imageImportService';
 
 type ApiErrorPayload = {
@@ -18,7 +19,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -82,4 +83,4 @@ export async function POST(req: NextRequest) {
       500
     );
   }
-} 
+}

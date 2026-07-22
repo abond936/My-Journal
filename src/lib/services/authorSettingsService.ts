@@ -8,6 +8,7 @@ import {
   type GalleryTagInheritanceToggles,
   type TagSet0Status,
 } from '@/lib/types/authorSettings';
+import { getPersonIdentity } from '@/lib/services/personIdentityService';
 
 const COLLECTION = 'app_settings';
 const DOC_ID = 'author';
@@ -55,9 +56,8 @@ export async function updateArchivePerspectivePersonId(
 ): Promise<AuthorSettings> {
   const firestore = getAdminApp().firestore();
   if (archivePerspectivePersonId) {
-    const person = await firestore.collection('people').doc(archivePerspectivePersonId).get();
-    if (!person.exists) throw new Error('Archive perspective person does not exist.');
-    if (person.data()?.kind === 'nonhuman') {
+    const person = await getPersonIdentity(archivePerspectivePersonId);
+    if (person.kind === 'nonhuman') {
       throw new Error('Archive perspective must be a human identity.');
     }
   }

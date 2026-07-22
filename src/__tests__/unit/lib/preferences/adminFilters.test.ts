@@ -42,6 +42,7 @@ describe('adminFilters preferences', () => {
       [BROWSER_PREFERENCE_KEYS.studioCardBankLocalFilters]: JSON.stringify({
         typeFilter: 'gallery',
         displayModeFilter: 'invalid',
+        codificationFilter: 'incomplete',
         filterTagIds: ['tag-1', '', 4],
         dimensionFilters: {
           who: { mode: 'matches', tagId: 'tag-who' },
@@ -53,6 +54,7 @@ describe('adminFilters preferences', () => {
     expect(readStoredStudioCardBankLocalFilterPreferences(storage)).toEqual({
       typeFilter: 'gallery',
       displayModeFilter: 'all',
+      codificationFilter: 'incomplete',
       filterTagIds: ['tag-1'],
       tagFilterScope: 'all',
       dimensionFilters: {
@@ -89,6 +91,12 @@ describe('adminFilters preferences', () => {
         hasCaption: 'with',
         search: 'portraits',
         assignment: 'assigned',
+        matchStatus: 'all',
+        codification: 'all',
+        unresolvedDimension: 'all',
+        importBatchId: '',
+        importFolder: 'all',
+        metadataOutcome: 'all',
         tagScope: 'all',
       },
       dimensionalQueryOverlay: {

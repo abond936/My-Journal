@@ -30,11 +30,38 @@ jest.mock('image-size', () => ({
 jest.mock('@/lib/services/typesenseMediaService', () => ({
   syncMediaToTypesense: jest.fn(),
   syncMediaToTypesenseById: jest.fn(),
+  removeMediaFromTypesense: jest.fn(),
 }));
 
 jest.mock('@/lib/services/typesenseService', () => ({
   syncCardToTypesense: jest.fn(),
   removeCardFromTypesense: jest.fn(),
+}));
+
+jest.mock('@/lib/services/questionService', () => ({
+  QuestionAnswerConflictError: class QuestionAnswerConflictError extends Error {},
+  unlinkCardFromAllQuestions: jest.fn(async () => undefined),
+}));
+
+jest.mock('@/lib/services/images/mediaStorage', () => ({
+  deleteMediaAsset: jest.fn(async (mediaId: string, transaction?: FirebaseFirestore.Transaction) => {
+    const { getApps } = jest.requireActual<typeof import('firebase-admin/app')>('firebase-admin/app');
+    const { getFirestore } = jest.requireActual<typeof import('firebase-admin/firestore')>('firebase-admin/firestore');
+    const database = getFirestore(getApps()[0]);
+    const mediaRef = database.collection('media').doc(mediaId);
+    const mediaSnap = transaction ? await transaction.get(mediaRef) : await mediaRef.get();
+    const digest = mediaSnap.data()?.contentIdentity?.digest;
+    const identityRef = typeof digest === 'string'
+      ? database.collection('mediaContentIdentities').doc(digest)
+      : null;
+    if (transaction) {
+      if (identityRef) transaction.delete(identityRef);
+      transaction.delete(mediaRef);
+    } else {
+      if (identityRef) await identityRef.delete();
+      await mediaRef.delete();
+    }
+  }),
 }));
 
 jest.mock('@/lib/config/firebase/admin', () => ({
@@ -66,14 +93,28 @@ jest.mock('@/lib/config/firebase/admin', () => ({
 const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const describeIfEmulator = hasEmulator ? describe : describe.skip;
 
-type CardServiceModule = typeof import('@/lib/services/cardService');
+type CardServiceModule =
+  typeof import('@/lib/services/cards/cardLifecycleService') &
+  typeof import('@/lib/services/cards/cardMediaLifecycleService') &
+  typeof import('@/lib/services/cards/cardTagMutationService') &
+  typeof import('@/lib/services/cards/cardCoverMutationService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
 type ImageImportServiceModule = typeof import('@/lib/services/images/imageImportService');
 let imageImportServiceModulePromise: Promise<ImageImportServiceModule> | null = null;
 
 function getCardService(): Promise<CardServiceModule> {
   if (!cardServiceModulePromise) {
-    cardServiceModulePromise = import('@/lib/services/cardService');
+    cardServiceModulePromise = Promise.all([
+      import('@/lib/services/cards/cardLifecycleService'),
+      import('@/lib/services/cards/cardMediaLifecycleService'),
+      import('@/lib/services/cards/cardTagMutationService'),
+      import('@/lib/services/cards/cardCoverMutationService'),
+    ]).then(([lifecycle, media, tags, cover]) => ({
+      ...lifecycle,
+      ...media,
+      ...tags,
+      ...cover,
+    }) as CardServiceModule);
   }
   return cardServiceModulePromise;
 }

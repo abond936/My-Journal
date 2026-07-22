@@ -82,7 +82,7 @@ export const THEME_TYPOGRAPHY_OWNERSHIP: ThemeTypographyOwnershipItem[] = [
     label: 'Application UI typography',
     layer: 'shared-system',
     status: 'needs-inheritance',
-    currentRoles: ['chromeText', 'chromeMeta', 'supportTitle', 'supportLabel', 'supportMeta', 'supportHint', 'supportControlText'],
+    currentRoles: ['chromeText', 'sidebarLabel', 'sidebarCount', 'chromeMeta', 'supportTitle', 'supportLabel', 'supportMeta', 'supportHint', 'supportControlText'],
     inheritsFrom: 'foundation-families/ui',
     legitimateVariants: ['title', 'label', 'meta', 'hint', 'control'],
     decision: 'UI roles inherit one application family while retaining semantic size, weight, line-height, and color jobs.',

@@ -76,6 +76,9 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     setCollectionId,
     collectionCards,
     collectionTreeCards,
+    collectionsLoading,
+    collectionsReady,
+    collectionsError,
     feedSort,
     setFeedSort,
     refreshRandomOrder,
@@ -83,6 +86,8 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     setIncludeSubTagsInFeed,
     readerTagFilterScope,
     setReaderTagFilterScope,
+    tagSelectionMode,
+    setTagSelectionMode,
     clearFilters,
   } = useCardContext();
 
@@ -597,6 +602,24 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
                             </select>
                           </div>
                         ) : null}
+                        {isReaderFilterRoute ? (
+                          <div className={styles.matchControlRow}>
+                            <label htmlFor="reader-tag-selection-mode">Selected</label>
+                            <select
+                              id="reader-tag-selection-mode"
+                              value={tagSelectionMode}
+                              onChange={(e) => {
+                                setTagSelectionMode(e.target.value as 'any' | 'all');
+                                returnToFeedIfViewingDetail();
+                              }}
+                              className={`${styles.compactControl} ${styles.compactControlInline}`}
+                              aria-label="Selected tag combination"
+                            >
+                              <option value="any">Any</option>
+                              <option value="all">All</option>
+                            </select>
+                          </div>
+                        ) : null}
                       </div>
                       <div className={`${styles.inlineFieldRow} ${styles.randomSortRow}`}>
                         <select
@@ -692,7 +715,17 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
           ) : (
             <nav className={styles.navigation}>
               <div className={styles.collectionGroups}>
-                {collectionCards.length === 0 ? (
+                {!isReaderFilterRoute ? (
+                  <div className={styles.collectionEmpty}>Open Reader to browse collections.</div>
+                ) : collectionsLoading || (!collectionsReady && !collectionsError) ? (
+                  <div className={styles.loadingPlaceholder} aria-busy="true">
+                    Loading collections...
+                  </div>
+                ) : collectionsError && !collectionsReady ? (
+                  <div className={styles.collectionEmpty} role="alert">
+                    Collections could not be loaded. Reload Reader to try again.
+                  </div>
+                ) : collectionCards.length === 0 ? (
                   <div className={styles.collectionEmpty}>No collections yet.</div>
                 ) : (
                   <>

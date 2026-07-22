@@ -48,8 +48,8 @@ jest.mock('@/components/providers/CardFormProvider', () => ({
   }),
 }));
 
-jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
-  StudioCardFormStudioProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+jest.mock('@/components/authoring/CardFormSurfaceContext', () => ({
+  CardFormSurfaceProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 jest.mock('@/components/admin/studio/cards/CardForm', () => ({

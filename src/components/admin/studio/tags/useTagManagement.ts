@@ -3,13 +3,18 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTag, type TagWithChildren } from '@/components/providers/TagProvider';
 import { buildTagTree } from '@/lib/utils/tagUtils';
+import { buildReparentedTagPaths } from '@/lib/utils/tagHierarchy';
+import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
+import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
+import type { TagMergeImpact, TagRemovalImpact } from '@/lib/services/tagMutationImpactService';
 
 /**
  * Shared tag CRUD + tree ordering for `/admin/tag-admin` and `TagAdminStudioPane`.
  * Preserve stable behavior for the full Tag Management page (fallback); extend Studio-only needs via new optional hook/list props with safe defaults—do not regress the standalone route.
  */
 export function useTagManagement() {
-  const { tags: swrTags, createTag, updateTag, deleteTag, loading, error: swrError, mutate } = useTag();
+  const { tags: swrTags, createTag, updateTag, loading, error: swrError, mutate } = useTag();
+  const feedback = useAppFeedback();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +62,14 @@ export function useTagManagement() {
 
       if (!activeTag || !overTag) {
         console.error('Tags not found:', { activeId, overId });
+        return;
+      }
+
+      try {
+        buildReparentedTagPaths(currentTags, activeId, overId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'That move would create an invalid tag hierarchy.');
+        setIsSaving(false);
         return;
       }
 
@@ -153,7 +166,7 @@ export function useTagManagement() {
 
         await mutate();
       } catch (err) {
-        await mutate(currentTags, { revalidate: false });
+        await mutate();
         console.error('Failed to reparent tag:', err);
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       } finally {
@@ -163,6 +176,101 @@ export function useTagManagement() {
     [mutate, swrTags]
   );
 
+  const handleDeleteTag = useCallback(async (tagId: string) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const impactResponse = await fetch(`/api/tags/${tagId}/impact`);
+      const impactBody = await impactResponse.json().catch(() => null);
+      throwIfJsonApiFailed(impactResponse, impactBody, 'Unable to assess tag removal.');
+      const impact = impactBody as TagRemovalImpact;
+      const impactParts = [
+        `${impact.cardsChanged} Card${impact.cardsChanged === 1 ? '' : 's'}`,
+        `${impact.mediaChanged} Media item${impact.mediaChanged === 1 ? '' : 's'}`,
+        `${impact.questionsChanged} Question${impact.questionsChanged === 1 ? '' : 's'}`,
+      ];
+      const incompleteParts = [
+        impact.cardsNewlyIncomplete ? `${impact.cardsNewlyIncomplete} Card${impact.cardsNewlyIncomplete === 1 ? '' : 's'}` : '',
+        impact.mediaNewlyIncomplete ? `${impact.mediaNewlyIncomplete} Media item${impact.mediaNewlyIncomplete === 1 ? '' : 's'}` : '',
+      ].filter(Boolean);
+      const confirmed = await feedback.confirm({
+        title: `Remove ${impact.tagName}?`,
+        message: [
+          `This removes the tag everywhere and affects ${impactParts.join(', ')}.`,
+          impact.directChildrenPromoted
+            ? `${impact.directChildrenPromoted} direct child tag${impact.directChildrenPromoted === 1 ? '' : 's'} will be promoted to this tag's parent.`
+            : 'This tag has no direct children.',
+          incompleteParts.length
+            ? `${incompleteParts.join(' and ')} will become Incomplete.`
+            : 'No currently Complete Cards or Media will become Incomplete.',
+          'This cannot be undone.',
+        ].join(' '),
+        confirmLabel: 'Remove everywhere',
+        cancelLabel: 'Cancel',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+      const response = await fetch(`/api/tags/${tagId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'remove-everywhere', promoteChildren: true }),
+      });
+      const responseBody = await response.json().catch(() => null);
+      throwIfJsonApiFailed(response, responseBody, 'Unable to remove tag.');
+      await mutate();
+      feedback.showSuccess(`Removed ${impact.tagName}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to remove tag.';
+      setError(message);
+      feedback.showError(message);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [feedback, mutate]);
+
+  const handleMergeTag = useCallback(async (tagId: string, targetTagId: string): Promise<boolean> => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const impactResponse = await fetch(`/api/tags/${tagId}/impact?mode=merge&targetTagId=${encodeURIComponent(targetTagId)}`);
+      const impactBody = await impactResponse.json().catch(() => null);
+      throwIfJsonApiFailed(impactResponse, impactBody, 'Unable to assess tag merge.');
+      const impact = impactBody as TagMergeImpact;
+      const confirmed = await feedback.confirm({
+        title: `Merge ${impact.tagName} into ${impact.targetTagName}?`,
+        message: [
+          `Assignments and subjects will use ${impact.targetTagName} instead of ${impact.tagName}.`,
+          `This affects ${impact.cardsChanged} Card${impact.cardsChanged === 1 ? '' : 's'}, ${impact.mediaChanged} Media item${impact.mediaChanged === 1 ? '' : 's'}, and ${impact.questionsChanged} Question${impact.questionsChanged === 1 ? '' : 's'}.`,
+          impact.directChildrenPromoted
+            ? `${impact.directChildrenPromoted} direct child tag${impact.directChildrenPromoted === 1 ? '' : 's'} will move beneath ${impact.targetTagName}.`
+            : `${impact.tagName} has no direct children.`,
+          'The source tag will then be deleted. This cannot be undone.',
+        ].join(' '),
+        confirmLabel: 'Merge tags',
+        cancelLabel: 'Cancel',
+        tone: 'danger',
+      });
+      if (!confirmed) return false;
+      const response = await fetch(`/api/tags/${tagId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'merge', targetTagId }),
+      });
+      const responseBody = await response.json().catch(() => null);
+      throwIfJsonApiFailed(response, responseBody, 'Unable to merge tags.');
+      await mutate();
+      feedback.showSuccess(`Merged ${impact.tagName} into ${impact.targetTagName}.`);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to merge tags.';
+      setError(message);
+      feedback.showError(message);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [feedback, mutate]);
+
   return {
     tagTree: dimensionalTree,
     loading,
@@ -170,7 +278,8 @@ export function useTagManagement() {
     isSaving,
     handleCreateTag: createTag,
     handleUpdateTag: updateTag,
-    handleDeleteTag: deleteTag,
+    handleDeleteTag,
+    handleMergeTag,
     handleReorder,
     handleReparent,
   };

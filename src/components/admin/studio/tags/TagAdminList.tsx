@@ -193,6 +193,9 @@ interface TagAdminListProps {
   showDimensionNavigation?: boolean;
   /** Highlight tag rows (e.g. Organize reconcile target preview). */
   highlightTagIds?: string[];
+  /** Studio-only Who relationship editor; omitted on the standalone Tag page. */
+  onEditRelationships?: (tag: Tag) => void;
+  onMergeTag?: (tag: Tag) => void;
 }
 
 interface DimensionColumn {
@@ -216,6 +219,8 @@ function TagAdminDimensionColumn({
   onUpdateTag,
   onDeleteTag,
   onCreateTag,
+  onEditRelationships,
+  onMergeTag,
   hideDimensionColumnHeadings,
   highlightTagIds,
 }: {
@@ -251,6 +256,8 @@ function TagAdminDimensionColumn({
   onUpdateTag: TagAdminListProps['onUpdateTag'];
   onDeleteTag: TagAdminListProps['onDeleteTag'];
   onCreateTag: TagAdminListProps['onCreateTag'];
+  onEditRelationships?: TagAdminListProps['onEditRelationships'];
+  onMergeTag?: TagAdminListProps['onMergeTag'];
 }) {
   const columnRows = col.rows;
   const sortedIds = useMemo(() => columnRows.map((r) => r.docId!), [columnRows]);
@@ -410,6 +417,8 @@ function TagAdminDimensionColumn({
                     isCollapsed={collapsedNodes.has(tag.docId!)}
                     onToggleCollapse={onToggleCollapse}
                     highlighted={Boolean(tag.docId && highlightTagIds?.has(tag.docId))}
+                    onEditRelationships={onEditRelationships}
+                    onMergeTag={onMergeTag}
                   />
                 </SortableTag>
               ))}
@@ -433,6 +442,8 @@ export function TagAdminList({
   hideDimensionColumnHeadings = false,
   showDimensionNavigation = false,
   highlightTagIds = [],
+  onEditRelationships,
+  onMergeTag,
 }: TagAdminListProps) {
   const highlightTagIdSet = useMemo(() => new Set(highlightTagIds), [highlightTagIds]);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
@@ -571,6 +582,8 @@ export function TagAdminList({
             onUpdateTag={onUpdateTag}
             onDeleteTag={onDeleteTag}
             onCreateTag={onCreateTag}
+            onEditRelationships={onEditRelationships}
+            onMergeTag={onMergeTag}
             highlightTagIds={highlightTagIdSet}
           />
         ))}

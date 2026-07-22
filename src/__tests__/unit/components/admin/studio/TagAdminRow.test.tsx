@@ -11,12 +11,13 @@ const tag = {
   children: [{ docId: 'tag-child', name: 'Sandra', dimension: 'who' as const, children: [] }],
 };
 
-function renderRow() {
+function renderRow(onEditRelationships = jest.fn()) {
   const props = {
     onUpdateTag: jest.fn(),
     onDeleteTag: jest.fn(),
     onCreateTag: jest.fn(),
     onToggleCollapse: jest.fn(),
+    onEditRelationships,
   };
   render(<TagAdminRow tag={tag} depth={0} isCollapsed={false} {...props} />);
   return props;
@@ -29,6 +30,14 @@ describe('TagAdminRow', () => {
     expect(screen.getByLabelText('3 cards, 5 media items')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Actions for Family' })).toBeInTheDocument();
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('opens relationship editing from the Who tag action menu', () => {
+    const onEditRelationships = jest.fn();
+    renderRow(onEditRelationships);
+    fireEvent.click(screen.getByRole('button', { name: 'Actions for Family' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Relationships' }));
+    expect(onEditRelationships).toHaveBeenCalledWith(tag);
   });
 
   it('opens explicit actions and cancels rename with Escape', () => {

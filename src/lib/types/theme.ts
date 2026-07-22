@@ -394,6 +394,8 @@ export interface ReaderThemeRecipes {
     meta: ReaderTypographyRoleRecipe;
     caption: ReaderTypographyRoleRecipe;
     chromeText: ReaderTypographyRoleRecipe;
+    sidebarLabel: ReaderTypographyRoleRecipe;
+    sidebarCount: ReaderTypographyRoleRecipe;
     chromeMeta: ReaderTypographyRoleRecipe;
     supportTitle: ReaderTypographyRoleRecipe;
     supportLabel: ReaderTypographyRoleRecipe;

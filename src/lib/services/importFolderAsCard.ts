@@ -6,11 +6,9 @@ import {
   importFromLocalDrive,
   type ImportTagNameMaps,
 } from '@/lib/services/images/imageImportService';
-import {
-  createCard,
-  updateCard,
-  findCardByImportedFolder,
-} from '@/lib/services/cardService';
+import { updateCard } from '@/lib/services/cards/cardBroadMutationService';
+import { createCard } from '@/lib/services/cards/cardLifecycleService';
+import { findCardByImportedFolder } from '@/lib/services/cards/cardReadService';
 import {
   buildImportFolderRestorePlan,
   type ImportFolderRestorePlan,

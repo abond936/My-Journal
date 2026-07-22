@@ -100,12 +100,7 @@ jest.mock('@/components/admin/studio/media/MediaBrowseGroupedView', () => ({
 }));
 
 jest.mock('@/lib/utils/reviewClusterImport', () => ({
-  generateReviewClustersForImport: jest.fn(async () => undefined),
-}));
-
-jest.mock('@/components/admin/studio/media/MediaStoryPilesOverlayView', () => ({
-  __esModule: true,
-  default: () => <div data-testid="story-piles-overlay">overlay</div>,
+  MEDIA_BANK_IMPORT_PATH_LABEL: 'Studio Import',
 }));
 
 const baseMediaContext = {
@@ -131,6 +126,12 @@ const baseMediaContext = {
     hasCaption: 'all',
     search: '',
     assignment: 'all',
+    matchStatus: 'all',
+    codification: 'all',
+    unresolvedDimension: 'all',
+    importBatchId: '',
+    importFolder: 'all',
+    metadataOutcome: 'all',
     tagScope: 'all',
   },
   setFilter: jest.fn(),
@@ -167,6 +168,19 @@ describe('MediaAdminContent', () => {
     readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
       DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
     );
+  });
+
+  it('uses the simplified assignment and exact-match filters without a separate match workspace', () => {
+    render(<MediaAdminContent />);
+
+    expect(screen.getByRole('option', { name: 'All Statuses' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Assigned' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Unassigned' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'All Matches' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Matches' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'No Matches' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Browse' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Exact matches' })).not.toBeInTheDocument();
   });
 
   it('does not start the embedded media fetch before Studio has an active card context', () => {
@@ -306,7 +320,7 @@ describe('MediaAdminContent', () => {
     });
 
     const { rerender } = render(<MediaAdminContent embedded />);
-    fireEvent.click(screen.getByRole('button', { name: 'This card' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selected Card' }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
@@ -315,11 +329,7 @@ describe('MediaAdminContent', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 
-  it('renders story piles overlay when overlay toggle is on', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ clusters: [] }),
-    } as Response);
+  it('retires pile controls and automatic pile presentation from incomplete Media', () => {
     useStudioShellOptionalMock.mockReturnValue({
       selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
       selectedDetail: null,
@@ -327,32 +337,76 @@ describe('MediaAdminContent', () => {
     useMediaMock.mockReturnValue({
       ...baseMediaContext,
       media: [{ docId: 'media-1', importBatchId: 'batch-100' }],
+      filters: { ...baseMediaContext.filters, codification: 'incomplete' },
     });
 
     render(<MediaAdminContent embedded />);
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Story piles overlay' }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('story-piles-overlay')).toBeInTheDocument();
-    });
+    expect(screen.queryByRole('region', { name: 'Pile tools' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Build piles' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '+ New pile' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('story-piles-overlay')).not.toBeInTheDocument();
   });
 
-  it('shows the organize strip on Whole library', () => {
+  it('defaults Card-oriented Library media to Complete and retains the codification selector', async () => {
+    const setFilter = jest.fn();
+    const fetchMedia = jest.fn();
     useStudioShellOptionalMock.mockReturnValue({
       selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
       selectedDetail: null,
     });
     useMediaMock.mockReturnValue({
       ...baseMediaContext,
+      setFilter,
+      fetchMedia,
       media: [{ docId: 'media-1', importBatchId: 'batch-100' }],
     });
 
     render(<MediaAdminContent embedded />);
 
-    expect(screen.getByRole('region', { name: 'Organize imported media' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Build piles' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '+ New pile' })).toBeInTheDocument();
+    await waitFor(() => expect(fetchMedia).toHaveBeenCalledWith(1, expect.objectContaining({ codification: 'complete' })));
+    expect(screen.getByRole('combobox', { name: 'Filter by codification' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Include Incomplete' })).not.toBeInTheDocument();
+  });
+
+  it('hides pile and incomplete-only controls for the full Library', () => {
+    render(<MediaAdminContent embedded />);
+
+    expect(screen.queryByRole('region', { name: 'Pile tools' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Unresolved dimension filter' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Metadata result filter' })).not.toBeInTheDocument();
+  });
+
+  it('clears incomplete-only server filters when leaving Incomplete', () => {
+    const setFilter = jest.fn();
+    const fetchMedia = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      setFilter,
+      fetchMedia,
+      filters: {
+        ...baseMediaContext.filters,
+        codification: 'incomplete',
+        unresolvedDimension: 'what',
+        importBatchId: 'batch-1',
+        importFolder: 'Charleston',
+        metadataOutcome: 'found',
+      },
+    });
+
+    render(<MediaAdminContent embedded />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Filter by codification' }), {
+      target: { value: 'complete' },
+    });
+
+    expect(fetchMedia).toHaveBeenCalledWith(1, {
+      codification: 'complete',
+      unresolvedDimension: 'all',
+      importBatchId: '',
+      importFolder: 'all',
+      metadataOutcome: 'all',
+    });
+    expect(setFilter).toHaveBeenCalledWith('metadataOutcome', 'all');
   });
 
   it('does not arm the embedded load-more observer at all in Studio mode', async () => {

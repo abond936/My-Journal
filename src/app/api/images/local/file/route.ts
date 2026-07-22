@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { lookup } from 'mime-types';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 
@@ -13,7 +14,7 @@ function isNodeError(error: unknown): error is NodeJS.ErrnoException {
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return new NextResponse('Forbidden', { status: 403 });
   }
 

@@ -1,4 +1,4 @@
-import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cardService';
+import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cards/cardBulkMutationService';
 import { API_INPUT_CAPS, isInputCapFailure, validateStringIdArray } from '@/lib/api/inputCaps';
 import {
   apiRouteError,

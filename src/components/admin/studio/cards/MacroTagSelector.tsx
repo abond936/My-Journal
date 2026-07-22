@@ -508,7 +508,12 @@ function ExpandedView({
           </div>
         </div>
       ) : null}
-      <div className={styles.interactiveColumns}>
+      <div
+        className={clsx(
+          styles.interactiveColumns,
+          visibleDimensions.length === 1 && styles.interactiveColumnsSingle
+        )}
+      >
         {filteredDimensionalTree.map(dimension => (
           <TagPickerDimensionColumn
             key={dimension.docId}

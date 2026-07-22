@@ -112,7 +112,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!isAdminSession(session)) {
         return errorResponse(
             {
                 ok: false,

@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** Theme Standardization. Its Definition Gate passed; Foundation controls and visible inheritance are the first implementation slice. Left Navigation, Content Page, and View Page passed their Completion Gates.
+**Current active capability:** Media Intake and Tagging definition. Parts 1–3 have passed their defined Completion Gates. Release Candidate remains the required operational checkpoint before deploying further product changes; Landing Page, Quote and Quote-dependent typography, Video, External Photo Libraries, and discretionary Journal/Editorial tuning remain explicitly parked.
 
 ---
 
@@ -75,28 +75,28 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 ## Tag Workflow and Identity
 
-**Definition:** Verified
-**Execution:** Verified
+**Definition:** Reopened — integrated mutation contract approved
+**Execution:** Partial — ordinary workflows verified; hierarchy-wide reconciliation incomplete
 
-**Outcome** — The author can reliably find, filter, assign, edit, and normalize tags without stale presentation, ambiguous hierarchy behavior, lost assignments, or silent reinterpretation. Who distinguishes stable human and non-human identities from names, human relationships, and groups.
+**Outcome** — The author can reliably find, filter, assign, edit, and normalize a hierarchical vocabulary without stale presentation, lost assignments, silent reinterpretation, or routine repair scripts. Who preserves stable identities, author-controlled branches, nested names, and optional family-tree facts without making perspective-relative roles assignment truth.
 
 **Actors** — Author, Reader, and system operator.
 
-**Includes** — Tag modal, lookup, filter ownership and scope, save reconciliation, hierarchy authority and repair, People and aliases, relationships and perspective, typed groups, reviewed migration, projection rebuild, and verification.
+**Includes** — Tag modal, lookup, filter ownership and scope, save reconciliation, hierarchy authority, identities and nested names, optional family-tree facts, reviewed migration, Card and Media inheritance, subjects, completeness, projection rebuild, and verification.
 
 **Excludes** — Face recognition, a full genealogy platform or interchange standard, multi-tenant perspectives, full What/When/Where semantic redesign, automatic name-based conversion, legacy-tag deletion without verification, marketing, and Quote.
 
-**Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; aliases preserve names; human roles are perspective-relative relationships; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
+**Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; nested names preserve specificity; parent/partner facts support a family tree without rewriting authored truth; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
 
-**Current state** — The archive contains 660 tags, 1,281 cards, 3,503 media, and 270 questions. Tag workflows use shared modal ownership, exact lookup, scoped filters, separate Reader and Studio persistence, authoritative save reconciliation, and consistent Card, Media, and Question filter presentation. Identity administration provides stable human and non-human subjects, canonical names, aliases, details and editing, human parent/spouse/partner relationships with duplicate and parent-cycle protection, typed groups, and an explicit archive perspective. Live review confirms ten people, 100 remaining person candidates, eight relationship-role candidates, 19 structural candidates, one group candidate, and zero remaining alias clusters. Nine approved alias clusters and Alan Bond have stable identity records; Alan owns the archive perspective. Manifested migrations have live rollback-and-reapply proof and changed no Tags, Cards, Media, or Questions. Repair used complete paired backup `run-2026-07-15T15-34-27-951Z` and corrected 656 paths, 117 card projections, 577 media projections, and 289 tags with count or supporting-ID drift. Fresh Typesense rebuilds removed one orphan card and 13 orphan media records. Current audits report zero path, projection, scalar-count, and unique-ID discrepancies; Typesense counts exactly match Firestore. Automated and browser verification cover tag editing, subject handling, Card, Media, Question, and Reader filters, filter isolation, refresh, identity details, perspective, migration, and rollback.
+**Current state** — The archive contains 651 tags, 1,281 Cards, 3,503 Media records, and 270 Questions. Shared modal ownership, lookup, scoped filters, assignment, subjects, Any/All filtering, hierarchy display, child creation, governed rename/reparent/remove/merge, and Card completeness filtering are implemented. Canonical Who tags own identity; optional compatibility profiles and parent/partner controls use the same IDs without becoming a second visible People system. The integrated mutation owner reconciles paths, assignments, subjects, projections, completeness, counts, and both search indexes. The author-reviewed cleanup restored nine named people to Friends and removed nine obsolete role/group nodes after strict reconciliation and full reference verification.
 
-**Gaps / slices** — None inside this capability. Merge/split, additional reviewed conversions, inheritance, and taxonomy refinements remain separate Planned work in `02` and the sequence below.
+**Gaps / slices** — Identity merge/split and import-variant consolidation remain undefined. Compatibility-profile retirement remains gated by zero-live-reference proof. Face assistance remains later work and requires recoverable identity correction first.
 
 **Dependencies** — Valid administrator access, paired backup capability, Firestore and Typesense access, current tag/card/media/question catalogs, and browser verification.
 
 **Risks** — Incorrect identity merges, lost historical names, perspective errors, count drift, stale search projections, partial migration, and unintended Reader-filter changes.
 
-**Decisions needed** — None inside this completed capability. Ambiguous legacy meanings, including `Bob & Sandra`, remain decisions for a later reviewed-conversion capability.
+**Decisions needed** — None for the completed hierarchy mutation and vocabulary-cleanup slice. Merge/split product behavior requires a later bounded decision.
 
 **Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
 
@@ -329,15 +329,15 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Completion evidence** — Twenty-two focused tests pass across Media content/grid, Card-bank recovery, and the authoritative reference-summary client, including deduplication, request chunking, bulk consequence disclosure, and lookup-failure blocking. Production typecheck and build pass; touched-code lint has no errors and retains three pre-existing hook warnings. Live Studio verification confirmed the Media X clear control, query-named no-results recovery, Clear search, and preservation of the selected Local source filter while clearing search. The verification restored Media filters and did not invoke deletion or mutate archive content.
 
-- **Duplicates (parked)** — Source-byte evidence is stored for 3,064 of 3,503 Media records with 3,062 uncontested identity-registry entries. Studio Media provides an author-only Exact matches queue for identical source bytes; the sole exact pair is Deferred and remains unregistered. The remaining 439 records are explicitly assessed as 101 missing local originals and 338 sources whose original bytes were not retained. Paired backup `run-2026-07-17T20-58-32-604Z`, guarded apply, rollback support, and a full post-apply audit prove zero overlap, invalid assessments, or unclassified records. Likely-match review remains parked; same-asset reconciliation remains inactive unless an exact pair is explicitly changed to Same asset.
-- **Pile merge** — Add bounded author-controlled pile merging.
+- **Duplicates (parked)** — Source-byte evidence is stored for 3,064 of 3,503 Media records with 3,062 uncontested identity-registry entries. Studio Media exposes identical-source-byte evidence as an ordinary All Matches / Matches / No Matches Library filter; the author may use standard reference-aware deletion without entering a separate review queue. The sole exact pair's prior Deferred decision remains preserved and unregistered. The remaining 439 records are explicitly assessed as 101 missing local originals and 338 sources whose original bytes were not retained. Paired backup `run-2026-07-17T20-58-32-604Z`, guarded apply, rollback support, and a full post-apply audit prove zero overlap, invalid assessments, or unclassified records. Likely-match discovery and automatic same-asset reconciliation remain parked.
+- **Pile merge (retired UI)** — The previously verified backend remains dormant for historical compatibility; Piles are no longer part of the active Media journey.
 - **Bursts (parked)** — Resume only after import persists reliable original capture time and source-sequence evidence. Current `createdAt` is import time, and the optional EXIF path does not retain `DateTimeOriginal`; filenames or import proximity cannot truthfully authorize burst proposals.
 - **Derivatives (complete)** — Canonical source persistence, orientation correction, Studio and Reader WebP renditions, readiness/retry, and surface-specific URL selection already cover supported image formats. HEIC decoding is not available in the current image runtime and remains a future external-source ingestion concern rather than a parallel converter.
 
 #### Pile Merge
 
-**Definition:** Ready
-**Execution:** Verified
+**Definition:** Superseded
+**Execution:** Retired from active UI; verified backend retained dormant
 
 **Outcome** — The author can combine two pending story piles as one deliberate operation without moving members individually or changing confirmed archive truth.
 
@@ -349,7 +349,7 @@ The ordering below preserves the existing Admin → Reader → Scale progression
 
 **Contracts** — Source and destination must be distinct pending piles when the transaction commits. The destination survives with its title and suggested tags unchanged. Its existing member order remains first; source members append in source order with duplicates removed. The source becomes `merged`, records the destination ID, retains its prior metadata and members for audit/recovery evidence, and no longer appears in pending views. Confirmed Media tags remain untouched. A conflict or failed transaction makes no partial change. Recovery from the retained audit record is operational; UI Undo requires a separate gate because later membership edits can make automatic reversal ambiguous.
 
-**Current state** — Pending pile headers now provide Merge when another pending pile exists. The destination dialog names candidate piles and member counts, and a second confirmation names source, destination, both counts, destination metadata preservation, and non-transfer of source suggestions. The administrator action executes one Firestore transaction that revalidates both piles, appends deduplicated source membership after destination membership, preserves destination metadata, and marks the retained source record `merged` with destination and timestamp recovery evidence. Confirmed Media tags, cards, Media records, Storage, stacks, imports, generation, and individual movement remain unchanged.
+**Current state** — The verified transaction and historical records remain available for recovery compatibility, but the Pile overlay and Merge action are no longer reachable from the active Media interface. No production cluster data was deleted during retirement.
 
 **Gaps / slices** — None inside this definition. UI Undo remains a separate future gate because later membership edits can make reversal ambiguous.
 
@@ -563,6 +563,7 @@ The author parked this capability on July 17, 2026. Its product requirements rem
 ### View Page
 
 **Definition:** Ready
+**Execution:** Verified
 
 **Outcome** — Readers can consume a complete card and continue through the archive without losing the Guided or Freeform path that opened it.
 
@@ -603,6 +604,7 @@ The author parked this capability on July 17, 2026. Its product requirements rem
 ### Theme Standardization
 
 **Definition:** Ready
+**Execution:** Verified
 
 **Outcome** — The author can change meaningful global, shared-system, component, and layout decisions from centralized controls whose inheritance and affected surfaces are predictable, while the application retains responsive, accessibility, and integrity guardrails.
 
@@ -622,9 +624,9 @@ The author parked this capability on July 17, 2026. Its product requirements rem
 
 **Evidence required** — Automated binding and compile-path inventory; classified macro-control and bypass inventory; focused compiler, editor, persistence, and component tests; production typecheck; desktop and mobile live-draft validation on representative Reader and Administration surfaces; Journal/Editorial Light/Dark compilation canaries; and canon reconciliation.
 
-**Verified slice — Definition and enforcement inventory** — The approved author-control hierarchy is now explicit: Foundation, Shared system, Component, Variant, and fixed Guardrail layers. A read-only automated inventory validates all 109 registered Reader component attributes across 13 components and 24 variants against governed recipe paths with zero unresolved bindings. It separately tracks five macro controls that token resolution alone could not prove complete: global font inheritance disclosure, Primary action controls, the shared Reader Type chip, Content Grid spacing, and Question watermark scale. All five are now governed. Responsive fitting and accessibility remain intentionally fixed guardrails. The audit is available through `npm run audit:theme-contract`.
+**Verified slice — Definition and enforcement inventory** — The approved author-control hierarchy is now explicit: Foundation, Shared system, Component, Variant, and fixed Guardrail layers. A read-only automated inventory validates all 111 registered Reader component attributes across 13 components and 24 variants against governed recipe paths with zero unresolved bindings. It separately tracks five macro controls that token resolution alone could not prove complete: global font inheritance disclosure, Primary action controls, the shared Reader Type chip, Content Grid spacing, and Question watermark scale. All five are now governed. Responsive fitting and accessibility remain intentionally fixed guardrails. The audit is available through `npm run audit:theme-contract`.
 
-**Verified slice — Typography semantic ownership** — All 36 current Reader typography recipes are assigned exactly once to a Foundation, Shared system, Component, or Guardrail decision. The assessment preserves distinct publishing jobs and component override slots while rejecting card type alone as a reason for separate defaults. It confirms that the present recipe data is fully materialized rather than explicitly inherited: hiding a Family field for four support roles does not establish a cascade. Foundation therefore needs centralized UI, reading, and display family sources; shared title, prose, UI, feedback, and discovery roles need explicit inheritance; Story and Gallery roles remain available as intentional context overrides; Question and Callout retain meaningful component treatments; responsive fitting remains code-owned; and Quote remains parked. Five focused inventory tests enforce complete, nonduplicated role ownership.
+**Verified slice — Typography semantic ownership** — All 38 current Reader typography recipes are assigned exactly once to a Foundation, Shared system, Component, or Guardrail decision. The assessment preserves distinct publishing jobs and component override slots while rejecting card type alone as a reason for separate defaults. It confirms that the present recipe data is fully materialized rather than explicitly inherited: hiding a Family field for four support roles does not establish a cascade. Foundation therefore needs centralized UI, reading, and display family sources; shared title, prose, UI, feedback, and discovery roles need explicit inheritance; Story and Gallery roles remain available as intentional context overrides; Question and Callout retain meaningful component treatments; responsive fitting remains code-owned; and Quote remains parked. Five focused inventory tests enforce complete, nonduplicated role ownership.
 
 **Verified slice — Foundation typography inheritance** — Reader recipes now contain centralized UI, Reading, and Display Foundation family sources. Typography roles reference their assigned Foundation source by default; the compiler resolves those references through the same saved and live-draft path. Journal and Editorial preserve their prior output while using inherited Display families except for deliberate literal overrides such as Editorial Gallery detail and Question treatment and Journal Subtitle. The Foundation editor discloses how many assigned roles inherit or override each family and offers an explicit `Use across assigned roles` adoption action; every role Family selector states whether it inherits its assigned source or overrides it and can individually return to `Use Foundation`. Legacy fully materialized saved roles remain literal overrides during normalization rather than being silently reclassified. Twenty-five focused compiler, inventory, and Theme-overlay tests, touched-code lint, production typecheck, and live Theme-workbench verification pass.
 
@@ -679,67 +681,350 @@ The author parked this capability on July 17, 2026. Its product requirements rem
 
 ## 3. Platform and commercial readiness
 
+**Execution:** Verified at the defined capability level. A specific release revision still requires the Operations release checklist after intentional commit and push.
+
 ### Service Boundaries
 
-**Definition:** Not gated
+**Definition:** Ready
+**Execution:** Verified
 
-- **Cards** — Split `cardService` into explicit domain operations without duplicating integrity rules.
-- **Themes** — Split `themeService` by schema, transformation, compilation, and persistence.
+**Outcome** — Card and Theme services have explicit, testable ownership boundaries so routine changes can be made without reopening unrelated integrity-sensitive code or duplicating business rules.
+
+**Actors** — Author, administrator, Reader, operator, and developer-maintainer.
+
+**Includes** — Cards read/hydration, query, mutation orchestration, focused mutation domains, hierarchy, media relationships, tag reconciliation, deletion/duplication, and search synchronization boundaries; later Theme schema, normalization, compilation, draft, and persistence boundaries; stable public service entry points during migration; focused regression coverage.
+
+**Excludes** — Product behavior changes, Card schema redesign, Firestore collection migration, search replacement, authorization redesign, new Reader or Studio features, speculative generic repository frameworks, and simultaneous Card/Theme extraction.
+
+**Contracts** — Firestore remains authoritative. Tag counts and derived dimensions, media `referencedByCardIds`, curated hierarchy and cycle protection, Question-backed Q&A integrity, Gallery inheritance, Typesense projections, published visibility, and Reader hydration truth must not change. One operation owns each invariant; extraction must move an existing rule rather than copy it. Public API behavior and error semantics remain stable while callers migrate.
+
+**Current state** — Cards now use explicit domain owners under `services/cards`: read and hydration; list and archive queries; shared mutation integrity and support; focused metadata, content, tag, status, cover, Gallery, and hierarchy mutations; lifecycle and media lifecycle; bulk tags; and broad-update orchestration. Production callers and tests import those owners directly, and the temporary `cardService.ts` compatibility facade has been removed. Shared hierarchy reconciliation now detaches reassigned children from former parents and clears legacy root projections through the same owner used by focused and broad updates.
+
+**Gaps / slices** —
+
+1. **Card reads and hydration** — Complete.
+2. **Card mutation foundation** — Complete.
+3. **Focused mutation domains** — Complete.
+4. **Lifecycle and bulk operations** — Complete.
+5. **Compatibility facade retirement** — Complete. All production and test imports migrated and `cardService.ts` was removed.
+6. **Theme service gate** — Complete. Schema/document normalization, CSS compilation/scoped delivery, and persistence/fallback loading have explicit owners; callers migrated and the compatibility service was retired.
+
+**Dependencies** — Current Card, Media, Tag, Question, Gallery inheritance, curated-tree, Typesense, and authorization contracts; route and emulator tests; representative Reader and Studio browser workflows; stable Firestore test fixtures.
+
+**Risks** — Circular service imports; copied transaction logic; post-commit search sync being skipped or duplicated; changes to hydration cost or Gallery completeness; lost media backreferences; tag-count or derived-field drift; hierarchy cycles; Question/Card unlink errors; and a compatibility facade becoming permanent.
+
+**Decisions needed** — None for the first slice. Preserve behavior and use domain-oriented modules with a temporary compatibility facade. Do not introduce a generic repository abstraction unless later evidence shows repeated storage mechanics with identical integrity semantics.
+
+**Completion evidence** — Import-boundary inventory; focused unit, API, integrity, and emulator tests; production typecheck and build; read-only data audits where mutations are moved; browser verification of representative Studio create/edit/delete and Reader list/detail/Gallery behavior; no unexplained tag, media-reference, hierarchy, Question-link, or Typesense drift; canon reconciliation.
+
+**Verified slice — Card media and hydration ownership** — Card media-ID collection, hydrated Gallery-item stripping, media loading and public-URL application, media-derived dimension signals, focal-point fallback, complete Card hydration, Admin cover-only hydration, Reader feed hydration, and first-Gallery-slide fallback now have one owner in `services/cards/cardMediaHydrationService`. The existing `cardService` facade imports that domain for both reads and integrity-sensitive mutations, so the extraction moves rather than duplicates media-signal and hydration rules. Public routes and callers are unchanged. Production typecheck, touched-code lint, eighteen focused Reader/search/media-reference tests, and live Freeform verification pass; the live feed rendered 48 images with zero broken assets and preserved complete Gallery counts including 1/12, 1/8, 1/7, 1/6, 1/5, and 1/3 examples.
+
+**Verified slice — Card identity and collection reads** — Single-Card reads, ordered multi-ID reads with Firestore-safe chunking, hydration-mode selection, direct-child feed expansion, ID-list pagination, and collection-child pagination now have one owner in `services/cards/cardReadService`. `cardService` imports and re-exports the same functions and types as a compatibility facade, so API routes, Reader server pages, imports, scripts, and tests do not change call contracts. Production typecheck and touched-code lint pass. One hundred fifty-four focused Reader access, Card search, and administrator-access tests pass; the runner's pre-existing open-handle behavior required bounded `--forceExit` execution after the first combined run was terminated. Live Freeform detail verification loaded the 12-image `Wedding` Gallery as 13 total page images including app chrome, with Explore More present and zero broken images.
+
+**Verified slice — Archive and supporting Card queries** — Archive-wide seeded Random selection and curated-root/descendant collection queries now have one owner in `services/cards/cardArchiveQueryService`; imported-folder lookup, legacy tag search, and parent-by-child safety lookup join the identity and collection operations in `cardReadService`. Random still ranks the complete filtered ID universe before pagination, exact dimensions remain direct-tag checks, collection traversal remains cycle-safe through queued-ID deduplication, and all hydration modes use the extracted hydration owner. `cardService` remains the compatibility facade. Production typecheck, lint, and twenty-one focused Reader/search/import tests pass. The full filtered/sorted `getCards` operation remains the final read-side extraction because its Firestore cursor, projection ordering, oversampling, and legacy-title fallback must move as one unit.
+
+**Verified slice — Filtered and sorted Card queries** — The complete `getCards` operation now belongs to `services/cards/cardListQueryService`, preserving Firestore cursor behavior, projection ordering, oversampling, Random handling, hydration, and legacy-title fallback as one extraction.
+
+**Verified slice — Card mutation domains** — Shared retry, transaction support, search projection, media-reference integrity, and QA validation now have single owners. Focused metadata, content, tag, status, cover, Gallery, and hierarchy operations consume that foundation. Emulator execution exposed and verified a hierarchy invariant repair: assigning a child now removes it from former parents and clears obsolete root projections in both focused and broad mutation paths.
+
+**Verified slice — Lifecycle, bulk operations, and facade retirement** — Create, Question-backed create, duplicate, delete, media cleanup, and bulk-tag operations now have explicit domain owners. Routes, Reader/Studio callers, import helpers, scripts, Gallery inheritance, provisional clustering, and tests import those owners directly; no `services/cardService` imports remain and the facade is removed. Production typecheck and touched-code lint pass. Eight focused Jest suites pass 183 tests. Firestore emulator verification passes 23 tests across Card integrity and Question-backed lifecycle behavior. Read-only audits found all 1,281 Card content/media projections synchronized and no subject-contract conflicts. The media-reference audit identified only pre-existing references attached to the existing draft `The Bond Coats of Arms`; no repair was performed. The production build reached Next compilation but could not fetch Google Fonts because this environment routes external requests to the unavailable proxy at `127.0.0.1:9`. Browser automation was attempted against the running local app, but the in-app browser bridge rejected its own claimed tabs as outside the active session; prior verified Reader behavior remains recorded above, and no new live UI result is claimed for this final slice.
+
+**Verified definition gate — Theme service boundaries** — The present server-only `themeService.ts` is 1,666 lines and combines four distinct responsibilities: legacy/scoped document normalization, CSS token compilation and scope wrapping, Firestore plus JSON fallback reads, and Firestore-first save with atomic backup. The public caller surface is small: Root layout consumes resolved documents and compiled CSS; Theme APIs consume document validation, normalization, draft compilation, reads, and saves; the seed script consumes JSON-to-Firestore synchronization. `readerThemeSystem`, `themePresets`, and `types/theme` already own recipes, presets, and schema types and will remain inputs rather than being folded into the service split. Extraction order is document normalization, compiler/draft CSS, persistence/fallback loading, then direct caller migration and facade retirement. The save ordering, development `.next` backup safety, legacy flat-document compatibility, scoped Reader/Admin behavior, and exact generated CSS remain invariant. No new visual semantics or Theme Management controls are included.
+
+**Verified slice — Theme service boundaries** — Theme document validation, legacy normalization, scoped resolution, and persisted-shape conversion now belong to `services/theme/themeDocumentService`; token compilation and scoped draft CSS belong to `themeCssCompiler`; Firestore/JSON resolution, Firestore-first save, atomic backup, and seed synchronization belong to `themePersistenceService`. Root layout, Theme APIs, tests, seed tooling, and the tracked root diagnostic script import those owners directly; `themeService.ts` and all legacy imports are removed. Production typecheck, touched-code lint, and the full production build pass. Three focused suites pass 166 tests, including new canaries proving Firestore precedes backup, backup failure does not hide a successful Firestore save, and JSON fallback remains normalized. A production Reader smoke test rendered Guided and Freeform, injected 91,626 bytes of scoped Reader/Admin Theme CSS, and produced no console errors. Theme Admin navigation later stalled in the browser bridge, so no interactive save result is claimed; save behavior is verified at the persistence boundary.
 
 ### Component Boundaries
 
-**Definition:** Not gated
+**Definition:** Ready
+**Execution:** Verified
 
-- **Studio** — Split `StudioWorkspace` coordination from domain and presentation work.
-- **Media** — Split `MediaAdminContent` population, operations, and presentation responsibilities.
-- **Forms** — Split `CardForm` by content, relationships, and presentation responsibilities.
-- **Reader edit** — Extract reusable focused editing without depending on the full Studio form.
+**Outcome** — Studio and Reader components coordinate explicit subsystems instead of owning layout mechanics, data operations, domain workflows, and presentation in the same component.
+
+**Current state** — The initial inventory measured `StudioWorkspace` at 1,548 lines, `MediaAdminContent` at 1,554, and `CardForm` at 1,732, with Reader desktop editing also depending on Studio context and layout CSS. The implemented boundaries now leave `StudioWorkspace` as a 736-line shell coordinator, place pane and selected-Card state behind tested controllers, place destructive and stack Media operations behind Media hooks while existing grid/browse/organize components retain presentation, move Story Assist into its own CardForm subsystem, and route both Studio and Reader through a neutral authoring-surface contract. Reader no longer imports Studio context or Studio layout CSS, and CardForm no longer reads `StudioShellContext`.
+
+**Gaps / slices** —
+
+1. **Studio layout boundary** — Move pane sizing math, resize mechanics, and persisted layout preferences behind a tested layout owner so `StudioWorkspace` retains orchestration rather than DOM layout policy.
+2. **Studio selection and action boundary** — Move selected-Card loading/cache, optimistic patching, and lifecycle synchronization behind one controller while preserving SWR and collection synchronization.
+3. **Media workspace boundary** — Separate population/filter derivation and media operations from browse/exact/organize presentation; preserve imports, stacks, provisional piles, and assigned-media reconciliation.
+4. **Card form boundary** — Separate draft/persistence orchestration, media relationships, and Story Assist from field-section presentation without changing focused endpoint ownership.
+5. **Reader edit boundary** — Reuse the focused editing contract without importing the Studio shell or its layout CSS. Preserve the existing mobile quick/full-editor escalation and obtain author input only if the supported desktop field set cannot be derived from the existing contract.
+
+**Dependencies** — Existing Studio shell contexts and imperative registry, stored layout preferences, Card/Media providers, focused Card endpoints, drag/drop contracts, Reader patch reconciliation, and current component tests.
+
+**Risks** — Hidden imperative registration order; stale optimistic caches; resize regressions; duplicated media population state; CardForm dirty-baseline loss; Reader save/close actions becoming unreachable; and accidental reduction of current editing capability.
+
+**Decisions needed** — None for the Studio layout slice. Preserve current dimensions and persistence behavior. Reader desktop field scope may require a later author decision only if the existing focused contract and extracted form sections do not settle it.
+
+**Completion evidence** — Direct import inventory, focused component and utility tests, production typecheck/build, representative wide/narrow Studio pane behavior, Card selection/edit/delete synchronization, Media browse/organize behavior, Reader quick/full editing, and canon reconciliation.
+
+**Verified slice — Studio layout and selected-Card ownership** — Pane minimums, reset widths, sibling reservations, clamping, rendered-width fallback, and DOM width application belong to `studioPaneLayout`. `useStudioPaneLayout` owns preference hydration and persistence, responsive wide mode, resize observation, pane visibility, and pointer resize sessions. Optimistic relationship cloning, SWR cache removal, assigned-media collection, and media-role projection belong to `studioCardSelectionModel`; `useStudioSelectedCard` owns selection, preview/detail loading, LRU cache, optimistic patch/rollback, reconciliation, upsert, and eviction. `StudioWorkspace` is reduced from 1,548 to 736 lines and retains shell orchestration, relationship drag, deletion, and context composition. Ten focused tests, touched-code lint, and production typecheck pass.
+
+**Verified slice — Media operations ownership** — `useMediaBulkActions` owns authoritative delete-consequence verification, modal state, deletion, and active-Card refresh. `useMediaStackActions` owns stack eligibility, expansion, creation, unstacking, refresh, feedback, and selection cleanup. `MediaAdminContent` coordinates those controllers with the already-separated grid, grouped browse, exact review, organize strip, and Story Piles overlay presentations. Thirteen focused Media tests, touched-code lint, and production typecheck pass.
+
+**Verified slice — CardForm and Reader authoring boundaries** — `CardStoryAssist` owns Story Assist guide preference, request lifecycle, results, coaching, application, and its presentation, reducing `CardForm` from 1,732 to 1,433 lines. Draft and persistence state remain with the existing `CardFormProvider`; Gallery and children presentations remain with their existing focused components. `CardFormSurfaceContext` is the neutral capability contract for compact authoring, optional Studio relationship DnD, active-Card refresh, and Media editing. Studio supplies those optional operations; Reader supplies only compact presentation. CardForm no longer imports `StudioShellContext`. Reader title/actions, dirty-leave confirmation, discard, save, duplicate, delete, and baseline synchronization live in `ReaderCardEditChrome`, and Reader owns its modal CSS. Thirteen focused CardForm/Reader suites pass, touched-code lint and production typecheck pass.
+
+**Completion evidence** — Production typecheck, touched-code lint, diff checks, and the full production build pass. Thirty-six focused Studio, Media, CardForm, and Reader tests pass. Live browser verification on the rebuilt development server confirmed Studio pane collapse/restore, Media Browse/Exact mode switching and restoration, Card selection loading the expected Gallery into Compose, and Reader full-editor loading the same Card with Save, Duplicate, and Close controls reachable; closing returned to the Reader detail without a console error. Component Boundaries passed its Completion Gate.
 
 ### Authorization
 
-**Definition:** Not gated
+**Definition:** Ready
 
-- **Classification** — Centralize Reader and administrator route and mutation policy.
-- **Sign-in** — Make `/login` the single authentication entry.
-- **Callbacks** — Preserve safe return destinations and reject unsafe ones.
-- **Enforcement** — Centralize authorization boundaries without weakening the completed disabled-account revocation contract.
+**Execution:** Verified
+
+**Outcome** — Every protected page and API classifies the same refreshed account-backed session through one revocation-aware policy, while `/login` is the sole authentication entry and successful sign-in returns only to a safe internal destination.
+
+**Actors** — Anonymous visitor, reader, administrator, and operator.
+
+**Includes** — Active-session and administrator-session classification; protected Reader, Account, and Administration page enforcement; authenticated-reader and administrator API enforcement; `/login` as NextAuth and application sign-in entry; one callback sanitizer for client and server return paths; preservation of the complete API access inventory and disabled-account revocation behavior.
+
+**Excludes** — Public registration; invitations; password recovery; role promotion; account deletion; multi-administrator redesign; tenancy; sharing; permission tiers beyond administrator and reader; UI redesign; database-session migration; and changes to published-content visibility.
+
+**Contracts** — `journal_users` remains account truth. A missing, disabled, or unreadable account fails closed on the next server-backed session read. Raw JWT role possession is insufficient. `isAuthenticatedSession` and `isAdminSession` own active-session classification; protected pages and APIs consume those policies rather than restating role checks. Anonymous Reader requests authenticate through `/login`; administrators retain server-enforced mutation boundaries. Callback destinations must begin with one `/`, reject protocol-relative and external values, preserve safe internal query context, and fall back to `/view`.
+
+**Current state** — Credential authorization and JWT/session refresh validate `journal_users` on every server-backed session read, clear stale roles, and mark revoked access. Reader access helpers reject revoked sessions, and the API route inventory classifies all public-auth, authenticated-reader, and administrator routes. NextAuth points sign-in to `/login`; client and server return paths share one internal callback sanitizer; protected server pages and API routes consume the revocation-aware policy owner rather than restating role checks.
+
+**Gaps / slices** —
+
+1. **Classification owner — Complete** — Shared active-session and administrator-session policy is the only role classification used by protected server surfaces.
+2. **Sign-in owner — Complete** — NextAuth and protected-page redirects use `/login` while the public `/` landing page remains public.
+3. **Callback owner — Complete** — Safe internal callback normalization is shared and covers malicious, malformed, and valid contextual returns.
+4. **Boundary migration — Complete** — Repeated raw server role checks were replaced without changing route status or response contracts.
+5. **Audit and close — Complete** — The declared API inventory, revoked-session behavior, safe return paths, Reader visibility, and administrator mutation rejection are covered by focused boundary tests.
+
+**Dependencies** — NextAuth credential, JWT, and session callbacks; `journal_users`; `readerAccess`; protected pages; API route envelope and route audit; login form; navigation; existing User Management revocation tests; route-boundary tests; and browser verification.
+
+**Risks** — Redirect loops; authenticated users returning to `/`; unsafe external callbacks; a revoked token retaining administrator capability; anonymous status-code drift; Reader APIs becoming administrator-only; or client role presentation being mistaken for enforcement.
+
+**Decisions needed** — None. Canon already fixes `/login` as the single authentication entry, `/view` as the fallback, one administrator/reader role model, server-side enforcement, and immediate account-truth revalidation.
+
+**Completion evidence** — Direct authorization-consumer inventory; focused callback, credential, revocation, page, API-envelope, and full route-boundary tests; production typecheck/build; anonymous `/login` redirects with preserved safe callbacks; authenticated Reader access without Administration; active administrator access; and canon reconciliation.
+
+**Verified evidence** — The authorization consumer inventory leaves raw role comparison only in the policy owner and client-side control presentation; server enforcement uses `isAuthenticatedSession` / `isAdminSession`. Shared callback tests cover safe contextual, external, protocol-relative, relative, empty, and missing destinations. The focused authorization and route-boundary run passes 155 tests, touched-route lint passes, production typecheck passes, and the production build compiles, validates types, and generates all 51 static pages. The local post-build HTTP probe timed out because the pre-existing development listener stopped responding; it is not counted as completion evidence.
 
 ### Legacy Retirement
 
-**Definition:** Not gated
+**Definition:** Ready
 
-- **Routes** — Remove redirect-only administrative and compatibility routes after caller verification.
-- **Loaders** — Remove duplicate data paths only after canonical ownership is proven.
-- **Collections** — Determine whether `CollectionsAdminClient` remains required before refactoring or retirement.
+**Execution:** Verified
+
+**Outcome** — Retire only compatibility code whose canonical replacement and zero-caller state are proven; retain intentional entry-point redirects and active domain owners.
+
+**Includes** — Redirect-only administrative and compatibility route inventory; removed Card and Theme service-facade verification; loader ownership inventory; and direct caller proof for `CollectionsAdminClient`.
+
+**Excludes** — Stored-data migrations; legacy-field deletion; removal of bookmarked compatibility URLs; redesign of Studio Collections; speculative directory cleanup; and deletion based only on names containing legacy or compatibility.
+
+**Contracts** — Compatibility redirects may remain when they provide a stable external entry into one canonical implementation. A loader or facade may be removed only after all production callers use the canonical owner. An apparently old component remains required when it is embedded in a live capability.
+
+**Verified assessment** — `/admin` canonically enters Studio, `/settings` canonically enters Account, and `next.config.ts` maps former administrative paths to the single Studio implementation; none owns duplicate page behavior. The temporary `cardService.ts` and `themeService.ts` facades were already removed during Service Boundaries, and production callers import the focused Card and Theme owners directly. `CollectionsAdminClient` is actively embedded by `StudioWorkspace`, supplies the current Collections tree surface, and shares its styles and embedded-bank context with active Studio components; it must not be retired or refactored under a cleanup label.
+
+**Completion evidence** — Direct route, import, tracked-file, and component-caller inventories; successful production typecheck/build after the already-completed facade removals; and an explicit retain/remove disposition for every item named by this gate. No additional code deletion is justified.
 
 ### Search and Lists
 
-**Definition:** Not gated
+**Definition:** Ready
 
-- **Fallback** — Define truthful degraded search behavior without Typesense.
-- **Ordering** — Verify stable full-population filtering and chunk ordering.
-- **Refresh** — Replace unnecessary full-catalog reloads with targeted reconciliation.
+**Execution:** Verified
+
+**Outcome** — Search and paginated lists remain truthful, deterministically ordered, and locally reconciled when full-text infrastructure is unavailable or records change.
+
+**Includes** — Authenticated Card search through Typesense; automatic Firestore title-prefix fallback when Typesense is unconfigured or unavailable; explicit degraded-mode response and Reader notice; stable Firestore tie-break ordering; requested-order reconstruction across Firestore ID chunks; and field-scoped Reader list reconciliation.
+
+**Excludes** — A second full-text engine; fuzzy or semantic Firestore search; Typesense deployment; search analytics; archive grouping; and changing the approved Reader sort choices.
+
+**Contracts** — Full-text search returns Typesense relevance/order hydrated in the same requested ID order. Degraded search is title-prefix only and says so rather than failing or presenting itself as equivalent. Readers see published Cards only; administrators may search all statuses. Firestore list sorts end in deterministic document-ID ordering. Saved Reader Cards patch visible cache records immediately and revalidate only when changed fields can alter membership, ordering, or search results.
+
+**Verified assessment** — `getCardsByIds` reconstructs caller order after Firestore-safe 30-ID chunks. Card list queries use stable field and document-ID ordering, and post-filter pages carry the raw query cursor forward. Reader reconciliation distinguishes no revalidation, search-only revalidation, and all-list revalidation. The search route now catches configured Typesense failure and uses the same Firestore title-prefix path used when Typesense is absent; its response identifies `full-text` versus `title-prefix`, and the Search page displays a restrained degraded notice.
+
+**Completion evidence** — Twenty-four focused route and reconciliation tests pass, including administrator/reader scope, configured full-text search, unconfigured fallback, runtime-failure fallback, and field-based cache reconciliation. Touched-code lint and production typecheck pass. Existing Service Boundaries evidence covers deterministic chunk reconstruction and production build integration.
 
 ### Operations
 
-**Definition:** Not gated
+**Definition:** Ready
 
-- **Backup** — Prove complete paired backup operation.
-- **Restore** — Repeat restore drill against a disposable target.
-- **Accounts** — Prove administrator and reader recovery procedures.
-- **Release** — Establish release and rollback readiness.
-- **Incident** — Prove incident-response and recovery steps.
+**Execution:** Verified
+
+**Outcome** — An operator can identify a complete recovery point, restore authoritative data and media safely, recover account access, and follow explicit release, rollback, and incident procedures without treating partial work as success.
+
+**Includes** — Paired Firestore and Storage backup manifests and status; guarded paired restore to a disposable project; administrator and reader password/access recovery; total-administrator-lockout recovery; release and rollback checklist; incident classes and containment/recovery sequence; and CI/build/integrity evidence requirements.
+
+**Excludes** — Automatic hosted-runtime backups; automatic production rollback; destructive production restore; automatic secret rotation; a second backup provider; and certification of an arbitrary dirty worktree as a release candidate.
+
+**Contracts** — A complete backup contains `run-manifest.json`, `firestore.json`, `storage-manifest.json`, and Storage bytes from one run. Restore defaults to dry-run, blocks the production project, and requires exact disposable-project confirmation for apply. Account recovery never accepts a replacement password as a CLI argument. Release requires a known pushed rollback revision, complete backup, environment verification, build/lint/tests/CI, and working administrator and reader accounts. Incidents preserve evidence, contain access or mutation first, recover from authoritative sources, and verify before reopening.
+
+**Verified evidence** — Complete paired run `run-2026-07-17T20-58-32-604Z` is readable with 8,938 Firestore documents across 11 collections and 10,639 Storage objects; its manifest reports `complete: true`. A current paired dry run against `my-journal-restore-drill` validated both Firestore and Storage legs, detected the target's existing collections, printed the post-restore index/rules/Typesense/build checklist, and made zero writes. The prior disposable-target apply drill remains recorded in `docs/NPM-SCRIPTS.md`. Backup-status and restore safety tests pass. In-app User Management covers ordinary reader/admin password and enablement recovery; `recover:journal-admin` now provides dry-run-by-default total-lockout recovery with exact administrator lookup, environment-only replacement password, 12-character minimum, exact project confirmation, and re-enable behavior. The release and incident runbooks enumerate rollback, failed import, missing media, access leak, and backup/restore failure paths; the PR gate runs lint, build, unit/integrity tests, and hosted authenticated Playwright smoke.
+
+**Release distinction** — This gate verifies the operating system and procedures. A specific release revision is ready only after its worktree is intentionally committed, pushed, backed up, and passes the release checklist on that exact revision.
 
 ### Engineering Quality
 
-**Definition:** Not gated
+**Definition:** Ready
 
-- **Security** — Threat-model authorization, secrets, and hosted deployment.
-- **Testing** — Expand workflow, integrity, commercial, and browser contract coverage.
-- **Quality** — Perform application QA against selected capability gates.
-- **Directory** — Remove obsolete structure only when ownership is proven.
-- **Comments** — Add documentation only where code intent is not evident from names, types, tests, or contracts.
-- **Strictness** — Continue bounded TypeScript, lint, API-envelope, and unused-dependency cleanup.
+**Execution:** Verified
+
+**Outcome** — Part 3 closes with explicit security boundaries, broad automated evidence, no speculative structural churn, and a visible distinction between remediated dependency risk and later platform migrations.
+
+**Includes** — Authorization, secret-file, hosted-response, and dependency threat assessment; route and workflow integrity coverage; complete unit/integrity execution; production typecheck, lint, and build; confirmed obsolete-service removal; and bounded dependency remediation.
+
+**Excludes** — Warning-zero cleanup; arbitrary comments; broad folder renaming; forced major framework upgrades; Content Security Policy without a complete resource inventory; and claiming browser evidence when the local process does not respond.
+
+**Security assessment** — No environment, service-account, private-key, or Firebase administrator credential file is tracked by Git. Server authorization consumes refreshed Firestore account truth and rejects disabled or missing users. Safe internal return paths reject external and protocol-relative callbacks. The invalid global wildcard-plus-credentials API CORS grant was removed; all routes now receive `nosniff`, strict-origin referrer, frame-denial, and bounded camera/microphone/geolocation/browsing-topic policies. A CSP remains a separate hosted-deployment slice because Google Fonts, Firebase media, TipTap content, and Sentry must be inventoried and validated together.
+
+**Dependency assessment** — Compatible upgrades moved Swiper 11 to patched 12.1.2, Typesense to 3.0.6, NextAuth to 4.24.14, and ExifTool to 35.21.0. Minimum patched overrides constrain `protobufjs`, `websocket-driver`, `@grpc/grpc-js`, and `fast-xml-builder`. Production audit critical findings fell from three to zero and total production findings from 28 to 18. Remaining direct findings are Next, NextAuth, and Firebase Admin or transitive packages inside those platforms; their available remedies require bounded major migrations and are not force-applied under cleanup.
+
+**Structure and strictness assessment** — Card and Theme compatibility facades are removed and have zero imports. `CollectionsAdminClient`, compatibility redirects, and shared Studio collection styles are proven live and retained. Production typecheck passes. Full lint reports zero errors and 23 warnings; warnings are recorded rather than mechanically changed because they include intentional test images, existing hook-dependency questions, and unrelated unused values that require owner-level review.
+
+**Completion evidence** — The complete Jest run passes 156 suites and 853 tests, with three emulator-only suites and 23 tests skipped in the non-emulator run. Post-upgrade Gallery, rail, Reader tile, search, auth, Firebase Admin, and hosted-security tests pass 46 cases. Production typecheck and lint pass. The final production build wrote a new `BUILD_ID` and build manifest after compiling the upgraded dependency graph. Live `/login` and `/view` responses returned the new security headers; the subsequent local `/admin/studio` probe timed out and is not claimed as browser evidence. Earlier Component Boundaries Studio verification and the 159-case focused administrator/reader boundary run remain the relevant interaction and enforcement evidence.
+
+**Deferred platform migrations** — Upgrade Next, Auth.js, Firebase Admin/Firebase client, and their remaining transport/markdown dependency trees as separately gated migrations with changelog review, focused compatibility tests, full build, and hosted smoke. Add CSP only after the hosted resource inventory is explicit. These are visible future security maintenance, not incomplete hidden work inside this bounded gate.
+
+---
+
+## 4. Stabilization and deferred plan
+
+The active objective is to stabilize the product as implemented, establish one recoverable release candidate, and then let the author concentrate on archive content. This phase does not add new product capability. The controlling execution order is **3. State Communication → 2. Media Intake and Tagging stabilization → 1. Release Candidate**. Items 4–8 are deferred and do not become active merely because they remain documented.
+
+### 1. Release Candidate
+
+**Definition:** Ready
+
+**Outcome** — Convert the accumulated verified work into one known, recoverable, deployed revision and establish the trustworthy v1 baseline from which later product work proceeds.
+
+**Includes** — Intentional worktree review; commit and push; paired backup; exact-revision lint, typecheck, tests, build, CI, deployment, hosted administrator/reader smoke, desktop/mobile validation, rollback revision, and release record.
+
+**Excludes** — New product capability, discretionary styling, major dependency migrations, CSP, and cleanup unrelated to release evidence.
+
+**Responsibility** — The agent owns repository review, verification, defect correction within the stabilization boundary, backup, revision control, deployment checks, rollback evidence, and release recording. The author is required only for final subjective acceptance, representative desktop/mobile use, and any consequential product decision exposed by verification.
+
+**Local gate evidence** — Full lint and production typecheck pass. All 165 active Jest suites and 891 tests pass; the 3 emulator suites and 23 tests remain skipped by their declared environment gate, and the diagnostic in-band run exits normally. A clean production build passes compilation, type validation, all 52 static pages, optimization, and route tracing. Live development verification covers Reader collections, Studio state communication, Media Library recovery, and the hierarchical Tag workspace. Complete paired backup `run-2026-07-22T13-56-38-736Z` verified 8,932 Firestore documents and 10,639 Storage objects. The remaining Release Candidate work begins at intentional revision control, deployment, hosted smoke, and author acceptance.
+
+### 2. Media Intake and Tagging
+
+**Definition:** Ready for bounded stabilization; broader usability and future assistance deferred
+
+**Outcome** — Confirm that the implemented Import → Library → codify/caption → select → Card workflow and hierarchical tagging system operate reliably enough for sustained authoring, and repair only defects that prevent or corrupt that work.
+
+**Actors** — Current author and system operator. Representative first-time archive-owner acceptance is deferred until the author is ready to validate later onboarding and workflow refinement.
+
+**Includes** — End-to-end verification of existing local import, readiness, Library filtering/grouping, codification, captions, hierarchical Who/What/When/Where assignment, subjects, Any/All filtering, Gallery inheritance, selection, Card assignment, governed Tag mutation, counts, completeness, search projections, and recovery from ordinary interruption. Correct defects found in those existing paths.
+
+**Excludes** — New onboarding, first-user redesign, face recognition, identity split, likely-match discovery, saved working sets, new import sources, compatibility retirement, and other capability expansion.
+
+**Contracts** — Source structure may be rich, partial, inconsistent, or absent. Imported facts and machine suggestions remain distinguishable from confirmed truth. Every interruption preserves completed work and provides a truthful resume point. The implemented path must end in usable organized media and a reliable transition to Gallery, Card, caption, or story work without requiring a new product model.
+
+**Definition slices** —
+
+1. **Starting-condition matrix — Complete** — Representative folders, exports, metadata, existing keywords/person data, duplicates, partial dates, scans, and unstructured files; state what can be inherited, what can only be suggested, and what requires author input.
+2. **Current journey inventory — Complete** — Trace preparation, import, readiness, Browse, Exact review, tag assignment, identity administration, piles, stacks, Card creation, and return/resume paths. Identify duplicated concepts, dead ends, hidden state, premature messages, and expert-only terminology.
+3. **Tag and identity mental model — Revised and approved** — Media truth and Card story truth remain distinct; Who identities, author-controlled hierarchy, nested names, subjects, dimensions, provisional suggestions, and Gallery inheritance remain central. Parent/partner facts may support a stable family-tree view, but perspective-relative relationship labels, viewer-relative hierarchy changes, and stored filtering Groups are not target assignment truth.
+4. **Target journey and information architecture — Unified Library direction approved** — Organize and Tell remain useful descriptions of the product journey but do not become separate Media interfaces. One canonical Library supports import, browsing, codification, captioning, selection, and Card assignment together. All general and dimensional filters remain available; Complete/Incomplete is separate from Assigned/Unassigned, and Incomplete adds unresolved-dimension filters. Batch, folder, metadata, day, and later Face/Similar grouping create working views without dividing Media truth or forcing a mode choice.
+5. **Vocabulary direction — Complete for the current baseline** — Preserve hierarchical tag assignment and aggregation consistently across dimensions. Who uses directly assignable aggregate tags with directly assignable nested names and author-controlled branches such as Family and Friends; it does not require visible Person/Name or human/non-human typing. Optional parent/partner facts support a future family-tree view over the same canonical Who IDs; perspective-relative relationship labels do not become assignments or rewrite authored content. Any/OR and All/AND replace stored filtering Groups; Childhood and Parenthood remain What concepts combined with Who and When. Existing Person and Group records remain untouched until a future compatibility-retirement gate is approved.
+6. **Unified Media Library interface — Complete for the current baseline** — Import, codification, captioning, stacking, selection, Card assignment, and exact-match evidence operate in one Library without a separate Browse or duplicate-review workspace. Import adds Media to the Library with explicit metadata-application and folder-to-Card choices. Library filters cover source, caption, shape, Assigned/Unassigned, All/Matches/No Matches, Complete/Incomplete, and dimensional tags; Incomplete additionally exposes batch, folder, metadata availability, and unresolved-dimension filters. Grouping covers None, Batch, Folder, metadata source, and capture day. Face and Similar remain deferred.
+7. **Pile disposition and working sets — Complete** — Automatic generation, post-import suggestions, manual Pile controls, suggested grouping, tag suggestions, and Pile-based Card creation are retired from the active Media journey. Dormant records and backend compatibility remain temporarily; no destructive migration occurred. Filtering, grouping, search, and ordinary selection form the working set. Card-oriented Media selection defaults the existing All Codification / Complete / Incomplete selector to Complete; All Codification remains the explicit way to include both. A future saved-selection capability requires observed user need.
+8. **First-user usability acceptance — Deferred** — A representative new user should eventually validate the journey without live explanation from the original author. That validation is not required to establish the current authoring baseline and will gate later onboarding or workflow redesign.
+9. **Current implementation foundation — Complete** — The unified Library, hierarchy-native vocabulary, governed Tag mutation, whole-population Any/All filtering, completeness filtering, Exact-match filtering, Who cleanup, and Pile retirement are implemented. The active work is bounded verification and defect correction, not another redesign.
+
+**Approved vocabulary implementation sequence** — This sequence is deliberately reversible and does not authorize production-data mutation merely by being documented:
+
+1. **Schema and compatibility boundary** — Use the selected canonical Who tag ID as the identity key without requiring a new visible tag type. Read existing `people` documents only as compatibility/profile data keyed to that tag; do not create a second identity authority.
+2. **Hierarchy-native vocabulary interface** — Keep creation, naming, nesting, direct assignability, and drag/reparent behavior in the common tag tree. Attach optional profile and parent/partner family-tree facts through actions on a Who tag. Do not present a separate People workspace, human/non-human selector, Person conversion, perspective-relative relationship tree, or named filtering Groups as the target workflow.
+3. **Whole-population Any/All filtering — Implemented** — Reader Cards and Media expose a separate Selected Any/All control without changing the existing assigned-versus-subject Match control. Any requires one selected tag within each populated dimension; All requires every selected tag within each populated dimension; populated dimensions continue to intersect. The operator is persisted and sent to server-backed Card, Media, search, seeded-Random, discovery-Random, Typesense, and Firestore fallback paths. Firestore fallbacks scan until a filtered page is filled rather than filtering only a loaded client page.
+4. **Manifested dry run — Complete** — The read-only manifest classified all 138 Who tags and inspected 10 compatibility profiles, 1,281 Cards, 3,503 Media records, and 270 Questions. All 10 profiles, including archive perspective, already use their canonical Who tag IDs; no relationship or Person Group records exist. Nine approved nested-name clusters resolve without identity-ID migration. The manifest identified the nine legacy role/group branches later removed through governed cleanup.
+5. **Approved migration and rollback — Complete for vocabulary cleanup** — The manifest proved the compatibility IDs already equal canonical Who tag IDs, so no compatibility remap was performed. The 10 profiles remain until the service-retirement gate. Author-approved object disposition was executed through the integrated mutation owner rather than direct deletion or an unreconciled hierarchy script.
+6. **Integrated tag mutation and completeness foundation — Complete** — Governed rename and same-dimension reparent preserve stable assignments and reconcile descendant paths, Card/Media projections, Card/Media/Question subject ancestry, Media completeness flags, hierarchical counts, and both search indexes. Studio Cards provide server-backed All Codification, Complete, and Incomplete filtering through Typesense and Firestore fallback, derived from effective Who, What, When, and Where assignments. Remove Everywhere and Merge both require server impact preview plus explicit confirmation. Removal deletes only the selected tag and promotes its children; merge consolidates assignments and subjects into a selected same-dimension target and moves children beneath it. Self, cross-dimension, and descendant-target merges, unqualified deletion, and silent subtree deletion are blocked. Both destructive operations reconcile projections/completeness/counts, strictly refresh search, and delete the authoritative source tag last.
+7. **Author-reviewed vocabulary cleanup — Complete** — Nine author-selected people were restored beneath Friends: Karen Albright, Aileen Ferguson, Anne Frank, Betty Edwards, Ed Edwards, Craig Neimiec, Gov. Carroll Campbell, Jerry Pierson, and Stephanie Baker. Bob & Sandra, Children, Cousins, Father, Grandkids, Mother, Parents, Siblings, and Spouse were removed through one guarded, idempotent cleanup. The operation reconciled hierarchy, direct and subject assignments, completeness, counts, and strict Card/Media search projections before deleting the source nodes. Final read-only verification scanned all 1,281 Cards, 3,503 Media records, and 270 Questions and found no removed-ID references.
+8. **Compatibility retirement — Deferred** — Remove the legacy `people`, `person_groups`, dormant Pile paths, and old perspective paths only after zero-live-reference proof and a separately approved rollback window.
+9. **Face assistance — Deferred** — Add provisional face evidence only after merge/split correction is defined; suggestions target canonical Who tag IDs and require author confirmation before becoming Who assignments.
+
+**Implemented slice — Who-tag compatibility boundary** — Any selected Who tag can be the canonical identity endpoint without a visible Person/Name or human/non-human classification. A tag-first resolver treats that Who tag ID and name as canonical, reads an existing linked `people` document only as optional compatibility/profile data, and fails closed on missing, non-Who, unlinked, or conflicting identity evidence. Archive-perspective validation uses that resolver while preserving current linked-Person behavior. Who tags may carry explicit assignability and optional gender used only for relationship labels. No production Tag, Person, Group, relationship, assignment, perspective, count, or search record was migrated or rewritten. Focused schema, resolver, and relationship tests, touched-file lint, production typecheck, and diff checks pass.
+
+**Implemented slice — Hierarchy-native Who interface** — The duplicate Studio People workspace has been removed. Who names, imported variants, aggregate parents, assignability, and drag/reparent behavior remain ordinary tag-tree capabilities. A Who tag action opens optional gender, archive-perspective, and parent/partner relationship controls using canonical Who tag IDs; those links do not change tag assignments or hierarchical aggregation. Stored compatibility Person, relationship, and Group records remain untouched. Focused tag-row, relationship-modal, schema, resolver, and relationship tests plus production typecheck and touched-file lint pass. Live read-only verification on port 3001 confirmed that the People tab is absent and the Relationships action opens from a Who tag; no mutation control was invoked.
+
+**Implemented slice — Whole-population Any/All filtering** — Reader refinement now separates assignment scope (`Any assigned` or `Subject only`) from selected-tag combination (`Any` or `All`). The same dimensional intersection contract is implemented in Card lists, Media lists, text-search projections, seeded Random feeds, discovery Random selection, Typesense filters, and Firestore scan fallbacks. Any remains the compatible default; All is persisted only when selected. Focused operator, exact-scope, Reader Media, Card search, and Media route tests, production typecheck, touched-file lint, and diff checks pass. Live verification on port 3001 confirmed the control and both options; the saved selection was restored to Any after verification.
+
+**Implemented slice — Governed Tag rename and reparent** — Tag PUT/PATCH rename and the reparent endpoint now share one server owner. It plans the prospective catalog before writes, rejects missing parents, sibling-name conflicts, cycles, and cross-dimension moves, then batch-reconciles descendant paths, Card and Media dimensional/filter projections, explicit and Gallery-implicit subject ancestry, Question subject ancestry, Media presence/completeness fields, full-population published-Card and Media rollup counts, and strict Card/Media Typesense refresh. Each attempt records `planning`, authoritative, projection, count, and search stages in `tag_mutation_operations`; failed attempts remain visible, and retrying the same desired value reruns reconciliation idempotently. Non-structural edits such as ordering stay on the narrow update path. No production mutation was used for verification. Eight focused catalog/route tests, the 138-case administrator boundary suite, Tag projection/count tests, touched-file lint, production typecheck, and diff checks pass.
+
+**Implemented slice — Manifested Who-vocabulary dry run** — A reproducible read-only manifest now inventories hierarchy classification, approved nested-name clusters, compatibility Person mappings, perspective, relationships, Groups, direct assignments, subjects, and projected count/search effects. The refreshed live manifest fingerprint is `2618124cc1617c2319a9ba43fa2e4d14a3b6f27cd0ee49b008d05ea186f690bc`. All 10 compatibility Person IDs already equal their canonical Who tag IDs; there are zero relationship records, zero Person Group records, zero unresolved compatibility mappings, and nine approved nested-name clusters. The author decided not to retain the nine legacy role/group branches. The object-level manifest now identifies the exact 33 Cards, 73 Media records, 29 Questions, and five subject references that require disposition before deletion; no production writes occurred.
+
+**Implemented slice — Author-reviewed Who cleanup** — One guarded cleanup restored Karen Albright, Aileen Ferguson, Anne Frank, Betty Edwards, Ed Edwards, Craig Neimiec, Gov. Carroll Campbell, Jerry Pierson, and Stephanie Baker beneath Friends and removed the nine rejected role/group nodes. A failed first strict-index attempt exposed a Firestore delete sentinel leaking into the in-memory Typesense projection; deletion correctly remained blocked. The projection was repaired, focused tests/typecheck/lint passed, and the idempotent operation completed. The hierarchy service now uses validated bulk Typesense imports with one in-memory tag map rather than per-object tag lookups. Final verification found the expected 651 tags and zero obsolete-ID references across all Cards, Media, and Questions.
+
+**Implemented slice — Unified Library control hierarchy** — The Studio Media pane now presents Library and Selected Card as its population selector without a separate View label. The obsolete Organize heading, scoped photo/batch summary, and Raw/Foldered/Phone source lenses are removed from the visible hierarchy. At this historical slice, existing Pile operations occupied one compact row; the later Pile-retirement slice removed that row and its workflow. Search and existing general filters share the first filter row; the dimensional tag selector follows; grouping, batch/folder controls, and stack disclosure follow on the next row. Tile size sits beside Import because it controls presentation rather than filtering or grouping.
+
+**Implemented slice — Server-backed Library workflow** — Complete/Incomplete evaluates the four persisted dimensional-presence fields on the server. Incomplete reveals server-backed unresolved Who/What/When/Where, import batch, source folder, and metadata-outcome filters while ordinary dimensional tag filters remain available. Leaving Incomplete atomically clears every hidden workflow filter. New local imports persist whether metadata reading was attempted and whether caption or keyword metadata was found, absent, or failed; paste imports record not requested and legacy records remain Unknown. A protected options route supplies full-Library Batch and Folder choices. Ordinary grouping offers None, Folder, Batch, Metadata, and Day and automatically loads every matching server page before rendering groups.
+
+**Implemented slice — Pile retirement and Card-oriented completeness** — Import now ends with the new Media selected and ready for codification or captioning; it does not generate provisional clusters or expose Pile suggestions. Pile controls, overlay, manual creation, suggested grouping, tag application, merge, dismissal, and Pile-based Card creation are absent from active Media UI. Existing records and backend services remain dormant and were not destructively migrated. When an active Studio Card makes the Library a Card-selection surface, the server-backed Media query defaults the existing All Codification / Complete / Incomplete selector to Complete; All Codification remains the explicit way to include both populations. Twenty focused Media, grouping, and preference tests, touched-code lint, and production typecheck pass.
+
+**Implemented slice — Exact-match filter and tag-picker repair** — The separate Browse / Exact Matches workspace selector and duplicate decision states are removed from the author interface. Exact source-byte evidence now drives a server-backed All Matches / Matches / No Matches filter on the ordinary Library row, composable with the other Library filters; ordinary reference-aware Media deletion remains the disposition mechanism. Card status labels are All Statuses, Assigned, and Unassigned; incomplete-detail labels use All/Who/What/When/Where Unresolved; stack disclosure is Show Stacks. Individual dimensional tag pickers render the requested dimension as one full-width column, and shared edit dialogs render at the document root so Media-tile overlays cannot cover them. Stored duplicate evidence and historical decisions are preserved; likely-match discovery remains deferred.
+
+**Stabilization completion evidence — Passed for the current authoring baseline** — Focused Media, Tag, hierarchy, filter, provider, route, and assignment checks pass. Live desktop verification on a clean development server confirmed the unified Library, persisted-filter recovery, mutually exclusive loading and empty states, the complete hierarchy and counts, and the existing import entry point without mutating archive data. The full active Jest suite passes 165 suites and 891 tests. Destructive Tag mutation and new import execution remain covered by focused tests and their previously verified governed paths rather than being repeated against production data. First-time-user and mobile Reader usability remain later product-validation work rather than blockers to the authoring baseline.
+
+**Definition evidence** — The starting-condition matrix, current-journey inventory, observed friction, and unresolved definition questions are maintained in `docs/06-Media-Intake-Tagging.md`. That support document does not change product truth or authorize implementation independently of this brief.
+
+### 3. State Communication
+
+**Definition:** Verified
+
+**Outcome** — Normal loading never masquerades as missing data or failure, and genuine empty, warning, error, and success states are calm, truthful, timely, and actionable.
+
+**Includes** — Application-wide inventory of transient copy and state timing; loading-versus-empty contracts; delayed or skeleton presentation where appropriate; suppression of premature messages such as `No collections yet`; consistent recovery actions; accessible announcements; and representative Reader, Studio, Users, Theme, Settings, import, and search verification.
+
+**Excludes** — General copy rewriting, visual redesign, and hiding genuine failures.
+
+**Responsibility** — The agent may inventory and correct objective state-timing and recovery defects independently. Author input is required only when wording or presentation presents a consequential preference rather than a truthfulness or accessibility defect.
+
+**Verified evidence** — Reader collections now distinguish loading, successful readiness, genuine empty results, and load failure; non-Reader administration routes no longer imply that collections are absent before Reader data is requested. Studio Media, Studio Card selection, and Collections administration do not render empty-state copy while their initial data is loading. Theme, Settings, Search, and Users expose calm user-facing failure or recovery paths instead of technical dead ends or authoritative defaults after a failed load. Focused component checks, production typecheck, full lint, and the complete active Jest suite pass. Live verification on a clean development server confirmed the administration guidance, populated Reader collection tree, Media loading transition, persisted-filter recovery, populated Library, and hierarchy workspace.
+
+### 4. Landing, Onboarding, and Commercial Offer
+
+**Definition:** Parked pending author reactivation
+
+**Outcome** — A prospective customer understands who the product serves, why it matters, what is included, how a private archive begins, and what access or payment is required.
+
+**Includes** — Audience decision, messaging, brand assets, hosted-product packaging, invitation/sign-in expectations, initial onboarding, secure reader invitation/password setup or recovery, and commercial validation.
+
+**Excludes** — Multi-tenancy, public signup, broad sharing, and speculative acquisition machinery.
+
+### 5. Identity Correction and Face Assistance
+
+**Definition:** Deferred
+
+**Outcome** — The author can safely correct identity mistakes and use face evidence to accelerate Who classification without turning machine inference into confirmed archive truth.
+
+**Includes** — Recoverable Tag/identity merge and split first; face-region and provider-data import assessment; recognition-service evaluation; provisional face clustering and candidate matching; author confirmation, rejection, correction, retention, deletion, provenance, reprocessing, and bounded application of accepted Who assignments.
+
+**Dependencies** — Product Comprehension and Workflow; stable Who identity and nested-name contracts; optional family-tree facts; source and rendition access; explicit privacy, cost, quality, and provider-data decisions.
+
+**Excludes** — Automatic relationship-role inference, silent assignment, genealogy-platform scope, and face-based access control.
+
+### 6. Bounded Product Extensions
+
+**Definition:** Deferred
+
+Prioritize individually only after Release Candidate and the relevant comprehension work:
+
+1. **Reader package choice** — Per-reader Journal/Editorial selection and persistence.
+2. **Help** — Product guidance beyond the tag/identity operating model and essential contextual copy.
+3. **Editorial controls** — Deliberate long-form presentation controls where approved.
+4. **Media duplicates** — Evidence recovery and confirmed same-asset reconciliation; likely-match review remains low priority unless archive pain proves otherwise.
+5. **Search and taxonomy extensions** — Include/exclude filtering, useful aggregation, and advanced keyboard/drag behavior.
+
+### 7. Parked Media and Content Expansion
+
+**Definition:** Parked
+
+- **Quote and dependent typography** — Resume only with a complete product definition.
+- **Video** — Resume after the core release and workflow prove their value.
+- **External photo libraries** — Provider export guidance, explicit-selection ingestion, or native companion evaluation; no assumption of continuous Apple Photos or Google Photos synchronization.
+- **Bursts, similarity, motion pairs, external edit, and Reader stacks** — Reassess from demonstrated archive needs and reliable source evidence.
+- **Gallery mosaic and additional themes** — Optional presentation expansion, not core readiness.
+
+### 8. Platform Evolution
+
+**Definition:** Deferred except for the backup, recovery, deployment-integrity, and critical-security checks included in Release Candidate
+
+- **Security maintenance** — Separately migrate Next, Auth.js, Firebase, and remaining vulnerable dependency trees; add CSP after hosted resource inventory and validation.
+- **Hosted operations** — Automate backup, monitoring, recovery, and observability without weakening current safeguards.
+- **Scale architecture** — Multi-tenancy, expanded sharing, history/versioning, storage abstraction, and provider portability only when the commercial model requires them.
 
 ---
 

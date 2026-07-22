@@ -14,7 +14,8 @@ jest.mock('firebase-admin/firestore', () => ({
 }));
 
 import baseTheme from '../../../../theme-data.json';
-import { buildScopedDraftThemeCss, buildThemeTokensCss, normalizeThemeDocument, toPersistedThemeDocument } from '@/lib/services/themeService';
+import { buildScopedDraftThemeCss, buildThemeTokensCss } from '@/lib/services/theme/themeCssCompiler';
+import { normalizeThemeDocument, toPersistedThemeDocument } from '@/lib/services/theme/themeDocumentService';
 import { normalizeReaderThemeRecipes } from '@/lib/theme/readerThemeSystem';
 import { getAdminPresetSettings, getReaderPresetSettings } from '@/lib/theme/themePresets';
 import type { ReaderThemeRecipes, ThemeRecipeTokenRef } from '@/lib/types/theme';
@@ -278,6 +279,8 @@ describe('theme compiler canaries', () => {
     expect(css).toContain('--reader-chrome-text-color: var(--color6);');
     expect(css).toContain('--reader-chrome-muted-color: var(--color7);');
     expect(css).toContain(`--reader-chrome-text-font-family: ${reader.data.typography.fontFamilies.serif1};`);
+    expect(css).toContain(`--reader-sidebar-label-font-size: ${reader.data.typography.fontSizes.sm};`);
+    expect(css).toContain(`--reader-sidebar-count-font-size: ${reader.data.typography.fontSizes.xs};`);
     expect(css).toContain(`--reader-support-label-font-family: ${reader.data.typography.fontFamilies.serif1};`);
     expect(css).toContain('--reader-support-control-border-color: var(--color1-300);');
     expect(css).toContain('--reader-feedback-title-color: var(--text1-color);');

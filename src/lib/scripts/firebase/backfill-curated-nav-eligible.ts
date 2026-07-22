@@ -11,7 +11,7 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(process.cwd(), '.env') });
 
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { computeCuratedNavEligible } from '@/lib/services/cardService';
+import { computeCuratedNavEligible } from '@/lib/services/cards/cardHierarchyRules';
 import { Card } from '@/lib/types/card';
 
 const CARDS_COLLECTION = 'cards';

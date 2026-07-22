@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
 import type { Media } from '@/lib/types/photo';
 
@@ -56,7 +57,7 @@ function normalizeSourcePaths(raw: unknown): string[] | null {
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

@@ -29,11 +29,9 @@ jest.mock('@/lib/services/importFolderAsCard', () => ({
   importFolderAsMediaOnly: jest.fn(),
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
-  getCardById: jest.fn(),
-  updateCardGallery: jest.fn(),
-  updateCardCover: jest.fn(),
-}));
+jest.mock('@/lib/services/cards/cardReadService', () => ({ getCardById: jest.fn() }));
+jest.mock('@/lib/services/cards/cardGalleryMutationService', () => ({ updateCardGallery: jest.fn() }));
+jest.mock('@/lib/services/cards/cardCoverMutationService', () => ({ updateCardCover: jest.fn() }));
 
 const {
   getImportFolderRestorePlan,
@@ -45,15 +43,9 @@ const {
   importFolderAsMediaOnly: jest.Mock;
 };
 
-const {
-  getCardById,
-  updateCardGallery,
-  updateCardCover,
-} = jest.requireMock('@/lib/services/cardService') as {
-  getCardById: jest.Mock;
-  updateCardGallery: jest.Mock;
-  updateCardCover: jest.Mock;
-};
+const { getCardById } = jest.requireMock('@/lib/services/cards/cardReadService') as { getCardById: jest.Mock };
+const { updateCardGallery } = jest.requireMock('@/lib/services/cards/cardGalleryMutationService') as { updateCardGallery: jest.Mock };
+const { updateCardCover } = jest.requireMock('@/lib/services/cards/cardCoverMutationService') as { updateCardCover: jest.Mock };
 
 describe('restore-missing-x-media-as-imported-lib', () => {
   beforeEach(() => {

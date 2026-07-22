@@ -106,8 +106,8 @@ jest.mock('@/components/common/RichTextEditor', () => {
   });
 });
 
-jest.mock('@/components/admin/studio/studioCardFormStudioContext', () => ({
-  useStudioCardFormStudioOptional: () => null,
+jest.mock('@/components/authoring/CardFormSurfaceContext', () => ({
+  useCardFormSurfaceOptional: () => null,
 }));
 
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({

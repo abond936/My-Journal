@@ -1,4 +1,4 @@
-import { getCards } from '@/lib/services/cardService';
+import { getCards } from '@/lib/services/cards/cardListQueryService';
 import type { Card } from '@/lib/types/card';
 import UtilityCardReproClient from './UtilityCardReproClient';
 

@@ -1,4 +1,8 @@
-import { buildLoginRedirectPath, isMarketingRoute } from '@/lib/utils/marketingRoutes';
+import {
+  buildLoginRedirectPath,
+  isMarketingRoute,
+  safeInternalCallbackPath,
+} from '@/lib/utils/marketingRoutes';
 
 describe('marketingRoutes', () => {
   it('treats public marketing paths as marketing routes', () => {
@@ -20,5 +24,13 @@ describe('marketingRoutes', () => {
     expect(buildLoginRedirectPath('/view?focusCardId=card-1')).toBe(
       '/login?callbackUrl=%2Fview%3FfocusCardId%3Dcard-1'
     );
+  });
+
+  it('preserves only safe internal callback paths', () => {
+    expect(safeInternalCallbackPath('/view/card-1?mode=freeform')).toBe('/view/card-1?mode=freeform');
+    expect(safeInternalCallbackPath('https://evil.example')).toBe('/view');
+    expect(safeInternalCallbackPath('//evil.example/path')).toBe('/view');
+    expect(safeInternalCallbackPath('view/card-1')).toBe('/view');
+    expect(safeInternalCallbackPath(null)).toBe('/view');
   });
 });

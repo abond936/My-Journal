@@ -176,6 +176,17 @@ export async function importMediaDocs(docs: TypesenseMediaDocument[]): Promise<v
   await client.collections(MEDIA_COLLECTION).documents().import(docs, { action: 'upsert' });
 }
 
+/** Strict bulk path: fail the governing operation if Typesense rejects any document. */
+export async function importMediaDocsStrict(docs: TypesenseMediaDocument[]): Promise<void> {
+  const client = getTypesenseClient();
+  if (!client) throw new Error('Typesense not configured');
+  const results = await client.collections(MEDIA_COLLECTION).documents().import(docs, { action: 'upsert' });
+  const failures = results.filter((result) => !result.success);
+  if (failures.length > 0) {
+    throw new Error(`Typesense rejected ${failures.length} of ${docs.length} media documents: ${JSON.stringify(failures.slice(0, 3))}`);
+  }
+}
+
 export async function dropMediaCollection(): Promise<void> {
   const client = getTypesenseClient();
   if (!client) throw new Error('Typesense not configured');
@@ -258,9 +269,10 @@ export interface MediaTypesenseSearchParams {
   hasCaption: string | null;
   assignment: string | null;
   dimensionalTags: DimensionalTagIdMap;
+  tagSelectionMode?: 'any' | 'all';
 }
 
-function buildDimensionalFilters(dt: DimensionalTagIdMap): string[] {
+function buildDimensionalFilters(dt: DimensionalTagIdMap, mode: 'any' | 'all' = 'any'): string[] {
   if (!dimensionalTagMapHasFilters(dt)) return [];
   const clauses: string[] = [];
 
@@ -273,8 +285,8 @@ function buildDimensionalFilters(dt: DimensionalTagIdMap): string[] {
 
   for (const { field, ids } of dims) {
     if (!ids.length) continue;
-    const ors = ids.map((id) => `${field}:=${escapeFilterValue(id)}`).join(' || ');
-    clauses.push(`(${ors})`);
+    const parts = ids.map((id) => `${field}:=${escapeFilterValue(id)}`);
+    clauses.push(mode === 'all' ? parts.join(' && ') : `(${parts.join(' || ')})`);
   }
   return clauses;
 }
@@ -318,7 +330,7 @@ export async function searchMediaTypesense(
     filterParts.push('assigned:=false');
   }
 
-  filterParts.push(...buildDimensionalFilters(params.dimensionalTags));
+  filterParts.push(...buildDimensionalFilters(params.dimensionalTags, params.tagSelectionMode));
 
   const q = params.query.trim() || '*';
   const sortBy =

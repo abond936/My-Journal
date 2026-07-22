@@ -1,7 +1,7 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getAllTags } from '@/lib/firebase/tagService';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
-import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cardService';
+import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cards/cardMediaLifecycleService';
 import type { Media } from '@/lib/types/photo';
 import {
   flattenSuggestedTagIds,

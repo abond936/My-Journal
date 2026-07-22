@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'child_process';
 
 export const PRODUCTION_PROJECT_ID = 'my-journal-936';
 export const BACKUPS_SUBDIR = 'Firebase Backups';
-export const KEEP_RUNS = 5;
+export const KEEP_RUNS = 3;
 
 export function safeBackupTimestamp(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -38,4 +39,28 @@ export function pruneOldBackupRuns(backupRoot: string, log: (message: string) =>
     fs.rmSync(runPath, { recursive: true, force: true });
     log(`Removed old backup run: ${name}`);
   }
+}
+
+export function requestOnlineOnlyBackupRun(
+  runDir: string,
+  log: (message: string) => void
+): void {
+  if (process.platform !== 'win32') {
+    log('Skipped online-only request: OneDrive Files On-Demand automation is Windows-only.');
+    return;
+  }
+
+  const result = spawnSync(
+    'attrib.exe',
+    ['+U', '-P', path.join(runDir, '*'), '/S', '/D'],
+    { encoding: 'utf8', windowsHide: true }
+  );
+
+  if (result.error || result.status !== 0) {
+    const detail = result.error?.message || result.stderr?.trim() || `exit ${result.status}`;
+    log(`Warning: backup completed, but OneDrive online-only request failed: ${detail}`);
+    return;
+  }
+
+  log(`Requested OneDrive Free up space for completed backup: ${path.basename(runDir)}`);
 }

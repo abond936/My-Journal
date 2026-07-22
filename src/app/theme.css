@@ -84,7 +84,7 @@
   --transition-short: 0.2s;
   --font-size-xl: 1.5rem;
   --font-weight-medium: 500;
-  /* Admin grid overlays — fallback when theme token injection is missing (see themeService buildThemeTokensCss) */
+  /* Admin grid overlays — fallback when Theme CSS token injection is missing. */
   --font-size-admin-grid-overlay: 0.5rem;
   --admin-grid-overlay-font: var(--font-weight-medium) var(--font-size-admin-grid-overlay) / 1.2 var(--body-font-family);
   --studio-tag-chip-font-size: calc(var(--font-size-admin-grid-overlay) + 0.125rem + 0.25px);
@@ -116,6 +116,16 @@
   --reader-chrome-text-font-size: var(--font-size-lg);
   --reader-chrome-text-font-weight: var(--font-weight-medium);
   --reader-chrome-text-line-height: var(--line-height-base);
+  --reader-sidebar-label-color: var(--text1-color);
+  --reader-sidebar-label-font-family: var(--body-font-family);
+  --reader-sidebar-label-font-size: var(--font-size-sm);
+  --reader-sidebar-label-font-weight: var(--font-weight-medium);
+  --reader-sidebar-label-line-height: var(--line-height-base);
+  --reader-sidebar-count-color: var(--text2-color);
+  --reader-sidebar-count-font-family: var(--body-font-family);
+  --reader-sidebar-count-font-size: var(--font-size-xs);
+  --reader-sidebar-count-font-weight: var(--font-weight-medium);
+  --reader-sidebar-count-line-height: var(--line-height-base);
   --reader-chrome-muted-color: var(--text2-color);
   --reader-chrome-meta-font-family: var(--body-font-family);
   --reader-chrome-meta-font-size: var(--font-size-sm);

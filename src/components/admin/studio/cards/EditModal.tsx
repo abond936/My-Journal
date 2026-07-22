@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { X } from 'lucide-react';
 import styles from './EditModal.module.css';
@@ -27,7 +28,7 @@ export default function EditModal({
 }: EditModalProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={onClose}>
       <div
         className={clsx(
@@ -49,6 +50,7 @@ export default function EditModal({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
-} 
+}

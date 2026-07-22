@@ -10,6 +10,7 @@ import { PaginatedResult } from '@/lib/types/services';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import { appendReaderTagScopeParam } from '@/lib/utils/readerTagFilterScope';
+import { appendTagSelectionModeParam } from '@/lib/utils/tagSelectionMode';
 import { getDisplayUrl, getReaderDisplayUrl } from '@/lib/utils/photoUtils';
 import styles from './ViewMediaFeed.module.css';
 
@@ -49,6 +50,7 @@ export default function ViewMediaFeed() {
     searchTerm,
     includeSubTagsInFeed,
     readerTagFilterScope,
+    tagSelectionMode,
     clearFilters,
   } = useCardContext();
   const { tags: allTags } = useTag();
@@ -111,6 +113,7 @@ export default function ViewMediaFeed() {
       }
 
       appendReaderTagScopeParam(params, readerTagFilterScope);
+      appendTagSelectionModeParam(params, tagSelectionMode);
 
       return `/api/view/media?${params.toString()}`;
     },

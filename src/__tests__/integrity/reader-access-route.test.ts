@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth/next';
 import { getToken } from 'next-auth/jwt';
 import { redirect } from 'next/navigation';
-import { getCardById, getCards, getCardsByIds, getPaginatedCardsByIds } from '@/lib/services/cardService';
+import { getCards } from '@/lib/services/cards/cardListQueryService';
+import { getCardById, getCardsByIds, getPaginatedCardsByIds } from '@/lib/services/cards/cardReadService';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { searchCardsFiltered } from '@/lib/services/typesenseService';
 import { GET as listCards } from '@/app/api/cards/route';
@@ -48,37 +49,62 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
+jest.mock('@/lib/services/cards/cardReadService', () => ({
   getCardById: jest.fn(),
   getCardsByIds: jest.fn(),
   getPaginatedCardsByIds: jest.fn(),
+  getCardsByCollectionId: jest.fn(),
+  getParentCardsByChildId: jest.fn(),
+  searchCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardListQueryService', () => ({ getCards: jest.fn() }));
+jest.mock('@/lib/services/cards/cardArchiveQueryService', () => ({
+  getCollectionCards: jest.fn(),
+  getSeededRandomCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardBroadMutationService', () => ({
   updateCard: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardCoverMutationService', () => ({
   updateCardCover: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardContentMutationService', () => ({
+  updateCardContent: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardGalleryMutationService', () => ({
   updateCardGallery: jest.fn(),
   updateCardGalleryOrder: jest.fn(),
+  updateCardGalleryInheritanceOverrides: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardHierarchyMutationService', () => ({
   updateCardChildren: jest.fn(),
   updateCardChildrenOrder: jest.fn(),
   updateCardCollectionRoot: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardMetadataMutationService', () => ({
   updateCardMetadata: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardTagMutationService', () => ({
   updateCardTags: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardStatusMutationService', () => ({
   updateCardStatus: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardLifecycleService', () => ({
   deleteCard: jest.fn(),
+  createCard: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardMutationClassifiers', () => ({
   isGalleryOnlyPayload: jest.fn(),
   isGalleryReorderOnlyPayload: jest.fn(),
   isCardMetadataOnlyPayload: jest.fn(),
   isChildrenOnlyPayload: jest.fn(),
   isChildrenReorderOnlyPayload: jest.fn(),
   isCollectionRootOnlyPayload: jest.fn(),
+  isContentOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
   isGalleryInheritanceOverridesOnlyPayload: jest.fn(),
-  updateCardGalleryInheritanceOverrides: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
-  getCards: jest.fn(),
-  getCardsByCollectionId: jest.fn(),
-  getCollectionCards: jest.fn(),
-  getParentCardsByChildId: jest.fn(),
-  createCard: jest.fn(),
-  searchCards: jest.fn(),
 }));
 
 jest.mock('@/lib/config/typesense', () => ({

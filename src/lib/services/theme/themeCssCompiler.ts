@@ -1,38 +1,19 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/config/firebase/admin';
 import {
   StructuredThemeData,
-  TypographyTokens,
-  SpacingTokens,
-  BorderTokens,
-  ShadowTokens,
-  ZIndexTokens,
-  LayoutTokens,
-  ComponentTokens,
-  StateTokens,
-  GradientTokens,
-  PersistedThemeDocumentData,
   ThemeColor,
   ResolvedScopedThemeDocumentData,
   ResolvedScopedThemeSettings,
   ReaderThemeRecipes,
   ThemeRecipeTokenRef,
   type CanvasTextureToken,
-  type ScopedThemeSettings,
 } from '@/lib/types/theme';
-import { getDefaultScopedThemeDocument } from '@/lib/theme/themePresets';
 import { DEFAULT_READER_THEME_RECIPES, normalizeReaderThemeRecipes } from '@/lib/theme/readerThemeSystem';
 import { scopeThemeTokensCss } from '@/lib/theme/scopeThemeTokensCss';
 
 /**
- * Server-side theme service: JSON backup, Firestore runtime source, CSS token generation.
+ * Server-side Theme CSS compiler.
  * Do not import from client components.
  */
-
-const THEME_FIRESTORE_COLLECTION = 'app_settings';
-const THEME_FIRESTORE_DOC = 'theme';
 
 const CANVAS_TEXTURE_CSS: Record<CanvasTextureToken, string> = {
   none: 'none',
@@ -78,103 +59,6 @@ const hexToHsl = (hex: string): { h: number; s: number; l: number } => {
     s: Math.round(s * 100),
     l: Math.round(l * 100)
   };
-};
-
-function getEmptyThemeData(): StructuredThemeData {
-  return {
-    palette: [],
-    themeColors: [],
-    typography: {} as TypographyTokens,
-    spacing: {} as SpacingTokens,
-    borders: {} as BorderTokens,
-    shadows: {} as ShadowTokens,
-    zIndex: {} as ZIndexTokens,
-    layout: {} as LayoutTokens,
-    components: {} as ComponentTokens,
-    states: {} as StateTokens,
-    gradients: {} as GradientTokens,
-  };
-}
-
-function normalizeLegacyContrastTextToken(themeData: StructuredThemeData): StructuredThemeData {
-  if (themeData.components?.button?.solid?.textColor !== 'color1-100') return themeData;
-
-  return {
-    ...themeData,
-    components: {
-      ...themeData.components,
-      button: {
-        ...themeData.components.button,
-        solid: {
-          ...themeData.components.button.solid,
-          textColor: 'theme-color/2/dark',
-        },
-      },
-    },
-  };
-}
-
-function normalizeLegacyReaderRecipes(recipes?: ReaderThemeRecipes): ReaderThemeRecipes | undefined {
-  if (!recipes) return recipes;
-
-  if (
-    recipes.controls?.chromeActiveTab?.text !== 'semantic/reader/tonal-text-secondary' ||
-    recipes.controls?.supportControlStrong?.text !== 'semantic/reader/contrast-on-fill-text'
-  ) {
-    return recipes;
-  }
-
-  return {
-    ...recipes,
-    controls: {
-      ...recipes.controls,
-      chromeActiveTab: {
-        ...recipes.controls.chromeActiveTab,
-        text: 'semantic/reader/contrast-on-fill-text',
-      },
-    },
-  };
-}
-
-function resolveScopedThemeSettings(
-  settings: ScopedThemeSettings,
-  fallbackPreset: ResolvedScopedThemeSettings['activePresetId']
-): ResolvedScopedThemeSettings {
-  return {
-    data: normalizeLegacyContrastTextToken(settings.data),
-    activePresetId: settings.activePresetId ?? fallbackPreset,
-    recipes: normalizeLegacyReaderRecipes(settings.recipes),
-  };
-}
-
-async function readThemeJsonFile(): Promise<unknown> {
-  const jsonPath = path.join(process.cwd(), 'theme-data.json');
-  const jsonContent = await fs.readFile(jsonPath, 'utf-8');
-  return JSON.parse(jsonContent);
-}
-
-function coerceStructuredThemeData(
-  data: unknown
-): StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes } {
-  const normalized = normalizeThemeDocument(data);
-  return {
-    ...normalized.reader.data,
-    activePresetId: normalized.reader.activePresetId,
-    recipes: normalized.reader.recipes,
-  };
-}
-
-/**
- * Reads reader theme data from the JSON file.
- * Accepts either the legacy flat shape or the scoped persisted document.
- */
-export const getThemeData = async (): Promise<StructuredThemeData> => {
-  try {
-    return coerceStructuredThemeData(await readThemeJsonFile());
-  } catch (error) {
-    console.error('Failed to read theme JSON file:', error);
-    return getEmptyThemeData();
-  }
 };
 
 /**
@@ -866,6 +750,16 @@ export function buildThemeTokensCss(
   --reader-chrome-text-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeText.size)};
   --reader-chrome-text-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeText.weight)};
   --reader-chrome-text-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeText.lineHeight)};
+  --reader-sidebar-label-color: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarLabel.color)};
+  --reader-sidebar-label-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarLabel.family)};
+  --reader-sidebar-label-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarLabel.size)};
+  --reader-sidebar-label-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarLabel.weight)};
+  --reader-sidebar-label-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarLabel.lineHeight)};
+  --reader-sidebar-count-color: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarCount.color)};
+  --reader-sidebar-count-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarCount.family)};
+  --reader-sidebar-count-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarCount.size)};
+  --reader-sidebar-count-font-weight: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarCount.weight)};
+  --reader-sidebar-count-line-height: ${getThemeRecipeRefValue(themeData, recipes.typography.sidebarCount.lineHeight)};
   --reader-chrome-muted-color: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeMeta.color)};
   --reader-chrome-meta-font-family: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeMeta.family)};
   --reader-chrome-meta-font-size: ${getThemeRecipeRefValue(themeData, recipes.typography.chromeMeta.size)};
@@ -1422,235 +1316,3 @@ export function buildScopedDraftThemeCss(
   };
 }
 
-type LegacyFlatThemeData =
-  StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes };
-
-type PersistedThemeData =
-  | LegacyFlatThemeData
-  | PersistedThemeDocumentData;
-
-/** Firestore can hold a partial `data` object; building CSS from it throws or yields broken vars. */
-function isThemeDataViable(
-  data: StructuredThemeData | null | undefined
-): boolean {
-  if (!data?.palette?.length || !data.themeColors?.length) return false;
-  const hasBg = data.themeColors.some((c) => c.id === 1);
-  const hasText = data.themeColors.some((c) => c.id === 2);
-  if (!hasBg || !hasText) return false;
-  if (!data.layout?.breakpoints?.sm) return false;
-  if (!data.typography?.fontFamilies?.sans1) return false;
-  if (!data.spacing?.unit) return false;
-  if (!data.shadows?.strengthDark) return false;
-  return true;
-}
-
-export function isPersistedThemeDocument(data: unknown): data is PersistedThemeDocumentData {
-  const row = data as Partial<PersistedThemeDocumentData> | null | undefined;
-  return row?.version === 2 && !!row.reader?.data && !!row.admin?.data;
-}
-
-function themeSettingsFromFlat(
-  data: (StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }) | null | undefined,
-  fallback: ResolvedScopedThemeSettings
-): ResolvedScopedThemeSettings {
-  if (!isThemeDataViable(data)) return fallback;
-  const {
-    activePresetId,
-    recipes,
-    ...rawThemeData
-  } = data;
-  const themeData = normalizeLegacyContrastTextToken(rawThemeData as StructuredThemeData);
-
-  return {
-    data: themeData,
-    activePresetId:
-      activePresetId === 'journal' ||
-      activePresetId === 'editorial' ||
-      activePresetId === 'admin' ||
-      activePresetId === 'custom'
-        ? activePresetId
-        : fallback.activePresetId ?? 'custom',
-    recipes: normalizeLegacyReaderRecipes(recipes) ?? fallback.recipes,
-  };
-}
-
-export function normalizeThemeDocument(data: unknown): ResolvedScopedThemeDocumentData {
-  const defaultScoped = getDefaultScopedThemeDocument();
-  const fallback: ResolvedScopedThemeDocumentData = {
-    version: 2,
-    reader: resolveScopedThemeSettings(defaultScoped.reader, 'journal'),
-    admin: resolveScopedThemeSettings(defaultScoped.admin, 'admin'),
-  };
-  if (isPersistedThemeDocument(data)) {
-    return {
-      version: 2,
-      reader: themeSettingsFromFlat(
-        {
-          ...data.reader.data,
-          activePresetId: data.reader.activePresetId,
-          recipes: data.reader.recipes,
-        },
-        fallback.reader
-      ),
-      admin: themeSettingsFromFlat(
-        {
-          ...data.admin.data,
-          activePresetId: data.admin.activePresetId,
-          recipes: data.admin.recipes,
-        },
-        fallback.admin
-      ),
-    };
-  }
-
-  return {
-    ...fallback,
-    reader: themeSettingsFromFlat(
-      data as LegacyFlatThemeData | null | undefined,
-      fallback.reader
-    ),
-  };
-}
-
-export function toPersistedThemeDocument(
-  data: PersistedThemeDocumentData | ResolvedScopedThemeDocumentData
-): PersistedThemeDocumentData {
-  const reader = {
-    data: data.reader.data,
-    activePresetId: data.reader.activePresetId,
-    ...(data.reader.recipes ? { recipes: data.reader.recipes } : {}),
-  };
-  const admin = {
-    data: data.admin.data,
-    activePresetId: data.admin.activePresetId,
-    ...(data.admin.recipes ? { recipes: data.admin.recipes } : {}),
-  };
-
-  return {
-    version: 2,
-    reader,
-    admin,
-  };
-}
-
-export async function getPersistedThemeDocumentFromJson(): Promise<PersistedThemeDocumentData> {
-  try {
-    return toPersistedThemeDocument(normalizeThemeDocument(await readThemeJsonFile()));
-  } catch (error) {
-    console.error('Failed to read persisted theme JSON document:', error);
-    return toPersistedThemeDocument(getDefaultScopedThemeDocument());
-  }
-}
-
-/**
- * Theme for SSR: Firestore `app_settings/theme` when present and complete, else `theme-data.json`.
- */
-export async function getResolvedThemeData(): Promise<
-  StructuredThemeData & { activePresetId?: string; recipes?: ReaderThemeRecipes }
-> {
-  const scoped = await getResolvedScopedThemeDocument();
-  return {
-    ...scoped.reader.data,
-    activePresetId: scoped.reader.activePresetId,
-    recipes: scoped.reader.recipes,
-  };
-}
-
-/**
- * Theme admin document: Firestore `app_settings/theme` when present and complete,
- * else `theme-data.json` as reader + Admin preset as admin.
- */
-export async function getResolvedScopedThemeDocument(): Promise<ResolvedScopedThemeDocumentData> {
-  const fromFile = normalizeThemeDocument(await getPersistedThemeDocumentFromJson());
-  try {
-    getAdminApp();
-    const db = getFirestore();
-    const snap = await db.collection(THEME_FIRESTORE_COLLECTION).doc(THEME_FIRESTORE_DOC).get();
-    if (snap.exists) {
-      const row = snap.data();
-      const data = row?.data as PersistedThemeData | undefined;
-      if (isPersistedThemeDocument(data)) {
-        return normalizeThemeDocument(data);
-      }
-      if (isThemeDataViable(data as StructuredThemeData | undefined)) {
-        return normalizeThemeDocument(data as StructuredThemeData);
-      }
-      if ((data as StructuredThemeData | undefined)?.palette?.length) {
-        console.warn(
-          '[theme] Firestore app_settings/theme is incomplete; using theme-data.json. Re-save from Theme admin or run npm run seed:theme-firestore.'
-        );
-      }
-    }
-  } catch (e) {
-    console.warn('[theme] Firestore load failed; falling back to theme-data.json:', e);
-  }
-  return fromFile;
-}
-
-async function persistThemeToFirestore(
-  themeData: PersistedThemeData
-): Promise<void> {
-  getAdminApp();
-  const db = getFirestore();
-  await db.collection(THEME_FIRESTORE_COLLECTION).doc(THEME_FIRESTORE_DOC).set({
-    data: themeData,
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-}
-
-/** One-off / CI: push `theme-data.json` to Firestore so production matches repo without opening Theme admin. */
-export async function syncThemeFromJsonToFirestore(): Promise<void> {
-  const data = await getPersistedThemeDocumentFromJson();
-  if (!data.reader.data.palette?.length) {
-    throw new Error('theme-data.json has no reader palette; cannot sync to Firestore');
-  }
-  await persistThemeToFirestore(data);
-}
-
-async function writeThemeBackupFile(themeData: PersistedThemeDocumentData): Promise<void> {
-  // `theme-data.json` is part of the development module graph because preset
-  // builders import it. Rewriting it while Turbopack is running causes an HMR
-  // module-pattern error even though Firestore persistence succeeds. Keep the
-  // recoverable development snapshot under ignored `.next`; production keeps
-  // the repository fallback path used by the deployed save contract.
-  const jsonPath = process.env.NODE_ENV === 'development'
-    ? path.join(process.cwd(), '.next', 'theme-data.backup.json')
-    : path.join(process.cwd(), 'theme-data.json');
-  const temporaryJsonPath = `${jsonPath}.tmp`;
-  await fs.mkdir(path.dirname(jsonPath), { recursive: true });
-  await fs.writeFile(temporaryJsonPath, JSON.stringify(themeData, null, 2), 'utf-8');
-  await fs.rename(temporaryJsonPath, jsonPath);
-}
-
-export type ThemeSaveResult = {
-  firestoreSaved: true;
-  backupSaved: boolean;
-  backupError?: string;
-};
-
-/** Writes the save-ready scoped theme document to Firestore first, then updates the JSON backup best-effort. */
-export const saveThemeData = async (
-  themeData: PersistedThemeDocumentData
-): Promise<ThemeSaveResult> => {
-  try {
-    await persistThemeToFirestore(themeData);
-    try {
-      await writeThemeBackupFile(themeData);
-      console.log('Theme saved to Firestore; theme-data.json backup updated.');
-      return {
-        firestoreSaved: true,
-        backupSaved: true,
-      };
-    } catch (backupError) {
-      console.warn('[theme] Firestore save succeeded, but theme-data.json backup write failed:', backupError);
-      return {
-        firestoreSaved: true,
-        backupSaved: false,
-        backupError: backupError instanceof Error ? backupError.message : String(backupError),
-      };
-    }
-  } catch (error) {
-    console.error('Failed to save theme data:', error);
-    throw error;
-  }
-};

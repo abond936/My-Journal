@@ -125,11 +125,11 @@
 
 .sectionHeading {
   margin: 0;
-  font-family: var(--reader-chrome-text-font-family);
-  font-size: var(--reader-chrome-text-font-size);
-  font-weight: var(--reader-chrome-text-font-weight);
-  line-height: var(--reader-chrome-text-line-height);
-  color: var(--reader-chrome-text-color);
+  font-family: var(--reader-sidebar-label-font-family);
+  font-size: var(--reader-sidebar-label-font-size);
+  font-weight: var(--reader-sidebar-label-font-weight);
+  line-height: var(--reader-sidebar-label-line-height);
+  color: var(--reader-sidebar-label-color);
   flex: 0 0 auto;
 }
 
@@ -170,14 +170,14 @@
   .compactControl {
     width: 100%;
     padding: var(--spacing-sm);
-    font-family: var(--reader-support-control-font-family);
-    font-size: var(--reader-support-control-font-size);
-    font-weight: var(--reader-support-control-font-weight);
-    line-height: var(--reader-support-control-line-height);
+    font-family: var(--reader-sidebar-label-font-family);
+    font-size: var(--reader-sidebar-label-font-size);
+    font-weight: var(--reader-sidebar-label-font-weight);
+    line-height: var(--reader-sidebar-label-line-height);
     border: var(--border-width-thin) solid var(--reader-support-control-border-color);
     border-radius: var(--border-radius-md);
     background-color: var(--reader-support-control-background-color);
-    color: var(--reader-support-control-text-color);
+    color: var(--reader-sidebar-label-color);
     box-sizing: border-box;
   }
 
@@ -281,7 +281,7 @@
     width: 100%;
     padding: 1px var(--spacing-xs);
     font-family: var(--reader-support-control-font-family);
-    font-size: var(--font-size-xs);
+    font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
     line-height: var(--reader-support-control-line-height);
     text-align: left;
@@ -327,11 +327,11 @@
 
   .collectionCount {
     margin-left: var(--spacing-xs);
-    font-family: var(--reader-chrome-meta-font-family);
-    font-size: var(--reader-chrome-meta-font-size);
-    font-weight: var(--reader-chrome-meta-font-weight);
-    line-height: var(--reader-chrome-meta-line-height);
-    color: var(--reader-chrome-muted-color);
+    font-family: var(--reader-sidebar-count-font-family);
+    font-size: var(--reader-sidebar-count-font-size);
+    font-weight: var(--reader-sidebar-count-font-weight);
+    line-height: var(--reader-sidebar-count-line-height);
+    color: var(--reader-sidebar-count-color);
   }
 
   .collectionEmpty {

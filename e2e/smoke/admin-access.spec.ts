@@ -17,7 +17,7 @@ test.describe('admin studio access', () => {
   test('@admin reaches the studio card bank', async ({ page }) => {
     await page.goto('/admin/studio');
 
-    await expect(page.getByRole('heading', { name: 'Content Studio' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Studio', exact: true })).toBeVisible({
       timeout: 45_000,
     });
     await expect(page.getByRole('button', { name: 'Clear card filters' })).toBeVisible();

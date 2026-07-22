@@ -81,6 +81,8 @@ export default function AdminSettingsPage() {
   const [inheritanceConfigured, setInheritanceConfigured] = useState(false);
   const [tagSet0, setTagSet0] = useState<TagSet0Status>({ installed: false, tagCount: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [tagSetBusy, setTagSetBusy] = useState(false);
   const [operations, setOperations] = useState<{
@@ -117,6 +119,9 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
+      setLoadError(null);
+      setOperationsLoading(true);
       try {
         const [settingsRes] = await Promise.all([
           fetch('/api/admin/author-settings'),
@@ -142,7 +147,9 @@ export default function AdminSettingsPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          feedback.showError(error instanceof Error ? error.message : 'Settings could not be loaded. Try again.');
+          const message = error instanceof Error ? error.message : 'Settings could not be loaded. Try again.';
+          setLoadError(message);
+          feedback.showError(message);
         }
       } finally {
         if (!cancelled) {
@@ -154,7 +161,7 @@ export default function AdminSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [feedback, loadTagSet0, loadOperations]);
+  }, [feedback, loadAttempt, loadTagSet0, loadOperations]);
 
   const cancel = useCallback(() => {
     setToggles({ ...savedToggles });
@@ -334,6 +341,22 @@ export default function AdminSettingsPage() {
     return (
       <div className={styles.page}>
         <p className={styles.muted}>Loading settings…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className={styles.page}>
+        <p role="alert">Settings could not be loaded.</p>
+        <p className={styles.muted}>{loadError}</p>
+        <button
+          type="button"
+          className={styles.cancelButton}
+          onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+        >
+          Try again
+        </button>
       </div>
     );
   }

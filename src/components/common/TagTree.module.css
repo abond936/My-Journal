@@ -103,11 +103,11 @@
 
 .cardCount {
   margin-left: var(--spacing-xs);
-  font-family: var(--reader-chrome-meta-font-family);
-  font-size: var(--reader-chrome-meta-font-size);
-  font-weight: var(--reader-chrome-meta-font-weight);
-  line-height: var(--reader-chrome-meta-line-height);
-  color: var(--reader-chrome-muted-color);
+  font-family: var(--reader-sidebar-count-font-family);
+  font-size: var(--reader-sidebar-count-font-size);
+  font-weight: var(--reader-sidebar-count-font-weight);
+  line-height: var(--reader-sidebar-count-line-height);
+  color: var(--reader-sidebar-count-color);
   opacity: 0.8;
 }
 

@@ -5,6 +5,7 @@ import path from 'path';
 import sizeOf from 'image-size';
 import { PickerMedia } from '@/lib/types/photo';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 
 const ONEDRIVE_ROOT_FOLDER = process.env.ONEDRIVE_ROOT_FOLDER;
 // Keep previewable local-folder formats aligned with the import pipeline.
@@ -16,7 +17,7 @@ const toDatabasePath = (p: string) => p.split(path.sep).join('/');
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return NextResponse.json({ message: 'Forbidden.' }, { status: 403 });
   }
 

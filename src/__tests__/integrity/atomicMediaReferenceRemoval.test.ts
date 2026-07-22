@@ -1,5 +1,5 @@
 import { FieldValue } from 'firebase-admin/firestore';
-import { buildMediaReferenceRemovalUpdate } from '@/lib/services/cardService';
+import { buildMediaReferenceRemovalUpdate } from '@/lib/services/cards/cardMediaLifecycleService';
 import type { Card } from '@/lib/types/card';
 
 describe('atomic media reference removal (7e)', () => {

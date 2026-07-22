@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { TreeNode } from '@/lib/types/photo';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 
 // Define the path to the root directory from environment variables.
 const baseDir = process.env.ONEDRIVE_ROOT_FOLDER;
@@ -43,7 +44,7 @@ const getDirectoryTree = (dirPath: string): TreeNode[] => {
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return NextResponse.json({ message: 'Forbidden.' }, { status: 403 });
   }
 

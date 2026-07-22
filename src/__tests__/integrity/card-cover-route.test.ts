@@ -1,19 +1,21 @@
 import { getServerSession } from 'next-auth';
+import { updateCard } from '@/lib/services/cards/cardBroadMutationService';
+import { updateCardContent } from '@/lib/services/cards/cardContentMutationService';
+import { updateCardCover } from '@/lib/services/cards/cardCoverMutationService';
 import {
-  getCardById,
-  updateCard,
-  updateCardCover,
   updateCardGallery,
   updateCardGalleryOrder,
-  isGalleryOnlyPayload,
-  isGalleryReorderOnlyPayload,
+  updateCardGalleryInheritanceOverrides,
+} from '@/lib/services/cards/cardGalleryMutationService';
+import {
   updateCardChildren,
   updateCardChildrenOrder,
   updateCardCollectionRoot,
-  updateCardMetadata,
-  updateCardTags,
-  updateCardStatus,
-  updateCardContent,
+} from '@/lib/services/cards/cardHierarchyMutationService';
+import { updateCardMetadata } from '@/lib/services/cards/cardMetadataMutationService';
+import {
+  isGalleryOnlyPayload,
+  isGalleryReorderOnlyPayload,
   isCardMetadataOnlyPayload,
   isChildrenOnlyPayload,
   isChildrenReorderOnlyPayload,
@@ -21,9 +23,11 @@ import {
   isContentOnlyPayload,
   isTagsOnlyPayload,
   isGalleryInheritanceOverridesOnlyPayload,
-  updateCardGalleryInheritanceOverrides,
   isStatusOnlyPayload,
-} from '@/lib/services/cardService';
+} from '@/lib/services/cards/cardMutationClassifiers';
+import { getCardById } from '@/lib/services/cards/cardReadService';
+import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
+import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
 jest.mock('next/server', () => ({
@@ -46,21 +50,25 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
-  getCardById: jest.fn(),
-  updateCard: jest.fn(),
-  updateCardCover: jest.fn(),
+jest.mock('@/lib/services/cards/cardReadService', () => ({ getCardById: jest.fn(), getPaginatedCardsByIds: jest.fn() }));
+jest.mock('@/lib/services/cards/cardBroadMutationService', () => ({ updateCard: jest.fn() }));
+jest.mock('@/lib/services/cards/cardCoverMutationService', () => ({ updateCardCover: jest.fn() }));
+jest.mock('@/lib/services/cards/cardGalleryMutationService', () => ({
   updateCardGallery: jest.fn(),
   updateCardGalleryOrder: jest.fn(),
+  updateCardGalleryInheritanceOverrides: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardHierarchyMutationService', () => ({
+  updateCardChildren: jest.fn(), updateCardChildrenOrder: jest.fn(), updateCardCollectionRoot: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardMetadataMutationService', () => ({ updateCardMetadata: jest.fn() }));
+jest.mock('@/lib/services/cards/cardTagMutationService', () => ({ updateCardTags: jest.fn() }));
+jest.mock('@/lib/services/cards/cardStatusMutationService', () => ({ updateCardStatus: jest.fn() }));
+jest.mock('@/lib/services/cards/cardContentMutationService', () => ({ updateCardContent: jest.fn() }));
+jest.mock('@/lib/services/cards/cardLifecycleService', () => ({ deleteCard: jest.fn() }));
+jest.mock('@/lib/services/cards/cardMutationClassifiers', () => ({
   isGalleryOnlyPayload: jest.fn(),
   isGalleryReorderOnlyPayload: jest.fn(),
-  updateCardChildren: jest.fn(),
-  updateCardChildrenOrder: jest.fn(),
-  updateCardCollectionRoot: jest.fn(),
-  updateCardMetadata: jest.fn(),
-  updateCardTags: jest.fn(),
-  updateCardStatus: jest.fn(),
-  updateCardContent: jest.fn(),
   isCardMetadataOnlyPayload: jest.fn(),
   isChildrenOnlyPayload: jest.fn(),
   isChildrenReorderOnlyPayload: jest.fn(),
@@ -68,10 +76,7 @@ jest.mock('@/lib/services/cardService', () => ({
   isContentOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
   isGalleryInheritanceOverridesOnlyPayload: jest.fn(),
-  updateCardGalleryInheritanceOverrides: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
-  deleteCard: jest.fn(),
-  getPaginatedCardsByIds: jest.fn(),
 }));
 
 jest.mock('@/lib/config/firebase/admin', () => ({

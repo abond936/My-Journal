@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { updateTagAndDescendantPaths } from '@/lib/firebase/tagService';
+import { mutateTagHierarchy } from '@/lib/services/tagHierarchyMutationService';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { getServerSession } from 'next-auth/next';
 
 getAdminApp();
-const db = getFirestore();
 
 type ApiErrorPayload = {
   ok: false;
@@ -26,7 +25,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
         return errorResponse(
           {
             ok: false,
@@ -56,24 +55,28 @@ export async function POST(
     }
 
     try {
-        await db.runTransaction(async (transaction) => {
-            await updateTagAndDescendantPaths(tagId, newParentId, transaction);
+        const result = await mutateTagHierarchy({
+            kind: 'reparent',
+            tagId,
+            newParentId: typeof newParentId === 'string' && newParentId.trim() ? newParentId : undefined,
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, result });
     } catch (error) {
         console.error(`Error reparenting tag ${tagId}:`, error);
         const message = error instanceof Error ? error.message : 'Unknown error';
+        const isConflict = /cycle/i.test(message);
+        const isInvalid = /not found|different dimension|required/i.test(message);
         return errorResponse(
           {
             ok: false,
-            code: 'TAG_REPARENT_FAILED',
-            message: 'Internal server error.',
+            code: isConflict ? 'TAG_REPARENT_CYCLE' : isInvalid ? 'TAG_REPARENT_INVALID' : 'TAG_REPARENT_FAILED',
+            message: isConflict || isInvalid ? message : 'Internal server error.',
             severity: 'error',
-            retryable: true,
+            retryable: !isConflict && !isInvalid,
             error: message,
           },
-          500
+          isConflict ? 409 : isInvalid ? 400 : 500
         );
     }
-} 
+}

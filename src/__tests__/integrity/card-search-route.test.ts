@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { GET } from '@/app/api/cards/search/route';
-import { getCards, getCardsByIds } from '@/lib/services/cardService';
+import { getCards } from '@/lib/services/cards/cardListQueryService';
+import { getCardsByIds } from '@/lib/services/cards/cardReadService';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { searchCardsFiltered } from '@/lib/services/typesenseService';
 
@@ -24,8 +25,10 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
+jest.mock('@/lib/services/cards/cardListQueryService', () => ({
   getCards: jest.fn(),
+}));
+jest.mock('@/lib/services/cards/cardReadService', () => ({
   getCardsByIds: jest.fn(),
 }));
 
@@ -91,6 +94,8 @@ describe('card search route', () => {
       items: [{ docId: 'card-1' }, { docId: 'card-2' }],
       hasMore: true,
       lastDocId: 'card-2',
+      searchMode: 'full-text',
+      degraded: false,
     });
   });
 
@@ -119,6 +124,37 @@ describe('card search route', () => {
       items: [{ docId: 'card-a' }],
       hasMore: false,
       lastDocId: 'card-a',
+      searchMode: 'title-prefix',
+      degraded: true,
+    });
+  });
+
+  it('falls back truthfully when configured Typesense search is unavailable', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
+    mockedIsTypesenseConfigured.mockReturnValue(true);
+    mockedSearchCardsFiltered.mockRejectedValue(new Error('Typesense unavailable'));
+    mockedGetCards.mockResolvedValue({
+      items: [{ docId: 'card-fallback', title: 'Fallback' }] as never,
+      hasMore: false,
+      lastDocId: 'card-fallback',
+    });
+
+    const res = await GET(makeRequest('https://example.test/api/cards/search?q=fall&limit=5'));
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedGetCards).toHaveBeenCalledWith({
+      q: 'fall',
+      status: 'published',
+      limit: 5,
+      lastDocId: undefined,
+      sortBy: 'title',
+      sortDir: 'asc',
+    });
+    expect(payload).toMatchObject({
+      items: [{ docId: 'card-fallback' }],
+      searchMode: 'title-prefix',
+      degraded: true,
     });
   });
 });

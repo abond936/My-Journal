@@ -52,7 +52,7 @@ describeIfEmulator('Question-answer integrity (Firestore emulator)', () => {
     const question = minimalQuestion('question-create');
     await db.collection('questions').doc(question.docId).set(question);
 
-    const { createQuestionCardFromQuestion } = await import('@/lib/services/cardService');
+    const { createQuestionCardFromQuestion } = await import('@/lib/services/cards/cardLifecycleService');
     const [first, second] = await Promise.all([
       createQuestionCardFromQuestion(question),
       createQuestionCardFromQuestion(question),

@@ -4,7 +4,8 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { authOptions } from '@/lib/auth/authOptions';
 import { projectTagForApiResponse } from '@/lib/api/tagApiProjection';
 import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
-import { getTagById, updateTag, deleteTag } from '@/lib/firebase/tagService';
+import { getTagById, updateTag } from '@/lib/firebase/tagService';
+import { mutateTagHierarchy } from '@/lib/services/tagHierarchyMutationService';
 import { Tag } from '@/lib/types/tag';
 import { safeToDate } from '@/lib/utils/dateUtils';
 
@@ -24,6 +25,44 @@ type ApiErrorPayload = {
 
 function errorResponse(payload: ApiErrorPayload, status: number) {
     return NextResponse.json(payload, { status });
+}
+
+async function applyGovernedTagUpdate(
+    id: string,
+    body: Partial<Omit<Tag, 'docId' | 'createdAt'>>
+): Promise<Tag> {
+    const existing = await getTagById(id);
+    if (!existing) throw new Error(`Tag with ID ${id} not found`);
+
+    const requestedName = typeof body.name === 'string' ? body.name.trim() : undefined;
+    // Run even when the authoritative value already matches: a previous request may
+    // have failed after the Tag write and this idempotent pass resumes projections/search.
+    if (requestedName !== undefined) {
+        await mutateTagHierarchy({ kind: 'rename', tagId: id, name: requestedName });
+    }
+
+    if (body.dimension !== undefined && body.dimension !== existing.dimension) {
+        throw new Error('Cannot change a tag dimension through the update route');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(body, 'parentId')) {
+        await mutateTagHierarchy({
+            kind: 'reparent',
+            tagId: id,
+            newParentId: typeof body.parentId === 'string' && body.parentId.trim() ? body.parentId : undefined,
+        });
+    }
+
+    const remaining = { ...body };
+    delete remaining.name;
+    delete remaining.parentId;
+    delete remaining.dimension;
+    if (Object.keys(remaining).length > 0) {
+        await updateTag(id, remaining);
+    }
+    const updated = await getTagById(id);
+    if (!updated) throw new Error(`Tag with ID ${id} not found after update`);
+    return updated;
 }
 
 /**
@@ -146,7 +185,7 @@ export async function GET(request: NextRequest, { params }: { params: RouteParam
  */
 export async function PUT(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminSession(session)) {
         return errorResponse(
             {
                 ok: false,
@@ -192,7 +231,7 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
         }
 
         // For PUT, we update all fields except docId and createdAt
-        const updatedTag = await updateTag(id, body);
+        const updatedTag = await applyGovernedTagUpdate(id, body);
         
         // Convert timestamps to dates for API response
         const tagWithDates = {
@@ -282,7 +321,7 @@ export async function PUT(request: NextRequest, { params }: { params: RouteParam
  */
 export async function PATCH(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!isAdminSession(session)) {
         return errorResponse(
             {
                 ok: false,
@@ -312,7 +351,7 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
             );
         }
 
-        const updatedTag = await updateTag(id, body);
+        const updatedTag = await applyGovernedTagUpdate(id, body);
         
         // Convert timestamps to dates for API response
         const tagWithDates = {
@@ -390,7 +429,7 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
  */
 export async function DELETE(request: NextRequest, { params }: { params: RouteParams }) {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'admin') {
+    if (!isAdminSession(session)) {
         return errorResponse(
             {
                 ok: false,
@@ -405,8 +444,41 @@ export async function DELETE(request: NextRequest, { params }: { params: RoutePa
 
     try {
         const { id } = await params;
-        await deleteTag(id);
-        return new NextResponse(null, { status: 204 });
+        const body = await request.json().catch(() => null) as {
+            mode?: string;
+            promoteChildren?: boolean;
+            targetTagId?: string;
+        } | null;
+        if (body?.mode === 'merge') {
+            if (!body.targetTagId) {
+                return errorResponse(
+                    {
+                        ok: false,
+                        code: 'TAG_MERGE_TARGET_REQUIRED',
+                        message: 'Merge target is required.',
+                        severity: 'warning',
+                        retryable: false,
+                    },
+                    400
+                );
+            }
+            const result = await mutateTagHierarchy({ kind: 'merge', tagId: id, targetTagId: body.targetTagId });
+            return NextResponse.json({ ok: true, result });
+        }
+        if (body?.mode !== 'remove-everywhere' || body.promoteChildren !== true) {
+            return errorResponse(
+                {
+                    ok: false,
+                    code: 'TAG_DELETE_IMPACT_REQUIRED',
+                    message: 'Tag removal requires an impact preview and explicit child promotion.',
+                    severity: 'warning',
+                    retryable: false,
+                },
+                409
+            );
+        }
+        const result = await mutateTagHierarchy({ kind: 'remove', tagId: id, promoteChildren: true });
+        return NextResponse.json({ ok: true, result });
     } catch (error) {
         console.error(`API Error deleting tag`, error);
         const message = error instanceof Error ? error.message : 'Unknown error';

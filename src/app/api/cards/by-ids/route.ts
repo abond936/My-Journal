@@ -1,4 +1,4 @@
-import { getCardsByIds } from '@/lib/services/cardService';
+import { getCardsByIds } from '@/lib/services/cards/cardReadService';
 import {
   API_INPUT_CAPS,
   isInputCapFailure,

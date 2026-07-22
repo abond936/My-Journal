@@ -1,5 +1,5 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { Tag, OrganizedTags } from '@/lib/types/tag';
+import { tagSchema, type Tag, type OrganizedTags } from '@/lib/types/tag';
 import type { Media } from '@/lib/types/photo';
 import { FieldValue, type DocumentData, type Transaction } from 'firebase-admin/firestore';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
@@ -184,7 +184,7 @@ export async function getTagAncestors(tagIds: string[], allTags?: Tag[]): Promis
 
 /**
  * Centralized function to calculate all derived tag data for a card.
- * This consolidates the duplicate logic currently scattered across cardService.ts.
+ * This is the shared owner for tag-count reconciliation used by Card mutation domains.
  * 
  * @param directTagIds - The tag IDs directly assigned to the card
  * @returns Promise resolving to all derived tag data
@@ -421,6 +421,7 @@ export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId
       updatedAt: FieldValue.serverTimestamp()
     };
 
+    tagSchema.parse({ docId, ...existing, ...updateData });
     await tagRef.update(updateData);
     
     // Fetch and return the updated tag
@@ -660,6 +661,8 @@ export async function createTag(tagData: Omit<Tag, 'docId' | 'createdAt' | 'upda
     });
     const maxOrder = siblings.reduce((m, t) => Math.max(m, t.order ?? 0), 0);
     tagData.order = maxOrder + 1;
+
+    tagSchema.parse(tagData);
 
     // Create the tag
     const tagRef = firestore.collection(TAGS_COLLECTION).doc();

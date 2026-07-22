@@ -509,6 +509,10 @@
   border-radius: var(--border-radius-md);
 }
 
+.interactiveColumnsSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .interactiveTree {
   max-height: 55vh;
   overflow-y: auto;

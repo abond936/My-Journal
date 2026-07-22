@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth/next';
-import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cardService';
+import { bulkApplyTagDelta, bulkUpdateTags } from '@/lib/services/cards/cardBulkMutationService';
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -18,7 +18,7 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
+jest.mock('@/lib/services/cards/cardBulkMutationService', () => ({
   bulkApplyTagDelta: jest.fn(),
   bulkUpdateTags: jest.fn(),
 }));

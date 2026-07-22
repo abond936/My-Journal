@@ -225,6 +225,84 @@
   border-bottom: 2px solid color-mix(in srgb, var(--reader-chrome-text-color) 30%, transparent);
 }
 
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.saveButton,
+.deleteButton,
+.cancelButton {
+  min-height: 30px;
+  min-width: 34px;
+  padding: 0 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background-color 0.2s ease, border-color var(--transition-short) ease,
+    color var(--transition-short) ease;
+}
+
+.saveButton {
+  width: 88px;
+  background-color: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: var(--admin-support-control-strong-hover-background-color);
+}
+
+.deleteButton,
+.cancelButton {
+  background-color: transparent;
+}
+
+.deleteButton {
+  color: var(--admin-state-error-text-color);
+  border: var(--border-width-thin) solid var(--admin-state-error-border-color);
+}
+
+.deleteButton:hover:not(:disabled) {
+  background-color: var(--admin-state-error-background-color);
+}
+
+.cancelButton {
+  color: var(--admin-support-control-text-color);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: var(--admin-support-control-hover-background-color);
+}
+
+.saveButton:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.deleteButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cancelButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .readerModal {
     inset: 0 !important;

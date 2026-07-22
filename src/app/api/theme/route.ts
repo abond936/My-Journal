@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getResolvedScopedThemeDocument, isPersistedThemeDocument, saveThemeData } from '@/lib/services/themeService';
+import { isPersistedThemeDocument } from '@/lib/services/theme/themeDocumentService';
+import { getResolvedScopedThemeDocument, saveThemeData } from '@/lib/services/theme/themePersistenceService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 
 function isThemeSaveEnabled(): boolean {
   return true;
@@ -23,7 +25,7 @@ function errorResponse(payload: ApiErrorPayload, status: number) {
 export async function GET() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as { role?: string }).role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -59,7 +61,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as { role?: string }).role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

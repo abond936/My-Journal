@@ -2,6 +2,7 @@ import React from 'react';
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { MediaProvider } from '@/components/providers/MediaProvider';
@@ -15,7 +16,7 @@ export default async function RootAdminLayout({
 }) {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     // Redirect to the custom sign-in page on the homepage
     redirect(buildLoginRedirectPath('/admin'));
   }

@@ -2,9 +2,12 @@
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
-import PeopleAdminPanel from '@/components/admin/studio/people/PeopleAdminPanel';
+import { WhoRelationshipModal } from '@/components/admin/studio/tags/WhoRelationshipModal';
+import { TagMergeModal } from '@/components/admin/studio/tags/TagMergeModal';
 import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
+import { useTag } from '@/components/providers/TagProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
+import type { Tag } from '@/lib/types/tag';
 import tagAdminStyles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 import studioStyles from './StudioWorkspace.module.css';
 
@@ -20,7 +23,9 @@ export default function TagAdminStudioPane({
   embeddedColumn?: boolean;
   highlightTagIds?: string[];
 }) {
-  const [section, setSection] = useState<'tags' | 'people'>('tags');
+  const [relationshipTag, setRelationshipTag] = useState<Tag | null>(null);
+  const [mergeTag, setMergeTag] = useState<Tag | null>(null);
+  const { tags } = useTag();
   const studioShell = useStudioShellOptional();
   const shellHighlightId = studioShell?.organizeReconcileTargetTagId ?? null;
   const mergedHighlightTagIds = useMemo(() => {
@@ -36,6 +41,7 @@ export default function TagAdminStudioPane({
     handleCreateTag,
     handleUpdateTag,
     handleDeleteTag,
+    handleMergeTag,
     handleReorder,
     handleReparent,
   } = useTagManagement();
@@ -63,13 +69,9 @@ export default function TagAdminStudioPane({
         className={`${embeddedColumn ? '' : tagAdminStyles.stickyTop} ${studioStyles.tagPaneHeader}`}
         ref={stickyTopRef}
       >
-        {embeddedColumn ? null : <h2 className={studioStyles.tagPaneTitle}>{section === 'tags' ? 'Tags' : 'People'}</h2>}
-        <div role="tablist" aria-label="Tag administration sections" style={{ display: 'flex', gap: '0.35rem', padding: '0.4rem' }}>
-          <button type="button" role="tab" aria-selected={section === 'tags'} onClick={() => setSection('tags')}>Tags</button>
-          <button type="button" role="tab" aria-selected={section === 'people'} onClick={() => setSection('people')}>People</button>
-        </div>
+        {embeddedColumn ? null : <h2 className={studioStyles.tagPaneTitle}>Tags</h2>}
       </div>
-      {section === 'people' ? <PeopleAdminPanel /> : <div className={studioStyles.tagPaneScroll}>
+      <div className={studioStyles.tagPaneScroll}>
       {loading && <p className={studioStyles.tagPaneBody}>Loading tags…</p>}
       {error && <p className={tagAdminStyles.error}>{error.toString()}</p>}
       {isSaving && <p className={studioStyles.tagPaneBody}>Saving…</p>}
@@ -85,10 +87,24 @@ export default function TagAdminStudioPane({
             onCreateTag={handleCreateTag}
             onUpdateTag={handleUpdateTag}
             onDeleteTag={handleDeleteTag}
+            onEditRelationships={setRelationshipTag}
+            onMergeTag={setMergeTag}
           />
         </div>
       )}
-      </div>}
+      </div>
+      <WhoRelationshipModal
+        tag={relationshipTag}
+        whoTags={tags.filter((tag) => tag.docId && tag.dimension === 'who')}
+        onClose={() => setRelationshipTag(null)}
+        onUpdateTag={handleUpdateTag}
+      />
+      <TagMergeModal
+        source={mergeTag}
+        tags={tags}
+        onClose={() => setMergeTag(null)}
+        onMerge={handleMergeTag}
+      />
     </div>
   );
 }

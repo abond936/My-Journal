@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
   ],
   adapter: FirestoreAdapter(db),
   pages: {
-    signIn: '/',
+    signIn: '/login',
   },
   session: {
     strategy: 'jwt',

@@ -5,7 +5,7 @@ import {
   deleteMediaWithCardCleanup,
   recomputeCardsMediaSignalsForMedia,
   recomputeCardsMediaSignalsForMediaIds,
-} from '@/lib/services/cardService';
+} from '@/lib/services/cards/cardMediaLifecycleService';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
 
 jest.mock('next/server', () => {
@@ -51,7 +51,7 @@ jest.mock('@/lib/services/images/imageImportService', () => ({
   patchMediaDocument: jest.fn(),
 }));
 
-jest.mock('@/lib/services/cardService', () => ({
+jest.mock('@/lib/services/cards/cardMediaLifecycleService', () => ({
   recomputeCardsMediaSignalsForMedia: jest.fn(),
   recomputeCardsMediaSignalsForMediaIds: jest.fn(),
   deleteMediaWithCardCleanup: jest.fn(),

@@ -2,11 +2,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getAllTags } from '@/lib/firebase/tagService';
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import {
-  getCardById,
-  updateCardCover,
-  updateCardGallery,
-} from '@/lib/services/cardService';
+import { updateCardCover } from '@/lib/services/cards/cardCoverMutationService';
+import { updateCardGallery } from '@/lib/services/cards/cardGalleryMutationService';
+import { getCardById } from '@/lib/services/cards/cardReadService';
 import {
   ensureCompleteFolderImport,
   buildGalleryWithExistingMediaPreserved,

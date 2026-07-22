@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import type { InputCapError } from '@/lib/api/inputCaps';
-import { AppError, ErrorCode, getStatusCodeForError, isAppError } from '@/lib/types/error';
+import { ErrorCode, getStatusCodeForError, isAppError } from '@/lib/types/error';
 
 /** Standard `{ ok: false, ... }` envelope used by admin/list routes and MediaProvider clients. */
 export type ApiRouteErrorPayload = {
@@ -52,7 +52,7 @@ export async function requireApiSession(
   const session = await getServerSession(authOptions);
 
   if (mode === 'admin') {
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminSession(session)) {
       return {
         error: apiRouteError({
           code: 'AUTH_FORBIDDEN',

@@ -2,7 +2,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
-import { updateCardTags } from '@/lib/services/cardService';
+import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
 import { getAllTags } from '@/lib/firebase/tagService';
 import {
   cardTagsEqual,

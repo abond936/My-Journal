@@ -14,6 +14,7 @@ This file is an **index only**.
 | Guided archive / AI clustering seed spec (support doc; not active unless mirrored into `03`) | `docs/05-Guided-Archive-Assistance.md` |
 | Scripts and operational commands (support reference) | `docs/NPM-SCRIPTS.md` |
 | Import-specific operational reference (support reference) | `docs/IMPORT-REFERENCE.md` |
+| Media intake and tagging definition evidence (support doc; active only through `03`) | `docs/06-Media-Intake-Tagging.md` |
 | Working prompts | `docs/Prompts.txt` |
 
 This file routes to canonical owners and does not own process, behavior, or operational policy.

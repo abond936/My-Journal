@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import type { CollectionReference, Firestore, Query, QuerySnapshot } from 'firebase-admin/firestore';
 import { authOptions } from '@/lib/auth/authOptions';
+import { isAdminSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
+import { folderLabelFromSourcePath } from '@/lib/utils/reviewClusterHeuristics';
 import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
 import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch, seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
 import {
@@ -16,6 +18,8 @@ import {
   dimensionalTagMapHasFilters,
   parseDimensionalTagParamsFromSearchParams,
 } from '@/lib/utils/tagUtils';
+import { groupExactMediaDuplicates } from '@/lib/utils/mediaDuplicateEvidence';
+import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 
 type ApiErrorPayload = {
   ok: false;
@@ -89,11 +93,60 @@ function mediaMatchesCaptionFilter(item: Media, hasCaption: string | null): bool
   return true;
 }
 
+function mediaIsCodificationComplete(item: Media): boolean {
+  return Boolean(item.hasWho && item.hasWhat && item.hasWhen && item.hasWhere);
+}
+
+function mediaMatchesLibraryWorkflowFilters(
+  item: Media,
+  filters: {
+    codification: string | null;
+    unresolvedDimension: string | null;
+    importBatchId: string | null;
+    importFolder: string | null;
+    metadataOutcome: string | null;
+  }
+): boolean {
+  const complete = mediaIsCodificationComplete(item);
+  if (filters.codification === 'complete' && !complete) return false;
+  if (filters.codification === 'incomplete' && complete) return false;
+
+  const unresolvedField = {
+    who: 'hasWho',
+    what: 'hasWhat',
+    when: 'hasWhen',
+    where: 'hasWhere',
+  }[filters.unresolvedDimension ?? ''];
+  if (unresolvedField && item[unresolvedField as 'hasWho' | 'hasWhat' | 'hasWhen' | 'hasWhere']) {
+    return false;
+  }
+  if (filters.importBatchId && item.importBatchId !== filters.importBatchId) return false;
+  if (filters.importFolder && filters.importFolder !== 'all') {
+    const folder = folderLabelFromSourcePath(item.sourcePath ?? '') ?? 'Unknown folder';
+    if (folder !== filters.importFolder) return false;
+  }
+  if (filters.metadataOutcome && filters.metadataOutcome !== 'all') {
+    const outcome = item.metadataImport?.outcome ?? 'unknown';
+    if (outcome !== filters.metadataOutcome) return false;
+  }
+  return true;
+}
+
+async function loadExactMatchMediaIds(firestore: Firestore): Promise<Set<string>> {
+  const snapshot = await firestore.collection('media').select('contentIdentity').get();
+  const evidenceRows = snapshot.docs.map((doc) => ({
+    docId: doc.id,
+    ...doc.data(),
+  })) as Media[];
+  return new Set(groupExactMediaDuplicates(evidenceRows).flatMap((group) => group.mediaIds));
+}
+
 /** Aligns with getCards dimensional filtering: intra-dimension OR, inter-dimension AND. */
 function mediaMatchesDimensionalTags(
   item: Media,
   dt: DimensionalTagIdMap,
-  tagScope: 'all' | 'subject'
+  tagScope: 'all' | 'subject',
+  tagSelectionMode: TagSelectionMode = 'any'
 ): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
 
@@ -102,12 +155,10 @@ function mediaMatchesDimensionalTags(
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
-    const ok = selected.some(
-      (tid) =>
-        tagScope === 'subject'
-          ? Boolean(item.subjectFilterTags?.[tid])
-          : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
-    );
+    const candidates = tagScope === 'subject'
+      ? Object.keys(item.subjectFilterTags ?? {}).filter((id) => item.subjectFilterTags?.[id])
+      : [...idsOnMedia, ...Object.keys(item.filterTags ?? {}).filter((id) => item.filterTags?.[id])];
+    const ok = matchesSelectedTags(candidates, selected, tagSelectionMode);
     if (!ok) return false;
   }
   return true;
@@ -187,7 +238,7 @@ async function fetchMediaByIdsInOrder(firestore: Firestore, ids: string[]): Prom
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,
@@ -210,7 +261,14 @@ export async function GET(request: NextRequest) {
     const hasCaption = searchParams.get('hasCaption');
     const search = searchParams.get('search');
     const assignment = searchParams.get('assignment') || 'all';
+    const matchStatus = searchParams.get('matchStatus') || 'all';
+    const codification = searchParams.get('codification');
+    const unresolvedDimension = searchParams.get('unresolvedDimension');
+    const importBatchId = searchParams.get('importBatchId');
+    const importFolder = searchParams.get('importFolder');
+    const metadataOutcome = searchParams.get('metadataOutcome');
     const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
+    const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
     const dimensionPresence = Object.fromEntries(
       (['who', 'what', 'when', 'where'] as const)
         .map((dimension) => [dimension, searchParams.get(`${dimension}Presence`)])
@@ -235,9 +293,22 @@ export async function GET(request: NextRequest) {
 
     const searchTrimmed = search?.trim() ?? '';
     const hasSearchSeek = searchTrimmed.length > 0;
+    const hasLibraryWorkflowSeek = Boolean(
+      (codification && codification !== 'all') ||
+      (unresolvedDimension && unresolvedDimension !== 'all') ||
+      importBatchId ||
+      (importFolder && importFolder !== 'all') ||
+      (metadataOutcome && metadataOutcome !== 'all')
+    );
+    const hasMatchStatusSeek = matchStatus === 'matches' || matchStatus === 'no_matches';
+    const exactMatchMediaIds = hasMatchStatusSeek
+      ? await loadExactMatchMediaIds(firestore)
+      : null;
 
     const wantTypesense =
       isTypesenseConfigured() &&
+      !hasMatchStatusSeek &&
+      !hasLibraryWorkflowSeek &&
       !shouldUseLegacyTagSeek &&
       !hasDimensionPresenceSeek &&
       !(tagScope === 'subject' && hasDimensionalTagSeek) &&
@@ -262,11 +333,12 @@ export async function GET(request: NextRequest) {
         hasCaption,
         assignment,
         dimensionalTags,
+        tagSelectionMode,
       });
 
       const media = await fetchMediaByIdsInOrder(firestore, tsResult.docIds);
       const filteredMedia = media.filter((item) =>
-        mediaMatchesDimensionalTags(item, dimensionalTags, tagScope)
+        mediaMatchesDimensionalTags(item, dimensionalTags, tagScope, tagSelectionMode)
       );
       const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
 
@@ -289,16 +361,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek || hasDimensionPresenceSeek) {
+    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek || hasDimensionPresenceSeek || hasLibraryWorkflowSeek || hasMatchStatusSeek) {
       const predicate = (row: Media) => {
         if (hasSourceSeek && row.source !== source) return false;
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
         if (assignment === 'unassigned' && isMediaAssigned(row)) return false;
+        if (matchStatus === 'matches' && !exactMatchMediaIds?.has(row.docId)) return false;
+        if (matchStatus === 'no_matches' && exactMatchMediaIds?.has(row.docId)) return false;
         if (!mediaMatchesCaptionFilter(row, hasCaption)) return false;
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, searchTrimmed, tagNameLookup)) return false;
+        if (!mediaMatchesLibraryWorkflowFilters(row, {
+          codification,
+          unresolvedDimension,
+          importBatchId,
+          importFolder,
+          metadataOutcome,
+        })) return false;
         if (hasDimensionalTagSeek) {
-          if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
+          if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode)) return false;
         }
         for (const dimension of ['who', 'what', 'when', 'where'] as const) {
           const presence = dimensionPresence[dimension];

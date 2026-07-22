@@ -29,12 +29,12 @@ jest.mock('@/lib/config/firebase/admin', () => ({
 const hasEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
 const describeIfEmulator = hasEmulator ? describe : describe.skip;
 
-type CardServiceModule = typeof import('@/lib/services/cardService');
+type CardServiceModule = typeof import('@/lib/services/cards/cardBroadMutationService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
 
 function getCardService(): Promise<CardServiceModule> {
   if (!cardServiceModulePromise) {
-    cardServiceModulePromise = import('@/lib/services/cardService');
+    cardServiceModulePromise = import('@/lib/services/cards/cardBroadMutationService');
   }
   return cardServiceModulePromise;
 }

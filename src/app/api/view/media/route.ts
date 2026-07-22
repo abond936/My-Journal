@@ -18,6 +18,7 @@ import {
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 
 type ExactDimensionalTagIdMap = Partial<Record<'who' | 'what' | 'when' | 'where', string[]>>;
 
@@ -45,7 +46,8 @@ function getDimensionIds(item: Media, dimension: string): string[] {
 function mediaMatchesDimensionalTags(
   item: Media,
   dt: DimensionalTagIdMap,
-  tagScope: 'all' | 'subject' = 'all'
+  tagScope: 'all' | 'subject' = 'all',
+  tagSelectionMode: TagSelectionMode = 'any'
 ): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
@@ -53,11 +55,10 @@ function mediaMatchesDimensionalTags(
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
-    const ok = selected.some((tid) =>
-      tagScope === 'subject'
-        ? Boolean(item.subjectFilterTags?.[tid])
-        : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
-    );
+    const candidates = tagScope === 'subject'
+      ? Object.keys(item.subjectFilterTags ?? {}).filter((id) => item.subjectFilterTags?.[id])
+      : [...idsOnMedia, ...Object.keys(item.filterTags ?? {}).filter((id) => item.filterTags?.[id])];
+    const ok = matchesSelectedTags(candidates, selected, tagSelectionMode);
     if (!ok) return false;
   }
   return true;
@@ -81,18 +82,18 @@ function parseExactDimensionalTagParams(searchParams: URLSearchParams): ExactDim
 function mediaMatchesExactDimensionalTags(
   item: Media,
   exact: ExactDimensionalTagIdMap,
-  tagScope: 'all' | 'subject' = 'all'
+  tagScope: 'all' | 'subject' = 'all',
+  tagSelectionMode: TagSelectionMode = 'any'
 ): boolean {
   const directTags = new Set(item.tags ?? []);
   const dims: Array<keyof ExactDimensionalTagIdMap> = ['who', 'what', 'when', 'where'];
   for (const dim of dims) {
     const selected = exact[dim];
     if (!selected?.length) continue;
-    const ok = selected.some((tid) =>
-      tagScope === 'subject'
-        ? Boolean(item.subjectFilterTags?.[tid])
-        : directTags.has(tid)
-    );
+    const candidates = tagScope === 'subject'
+      ? Object.keys(item.subjectFilterTags ?? {}).filter((id) => item.subjectFilterTags?.[id])
+      : directTags;
+    const ok = matchesSelectedTags(candidates, selected, tagSelectionMode);
     if (!ok) return false;
   }
   return true;
@@ -180,6 +181,7 @@ export async function GET(request: NextRequest) {
     const dimensionalTags = parseDimensionalTagParamsFromSearchParams(searchParams);
     const exactDimensionalTags = parseExactDimensionalTagParams(searchParams);
     const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
+    const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
     const hasDimensionalTagSeek = dimensionalTagMapHasFilters(dimensionalTags);
     const hasExactDimensionalTags = Object.values(exactDimensionalTags).some((ids) => ids && ids.length > 0);
 
@@ -202,9 +204,10 @@ export async function GET(request: NextRequest) {
         hasCaption: null,
         assignment: null,
         dimensionalTags,
+        tagSelectionMode,
       });
       const items = applyPublicStorageUrls(await fetchMediaByIdsInOrder(firestore, result.docIds));
-      const filteredItems = items.filter((row) => mediaMatchesDimensionalTags(row, dimensionalTags, tagScope));
+      const filteredItems = items.filter((row) => mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode));
       return NextResponse.json({
         items: filteredItems,
         hasMore: result.hasNext,
@@ -212,8 +215,8 @@ export async function GET(request: NextRequest) {
     }
 
     const result = await seekMediaWithPredicates(firestore, limit, lastDocId, (row) => {
-      if (hasDimensionalTagSeek && !mediaMatchesDimensionalTags(row, dimensionalTags, tagScope)) return false;
-      if (hasExactDimensionalTags && !mediaMatchesExactDimensionalTags(row, exactDimensionalTags, tagScope)) return false;
+      if (hasDimensionalTagSeek && !mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode)) return false;
+      if (hasExactDimensionalTags && !mediaMatchesExactDimensionalTags(row, exactDimensionalTags, tagScope, tagSelectionMode)) return false;
       if (q && !mediaMatchesSearch(row, q)) return false;
       return true;
     });

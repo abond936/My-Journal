@@ -2,10 +2,10 @@
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { closestCenter, DndContext, type DragEndEvent, type DragOverEvent } from '@dnd-kit/core';
-import { ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
-import { dehydrateCardForSave, extractMediaFromContent, generateExcerpt } from '@/lib/utils/cardUtils';
+import { dehydrateCardForSave, generateExcerpt } from '@/lib/utils/cardUtils';
 import CoverPhotoContainer from '@/components/admin/studio/cards/CoverPhotoContainer';
 import GalleryManager from '@/components/admin/studio/cards/GalleryManager';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
@@ -18,8 +18,7 @@ import clsx from 'clsx';
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import { getAllowedDisplayModes, normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { arrayMove } from '@dnd-kit/sortable';
-import { useStudioCardFormStudioOptional } from '@/components/admin/studio/studioCardFormStudioContext';
-import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
+import { useCardFormSurfaceOptional } from '@/components/authoring/CardFormSurfaceContext';
 import {
   reorderGalleryMediaFromDragIds,
   reorderChildrenIdsFromDragIds,
@@ -43,73 +42,7 @@ import {
   protectExistingCardInheritance,
 } from '@/lib/utils/galleryTagInheritance';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
-
-type CardDraftOption = {
-  title: string;
-  subtitle: string;
-  excerpt: string;
-  content: string;
-  rationale?: string;
-};
-
-type StoryAssistGuide = 'bob' | 'sandra';
-type StoryAssistMode =
-  | 'draftFromNotes'
-  | 'tightenWording'
-  | 'expandMemory'
-  | 'retitleStory'
-  | 'makeStoryStronger';
-type StoryCoachSuggestion = {
-  category: string;
-  suggestion: string;
-  prompt?: string;
-  example?: string;
-};
-
-const STORY_ASSIST_GUIDE_STORAGE_KEY = 'myjournal-ai-story-guide';
-const STORY_ASSIST_GUIDE_LABEL: Record<StoryAssistGuide, string> = {
-  bob: 'Bob',
-  sandra: 'Sandra',
-};
-const STORY_ASSIST_GUIDE_HINT: Record<StoryAssistGuide, string> = {
-  bob: 'Direct, grounded, and plainspoken.',
-  sandra: 'Warm, reflective, and conversational.',
-};
-const STORY_ASSIST_WRITE_MODES: StoryAssistMode[] = [
-  'draftFromNotes',
-  'tightenWording',
-  'expandMemory',
-  'retitleStory',
-];
-const STORY_ASSIST_MODE_LABEL: Record<StoryAssistMode, string> = {
-  draftFromNotes: 'Draft from notes',
-  tightenWording: 'Tighten wording',
-  expandMemory: 'Expand this memory',
-  retitleStory: 'Retitle this story',
-  makeStoryStronger: 'Make this story stronger',
-};
-const STORY_ASSIST_MODE_HINT: Record<StoryAssistMode, string> = {
-  draftFromNotes: 'Turn rough notes into a readable story draft.',
-  tightenWording: 'Clean up flow, repetition, and clarity.',
-  expandMemory: 'Draw out meaning and scene without inventing facts.',
-  retitleStory: 'Improve the title and subtitle while keeping the story aligned.',
-  makeStoryStronger: 'Return coaching suggestions that deepen the story.',
-};
-
-function isCoachMode(mode: StoryAssistMode | null): mode is 'makeStoryStronger' {
-  return mode === 'makeStoryStronger';
-}
-
-function textToBasicHtml(text: string): string {
-  const safe = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return safe
-    .split(/\n{2,}/)
-    .map((block) => `<p>${block.replace(/\n/g, '<br/>')}</p>`)
-    .join('');
-}
+import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -156,10 +89,9 @@ const CardForm: React.FC = () => {
     commitChildrenIdsPersisted,
   } = useCardForm();
 
-  const studioFormCtx = useStudioCardFormStudioOptional();
-  const studioShellForm = Boolean(studioFormCtx?.studioShellCardForm);
-  const studioShellDnd = Boolean(studioFormCtx?.enableStudioShellDnd);
-  const studioShell = useStudioShellOptional();
+  const authoringSurface = useCardFormSurfaceOptional();
+  const studioShellForm = Boolean(authoringSurface?.compact);
+  const studioShellDnd = Boolean(authoringSurface?.enableStudioRelationshipDnd);
   const feedback = useAppFeedback();
   const [galleryInheritanceSettings, setGalleryInheritanceSettings] = useState<GalleryTagInheritanceToggles | null>(null);
   const [galleryInheritanceConfigured, setGalleryInheritanceConfigured] = useState<boolean | null>(null);
@@ -211,8 +143,8 @@ const CardForm: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (!studioShellDnd || !studioShell) return;
-    const register = studioShell.registerBodyMediaInsert;
+    if (!studioShellDnd || !authoringSurface?.registerBodyMediaInsert) return;
+    const register = authoringSurface.registerBodyMediaInsert;
     register((media: Media) => {
       const tryInsert = (remainingFrames: number) => {
         const editor = editorRef.current;
@@ -230,7 +162,7 @@ const CardForm: React.FC = () => {
     return () => {
       register(null);
     };
-  }, [studioShellDnd, studioShell]);
+  }, [authoringSurface, studioShellDnd]);
 
   useEffect(() => {
     return registerEditorContentGetter(
@@ -238,15 +170,6 @@ const CardForm: React.FC = () => {
     );
   }, [registerEditorContentGetter, cardData.content]);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
-  const [isSuggestingDrafts, setIsSuggestingDrafts] = useState(false);
-  const [includeHistoricalContext, setIncludeHistoricalContext] = useState(false);
-  const [storyAssistGuide, setStoryAssistGuide] = useState<StoryAssistGuide>('bob');
-  const [activeStoryAssistMode, setActiveStoryAssistMode] = useState<StoryAssistMode | null>(null);
-  const [storyAssistSummary, setStoryAssistSummary] = useState('');
-  const [draftOptions, setDraftOptions] = useState<CardDraftOption[]>([]);
-  const [storyCoachSuggestions, setStoryCoachSuggestions] = useState<StoryCoachSuggestion[]>([]);
-  const [draftSuggestionError, setDraftSuggestionError] = useState<string | null>(null);
-  const [storyAssistOpen, setStoryAssistOpen] = useState(false);
   const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
   const [tagMacroDimension, setTagMacroDimension] = useState<TagDimension | null>(null);
   const [titleDraft, setTitleDraft] = useState(cardData.title || '');
@@ -270,32 +193,6 @@ const CardForm: React.FC = () => {
     setExcerptDraft(cardData.excerpt || '');
   }, [cardData.docId, cardData.excerpt]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const stored = window.localStorage.getItem(STORY_ASSIST_GUIDE_STORAGE_KEY);
-    if (stored === 'bob' || stored === 'sandra') {
-      setStoryAssistGuide(stored);
-    }
-  }, []);
-
-  const handleStoryAssistGuideChange = useCallback((nextGuide: StoryAssistGuide) => {
-    setStoryAssistGuide(nextGuide);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORY_ASSIST_GUIDE_STORAGE_KEY, nextGuide);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (
-      isSuggestingDrafts ||
-      draftOptions.length > 0 ||
-      storyCoachSuggestions.length > 0 ||
-      Boolean(draftSuggestionError) ||
-      Boolean(storyAssistSummary)
-    ) {
-      setStoryAssistOpen(true);
-    }
-  }, [draftOptions.length, draftSuggestionError, isSuggestingDrafts, storyAssistSummary, storyCoachSuggestions.length]);
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setTitleDraft(e.target.value), []);
   const handleSubtitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => setSubtitleDraft(e.target.value), []);
@@ -614,8 +511,8 @@ const CardForm: React.FC = () => {
           return false;
         }
         commitGalleryMediaPersisted(normalized);
-        if (studioShell?.selectedCardId === docId) {
-          void studioShell.loadSelectedCard(docId, { quiet: true });
+        if (authoringSurface?.activeCardId === docId) {
+          authoringSurface.reloadCard?.(docId);
         }
         return true;
       } catch (e) {
@@ -627,7 +524,7 @@ const CardForm: React.FC = () => {
         return false;
       }
     },
-    [cardData, commitGalleryMediaPersisted, feedback, studioShell]
+    [authoringSurface, cardData, commitGalleryMediaPersisted, feedback]
   );
 
   /**
@@ -664,8 +561,8 @@ const CardForm: React.FC = () => {
           return false;
         }
         commitChildrenIdsPersisted(nextChildrenIds);
-        if (studioShell?.selectedCardId === docId) {
-          void studioShell.loadSelectedCard(docId, { quiet: true });
+        if (authoringSurface?.activeCardId === docId) {
+          authoringSurface.reloadCard?.(docId);
         }
         return true;
       } catch (e) {
@@ -677,7 +574,7 @@ const CardForm: React.FC = () => {
         return false;
       }
     },
-    [cardData.docId, commitChildrenIdsPersisted, feedback, studioShell]
+    [authoringSurface, cardData.docId, commitChildrenIdsPersisted, feedback]
   );
 
   const localShellFormSensors = useDefaultDndSensors();
@@ -892,89 +789,6 @@ const CardForm: React.FC = () => {
     setIsPhotoPickerOpen(false);
   }, []);
 
-  const requestDraftSuggestions = useCallback(async (mode: StoryAssistMode) => {
-    setIsSuggestingDrafts(true);
-    setActiveStoryAssistMode(mode);
-    setDraftSuggestionError(null);
-    setStoryAssistSummary('');
-    setDraftOptions([]);
-    setStoryCoachSuggestions([]);
-    try {
-      const currentContent = editorRef.current?.getContent() ?? (cardData.content || '');
-      const res = await fetch('/api/ai/suggest-card-drafts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          title: cardData.title || '',
-          subtitle: cardData.subtitle || '',
-          excerpt: cardData.excerpt || '',
-          content: currentContent || '',
-          includeHistoricalContext,
-          guide: storyAssistGuide,
-          mode,
-        }),
-      });
-      const payload = await res.json().catch(() => ({})) as {
-        message?: string;
-        error?: string;
-        mode?: StoryAssistMode;
-        summary?: string;
-        options?: CardDraftOption[];
-        coaching?: StoryCoachSuggestion[];
-      };
-      if (!res.ok) {
-        throw new Error(payload.error || payload.message || `Request failed (${res.status})`);
-      }
-      setStoryAssistSummary(typeof payload.summary === 'string' ? payload.summary : '');
-      if (mode === 'makeStoryStronger') {
-        if (!Array.isArray(payload.coaching) || payload.coaching.length === 0) {
-          throw new Error('No coaching suggestions returned.');
-        }
-        setStoryCoachSuggestions(payload.coaching);
-        return;
-      }
-      if (!Array.isArray(payload.options) || payload.options.length === 0) {
-        throw new Error('No draft options returned.');
-      }
-      setDraftOptions(payload.options.slice(0, 1));
-    } catch (e) {
-      setDraftSuggestionError(e instanceof Error ? e.message : 'Failed to get suggestions');
-    } finally {
-      setIsSuggestingDrafts(false);
-    }
-  }, [cardData.title, cardData.subtitle, cardData.excerpt, cardData.content, includeHistoricalContext, storyAssistGuide]);
-
-  const clearDraftSuggestions = useCallback(() => {
-    setActiveStoryAssistMode(null);
-    setStoryAssistSummary('');
-    setDraftOptions([]);
-    setStoryCoachSuggestions([]);
-    setDraftSuggestionError(null);
-  }, []);
-
-  const applyDraftOption = useCallback(
-    (option: CardDraftOption, scope: 'all' | 'title' | 'subtitle' | 'content') => {
-      if (scope === 'all' || scope === 'title') {
-        setField('title', option.title || '');
-      }
-      if (scope === 'all' || scope === 'subtitle') {
-        setField('subtitle', option.subtitle || '');
-      }
-      if (scope === 'all') {
-        setField('excerptAuto', false);
-        setField('excerpt', option.excerpt || '');
-      }
-      if (scope === 'all' || scope === 'content') {
-        const html = textToBasicHtml(option.content || '');
-        setField('content', html);
-        updateContentMedia(extractMediaFromContent(html));
-      }
-      clearDraftSuggestions();
-    },
-    [clearDraftSuggestions, setField, updateContentMedia]
-  );
-
   const bodyRichTextEditor = (
     <RichTextEditor
       key={formRevision}
@@ -1031,132 +845,17 @@ const CardForm: React.FC = () => {
   );
 
   const storyAssistSection = (
-    <div className={styles.aiAssistSection}>
-      <div className={styles.aiAssistSectionHeader}>
-        <h4 className={styles.sectionTitle}>Story Assist</h4>
-        <button
-          type="button"
-          className={styles.aiAssistCollapseButton}
-          onClick={() => setStoryAssistOpen((open) => !open)}
-          aria-expanded={storyAssistOpen}
-          aria-controls="story-assist-panel"
-        >
-          {storyAssistOpen ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
-        </button>
-      </div>
-      {storyAssistOpen ? (
-        <div id="story-assist-panel">
-          <div className={styles.aiAssistHeaderBlock}>
-            <div className={styles.aiAssistGuideGroup} role="radiogroup" aria-label="Story guide">
-              {(['bob', 'sandra'] as StoryAssistGuide[]).map((guide) => (
-                <button
-                  key={guide}
-                  type="button"
-                  className={`${styles.aiAssistGuideButton} ${
-                    storyAssistGuide === guide ? styles.aiAssistGuideButtonActive : ''
-                  }`}
-                  aria-pressed={storyAssistGuide === guide}
-                  onClick={() => handleStoryAssistGuideChange(guide)}
-                  disabled={isSuggestingDrafts}
-                >
-                  {STORY_ASSIST_GUIDE_LABEL[guide]}
-                </button>
-              ))}
-            </div>
-            <p className={styles.aiAssistGuideHint}>
-              {STORY_ASSIST_GUIDE_HINT[storyAssistGuide]}
-            </p>
-          </div>
-          <div className={styles.aiAssistTopRow}>
-            <div className={styles.aiAssistActionGroup}>
-              {STORY_ASSIST_WRITE_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  className={styles.aiAssistButton}
-                  onClick={() => void requestDraftSuggestions(mode)}
-                  disabled={isSuggestingDrafts || isSaving}
-                  title={STORY_ASSIST_MODE_HINT[mode]}
-                >
-                  {isSuggestingDrafts && activeStoryAssistMode === mode
-                    ? 'Working...'
-                    : STORY_ASSIST_MODE_LABEL[mode]}
-                </button>
-              ))}
-              <button
-                type="button"
-                className={styles.aiAssistButton}
-                onClick={() => void requestDraftSuggestions('makeStoryStronger')}
-                disabled={isSuggestingDrafts || isSaving}
-                title={STORY_ASSIST_MODE_HINT.makeStoryStronger}
-              >
-                {isSuggestingDrafts && activeStoryAssistMode === 'makeStoryStronger'
-                  ? 'Working...'
-                  : STORY_ASSIST_MODE_LABEL.makeStoryStronger}
-              </button>
-              <button
-                type="button"
-                className={styles.aiAssistClearButton}
-                onClick={clearDraftSuggestions}
-                disabled={
-                  isSuggestingDrafts
-                    ? true
-                    : draftOptions.length === 0 &&
-                      storyCoachSuggestions.length === 0 &&
-                      !draftSuggestionError &&
-                      !storyAssistSummary
-                }
-              >
-                Clear
-              </button>
-            </div>
-            <label className={styles.aiAssistToggle}>
-              <input
-                type="checkbox"
-                checked={includeHistoricalContext}
-                onChange={(e) => setIncludeHistoricalContext(e.target.checked)}
-                disabled={isSuggestingDrafts}
-              />
-              Include historical context
-            </label>
-          </div>
-
-          {draftSuggestionError ? <p className={styles.aiAssistError}>{draftSuggestionError}</p> : null}
-          {storyAssistSummary && !draftSuggestionError && (
-            <p className={styles.aiAssistSummary}>{storyAssistSummary}</p>
-          )}
-          {storyCoachSuggestions.length > 0 && isCoachMode(activeStoryAssistMode) && (
-            <div className={styles.aiAssistCoachList}>
-              {storyCoachSuggestions.map((item, idx) => (
-                <article key={`${item.category}-${idx}`} className={styles.aiAssistCoachCard}>
-                  <p className={styles.aiAssistCoachCategory}>{item.category}</p>
-                  <p className={styles.aiAssistCoachSuggestion}>{item.suggestion}</p>
-                  {item.prompt ? <p className={styles.aiAssistCoachPrompt}>Prompt: {item.prompt}</p> : null}
-                  {item.example ? <p className={styles.aiAssistCoachExample}>Example: {item.example}</p> : null}
-                </article>
-              ))}
-            </div>
-          )}
-          {draftOptions.length > 0 && (
-            <div className={styles.aiAssistSuggestions}>
-              {draftOptions.map((opt, idx) => (
-                <button
-                  key={`${opt.title || 'draft'}-${idx}`}
-                  type="button"
-                  className={styles.aiAssistSuggestionButton}
-                  onClick={() => applyDraftOption(opt, 'all')}
-                >
-                  <span className={styles.aiAssistSuggestionTitle}>{opt.title || `Suggestion ${idx + 1}`}</span>
-                  {opt.rationale ? <span className={styles.aiAssistSuggestionHint}>{opt.rationale}</span> : null}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
+    <CardStoryAssist
+      title={cardData.title || ''}
+      subtitle={cardData.subtitle || ''}
+      excerpt={cardData.excerpt || ''}
+      content={cardData.content || ''}
+      isSaving={isSaving}
+      getCurrentContent={() => editorRef.current?.getContent() ?? (cardData.content || '')}
+      setField={setField}
+      updateContentMedia={updateContentMedia}
+    />
   );
-
 
   return (
     <>
@@ -1353,7 +1052,7 @@ const CardForm: React.FC = () => {
                   showSavingOverlay={false}
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
-                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  onOpenMediaEditor={authoringSurface?.openMediaEditor}
                   feedPreviewCard={cardData}
                   feedPreviewTags={allTags}
                 />
@@ -1420,7 +1119,7 @@ const CardForm: React.FC = () => {
                   disabled={isSaving}
                   onSetAsCover={handleSetGalleryItemAsCover}
                   currentCoverMediaId={cardData.coverImageId || null}
-                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  onOpenMediaEditor={authoringSurface?.openMediaEditor}
                   filterTagIds={cardData.tags ?? []}
                 />
               </div>
@@ -1588,7 +1287,7 @@ const CardForm: React.FC = () => {
                   showSavingOverlay={false}
                   error={errors.coverImage}
                   filterTagIds={cardData.tags ?? []}
-                  onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                  onOpenMediaEditor={authoringSurface?.openMediaEditor}
                   feedPreviewCard={cardData}
                   feedPreviewTags={allTags}
                 />
@@ -1611,7 +1310,7 @@ const CardForm: React.FC = () => {
                 showSavingOverlay={false}
                 error={errors.coverImage}
                 filterTagIds={cardData.tags ?? []}
-                onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                onOpenMediaEditor={authoringSurface?.openMediaEditor}
                 feedPreviewCard={cardData}
                 feedPreviewTags={allTags}
               />
@@ -1693,7 +1392,7 @@ const CardForm: React.FC = () => {
                 disabled={isSaving}
                 onSetAsCover={handleSetGalleryItemAsCover}
                 currentCoverMediaId={cardData.coverImageId || null}
-                onOpenMediaEditor={studioShell?.openSelectedCardMediaEditor}
+                onOpenMediaEditor={authoringSurface?.openMediaEditor}
                 onPersistGalleryAfterSlotSave={persistGalleryAfterSlotSave}
                 filterTagIds={cardData.tags ?? []}
               />

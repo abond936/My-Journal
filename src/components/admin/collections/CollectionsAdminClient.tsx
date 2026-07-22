@@ -1506,7 +1506,9 @@ export default function CollectionsAdminClient({
               <section className={styles.panel}>
                 <h2>Collections</h2>
                 <div className={styles.panelScroll}>
-                  {rootedCollections.length === 0 ? (
+                  {loading ? (
+                    <p className={styles.hint} aria-busy="true">Loading collections...</p>
+                  ) : rootedCollections.length === 0 ? (
                     <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
                       <p className={styles.emptyTreeHint}>
                         {curatedTreeDnd

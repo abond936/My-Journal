@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type DragEndEvent } from '@dnd-kit/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mutate as globalMutate } from 'swr';
@@ -13,10 +13,7 @@ import MediaEditModal from '@/components/admin/studio/media/MediaEditModal';
 import { handleStudioRelationshipDragEnd } from '@/components/admin/studio/studioRelationshipDndPrimitives';
 import { handleStudioPileMembershipDragEnd } from '@/components/admin/studio/studioPileMembershipDnd';
 import type {
-  StudioActiveCardViewModel,
   StudioCardContext,
-  StudioSelectedDetail,
-  StudioSelectedLoadState,
   StudioSelectedPreview,
 } from '@/components/admin/studio/studioCardTypes';
 import {
@@ -24,174 +21,23 @@ import {
   type StudioShellContextValue,
 } from '@/components/admin/studio/StudioShellContext';
 import { createStudioShellImperativeRegistry } from '@/components/admin/studio/studioShellImperativeRegistry';
-import {
-  mergeStudioCatalogCard,
-  toStudioSelectedDetail,
-  toStudioSelectedPreview,
-} from '@/components/admin/studio/studioCardProjection';
 import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
-import { EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX } from '@/lib/admin/embeddedWideMinWidthPx';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
-import { dehydrateCardPatchPayload } from '@/lib/utils/cardUtils';
 import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
-import {
-  createStudioPaneWidthPreference,
-  DEFAULT_STUDIO_PANE_VISIBILITY,
-  DEFAULT_STUDIO_WORKSPACE_LAYOUT_PREFERENCES,
-  readStoredStudioWorkspaceLayoutPreferences,
-  resolveStudioPaneWidthPreference,
-  writeStoredStudioWorkspaceLayoutPreferences,
-  type StudioPaneVisibility,
-  type StudioWorkspaceLayoutPreferences,
-} from '@/lib/preferences/studioWorkspaceLayout';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import cardAdminPageStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import styles from './StudioWorkspace.module.css';
+import { MIN_CARD_EDIT_PX, MIN_QUESTIONS_PX } from './studioPaneLayout';
+import { useStudioPaneLayout } from './useStudioPaneLayout';
+import { useStudioSelectedCard } from './useStudioSelectedCard';
+import { collectAssignedMediaIds, mediaRolesOnCard, removeCardFromCardsCache } from './studioCardSelectionModel';
 
-const CARD_EDIT_RESIZE_HANDLE = 8;
-const MIN_CARD_EDIT_PX = 220;
-const MIN_QUESTIONS_PX = 200;
-const MIN_MEDIA_BANK_PX = 180;
-/** Default Compose column width (px) when no saved preference; double-click handle resets here. */
-const DEFAULT_CARD_EDIT_WIDTH = 357;
-const DEFAULT_QUESTIONS_WIDTH = 272;
-/** Upper cap so Compose does not grow past a comfortable editing line length even on ultra-wide rows. */
-const MAX_CARD_EDIT_WIDTH = 1200;
-const MAX_QUESTIONS_WIDTH = 840;
-const STUDIO_SELECTED_CARD_CACHE_LIMIT = 12;
 const STUDIO_ACTION_INFO_TIMEOUT_MS = 3000;
-
-function removeCardFromCardsCache<T>(cached: T, cardId: string): T {
-  if (!cached || typeof cached !== 'object') return cached;
-
-  if (Array.isArray(cached)) {
-    return cached.map((entry) => removeCardFromCardsCache(entry, cardId)) as T;
-  }
-
-  const candidate = cached as { items?: Array<{ docId?: string }> };
-  if (Array.isArray(candidate.items)) {
-    return {
-      ...(candidate as Record<string, unknown>),
-      items: candidate.items.filter((item) => item?.docId !== cardId),
-    } as T;
-  }
-
-  return cached;
-}
-
-function paneHandleCount(opts: { compose: boolean; questions: boolean; media: boolean }): number {
-  return Math.max(0, [opts.compose, opts.questions, opts.media].filter(Boolean).length - 1);
-}
-
-/** When the row is narrow, still allow dragging within the real range. */
-function cardEditWidthBounds(rowW: number, opts: { questions: boolean; media: boolean }): { minEdit: number; maxEdit: number } | null {
-  const handleCount = paneHandleCount({ compose: true, questions: opts.questions, media: opts.media });
-  const rawMax =
-    rowW -
-    (opts.questions ? MIN_QUESTIONS_PX : 0) -
-    (opts.media ? MIN_MEDIA_BANK_PX : 0) -
-    handleCount * CARD_EDIT_RESIZE_HANDLE;
-  if (rawMax < 1) return null;
-  const maxEdit = Math.min(MAX_CARD_EDIT_WIDTH, rawMax);
-  const minEdit = Math.min(MIN_CARD_EDIT_PX, maxEdit);
-  return { minEdit, maxEdit };
-}
-
-function questionsWidthBounds(
-  rowW: number,
-  opts: { compose: boolean; media: boolean; composeWidth: number }
-): { minQuestions: number; maxQuestions: number } | null {
-  const handleCount = paneHandleCount({ compose: opts.compose, questions: true, media: opts.media });
-  const rawMax =
-    rowW -
-    (opts.compose ? opts.composeWidth : 0) -
-    (opts.media ? MIN_MEDIA_BANK_PX : 0) -
-    handleCount * CARD_EDIT_RESIZE_HANDLE;
-  if (rawMax < 1) return null;
-  const maxQuestions = Math.min(MAX_QUESTIONS_WIDTH, rawMax);
-  const minQuestions = Math.min(MIN_QUESTIONS_PX, maxQuestions);
-  return { minQuestions, maxQuestions };
-}
-
-function clamp(n: number, lo: number, hi: number) {
-  return Math.min(hi, Math.max(lo, n));
-}
-
-function rowWidthForCardEditResize(row: HTMLElement): number {
-  const w = row.getBoundingClientRect().width;
-  return w > 0 ? w : row.offsetWidth;
-}
-
-function renderedColumnWidth(el: HTMLDivElement | null, fallback: number): number {
-  if (!el) return fallback;
-  const width = el.getBoundingClientRect().width;
-  return width > 0 ? width : fallback;
-}
-
-function applyColumnWidth(el: HTMLDivElement | null, width: number, minWidthPx: number) {
-  if (!el) return;
-  el.style.flex = `0 0 ${width}px`;
-  el.style.width = `${width}px`;
-  el.style.minWidth = `${minWidthPx}px`;
-}
-
-function applyOptimisticSelectedCardPatch(
-  card: StudioCardContext,
-  payload: Partial<Card>
-): StudioCardContext {
-  const next: StudioCardContext = {
-    ...card,
-    ...payload,
-  };
-
-  if (Object.prototype.hasOwnProperty.call(payload, 'childrenIds')) {
-    next.childrenIds = Array.isArray(payload.childrenIds) ? [...payload.childrenIds] : [];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(payload, 'galleryMedia')) {
-    next.galleryMedia = Array.isArray(payload.galleryMedia)
-      ? payload.galleryMedia.map((item) => ({ ...item }))
-      : [];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(payload, 'contentMedia')) {
-    next.contentMedia = Array.isArray(payload.contentMedia) ? [...payload.contentMedia] : [];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(payload, 'coverImageId')) {
-    next.coverImageId = payload.coverImageId ?? null;
-  }
-
-  next.updatedAt = Date.now();
-  return next;
-}
-
-function collectAssignedMediaIds(card: Pick<Card, 'coverImageId' | 'galleryMedia' | 'contentMedia'> | null): string[] {
-  if (!card) return [];
-  const ids = new Set<string>();
-  if (card.coverImageId) ids.add(card.coverImageId);
-  (card.galleryMedia ?? []).forEach((item) => {
-    if (item.mediaId) ids.add(item.mediaId);
-  });
-  (card.contentMedia ?? []).forEach((mediaId) => {
-    if (mediaId) ids.add(mediaId);
-  });
-  return Array.from(ids);
-}
-
-function mediaRolesOnCard(card: Pick<Card, 'coverImageId' | 'galleryMedia' | 'contentMedia'> | null, mediaId: string): string[] {
-  if (!card || !mediaId) return [];
-  const roles: string[] = [];
-  if (card.coverImageId === mediaId) roles.push('Cover');
-  if ((card.galleryMedia ?? []).some((item) => item.mediaId === mediaId)) roles.push('Gallery');
-  if ((card.contentMedia ?? []).includes(mediaId)) roles.push('Content');
-  return roles;
-}
 
 export default function StudioWorkspace() {
   const feedback = useAppFeedback();
@@ -211,45 +57,29 @@ export default function StudioWorkspace() {
     () => (newCardRequested ? '__new__' : requestedCardId ?? '__none__'),
     [newCardRequested, requestedCardId]
   );
-  const [wideLayout, setWideLayout] = useState(true);
-  const [cardEditWidth, setCardEditWidth] = useState(DEFAULT_CARD_EDIT_WIDTH);
-  const [questionsWidth, setQuestionsWidth] = useState(DEFAULT_QUESTIONS_WIDTH);
-  const [paneVisibility, setPaneVisibility] = useState<StudioPaneVisibility>(DEFAULT_STUDIO_PANE_VISIBILITY);
-  const [layoutPrefsHydrated, setLayoutPrefsHydrated] = useState(false);
-  const cardEditWidthRef = useRef(cardEditWidth);
-  const questionsWidthRef = useRef(questionsWidth);
-  const studioLayoutPrefsRef = useRef<StudioWorkspaceLayoutPreferences>(
-    DEFAULT_STUDIO_WORKSPACE_LAYOUT_PREFERENCES
-  );
-  const studioMediaCardRowRef = useRef<HTMLDivElement | null>(null);
-  const studioRightColumnRef = useRef<HTMLDivElement | null>(null);
-  const cardEditColumnRef = useRef<HTMLDivElement | null>(null);
-  const questionsColumnRef = useRef<HTMLDivElement | null>(null);
-  /** True while dragging card-edit width (skip ResizeObserver clamp). */
-  const cardEditResizeActiveRef = useRef(false);
-  const cardEditResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
-  const questionsResizeActiveRef = useRef(false);
-  const questionsResizeSessionRef = useRef<{ startX: number; startW: number; pointerId: number } | null>(null);
-  const cardEditDragRafRef = useRef<number | null>(null);
-  const questionsDragRafRef = useRef<number | null>(null);
-  const pendingCardEditWidthRef = useRef<number | null>(null);
-  const pendingQuestionsWidthRef = useRef<number | null>(null);
+  const {
+    wideLayout,
+    cardEditWidth,
+    questionsWidth,
+    paneVisibility,
+    setPaneVisibility,
+    resizableWorkspaceLayout,
+    studioRightColumnRef,
+    cardEditColumnRef,
+    questionsColumnRef,
+    bindStudioMediaCardRowRef,
+    togglePane,
+    embeddedRightSlotMinWidth,
+    onCardEditResizePointerDown,
+    onCardEditResizeDoubleClick,
+    onQuestionsResizePointerDown,
+    onQuestionsResizeDoubleClick,
+  } = useStudioPaneLayout();
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(() => requestedCardId);
   const [organizeReconcileSourceTagId, setOrganizeReconcileSourceTagId] = useState<string | null>(null);
   const [organizeReconcileTargetTagId, setOrganizeReconcileTargetTagId] = useState<string | null>(null);
-  const selectedCardIdRef = useRef<string | null>(requestedCardId);
-  const [selectedPreview, setSelectedPreview] = useState<StudioSelectedPreview | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<StudioSelectedDetail | null>(null);
-  const selectedPreviewRef = useRef<StudioSelectedPreview | null>(null);
-  const selectedDetailRef = useRef<StudioSelectedDetail | null>(null);
-  const selectedCardCacheRef = useRef(new Map<string, StudioSelectedPreview>());
-  const selectedCardCacheOrderRef = useRef<string[]>([]);
-  const [selectedLoadState, setSelectedLoadState] = useState<StudioSelectedLoadState>('idle');
-  const [cardLoading, setCardLoading] = useState(false);
-  const [cardError, setCardError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
@@ -277,6 +107,37 @@ export default function StudioWorkspace() {
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const collectionsRemoveCardRef = useRef<((cardId: string) => void) | null>(null);
   const questionCardDeleteSyncRef = useRef<((cardId: string, questionId?: string | null) => void) | null>(null);
+  const {
+    selectedCardId,
+    setSelectedCardId,
+    selectedPreview,
+    setSelectedPreview,
+    selectedDetail,
+    setSelectedDetail,
+    selectedPreviewRef,
+    selectedDetailRef,
+    selectedLoadState,
+    cardLoading,
+    cardError,
+    setCardError,
+    setCardLoading,
+    selectCard,
+    requestSelectCard,
+    registerComposeLeaveGuard,
+    getKnownCardPreview,
+    loadSelectedCard,
+    patchSelectedCard,
+    evictCard,
+    activeCardViewModel,
+  } = useStudioSelectedCard({
+    initialCardId: requestedCardId,
+    selectionRequestKey,
+    reconcileCardMediaAssignments,
+    onCardUpsert: (card) => collectionsUpsertCardRef.current?.(card),
+    setActionBusy,
+    setActionError,
+    setActionInfo,
+  });
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
     [bankMediaPage, resolveMediaById]
@@ -313,91 +174,7 @@ export default function StudioWorkspace() {
       return items[0]!.docId;
     });
     setCardMediaEditorOpen(true);
-  }, [loadMediaById]);
-  const cacheSelectedCard = useCallback((card: StudioSelectedPreview | StudioSelectedDetail | null) => {
-    if (!card?.docId) return;
-    selectedCardCacheRef.current.set(card.docId, toStudioSelectedPreview(card));
-    selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((id) => id !== card.docId);
-    selectedCardCacheOrderRef.current.push(card.docId);
-    while (selectedCardCacheOrderRef.current.length > STUDIO_SELECTED_CARD_CACHE_LIMIT) {
-      const oldestId = selectedCardCacheOrderRef.current.shift();
-      if (oldestId) {
-        selectedCardCacheRef.current.delete(oldestId);
-      }
-    }
-  }, []);
-  const getCachedSelectedCard = useCallback((cardId: string | null) => {
-    if (!cardId) return null;
-    const cached = selectedCardCacheRef.current.get(cardId) ?? null;
-    if (!cached) return null;
-    selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((id) => id !== cardId);
-    selectedCardCacheOrderRef.current.push(cardId);
-    return cached;
-  }, []);
-  const getKnownCardPreview = useCallback(
-    (cardId: string | null) => {
-      if (!cardId) return null;
-      const trimmedId = cardId.trim();
-      if (!trimmedId) return null;
-      if (selectedDetailRef.current?.docId === trimmedId) {
-        return toStudioSelectedPreview(selectedDetailRef.current);
-      }
-      if (selectedPreviewRef.current?.docId === trimmedId) {
-        return selectedPreviewRef.current;
-      }
-      return getCachedSelectedCard(trimmedId);
-    },
-    [getCachedSelectedCard]
-  );
-  const composeLeaveGuardRef = useRef<(() => Promise<boolean>) | null>(null);
-  const selectCard = useCallback(
-    (cardId: string, previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null) => {
-      const trimmedId = cardId.trim();
-      if (!trimmedId) return;
-      const knownPreview = getKnownCardPreview(trimmedId);
-      const nextPreview =
-        previewCard?.docId === trimmedId
-          ? toStudioSelectedPreview(previewCard)
-          : knownPreview;
-      const sameSelectedCard =
-        selectedCardIdRef.current === trimmedId &&
-        (selectedDetailRef.current?.docId === trimmedId || selectedPreviewRef.current?.docId === trimmedId);
-      if (nextPreview) {
-        cacheSelectedCard(nextPreview);
-        setSelectedPreview(nextPreview);
-      }
-      if (sameSelectedCard) {
-        return;
-      }
-      setSelectedCardId(trimmedId);
-      setSelectedDetail((current) => (current?.docId === trimmedId ? current : null));
-      setSelectedLoadState('loading');
-    },
-    [cacheSelectedCard, getKnownCardPreview]
-  );
-  const registerComposeLeaveGuard = useCallback((fn: (() => Promise<boolean>) | null) => {
-    composeLeaveGuardRef.current = fn;
-  }, []);
-  const requestSelectCard = useCallback(
-    async (
-      cardId: string,
-      previewCard?: Card | StudioSelectedPreview | StudioSelectedDetail | null
-    ) => {
-      const trimmedId = cardId.trim();
-      if (!trimmedId) return false;
-      if (trimmedId !== selectedCardId && composeLeaveGuardRef.current) {
-        const canLeave = await composeLeaveGuardRef.current();
-        if (!canLeave) return false;
-      }
-      selectCard(trimmedId, previewCard);
-      return true;
-    },
-    [selectCard, selectedCardId]
-  );
-
-  useEffect(() => {
-    selectedCardIdRef.current = selectedCardId;
-  }, [selectedCardId]);
+  }, [loadMediaById, selectedDetailRef, selectedPreviewRef]);
 
   useEffect(() => {
     selectNoneMedia();
@@ -418,591 +195,6 @@ export default function StudioWorkspace() {
     }, STUDIO_ACTION_INFO_TIMEOUT_MS);
     return () => window.clearTimeout(timeoutId);
   }, [actionBusy, actionInfo]);
-
-  useEffect(() => {
-    if (selectionRequestKey === '__new__') {
-      setSelectedCardId(null);
-      return;
-    }
-    if (selectionRequestKey === '__none__') return;
-    setSelectedCardId((current) => (current === selectionRequestKey ? current : selectionRequestKey));
-  }, [selectionRequestKey]);
-
-  useEffect(() => {
-    cacheSelectedCard(selectedPreview);
-  }, [cacheSelectedCard, selectedPreview]);
-
-  useEffect(() => {
-    cacheSelectedCard(selectedDetail);
-  }, [cacheSelectedCard, selectedDetail]);
-
-  useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${EMBEDDED_ADMIN_WIDE_MIN_WIDTH_PX}px)`);
-    const apply = () => setWideLayout(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const tabsEl = document.getElementById('admin-tabs-bar');
-      if (!tabsEl) return;
-      const tabsHeight = tabsEl.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--admin-tabs-height', `${tabsHeight}px`);
-    };
-
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-
-  cardEditWidthRef.current = cardEditWidth;
-  questionsWidthRef.current = questionsWidth;
-  selectedPreviewRef.current = selectedPreview;
-  selectedDetailRef.current = selectedDetail;
-
-  const scheduleLiveCardEditWidth = useCallback((next: number) => {
-    pendingCardEditWidthRef.current = next;
-    applyColumnWidth(cardEditColumnRef.current, next, MIN_CARD_EDIT_PX);
-  }, []);
-  const scheduleLiveQuestionsWidth = useCallback((next: number) => {
-    pendingQuestionsWidthRef.current = next;
-    applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
-  }, []);
-
-  const persistStudioLayoutPrefs = useCallback(
-    (apply: (current: StudioWorkspaceLayoutPreferences) => StudioWorkspaceLayoutPreferences) => {
-      const next = apply(studioLayoutPrefsRef.current);
-      studioLayoutPrefsRef.current = next;
-      writeStoredStudioWorkspaceLayoutPreferences(next);
-    },
-    []
-  );
-
-  const persistStudioPaneWidth = useCallback(
-    (pane: 'composeWidth' | 'questionsWidth', width: number) => {
-      const rowWidth = studioMediaCardRowRef.current ? rowWidthForCardEditResize(studioMediaCardRowRef.current) : 0;
-      const viewportWidth = typeof window === 'undefined' ? 0 : window.innerWidth;
-      persistStudioLayoutPrefs((current) => ({
-        ...current,
-        [pane]: createStudioPaneWidthPreference(width, { rowWidth, viewportWidth }),
-      }));
-    },
-    [persistStudioLayoutPrefs]
-  );
-
-  useEffect(() => {
-    const stored = readStoredStudioWorkspaceLayoutPreferences();
-    studioLayoutPrefsRef.current = stored;
-    setPaneVisibility(stored.paneVisibility);
-    if (stored.composeWidth?.px != null) {
-      setCardEditWidth(clamp(stored.composeWidth.px, MIN_CARD_EDIT_PX, MAX_CARD_EDIT_WIDTH));
-    }
-    if (stored.questionsWidth?.px != null) {
-      setQuestionsWidth(clamp(stored.questionsWidth.px, MIN_QUESTIONS_PX, MAX_QUESTIONS_WIDTH));
-    }
-    setLayoutPrefsHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!layoutPrefsHydrated) return;
-    persistStudioLayoutPrefs((current) => ({
-      ...current,
-      paneVisibility,
-    }));
-  }, [layoutPrefsHydrated, paneVisibility, persistStudioLayoutPrefs]);
-
-  const togglePane = useCallback((pane: keyof StudioPaneVisibility) => {
-    setPaneVisibility((current) => ({
-      ...current,
-      [pane]: !current[pane],
-    }));
-  }, []);
-
-  const resizableWorkspaceLayout =
-    Number(!paneVisibility.composeCollapsed) +
-      Number(!paneVisibility.questionsCollapsed) +
-      Number(!paneVisibility.mediaCollapsed) >
-    1;
-  const embeddedRightSlotMinWidth = useMemo(() => {
-    const visiblePaneMins = [
-      !paneVisibility.composeCollapsed ? MIN_CARD_EDIT_PX : 0,
-      !paneVisibility.questionsCollapsed ? MIN_QUESTIONS_PX : 0,
-      !paneVisibility.mediaCollapsed ? MIN_MEDIA_BANK_PX : 0,
-    ].filter((width) => width > 0);
-    const handleCount = Math.max(0, visiblePaneMins.length - 1);
-    const requiredWidth = visiblePaneMins.reduce((sum, width) => sum + width, 0) + handleCount * CARD_EDIT_RESIZE_HANDLE;
-    return Math.max(MIN_MEDIA_BANK_PX, requiredWidth);
-  }, [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed]);
-
-  const clampCardEditToRow = useCallback(() => {
-    if (
-      cardEditResizeActiveRef.current ||
-      questionsResizeActiveRef.current ||
-      paneVisibility.composeCollapsed ||
-      (paneVisibility.questionsCollapsed && paneVisibility.mediaCollapsed) ||
-      !resizableWorkspaceLayout
-    ) {
-      return;
-    }
-    const row = studioMediaCardRowRef.current;
-    if (!row) return;
-    const rowW = rowWidthForCardEditResize(row);
-    const viewportWidth = typeof window === 'undefined' ? rowW : window.innerWidth;
-    const savedPrefs = studioLayoutPrefsRef.current;
-    const showQuestions = !paneVisibility.questionsCollapsed;
-    const showMedia = !paneVisibility.mediaCollapsed;
-    const cardBounds = cardEditWidthBounds(rowW, { questions: showQuestions, media: showMedia });
-    const nextCardWidth = cardBounds
-      ? resolveStudioPaneWidthPreference(savedPrefs.composeWidth, {
-          rowWidth: rowW,
-          viewportWidth,
-          minPx: cardBounds.minEdit,
-          maxPx: cardBounds.maxEdit,
-          fallbackPx: cardEditWidthRef.current,
-        })
-      : cardEditWidthRef.current;
-    if (cardBounds) {
-      setCardEditWidth(nextCardWidth);
-    }
-    if (showQuestions) {
-      const questionBounds = questionsWidthBounds(rowW, {
-        compose: !paneVisibility.composeCollapsed,
-        media: showMedia,
-        composeWidth: nextCardWidth,
-      });
-      if (questionBounds) {
-        setQuestionsWidth(
-          resolveStudioPaneWidthPreference(savedPrefs.questionsWidth, {
-            rowWidth: rowW,
-            viewportWidth,
-            minPx: questionBounds.minQuestions,
-            maxPx: questionBounds.maxQuestions,
-            fallbackPx: questionsWidthRef.current,
-          })
-        );
-      }
-    }
-  }, [
-    paneVisibility.composeCollapsed,
-    paneVisibility.mediaCollapsed,
-    paneVisibility.questionsCollapsed,
-    resizableWorkspaceLayout,
-  ]);
-
-  const rowResizeObserverRef = useRef<ResizeObserver | null>(null);
-
-  const bindStudioMediaCardRowRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      studioMediaCardRowRef.current = el;
-      rowResizeObserverRef.current?.disconnect();
-      rowResizeObserverRef.current = null;
-      if (!el || !resizableWorkspaceLayout) return;
-      const ro = new ResizeObserver(() => {
-        clampCardEditToRow();
-      });
-      ro.observe(el);
-      rowResizeObserverRef.current = ro;
-      queueMicrotask(() => {
-        clampCardEditToRow();
-      });
-    },
-    [clampCardEditToRow, resizableWorkspaceLayout]
-  );
-
-  useEffect(() => {
-    return () => {
-      rowResizeObserverRef.current?.disconnect();
-      rowResizeObserverRef.current = null;
-      if (cardEditDragRafRef.current != null) {
-        window.cancelAnimationFrame(cardEditDragRafRef.current);
-        cardEditDragRafRef.current = null;
-      }
-      if (questionsDragRafRef.current != null) {
-        window.cancelAnimationFrame(questionsDragRafRef.current);
-        questionsDragRafRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('resize', clampCardEditToRow);
-    return () => window.removeEventListener('resize', clampCardEditToRow);
-  }, [clampCardEditToRow]);
-
-  useEffect(() => {
-    if (!layoutPrefsHydrated) return;
-    clampCardEditToRow();
-  }, [clampCardEditToRow, layoutPrefsHydrated]);
-
-  const onCardEditResizePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (!resizableWorkspaceLayout || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const target = e.currentTarget as HTMLElement;
-      target.setPointerCapture(e.pointerId);
-      cardEditResizeActiveRef.current = true;
-      cardEditResizeSessionRef.current = {
-        startX: e.clientX,
-        startW: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
-        pointerId: e.pointerId,
-      };
-
-      const onMove = (ev: PointerEvent) => {
-        const session = cardEditResizeSessionRef.current;
-        if (!session || ev.pointerId !== session.pointerId) return;
-        const row = studioMediaCardRowRef.current;
-        if (!row) return;
-        const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row), {
-          questions: !paneVisibility.questionsCollapsed,
-          media: !paneVisibility.mediaCollapsed,
-        });
-        if (!bounds) return;
-        const dx = ev.clientX - session.startX;
-        // Handle is left of Compose: drag left → wider Compose; drag right → narrower (invert raw dx).
-        const next = clamp(session.startW + dx, bounds.minEdit, bounds.maxEdit);
-        scheduleLiveCardEditWidth(next);
-      };
-
-      const end = (ev: PointerEvent) => {
-        const session = cardEditResizeSessionRef.current;
-        if (!session || ev.pointerId !== session.pointerId) return;
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', end);
-        window.removeEventListener('pointercancel', end);
-        try {
-          target.releasePointerCapture(session.pointerId);
-        } catch {
-          /* ignore if already released */
-        }
-        cardEditResizeActiveRef.current = false;
-        cardEditResizeSessionRef.current = null;
-        const committedWidth =
-          pendingCardEditWidthRef.current ??
-          renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current);
-        setCardEditWidth(committedWidth);
-        pendingCardEditWidthRef.current = null;
-        if (cardEditDragRafRef.current != null) {
-          window.cancelAnimationFrame(cardEditDragRafRef.current);
-          cardEditDragRafRef.current = null;
-        }
-        try {
-          persistStudioPaneWidth('composeWidth', committedWidth);
-        } catch {
-          /* ignore */
-        }
-      };
-
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', end);
-      window.addEventListener('pointercancel', end);
-    },
-    [
-      paneVisibility.mediaCollapsed,
-      paneVisibility.questionsCollapsed,
-      persistStudioPaneWidth,
-      resizableWorkspaceLayout,
-      scheduleLiveCardEditWidth,
-    ]
-  );
-
-  const onCardEditResizeDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (!resizableWorkspaceLayout || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const row = studioMediaCardRowRef.current;
-      if (!row) return;
-      const bounds = cardEditWidthBounds(rowWidthForCardEditResize(row), {
-        questions: !paneVisibility.questionsCollapsed,
-        media: !paneVisibility.mediaCollapsed,
-      });
-      if (!bounds) return;
-      const next = clamp(DEFAULT_CARD_EDIT_WIDTH, bounds.minEdit, bounds.maxEdit);
-      setCardEditWidth(next);
-      pendingCardEditWidthRef.current = null;
-      applyColumnWidth(cardEditColumnRef.current, next, MIN_CARD_EDIT_PX);
-      persistStudioPaneWidth('composeWidth', next);
-    },
-    [paneVisibility.mediaCollapsed, paneVisibility.questionsCollapsed, persistStudioPaneWidth, resizableWorkspaceLayout]
-  );
-
-  const onQuestionsResizePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (!resizableWorkspaceLayout || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const target = e.currentTarget as HTMLElement;
-      target.setPointerCapture(e.pointerId);
-      questionsResizeActiveRef.current = true;
-      questionsResizeSessionRef.current = {
-        startX: e.clientX,
-        startW: renderedColumnWidth(questionsColumnRef.current, questionsWidthRef.current),
-        pointerId: e.pointerId,
-      };
-
-      const onMove = (ev: PointerEvent) => {
-        const session = questionsResizeSessionRef.current;
-        if (!session || ev.pointerId !== session.pointerId) return;
-        const row = studioMediaCardRowRef.current;
-        if (!row) return;
-        const bounds = questionsWidthBounds(rowWidthForCardEditResize(row), {
-          compose: !paneVisibility.composeCollapsed,
-          media: !paneVisibility.mediaCollapsed,
-          composeWidth: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
-        });
-        if (!bounds) return;
-        const dx = ev.clientX - session.startX;
-        const next = clamp(session.startW + dx, bounds.minQuestions, bounds.maxQuestions);
-        scheduleLiveQuestionsWidth(next);
-      };
-
-      const end = (ev: PointerEvent) => {
-        const session = questionsResizeSessionRef.current;
-        if (!session || ev.pointerId !== session.pointerId) return;
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', end);
-        window.removeEventListener('pointercancel', end);
-        try {
-          target.releasePointerCapture(session.pointerId);
-        } catch {
-          /* ignore if already released */
-        }
-        questionsResizeActiveRef.current = false;
-        questionsResizeSessionRef.current = null;
-        const committedWidth =
-          pendingQuestionsWidthRef.current ??
-          renderedColumnWidth(questionsColumnRef.current, questionsWidthRef.current);
-        setQuestionsWidth(committedWidth);
-        pendingQuestionsWidthRef.current = null;
-        if (questionsDragRafRef.current != null) {
-          window.cancelAnimationFrame(questionsDragRafRef.current);
-          questionsDragRafRef.current = null;
-        }
-        try {
-          persistStudioPaneWidth('questionsWidth', committedWidth);
-        } catch {
-          /* ignore */
-        }
-      };
-
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', end);
-      window.addEventListener('pointercancel', end);
-    },
-    [
-      paneVisibility.composeCollapsed,
-      paneVisibility.mediaCollapsed,
-      persistStudioPaneWidth,
-      resizableWorkspaceLayout,
-      scheduleLiveQuestionsWidth,
-    ]
-  );
-
-  const onQuestionsResizeDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (!resizableWorkspaceLayout || e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const row = studioMediaCardRowRef.current;
-      if (!row) return;
-      const bounds = questionsWidthBounds(rowWidthForCardEditResize(row), {
-        compose: !paneVisibility.composeCollapsed,
-        media: !paneVisibility.mediaCollapsed,
-        composeWidth: renderedColumnWidth(cardEditColumnRef.current, cardEditWidthRef.current),
-      });
-      if (!bounds) return;
-      const next = clamp(DEFAULT_QUESTIONS_WIDTH, bounds.minQuestions, bounds.maxQuestions);
-      setQuestionsWidth(next);
-      pendingQuestionsWidthRef.current = null;
-      applyColumnWidth(questionsColumnRef.current, next, MIN_QUESTIONS_PX);
-      persistStudioPaneWidth('questionsWidth', next);
-    },
-    [paneVisibility.composeCollapsed, paneVisibility.mediaCollapsed, persistStudioPaneWidth, resizableWorkspaceLayout]
-  );
-
-  const loadSelectedCard = useCallback(async (cardId: string, opts?: { quiet?: boolean }) => {
-    if (!opts?.quiet) setCardLoading(true);
-    setCardError(null);
-    setSelectedLoadState('loading');
-    const id = cardId.trim();
-    // Studio reads `selectedCard.childrenIds` (IDs only, free with parent fetch)
-    // but never the hydrated `children` array. Skip child hydration entirely —
-    // saves up to 100 child Firestore reads + media hydrations per card click.
-    const res = await fetch(`/api/cards/${encodeURIComponent(id)}?children=skip`, {
-      cache: 'no-store',
-      credentials: 'same-origin',
-    });
-    const raw = await res.text();
-    let data: unknown;
-    try {
-      data = raw ? JSON.parse(raw) : {};
-    } catch {
-      data = {
-        message: `Could not parse API response (HTTP ${res.status}). ${raw.slice(0, 160)}${raw.length > 160 ? '…' : ''}`,
-      };
-    }
-    throwIfJsonApiFailed(res, data, 'This card could not be opened. Try again.');
-    const card = toStudioSelectedDetail(data as StudioCardContext);
-    setSelectedDetail(card);
-    setSelectedPreview((current) =>
-      current?.docId === card.docId
-        ? mergeStudioCatalogCard(current, card)
-        : toStudioSelectedPreview(card)
-    );
-    setSelectedLoadState('ready');
-    if (!opts?.quiet) setCardLoading(false);
-    return card;
-  }, []);
-
-  useEffect(() => {
-    if (!selectedCardId) {
-      setSelectedPreview(null);
-      setSelectedDetail(null);
-      setCardError(null);
-      setCardLoading(false);
-      setSelectedLoadState('idle');
-      return;
-    }
-    let cancelled = false;
-    const cachedSelectedCard = getCachedSelectedCard(selectedCardId);
-    if (cachedSelectedCard && selectedPreviewRef.current?.docId !== selectedCardId) {
-      setSelectedPreview(cachedSelectedCard);
-    }
-    const hasUsablePreview =
-      selectedPreviewRef.current?.docId === selectedCardId ||
-      selectedDetailRef.current?.docId === selectedCardId ||
-      Boolean(cachedSelectedCard);
-    setCardError(null);
-    setCardLoading(true);
-    const run = async () => {
-      try {
-        await loadSelectedCard(selectedCardId, { quiet: hasUsablePreview });
-      } catch (e) {
-        if (!cancelled) {
-          const message = e instanceof Error ? e.message : 'Failed to load selected card context.';
-          const notFound = /not found/i.test(message);
-          if (notFound) {
-            setSelectedCardId(null);
-            setSelectedPreview(null);
-            setSelectedDetail(null);
-            setCardError(null);
-            setSelectedLoadState('idle');
-            if (typeof window !== 'undefined') {
-              window.history.replaceState(null, '', '/admin/studio');
-            }
-            return;
-          }
-          setCardError(message);
-          setSelectedLoadState(hasUsablePreview ? 'degraded' : 'error');
-        }
-      } finally {
-        if (!cancelled) setCardLoading(false);
-      }
-    };
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [getCachedSelectedCard, selectedCardId, loadSelectedCard]);
-
-  const patchSelectedCard = useCallback(
-    async (payload: Partial<Card>, successMessage?: string) => {
-      if (!selectedCardId) return;
-      setActionBusy(true);
-      setActionError(null);
-      const previousDetail = selectedDetail;
-      const previousPreview = selectedPreview;
-      if (selectedDetail?.docId === selectedCardId) {
-        const optimisticCard = applyOptimisticSelectedCardPatch(selectedDetail, payload);
-        cacheSelectedCard(optimisticCard);
-        setSelectedDetail(optimisticCard);
-        setSelectedPreview((current) =>
-          current?.docId === optimisticCard.docId
-            ? mergeStudioCatalogCard(current, optimisticCard)
-            : toStudioSelectedPreview(optimisticCard)
-        );
-      }
-      try {
-        const res = await fetch(`/api/cards/${selectedCardId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dehydrateCardPatchPayload(payload)),
-        });
-        const data = await res.json().catch(() => ({}));
-        throwIfJsonApiFailed(res, data, 'This card could not be updated. Try again.');
-        const nextCard = toStudioSelectedDetail(data as StudioCardContext);
-        const previousAssigned = previousDetail ? collectAssignedMediaIds(previousDetail) : [];
-        const nextAssigned = collectAssignedMediaIds(nextCard);
-        const addedAssigned = nextAssigned.filter((id) => !previousAssigned.includes(id));
-        const removedAssigned = previousAssigned.filter((id) => !nextAssigned.includes(id));
-        if (addedAssigned.length > 0 || removedAssigned.length > 0) {
-          reconcileCardMediaAssignments(selectedCardId, addedAssigned, removedAssigned);
-        }
-        cacheSelectedCard(nextCard);
-        setSelectedDetail(nextCard);
-        setSelectedPreview((current) =>
-          current?.docId === nextCard.docId
-            ? mergeStudioCatalogCard(current, nextCard)
-            : toStudioSelectedPreview(nextCard)
-        );
-        setSelectedLoadState('ready');
-        collectionsUpsertCardRef.current?.(nextCard);
-        // Always refresh strip: omitting a message must clear stale text (e.g. old cover-drag copy).
-        setActionInfo(successMessage ?? null);
-      } catch (e) {
-        if (previousDetail?.docId === selectedCardId) {
-          cacheSelectedCard(previousDetail);
-          setSelectedDetail(previousDetail);
-        }
-        if (previousPreview?.docId === selectedCardId) setSelectedPreview(previousPreview);
-        setActionError(e instanceof Error ? e.message : 'Update failed.');
-        setActionInfo(null);
-      } finally {
-        setActionBusy(false);
-      }
-    },
-    [cacheSelectedCard, reconcileCardMediaAssignments, selectedDetail, selectedPreview, selectedCardId]
-  );
-
-  const activeCardViewModel = useMemo<StudioActiveCardViewModel>(() => {
-    if (selectedLoadState === 'idle' && !selectedCardId && !selectedPreview && !selectedDetail) {
-      return {
-        status: 'empty',
-        card: null,
-        preview: null,
-        detail: null,
-        error: null,
-      };
-    }
-    if (selectedDetail) {
-      return {
-        status: selectedLoadState === 'degraded' ? 'degraded' : 'hydrated',
-        card: selectedDetail,
-        preview: selectedPreview,
-        detail: selectedDetail,
-        error: cardError,
-      };
-    }
-    if (selectedPreview) {
-      return {
-        status: selectedLoadState === 'degraded' ? 'degraded' : 'preview',
-        card: selectedPreview,
-        preview: selectedPreview,
-        detail: null,
-        error: cardError,
-      };
-    }
-    return {
-      status: selectedLoadState === 'error' ? 'error' : 'empty',
-      card: null,
-      preview: null,
-      detail: null,
-      error: cardError,
-    };
-  }, [cardError, selectedCardId, selectedDetail, selectedLoadState, selectedPreview]);
 
   const bridgeCollectionsCardToSelectedParent = useCallback(
     async ({
@@ -1112,7 +304,7 @@ export default function StudioWorkspace() {
         showError: feedback.showError,
       });
     },
-    [actionBusy, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById, studioImperatives]
+    [actionBusy, bodyMediaInsertRef, bridgeCollectionsCardToSelectedParent, feedback, selectedCardId, selectedDetail, patchSelectedCard, resolveBankMediaById, studioImperatives]
   );
 
   const refreshCollectionsStructure = useCallback(() => {
@@ -1156,24 +348,9 @@ export default function StudioWorkspace() {
         const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
         throwIfJsonApiFailed(res, data, 'This card could not be deleted. Try again.');
 
-        selectedCardCacheRef.current.delete(id);
-        selectedCardCacheOrderRef.current = selectedCardCacheOrderRef.current.filter((entryId) => entryId !== id);
         cardsBankRemoveRef.current?.(id);
         removeCollectionsCardStructure(id);
-        if (selectedCardId === id) {
-          if (fallbackCard?.docId && fallbackCard.docId !== id) {
-            selectCard(fallbackCard.docId, fallbackCard);
-          } else {
-            setSelectedCardId(null);
-            setSelectedPreview(null);
-            setSelectedDetail(null);
-            setSelectedLoadState('idle');
-          }
-        } else {
-          setSelectedCardId((current) => (current === id ? null : current));
-          setSelectedPreview((current) => (current?.docId === id ? null : current));
-          setSelectedDetail((current) => (current?.docId === id ? null : current));
-        }
+        evictCard(id, fallbackCard);
         setCardError(null);
         setCardLoading(false);
         selectNoneMedia();
@@ -1193,7 +370,18 @@ export default function StudioWorkspace() {
         setActionBusy(false);
       }
     },
-    [notifyQuestionCardDeleted, removeCollectionsCardStructure, router, selectCard, selectNoneMedia, selectedCardId]
+    [
+      evictCard,
+      notifyQuestionCardDeleted,
+      removeCollectionsCardStructure,
+      router,
+      selectNoneMedia,
+      selectedCardId,
+      selectedDetailRef,
+      selectedPreviewRef,
+      setCardError,
+      setCardLoading,
+    ]
   );
   const hasSelectedCardMedia = useMemo(
     () => collectAssignedMediaIds(selectedDetail ?? selectedPreview).length > 0,
@@ -1209,7 +397,7 @@ export default function StudioWorkspace() {
     setPaneVisibility((prev) =>
       prev.mediaCollapsed ? { ...prev, mediaCollapsed: false } : prev
     );
-  }, []);
+  }, [setPaneVisibility]);
 
   const registerStoryPileMembershipChanged = useCallback(
     (fn: (() => void | Promise<void>) | null) => {
@@ -1304,7 +492,7 @@ export default function StudioWorkspace() {
       <div className={styles.page}>
         <div className={`${cardAdminPageStyles.stickyTop} ${styles.studioChrome}`}>
           <div className={styles.studioHeaderRow}>
-            <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>Content Studio</h1>
+            <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>Studio</h1>
             <div className={styles.studioPaneToolbar} aria-label="Studio panes">
               <button
                 type="button"

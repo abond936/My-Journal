@@ -76,8 +76,8 @@
 }
 
 .mediaModeToggleButtonActive {
-  background: color-mix(in srgb, var(--accent1-color) 14%, var(--surface1-color));
-  color: var(--text1-color);
+  background: var(--accent1-color);
+  color: var(--button-text-color);
   font-weight: 600;
 }
 
@@ -268,6 +268,11 @@
 
 .studioAssignedToggle input {
   margin: 0;
+}
+
+.studioFilterToggle {
+  box-sizing: border-box;
+  padding-block: calc(3px + var(--border-width-thin));
 }
 
 .studioAssignedNotice {

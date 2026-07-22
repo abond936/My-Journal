@@ -9,7 +9,9 @@ import {
   PanelLeftOpen,
   Pencil,
   Plus,
+  GitMerge,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { Tag } from '@/lib/types/tag';
 import styles from './TagAdminRow.module.css';
@@ -27,6 +29,8 @@ interface TagAdminRowProps {
   isCollapsed: boolean;
   onToggleCollapse: (tagId: string) => void;
   highlighted?: boolean;
+  onEditRelationships?: (tag: Tag) => void;
+  onMergeTag?: (tag: Tag) => void;
 }
 
 export function TagAdminRow({
@@ -38,6 +42,8 @@ export function TagAdminRow({
   isCollapsed,
   onToggleCollapse,
   highlighted = false,
+  onEditRelationships,
+  onMergeTag,
 }: TagAdminRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [tagName, setTagName] = useState(tag.name);
@@ -175,6 +181,16 @@ export function TagAdminRow({
               <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setIsAddingChild(true); }}>
                 <Plus size={14} aria-hidden="true" /> Add child
               </button>
+              {tag.dimension === 'who' && onEditRelationships && (
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onEditRelationships(tag); }}>
+                  <Users size={14} aria-hidden="true" /> Relationships
+                </button>
+              )}
+              {onMergeTag && (
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onMergeTag(tag); }}>
+                  <GitMerge size={14} aria-hidden="true" /> Merge into…
+                </button>
+              )}
               {hasChildren && (
                 <button
                   type="button"

@@ -14,6 +14,7 @@ import {
 } from '@/lib/utils/personRelationships';
 import { buildArchiveIdentityReviewReport } from '@/lib/utils/archiveIdentityReview';
 import { getAuthorSettings, updateArchivePerspectivePersonId } from '@/lib/services/authorSettingsService';
+import { getPersonIdentity } from '@/lib/services/personIdentityService';
 
 const PEOPLE = 'people';
 const RELATIONSHIPS = 'person_relationships';
@@ -36,17 +37,15 @@ function withoutServerFields<T extends { docId?: string; createdAt?: unknown; up
 async function assertPeopleExist(personIds: string[]): Promise<void> {
   const unique = [...new Set(personIds)];
   if (unique.length === 0) return;
-  const firestore = db();
-  const snaps = await firestore.getAll(...unique.map((id) => firestore.collection(PEOPLE).doc(id)));
-  const missing = snaps.filter((snap) => !snap.exists).map((snap) => snap.id);
+  const results = await Promise.allSettled(unique.map((id) => getPersonIdentity(id)));
+  const missing = results.flatMap((result, index) => result.status === 'rejected' ? [unique[index]] : []);
   if (missing.length > 0) throw new Error(`Unknown people: ${missing.join(', ')}`);
 }
 
 async function assertHumanPeople(personIds: string[]): Promise<void> {
   const unique = [...new Set(personIds)];
-  const firestore = db();
-  const snaps = await firestore.getAll(...unique.map((id) => firestore.collection(PEOPLE).doc(id)));
-  const nonhuman = snaps.filter((snap) => snap.exists && snap.data()?.kind === 'nonhuman').map((snap) => snap.id);
+  const people = await Promise.all(unique.map((id) => getPersonIdentity(id)));
+  const nonhuman = people.filter((person) => person.kind === 'nonhuman').map((person) => person.personTagId);
   if (nonhuman.length > 0) throw new Error('Perspective-relative family relationships require human identities.');
 }
 

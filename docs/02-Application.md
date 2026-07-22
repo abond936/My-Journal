@@ -13,7 +13,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 *Principles*
 
 - **Purpose** — Relive, enjoy, and learn from meaningful moments.
-- **Private** — One author controls a private archive for named readers.
+- **Private** — One author controls a private archive for named readers; future sharing begins from private work rather than a common raw-media pool.
 - **Integrated** — Media, stories, tags, questions, and collections form one product.
 - **Assisted** — The system suggests; the author confirms.
 - **Responsive** — Reader is mobile-first; Administration is desktop-primary.
@@ -23,11 +23,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Reader** — Published stories and media in Freeform and Guided experiences.
 - **Administration** — Protected Studio, Users, Themes, Settings, and operations.
 - **Content** — Story, Gallery, Question, and Callout forms.
+- **State communication** — Loading, empty, success, warning, error, and unavailable states appear only when true. Normal asynchronous work does not masquerade as missing data, and recoverable failures provide a useful next action where one exists.
 
 ⭕2 **Future**
 
-- **Tenancy** — Multiple isolated customer archives.
-- **Sharing** — Access models beyond named private readers.
+- **Personal and family spaces** — Private author workspaces may later publish selected stories into authorized shared family archives without exposing the author's complete Media library.
+- **Family feed** — A chronological view of newly published family stories may complement archive exploration; it does not replace the structured archive or add engagement-driven social-network behavior.
 
 📋 **Contracts**
 
@@ -121,11 +122,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Filters** — Dimensional tag filtering and Subject-only scope.
 - **Collections** — Published authored tree in Guided mode.
 - **Author editing** — Administrator-only entry to edit the current card and its visible media without leaving Reader context.
-
-⭕1 **Planned**
-
-- **Hierarchy** — Clarify mode, filter, collection, and administrative controls.
-- **Mobile** — Improve drawer interaction without breaking browser gestures.
+- **Hierarchy** — Mode, Type, Tags, collection, count, and administrative controls have distinct hierarchy in their applicable Reader modes.
+- **Mobile** — The drawer preserves practical open/close behavior without replacing browser-edge navigation gestures.
 
 ⭕2 **Future**
 
@@ -279,11 +277,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Settings** — Archive preferences and operations.
 - **Suggestions** — Provisional grouping and tag assistance separated from confirmed truth.
 - **Shell** — Coherent entry and primary navigation for Studio, Users, Settings, and Theme; specialist pages exclude Reader/Studio chrome.
-
-⭕1 **Planned**
-
-- **Feedback** — Standardize success, error, warning, progress, confirmation, and blocking behavior across the application.
-- **Boundary** — Keep viewing users read-only, support practical in-context author editing in Reader, and retain archive-wide and bulk organization in Studio.
+- **Feedback** — Success, error, warning, progress, confirmation, and blocking behavior use shared semantic states and bounded workflow ownership.
+- **Boundary** — Viewing users remain read-only; authors have practical in-context Reader editing; archive-wide and bulk organization remain in Studio.
 
 ⭕2 **Future**
 
@@ -311,10 +306,10 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Forms** — Story, Gallery, Question, and Callout management.
 - **Subjects** — Card subject authoring.
 - **Compose** — Open the selected card for full authoring.
+- **Tags** — Keyboard-safe dimensional filtering, hierarchy, direct known-tag entry, and disambiguated subject scope.
 
 ⭕1 **Planned**
 
-- **Tags** — Improve keyboard use, hierarchy, and disambiguation.
 - **Quote** — Add Quote only with the completed Quote object.
 
 ⭕2 **Future**
@@ -338,12 +333,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Tags** — Dimensional assignment and subject designation.
 - **Children** — Attach, remove, and order structural children.
 - **Preview** — Reader-oriented presentation preview.
+- **Alignment** — Compose, Reader, and compact previews share the applicable Reader rendering contracts.
+- **Reader edit** — Focused Reader editing shares overlapping authoring capabilities while retaining a smaller Reader-owned shell.
 
 ⭕1 **Planned**
 
 - **Guidance** — Explain field roles in Help when needed; do not add inline definitions to the authoring forms.
-- **Alignment** — Reconcile Compose, Reader, and compact previews.
-- **Reader edit** — Align focused Reader editing with overlapping Compose fields.
 - **Editorial** — Add deliberate long-form presentation controls where approved.
 - **Context** — Keep historical context assistance distinct from writing rewrites.
 - **Quote** — Define and implement Quote authoring.
@@ -402,33 +397,36 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Reliability** — Shared modal ownership, exact lookup, scoped filters, and post-save reconciliation.
 - **Selection** — Direct entry handles known tags; Who, What, When, and Where open focused assignment trees; and the full four-dimensional selector remains available for comprehensive and bulk classification. Individual Card, Media, and Question assignment preserves hidden dimensions and supports multiple subjects.
 - **Integrity** — Canonical hierarchy with reconciled paths, counts, derived fields, and search projections.
-- **Identities** — Stable human and non-human subjects with canonical names, aliases, details, and editing.
-- **Relationships** — Parent, spouse, and partner records with archive perspective and contextual role resolution.
-- **Groups** — Typed couples, families, and households without duplicate people.
-- **Migration** — Manifested, reviewed identity conversion with audit and rollback evidence.
-- **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets.
+- **Identity compatibility** — Canonical Who tags own identity; the 10 existing compatibility profiles use those same tag IDs, and archive perspective resolves to the canonical Alan Bond Who tag.
+- **Family-tree facts** — Optional parent, spouse, and partner records can reference canonical Who tag IDs to construct a stable family-tree view. No relationship records currently exist, and derived kinship words do not become assignments or alter authored content.
+- **Groups** — Stored filtering Groups are not part of the target model. No Person Group records currently exist, and the rejected legacy role/group tag nodes have been removed through governed cleanup.
+- **Migration evidence** — The read-only vocabulary manifest covers all 138 Who tags, 10 compatibility profiles, 1,281 Cards, 3,503 Media records, and 270 Questions. It proves no ID remapping, assignment rewrite, count repair, or search reindex is required for the approved nested-name clusters.
+- **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets. A reparent move is cycle-checked before optimistic display; a rejected server move reloads authoritative tags rather than leaving the editable tree unusable.
+- **Governed rename and reparent** — Rename and same-dimension reparent preserve stable direct assignments and reconcile descendant paths, Card and Media dimensional/filter projections, Card and Media subject ancestry, Question subject ancestry, Media completeness flags, hierarchical published-Card and Media counts, and both search indexes. Each operation records durable stage and failure evidence and is idempotent so the same request can safely resume reconciliation after a partial failure.
 
 ⭕1 **Planned**
 
 - **Merge/split** — Define and implement recoverable identity correction without silently changing assignments.
+- **Import consolidation** — Let the author keep imported name variants nested under one aggregate Who tag or preview and consolidate selected variants into a corrected tag without losing assignments, subjects, counts, provenance, or search truth.
+- **Family organization** — Who remains an author-controlled hierarchy. Stable people may live beneath meaningful branches such as Family or Friends; historical married, maiden, and imported names may remain nested beneath their canonical person. A future family-tree view uses the same stable identities and parent/partner facts without converting relationship words into assignable tags or changing authored stories for each viewer.
 
 ⭕2 **Future**
 
 - **Aggregation** — Suggest and apply useful tag summaries.
-- **Faces** — Suggest Who assignments through face recognition.
+- **Faces** — Import supported face/person evidence or generate face recognition suggestions, cluster repeated faces, and let the author confirm them against stable Who identities. Relationship roles remain separately resolved from perspective.
 - **Exclusion** — Add include and exclude filtering.
 - **Keyboard** — Complete advanced taxonomy keyboard and drag interaction.
 
 📋 **Contracts**
 
 - Reflections live under What; operational import branches are not normal author or Reader vocabulary.
-- Parenthood and Childhood may be stable What concepts when they describe story subject matter; a person's childhood, parenthood, or other life stage is identity-relative context rather than a universal assigned tag.
+- Parenthood and Childhood are stable What concepts when they describe story subject matter. Combine them with Who and When when person- or period-specific context is required; identity-relative time filters are not part of the current target model.
 - Who represents stable human and non-human named identities; What covers events, activities, and Reflections; When uses sortable chronology; Where supports geographic and venue hierarchy.
-- Each named subject has one stable identity; canonical and historical names remain searchable aliases of that identity.
-- Mother, Father, Parent, Sibling, Grandparent, and similar human roles are contextual relationships resolved from an explicit human perspective.
-- Relationship groups may organize Who browsing, but selecting through one assigns the stable identity rather than the relationship label. Existing relational-tag assignments remain unchanged until an author-reviewed migration.
-- Identity-relative stages combine an identity with a dated or approximate period for presentation and filtering; they are not inherited as ordinary When tags.
-- Multiple people may be subjects; a meaningful couple, family, or household is an explicitly typed group rather than a duplicate person.
+- A Who parent node may serve as the stable aggregate identity. Its nested names and variants remain directly assignable and exact-filterable while automatically contributing to the parent's hierarchical counts and filters; the parent may also be assigned directly.
+- The ordinary Who hierarchy, not a second visible People classification system, owns identity naming and aggregation. Optional relationship/profile data may use a sidecar keyed by the selected Who tag ID, but no sidecar may become a second identity authority.
+- Parent and partner connections are optional family-tree facts, not assignable Who tags. Kinship labels may be derived as explanatory navigation, but they do not rewrite the Who hierarchy, Card titles, authored perspective, assignments, or filtering truth.
+- Arbitrary combinations of people use Any/OR or All/AND filtering rather than persistent Group identities. Collections own authored narrative groupings; a future saved filter may preserve a repeated query without becoming a tag.
+- Across all dimensions, a meaningful parent or child may be assigned directly, child assignments aggregate to ancestors, and purely navigational nodes may be explicitly nonassignable.
 - `parentId` is taxonomy authority; paths, counts, dimensional fields, and search records are derived projections that must reconcile to it.
 - Existing assignments are never renamed, merged, deleted, or reinterpreted without an author-reviewed migration with affected-object counts and recovery evidence.
 - Known tags use direct entry; clicking Who, What, When, or Where opens only that dimension without changing the others; the complete selector is reserved for comprehensive, initial, or bulk classification.
@@ -492,37 +490,38 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **One bank** — Assets enter one canonical library and cards reference them.
 - **Integrity** — Originals, metadata, identity, and relationships are preserved.
-- **Workshop** — Tags, piles, stacks, and assignments prepare media for stories.
+- **Unified library** — Import, search, filtering, grouping, codification, captioning, selection, and Card assignment operate on one canonical Media library rather than separate Organize and Tell views.
 - **Confirmation** — Suggested organization remains provisional until accepted.
+- **Adaptable intake** — Import and organization disclose what source evidence is available and provide a clear path when folders, metadata, dates, filenames, tags, captions, and duplicate quality vary.
+- **Story progression** — The workflow leads from imported media through understanding and confirmation toward useful Galleries, Cards, captions, and stories rather than ending at a managed asset bank.
 
 ✅ **Complete**
 
 - **Import** — Bank import, card-oriented folder tools, paste, and drop.
 - **Browse** — Search, filters, grouping, batches, and population scopes.
+- **Library workflow filters** — Server-backed Complete/Incomplete, unresolved dimension, import batch, source folder, metadata outcome, and dimensional-tag filters operate across the matching Library rather than only the loaded page. Grouping fully hydrates the matching result before presenting Folder, Batch, Metadata, or Day groups.
 - **Editing** — Captions, tags, subjects, positioning, and replace-in-place.
 - **Assignment** — Cover, Gallery, and body relationships through drag or library selection.
 - **Selection** — Bulk tags, subjects, and draft Gallery creation.
 - **Protection** — Reference-aware deletion.
 - **Renditions** — Optimized Reader and Studio images with originals retained.
-- **Piles** — Provisional story grouping, correction, tagging, dismissal, and card creation.
+- **Piles** — Retired from the active product journey. Historical provisional-cluster records and backend compatibility remain dormant pending a later cleanup gate.
 - **Stacks** — Manual hero/member grouping without deleting assets.
 - **Map preview** — Transient media view from import-tag mapping.
 - **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record. Existing accessible local originals have verified evidence and uncontested registry entries.
-- **Exact review** — An author queue presents records with identical source bytes and records Same asset, Keep both, or Defer without merging, deleting, or moving references.
+- **Exact-match filtering** — The Library can show all Media, only records that share exact source-byte evidence, or only records without such a match. The author uses ordinary Media selection and reference-aware deletion; prior duplicate-review evidence remains preserved but is not a separate author workflow.
 - **Evidence classification** — Media without source-byte evidence can be explicitly classified as a missing local original or a source whose original bytes were not retained; stored renditions never substitute for original-byte evidence.
 - **Readiness** — New imports durably report source, metadata, Studio rendition, Reader rendition, and search-index state; pending and failed work is visible without adding chrome to healthy media, and retry preserves the canonical asset.
 - **Consistency** — Cards and Media share narrow search and empty-state recovery, consistent selection wording, and authoritative deletion-consequence disclosure where their bank operations overlap.
-- **Pile merge** — Pending story piles can be merged transactionally into a chosen destination while preserving confirmed archive truth and retained source recovery evidence.
 - **Derivatives** — Canonical sources produce orientation-correct Studio and Reader renditions with truthful readiness, retry, and surface-specific delivery across Administration and Reader.
-
-⭕1 **Planned**
-
-- **Duplicates** — Recover evidence where original source bytes are unavailable, extend review to likely matches, and reconcile confirmed same-asset records with recovery evidence.
-- **Bursts (parked)** — Suggest likely burst stacks only after reliable original capture time and source-sequence evidence is persisted; import timestamps and filenames alone are insufficient.
-- **Video (parked)** — Import, browse, assign, preview, process, and play video across Media, Compose, and Reader after User Management, Settings, Reader Experience, and Platform and commercial readiness establish a solid core application.
 
 ⭕2 **Future**
 
+- **First-user workflow validation** — Observe a representative new archive owner using the implemented Import → Library → codify/caption → Card path without live instruction, then gate only the corrections supported by that evidence.
+- **Duplicate reconciliation** — Recover evidence where original source bytes are unavailable and reconcile confirmed same-asset records with recovery evidence. Likely-match discovery remains low priority unless archive pain proves otherwise.
+- **Compatibility retirement** — Remove dormant Pile, Person, Group, and old perspective compatibility only after zero-live-reference proof and a recoverable migration gate.
+- **Bursts (parked)** — Suggest likely burst stacks only after reliable original capture time and source-sequence evidence is persisted; import timestamps and filenames alone are insufficient.
+- **Video (parked)** — Import, browse, assign, preview, process, and play video only after the stable image-based authoring and reading baseline proves its value.
 - **External library adapters (parked)** — Add provider-specific export guidance, explicit-selection import, or native companion access only after the core experience is proven. Apple Photos, Google Photos, OneDrive, and similar services are ingestion sources, not synchronized backing libraries.
 - **External edit** — Managed export, external editing, and replacement round trip.
 - **Similarity** — Suggest non-burst visual stacks.
@@ -533,13 +532,17 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - PhotoPicker selects existing assets; folder import belongs to Studio Media.
 - Assignment never removes media from the bank or alone controls Reader discovery.
+- Media `Status` means Card relationship status: Assigned or Unassigned. Codification completeness is a separate Complete or Incomplete filter, and selecting Incomplete adds unresolved-dimension criteria without hiding ordinary dimensional tag filters.
+- Import adds Media to the Library; it does not create provisional story groups or Cards. The normal author journey is Import → Codify/caption → Select → Create or add to Card.
+- Card-oriented Media selection defaults the existing codification filter to Complete. The same All Codification / Complete / Incomplete selector remains visible; All Codification includes both Complete and Incomplete when Card context will help finish codification. Complete accepts intentional Unknown or N/A dimensional answers.
+- Automatic and manual Piles are not part of the target workflow. Filtering, grouping, search, and ordinary selection form working sets; a future saved-selection capability requires demonstrated user need rather than inheriting the provisional Pile model.
+- New imports persist whether embedded metadata was requested and whether useful caption or keyword metadata was found, absent, or unreadable. Paste imports record that metadata was not requested; legacy records without this evidence remain Unknown.
 - Media caption and tags are frame truth; card placement overrides are explicit and local.
+- Future first-time guidance must explain source evidence, provisional versus confirmed truth, and the relationship between Media tags, Card tags, subjects, identities, and Gallery inheritance at the moment each distinction becomes relevant.
+- A successful import is not the end of onboarding: the system must truthfully show what is ready, what requires review, and the most useful next action without forcing a novice through every advanced tool.
 - Delete checks every authoritative card surface; replace preserves identity and relationships.
 - Exact source bytes or an exact provider asset identity may reuse one canonical asset. Filename, dates, dimensions, size, and visual similarity are review evidence only and never authorize automatic merging.
 - Duplicate review decisions are Same asset, Keep both, or Defer. Keep-both decisions persist; same-asset reconciliation requires an explicit canonical asset and field-by-field conflict resolution before references move.
-- A pile is provisional, exclusive to one pending pile per item, append-only when rebuilt, and distinct from a stack.
-- Applying pile tags confirms tags but does not accept the pile; dismissal deletes no media or confirmed tags.
-- Pile tag suggestions default visible when the overlay opens; dismissing more than 40 members requires confirmation and returns them to Unsorted.
 - A stack is author-confirmed, has one hero, can be dissolved without deleting members, and contributes one Gallery position during card creation unless explicitly expanded.
 - External photo libraries do not remain live backing stores in v1. Exported, locally available, or explicitly selected assets enter the same canonical import pipeline, which preserves available source identity and metadata and stores durable application-owned media.
 - Video follows image identity, tagging, assignment, reference, and deletion rules; it plays in Media, Compose placements, and Reader. Studio Cards may use a poster only. Video never autoplays with sound.
@@ -594,22 +597,24 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Editor** — Component, variant, attribute, and value selection.
 - **Recipes** — Reusable values and semantic roles.
 - **Persistence** — Structured saved data, generated variables, and fallback.
-
-⭕1 **Planned**
-
 - **Standardization** — Restore one path from approved values through roles and recipes to surfaces with visible inheritance and explicit overrides.
 - **Enforcement** — Remove bypasses, competing aliases, duplicated variables, and local design systems.
 - **Coverage** — Reconcile surfaces, editor, schema, generator, runtime, and components.
 - **Foundations** — Provide centralized typography, palette, spacing, radius, shadow, and density decisions with understandable cascade impact.
 - **Shared systems** — Expose coherent Primary action, secondary action, field, selected, destructive, feedback, dimensional-tag, Type-chip, caption, and image-control recipes.
 - **Macro layout** — Expose meaningful layout controls such as Content Grid spacing without exposing responsive safety calculations as arbitrary styling.
-- **Journal** — Complete and validate Light and Dark.
-- **Editorial** — Complete and validate Light and Dark.
-- **Reader choice** — Let each reader select theme and mode.
-- **Persistence** — Preserve each reader's choice independently.
+- **Journal** — Journal Light and Dark meet the accepted v1 presentation and contrast level.
+- **Editorial** — Editorial Light and Dark meet the accepted v1 presentation and contrast level.
+- **Reader mode choice** — Each reader can select Light or Dark independently.
+- **Reader mode persistence** — Each reader's Light/Dark choice persists in account-backed settings.
 - **Administration** — Establish one coherent administrative presentation.
 - **States** — Standardize success, warning, error, information, focus, disabled, selected, and destructive states.
 - **Usability** — Improve the workbench after the contract is stable.
+
+⭕1 **Planned**
+
+- **Reader package choice** — Let each reader select Journal or Editorial rather than consuming the single globally materialized Reader package.
+- **Reader package persistence** — Preserve each reader's package choice independently once both packages can be stored and compiled truthfully at runtime.
 
 ⭕2 **Future**
 

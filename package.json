@@ -28,6 +28,8 @@
     "repair:tag-projections": "tsx -r dotenv/config src/lib/scripts/tags/repair-derived-tag-projections.ts",
     "repair:tag-counts": "tsx -r dotenv/config src/lib/scripts/tags/repair-tag-counts.ts",
     "migrate:approved-identities": "tsx -r dotenv/config src/lib/scripts/tags/migrate-approved-identities.ts",
+    "manifest:who-vocabulary": "tsx -r dotenv/config src/lib/scripts/tags/manifest-who-vocabulary.ts",
+    "migrate:who-people-to-family": "tsx -r dotenv/config src/lib/scripts/tags/move-who-people-to-family.ts",
     "migrate:archive-perspective": "tsx -r dotenv/config src/lib/scripts/tags/migrate-archive-perspective.ts",
     "backfill:gallery-inheritance-overrides": "tsx -r dotenv/config src/lib/scripts/tags/backfill-gallery-inheritance-overrides.ts",
     "audit:subject-contract": "tsx -r dotenv/config src/lib/scripts/tags/audit-subject-contract.ts",
@@ -54,6 +56,7 @@
     "typecheck:strict-api": "tsc -p tsconfig.strict-api.json",
     "regenerate:storage-urls": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/regenerate-storage-urls.ts",
     "seed:journal-users": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-journal-users.ts",
+    "recover:journal-admin": "tsx -r dotenv/config src/lib/scripts/firebase/recover-journal-admin.ts",
     "seed:theme-firestore": "npx ts-node -r dotenv/config -r tsconfig-paths/register -P tsconfig.scripts.json src/lib/scripts/firebase/seed-theme-firestore.ts",
     "backup:database": "tsx -r dotenv/config src/lib/scripts/firebase/backup-firestore.ts",
     "backup:storage": "tsx -r dotenv/config src/lib/scripts/firebase/backup-storage.ts",
@@ -100,7 +103,7 @@
     "commander": "^14.0.0",
     "csv-parse": "^5.6.0",
     "exif-reader": "^2.0.2",
-    "exiftool-vendored": "^35.16.0",
+    "exiftool-vendored": "^35.21.0",
     "firebase": "^11.8.1",
     "firebase-admin": "^12.0.0",
     "framer-motion": "^12.12.1",
@@ -108,7 +111,7 @@
     "lucide-react": "^1.8.0",
     "mime-types": "^3.0.1",
     "next": "15.5.15",
-    "next-auth": "^4.24.11",
+    "next-auth": "^4.24.14",
     "node-fetch": "^3.3.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
@@ -116,11 +119,11 @@
     "react-markdown": "^10.1.0",
     "react-photo-album": "^3.1.0",
     "sharp": "^0.34.3",
-    "swiper": "^11.2.8",
+    "swiper": "^12.1.2",
     "swr": "^2.3.3",
     "tippy.js": "^6.3.7",
     "tsx": "^4.20.3",
-    "typesense": "^3.0.5",
+    "typesense": "^3.0.6",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -153,6 +156,12 @@
     "tailwindcss": "^4.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.13.5",
+    "fast-xml-builder": "1.1.7",
+    "protobufjs": "7.6.3",
+    "websocket-driver": "0.7.5"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "directories": {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { duplicateCard } from '@/lib/services/cardService';
+import { isAdminSession } from '@/lib/auth/readerAccess';
+import { duplicateCard } from '@/lib/services/cards/cardLifecycleService';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export async function POST(
   { params }: { params: RouteParams }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user?.role !== 'admin') {
+  if (!isAdminSession(session)) {
     return errorResponse(
       {
         ok: false,

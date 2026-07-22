@@ -212,6 +212,21 @@ export async function importCards(docs: TypesenseCardDocument[]): Promise<void> 
     .import(docs, { action: 'upsert' });
 }
 
+/** Strict bulk path: fail the governing operation if Typesense rejects any document. */
+export async function importCardsStrict(docs: TypesenseCardDocument[]): Promise<void> {
+  const client = getTypesenseClient();
+  if (!client) throw new Error('Typesense not configured');
+
+  const results = await client
+    .collections(CARDS_COLLECTION)
+    .documents()
+    .import(docs, { action: 'upsert' });
+  const failures = results.filter((result) => !result.success);
+  if (failures.length > 0) {
+    throw new Error(`Typesense rejected ${failures.length} of ${docs.length} card documents: ${JSON.stringify(failures.slice(0, 3))}`);
+  }
+}
+
 export interface SearchOptions {
   query: string;
   type?: string;
@@ -235,6 +250,7 @@ export interface SearchCardsFilteredOptions {
   /** OR filter on card type when 2+ values; takes precedence over single `type`. */
   types?: string[];
   status?: string;
+  codification?: 'all' | 'complete' | 'incomplete';
   /** AND: every id must appear in `filter_tag_ids` (inherited + direct). */
   tags?: string[];
   dimensionalTags?: {
@@ -250,6 +266,7 @@ export interface SearchCardsFilteredOptions {
     when?: string[];
     where?: string[];
   };
+  tagSelectionMode?: 'any' | 'all';
   /** Card’s `childrenIds` must contain this id. */
   childrenIds_contains?: string;
   dimensionMissing?: {
@@ -270,10 +287,11 @@ function escapeFilterValue(value: string): string {
   return '`' + value.replace(/`/g, '``') + '`';
 }
 
-function orGroup(field: string, ids: string[] | undefined): string | null {
+function selectionGroup(field: string, ids: string[] | undefined, mode: 'any' | 'all' = 'any'): string | null {
   if (!ids || ids.length === 0) return null;
   if (ids.length === 1) return `${field}:=${escapeFilterValue(ids[0])}`;
-  return `(${ids.map((id) => `${field}:=${escapeFilterValue(id)}`).join(' || ')})`;
+  const parts = ids.map((id) => `${field}:=${escapeFilterValue(id)}`);
+  return mode === 'all' ? parts.join(' && ') : `(${parts.join(' || ')})`;
 }
 
 export function buildListSort(
@@ -332,6 +350,11 @@ export async function searchCardsFiltered(
   if (options.status && options.status !== 'all') {
     filterParts.push(`status:=${escapeFilterValue(options.status)}`);
   }
+  if (options.codification === 'complete') {
+    filterParts.push('who_count:>0', 'what_count:>0', 'when_count:>0', 'where_count:>0');
+  } else if (options.codification === 'incomplete') {
+    filterParts.push('(who_count:=0 || what_count:=0 || when_count:=0 || where_count:=0)');
+  }
 
   if (options.tags && options.tags.length > 0) {
     for (const tag of options.tags) {
@@ -341,25 +364,25 @@ export async function searchCardsFiltered(
 
   const dim = options.dimensionalTags;
   if (dim) {
-    const w = orGroup('who_ids', dim.who);
+    const w = selectionGroup('who_ids', dim.who, options.tagSelectionMode);
     if (w) filterParts.push(w);
-    const x = orGroup('what_ids', dim.what);
+    const x = selectionGroup('what_ids', dim.what, options.tagSelectionMode);
     if (x) filterParts.push(x);
-    const y = orGroup('when_ids', dim.when);
+    const y = selectionGroup('when_ids', dim.when, options.tagSelectionMode);
     if (y) filterParts.push(y);
-    const z = orGroup('where_ids', dim.where);
+    const z = selectionGroup('where_ids', dim.where, options.tagSelectionMode);
     if (z) filterParts.push(z);
   }
 
   const exactDim = options.exactDimensionalTags;
   if (exactDim) {
-    const w = orGroup('tag_ids', exactDim.who);
+    const w = selectionGroup('tag_ids', exactDim.who, options.tagSelectionMode);
     if (w) filterParts.push(w);
-    const x = orGroup('tag_ids', exactDim.what);
+    const x = selectionGroup('tag_ids', exactDim.what, options.tagSelectionMode);
     if (x) filterParts.push(x);
-    const y = orGroup('tag_ids', exactDim.when);
+    const y = selectionGroup('tag_ids', exactDim.when, options.tagSelectionMode);
     if (y) filterParts.push(y);
-    const z = orGroup('tag_ids', exactDim.where);
+    const z = selectionGroup('tag_ids', exactDim.where, options.tagSelectionMode);
     if (z) filterParts.push(z);
   }
 
@@ -582,6 +605,26 @@ export async function syncCardToTypesense(card: Card): Promise<void> {
   } catch (err) {
     console.error(`[Typesense] Failed to sync card ${card.docId}:`, err);
   }
+}
+
+/** Strict hierarchy/recovery path: projection failures remain visible to the caller. */
+export async function syncCardToTypesenseStrict(card: Card): Promise<void> {
+  if (!isTypesenseConfigured()) return;
+  await withTypesenseRetry(
+    async () => {
+      const allTagIds = [
+        ...(card.tags || []),
+        ...(card.who || []),
+        ...(card.what || []),
+        ...(card.when || []),
+        ...(card.where || []),
+      ];
+      const nameMap = await resolveTagNames([...new Set(allTagIds)]);
+      const data = { ...card } as unknown as Record<string, unknown>;
+      await upsertCard(buildTypesenseCardDocumentFromData(card.docId, data, nameMap));
+    },
+    { entity: 'card', id: card.docId, operation: 'upsert' }
+  );
 }
 
 /**

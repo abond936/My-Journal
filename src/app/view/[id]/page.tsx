@@ -1,6 +1,6 @@
 import { Card } from '@/lib/types/card';
 import CardDetailPage from './CardDetailPage';
-import { getCardById, getCardsByIds } from '@/lib/services/cardService';
+import { getCardById, getCardsByIds } from '@/lib/services/cards/cardReadService';
 import { serializeCardForClient } from '@/lib/utils/dateUtils';
 import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth/next';

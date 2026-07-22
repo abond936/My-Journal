@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getCardsByIds } from '@/lib/services/cardService';
+import { getCardsByIds } from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -119,7 +120,8 @@ function getRandomCardIds(
   },
   excludeIds: string[] = [],
   type?: CardTypeFilter,
-  types?: Card['type'][]
+  types?: Card['type'][],
+  tagSelectionMode: TagSelectionMode = 'any'
 ): string[] {
   if (!cardIdCache) {
     throw new Error('Card ID cache not initialized');
@@ -133,14 +135,19 @@ function getRandomCardIds(
     (['who', 'what', 'when', 'where'] as const).forEach((dimension) => {
       const tagIds = dimensionalTags[dimension] || [];
       if (!tagIds.length) return;
-      const idsForDimension = new Set<string>();
+      let idsForDimension: Set<string> | null = null;
       tagIds.forEach((tagId) => {
-        const cardIds = cardIdCache!.cardIdsByDimension[dimension][tagId] || [];
-        cardIds.forEach((cardId) => idsForDimension.add(cardId));
+        const idsForTag = new Set(cardIdCache!.cardIdsByDimension[dimension][tagId] || []);
+        idsForDimension = idsForDimension === null
+          ? idsForTag
+          : tagSelectionMode === 'all'
+            ? new Set([...idsForDimension].filter((id) => idsForTag.has(id)))
+            : new Set([...idsForDimension, ...idsForTag]);
       });
+      const resolvedIdsForDimension = idsForDimension ?? new Set<string>();
       intersectedIds = intersectedIds === null
-        ? idsForDimension
-        : new Set([...intersectedIds].filter((id) => idsForDimension.has(id)));
+        ? resolvedIdsForDimension
+        : new Set([...intersectedIds].filter((id) => resolvedIdsForDimension.has(id)));
     });
     availableCardIds = intersectedIds ? Array.from(intersectedIds) : [];
   } else {
@@ -267,6 +274,7 @@ export async function GET(request: Request) {
         ) ?? [];
     const typesFilter = typesList.length > 0 ? [...new Set(typesList)] : undefined;
     const excludeDimensionalMatches = searchParams.get('excludeDimensionalMatches') === 'true';
+    const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
 
     // Update cache if needed
     if (!cardIdCache || Date.now() - cardIdCache.lastUpdated > CACHE_DURATION) {
@@ -291,7 +299,8 @@ export async function GET(request: Request) {
       excludeDimensionalMatches ? dimensionalTags : undefined,
       excludeIds,
       typeResolved,
-      typesResolved
+      typesResolved,
+      tagSelectionMode
     );
     
     if (randomCardIds.length === 0) {

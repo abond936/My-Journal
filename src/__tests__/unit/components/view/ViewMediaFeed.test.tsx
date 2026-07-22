@@ -47,6 +47,7 @@ jest.mock('@/components/providers/CardProvider', () => ({
     searchTerm: '',
     includeSubTagsInFeed: true,
     readerTagFilterScope: 'all',
+    tagSelectionMode: 'any',
     clearFilters: jest.fn(),
   }),
 }));
