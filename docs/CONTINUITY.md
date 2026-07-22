@@ -6,7 +6,7 @@ This file is a concise operational handoff for the next project session. It is n
 
 - `01` remains the owner of vision, architecture, technical principles, and stable invariants. Structural boundaries and operating closeout are now verified architecture rather than Planned constraints.
 - `02` records current product truth, including completed Reader navigation and presentation, authoring alignment, account-backed Light/Dark choice, governed Theme standardization, administration feedback, service/component boundaries, and operational recovery.
-- `03` records verified implementation state and remaining work. Parts 1–3 passed their defined Completion Gates. The bounded Media/Tagging authoring baseline and State Communication stabilization are verified; broader first-user usability, identity merge/split, face assistance, and import-source expansion remain deferred. Release Candidate is the only active gate.
+- `03` records verified implementation state and remaining work. Parts 1–3 and the agent-owned Release Candidate engineering gate passed. Revision `21145a19` is the deployed v1 authoring candidate; representative author desktop/mobile acceptance remains. Broader first-user usability, identity merge/split, face assistance, and import-source expansion remain deferred.
 
 ## Delivered and verified
 
@@ -33,8 +33,8 @@ This file is a concise operational handoff for the next project session. It is n
 
 ## Next required sequence
 
-1. Intentionally review the accumulated worktree, create a fresh paired backup while retaining no more than the three newest complete runs, commit and push the chosen revision, and run deployment checks against that exact revision before treating it as a deployable v1 candidate.
-2. Validate the deployed candidate on representative administrator and reader accounts across desktop and mobile, including authentication, Studio authoring, Reader navigation/editing, Theme persistence, media presentation, backup status, and rollback readiness.
+1. Author-validate deployed revision `21145a19` on representative administrator and reader accounts across desktop and mobile, including authentication, Studio authoring, Reader navigation/editing, Theme persistence, and media presentation.
+2. If that representative use exposes a release-blocking defect, repair only the bounded defect and repeat the exact-revision deployment gates. Otherwise record author acceptance and use this revision as the sustained content-authoring baseline.
 3. Keep first-user onboarding, identity merge/split, face assistance, Quote, Video, external photo libraries, Bursts, likely-match review, discretionary Theme tuning, major platform upgrades, and CSP deferred until explicitly reactivated.
 
 ## Active vocabulary engineering gate
@@ -112,7 +112,5 @@ This file is a concise operational handoff for the next project session. It is n
 
 ## Workspace hygiene
 
-- The implementation checkpoint before this handoff is commit `a75164fc` (`feat: add exact media match review queue`).
-- `src/lib/services/questionService.ts` was already modified outside the Exact matches slice and must not be staged, reverted, or absorbed without separate inspection and approval.
-- `.codex-dev-3003.err.log`, `.codex-dev-3003.out.log`, and `firestore-debug.log` are local untracked diagnostic files and must not be committed.
+- The deployed Release Candidate checkpoint is commit `21145a19` (`Use save response as hosted smoke evidence`). GitHub full code/hosted-smoke run `29942610867` and emulator run `29942608642` pass.
 - Development browser state and port occupancy are transient. Verify them rather than relying on this handoff.

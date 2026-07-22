@@ -2,7 +2,7 @@
 
 This document turns Planned capabilities in `02` and Planned constraints in `01` into sequenced, bounded implementation work.
 
-**Current active capability:** Media Intake and Tagging definition. Parts 1–3 have passed their defined Completion Gates. Release Candidate remains the required operational checkpoint before deploying further product changes; Landing Page, Quote and Quote-dependent typography, Video, External Photo Libraries, and discretionary Journal/Editorial tuning remain explicitly parked.
+**Current active capability:** Release Candidate author acceptance. Parts 1–3 and the agent-owned Release Candidate engineering gate have passed. The deployed v1 authoring baseline is revision `21145a19`; representative author desktop/mobile acceptance remains before the candidate is declared accepted. Landing Page, Quote and Quote-dependent typography, Video, External Photo Libraries, and discretionary Journal/Editorial tuning remain explicitly parked.
 
 ---
 
@@ -886,7 +886,7 @@ The active objective is to stabilize the product as implemented, establish one r
 
 ### 1. Release Candidate
 
-**Definition:** Ready
+**Definition:** Agent-owned engineering gate complete; author acceptance pending
 
 **Outcome** — Convert the accumulated verified work into one known, recoverable, deployed revision and establish the trustworthy v1 baseline from which later product work proceeds.
 
@@ -896,7 +896,7 @@ The active objective is to stabilize the product as implemented, establish one r
 
 **Responsibility** — The agent owns repository review, verification, defect correction within the stabilization boundary, backup, revision control, deployment checks, rollback evidence, and release recording. The author is required only for final subjective acceptance, representative desktop/mobile use, and any consequential product decision exposed by verification.
 
-**Local gate evidence** — Full lint and production typecheck pass. All 165 active Jest suites and 891 tests pass; the 3 emulator suites and 23 tests remain skipped by their declared environment gate, and the diagnostic in-band run exits normally. A clean production build passes compilation, type validation, all 52 static pages, optimization, and route tracing. Live development verification covers Reader collections, Studio state communication, Media Library recovery, and the hierarchical Tag workspace. Complete paired backup `run-2026-07-22T13-56-38-736Z` verified 8,932 Firestore documents and 10,639 Storage objects. The remaining Release Candidate work begins at intentional revision control, deployment, hosted smoke, and author acceptance.
+**Release evidence** — Full lint and production typecheck pass. All 165 active Jest suites and 891 tests pass. The three emulator suites and 23 emulator tests pass in the exact-revision Firebase emulator gate. A clean no-secret production build passes compilation, type validation, all 52 static pages, optimization, and route tracing. Complete paired backup `run-2026-07-22T13-56-38-736Z` verified 8,932 Firestore documents and 10,639 Storage objects; retention is capped at three complete runs and completed runs request OneDrive online-only storage. Revision `21145a19` is committed, pushed to `main`, and successfully deployed by Vercel. GitHub run `29942610867` passes both the full code gate and all nine hosted administrator/viewer browser smokes; run `29942608642` passes the Firebase emulator gate. The remaining Release Candidate work is representative author desktop/mobile acceptance and confirmation that the candidate is accepted for sustained content authoring.
 
 ### 2. Media Intake and Tagging
 
