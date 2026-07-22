@@ -192,6 +192,7 @@ const CardDetailPage: React.FC<CardDetailPageProps> = ({
             cardId={displayCard.docId}
             returnTo={detailReturnTo}
             className={styles.adminEditTriggerButton}
+            ariaLabel="Edit open card"
             metadata={quickEditMetadata}
             onCardSaved={handleCardSaved}
           >

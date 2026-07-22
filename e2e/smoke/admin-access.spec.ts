@@ -7,9 +7,7 @@ test.describe('viewer admin boundary', () => {
     await expect(page.getByRole('searchbox', { name: /cards/i })).toHaveCount(0, {
       timeout: 15_000,
     });
-
-    const pathname = new URL(page.url()).pathname;
-    expect(pathname).not.toBe('/admin/studio');
+    await expect(page.getByRole('alert')).toBeVisible();
   });
 });
 

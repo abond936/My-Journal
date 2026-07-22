@@ -14,6 +14,7 @@ export default function ReaderCardEditEntry({
   cardId,
   returnTo,
   className,
+  ariaLabel = 'Edit',
   metadata,
   onBeforeOpen,
   onCardSaved,
@@ -22,6 +23,7 @@ export default function ReaderCardEditEntry({
   cardId: string;
   returnTo: string;
   className?: string;
+  ariaLabel?: string;
   metadata: ReaderQuickEditInitial;
   onBeforeOpen?: () => void;
   onCardSaved?: (savedCard: Card) => void;
@@ -55,7 +57,7 @@ export default function ReaderCardEditEntry({
 
   return (
     <>
-      <button type="button" className={className} onClick={handleOpenClick}>
+      <button type="button" className={className} onClick={handleOpenClick} aria-label={ariaLabel}>
         {children}
       </button>
       <ReaderMobileQuickEdit
