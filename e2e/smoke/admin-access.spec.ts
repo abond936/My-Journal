@@ -21,6 +21,6 @@ test.describe('admin studio access', () => {
       timeout: 45_000,
     });
     await expect(page.getByRole('button', { name: 'Clear card filters' })).toBeVisible();
-    await expect(page.getByRole('searchbox', { name: /cards/i })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: 'Search card titles' })).toBeVisible();
   });
 });

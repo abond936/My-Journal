@@ -15,7 +15,7 @@ test.describe('admin card save', () => {
     await firstCardLink.click();
     await expect(page).toHaveURL(new RegExp(`/view/${cardId}(\\?|$)`));
 
-    const editButton = page.getByRole('button', { name: 'Edit card' });
+    const editButton = page.getByRole('button', { name: 'Edit', exact: true });
     await expect(editButton).toBeVisible({ timeout: 15_000 });
 
     await editButton.click();
