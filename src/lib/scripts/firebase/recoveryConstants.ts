@@ -50,16 +50,19 @@ export function requestOnlineOnlyBackupRun(
     return;
   }
 
-  const result = spawnSync(
-    'attrib.exe',
-    ['+U', '-P', path.join(runDir, '*'), '/S', '/D'],
-    { encoding: 'utf8', windowsHide: true }
-  );
+  const targets = [runDir, path.join(runDir, '*')];
+  for (const target of targets) {
+    const result = spawnSync(
+      'attrib.exe',
+      ['+U', '-P', target, '/S', '/D'],
+      { encoding: 'utf8', windowsHide: true }
+    );
 
-  if (result.error || result.status !== 0) {
-    const detail = result.error?.message || result.stderr?.trim() || `exit ${result.status}`;
-    log(`Warning: backup completed, but OneDrive online-only request failed: ${detail}`);
-    return;
+    if (result.error || result.status !== 0) {
+      const detail = result.error?.message || result.stderr?.trim() || `exit ${result.status}`;
+      log(`Warning: backup completed, but OneDrive online-only request failed: ${detail}`);
+      return;
+    }
   }
 
   log(`Requested OneDrive Free up space for completed backup: ${path.basename(runDir)}`);
