@@ -38,6 +38,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'GET', path: '/api/cards/search', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
   { method: 'GET', path: '/api/cards/random', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
   { method: 'GET', path: '/api/cards/by-ids', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/cards/gallery-media-index', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/cards/bulk-update-tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'GET', path: '/api/cards/[id]', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Draft cards return 404 for viewers' },
   { method: 'PUT', path: '/api/cards/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -133,6 +134,7 @@ export const MUTATION_ROUTE_RATE_LIMIT_NOTE =
 export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'cards-post', method: 'POST', path: '/api/cards', modulePath: '@/app/api/cards/route', requestUrl: 'https://example.test/api/cards', body: { title: 'x', type: 'story' } },
   { id: 'cards-by-ids', method: 'GET', path: '/api/cards/by-ids', modulePath: '@/app/api/cards/by-ids/route', requestUrl: 'https://example.test/api/cards/by-ids?id=card-1' },
+  { id: 'cards-gallery-media-index', method: 'GET', path: '/api/cards/gallery-media-index', modulePath: '@/app/api/cards/gallery-media-index/route', requestUrl: 'https://example.test/api/cards/gallery-media-index' },
   { id: 'cards-bulk-update-tags', method: 'POST', path: '/api/cards/bulk-update-tags', modulePath: '@/app/api/cards/bulk-update-tags/route', requestUrl: 'https://example.test/api/cards/bulk-update-tags', body: { cardIds: [], tagIds: [] } },
   { id: 'cards-id-put', method: 'PUT', path: '/api/cards/[id]', modulePath: '@/app/api/cards/[id]/route', requestUrl: 'https://example.test/api/cards/card-1', params: Promise.resolve({ id: 'card-1' }), body: { title: 'Updated' } },
   { id: 'cards-id-patch', method: 'PATCH', path: '/api/cards/[id]', modulePath: '@/app/api/cards/[id]/route', requestUrl: 'https://example.test/api/cards/card-1', params: Promise.resolve({ id: 'card-1' }), body: { title: 'Updated' } },

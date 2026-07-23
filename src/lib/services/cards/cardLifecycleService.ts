@@ -195,6 +195,14 @@ export async function createCard(
       }
     });
   });
+
+  // A new Card may be created with its initial Gallery already populated.
+  // Reconcile enabled Gallery inheritance before returning so checked
+  // inheritance controls and the returned Card tags cannot disagree.
+  const { syncGalleryTagInheritanceForCard } = await import(
+    '@/lib/services/galleryTagInheritanceService'
+  );
+  await syncGalleryTagInheritanceForCard(docRef.id);
   
   // The created card object needs to be constructed outside the transaction to be returned
   const finalCard = await getCardById(docRef.id);
@@ -496,4 +504,3 @@ export async function deleteCard(cardId: string): Promise<void> {
  */
 
  
-

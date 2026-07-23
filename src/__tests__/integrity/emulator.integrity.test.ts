@@ -653,6 +653,48 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(tags.find((t) => t.docId === 'who-root')?.cardCount).toBe(1);
   });
 
+  it('createCard reconciles enabled Gallery inheritance before returning', async () => {
+    const db = getFirestore(app);
+    await seedWhoTags(db);
+    await db.collection('app_settings').doc('author').set({
+      galleryTagInheritanceConfigured: true,
+      galleryTagInheritance: { who: true, what: false, when: false, where: false },
+    }, { merge: true });
+    await db.collection('media').doc('gallery-who').set({
+      docId: 'gallery-who',
+      tags: ['who-child'],
+      referencedByCardIds: [],
+    });
+    const { createCard } = await getCardService();
+
+    const inherited = await createCard({
+      title: 'Inherited at creation',
+      type: 'gallery',
+      status: 'published',
+      tags: [],
+      galleryMedia: [{ mediaId: 'gallery-who', order: 0 }],
+      content: '',
+    });
+    const protectedCard = await createCard({
+      title: 'Protected at creation',
+      type: 'gallery',
+      status: 'draft',
+      tags: [],
+      galleryMedia: [{ mediaId: 'gallery-who', order: 0 }],
+      galleryTagInheritanceOverrides: { who: true, what: true, when: true, where: true },
+      content: '',
+    });
+
+    expect(inherited.tags).toContain('who-child');
+    expect(inherited.galleryTagInheritanceOverrides?.who).toBe(false);
+    expect(protectedCard.tags ?? []).not.toContain('who-child');
+    expect(protectedCard.galleryTagInheritanceOverrides?.who).toBe(true);
+
+    const tags = await readTagsWithCounts(db);
+    expect(tags.find((tag) => tag.docId === 'who-child')?.cardCount).toBe(1);
+    expect(tags.find((tag) => tag.docId === 'who-root')?.cardCount).toBe(1);
+  });
+
   it('updateCardTags shifts tag counts and refreshes derived fields', async () => {
     const db = getFirestore(app);
     await seedWhoAndWhatTags(db);

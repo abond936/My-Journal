@@ -18,6 +18,32 @@ export type GetCardsByIdsOptions = {
   hydrationMode?: CardHydrationMode;
 };
 
+export type GalleryCardMediaIndexItem = Pick<
+  Card,
+  'docId' | 'title' | 'subtitle' | 'status' | 'galleryMedia'
+>;
+
+/** Minimal administration index for grouping Media by authored Gallery membership. */
+export async function getGalleryCardMediaIndex(): Promise<GalleryCardMediaIndexItem[]> {
+  const snapshot = await firestore
+    .collection(CARDS_COLLECTION)
+    .select('title', 'subtitle', 'status', 'galleryMedia')
+    .get();
+
+  return snapshot.docs
+    .map((doc) => {
+      const data = doc.data() as Card;
+      return {
+        docId: doc.id,
+        title: data.title ?? '',
+        subtitle: data.subtitle ?? null,
+        status: data.status ?? 'draft',
+        galleryMedia: data.galleryMedia ?? [],
+      };
+    })
+    .filter((card) => card.galleryMedia.length > 0);
+}
+
 function normalizeChildrenIds(childrenIds: unknown, selfId?: string): string[] {
   if (!Array.isArray(childrenIds)) return [];
   const seen = new Set<string>();

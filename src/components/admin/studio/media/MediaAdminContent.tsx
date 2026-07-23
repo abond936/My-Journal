@@ -31,6 +31,7 @@ import {
   type AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
+import type { Card } from '@/lib/types/card';
 import {
   collectImportBatchIdsFromMedia,
   formatImportBatchLabel,
@@ -146,6 +147,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
   const [browseGroupBy, setBrowseGroupBy] = useState(initialLocalFilterPrefsRef.current.browseGroupBy);
+  const [galleryCardsForGrouping, setGalleryCardsForGrouping] = useState<Card[]>([]);
+  const [galleryCardsLoading, setGalleryCardsLoading] = useState(false);
+  const [galleryCardsError, setGalleryCardsError] = useState<string | null>(null);
   const [gridTileMinPx, setGridTileMinPx] = useState(initialLocalFilterPrefsRef.current.gridTileMinPx);
   const [lastImportBatchId, setLastImportBatchId] = useState(
     initialLocalFilterPrefsRef.current.lastImportBatchId
@@ -396,6 +400,41 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   );
 
   const browseScopedMedia = media;
+  useEffect(() => {
+    if (browseGroupBy !== 'card' || hasMore) {
+      setGalleryCardsForGrouping([]);
+      setGalleryCardsLoading(false);
+      setGalleryCardsError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setGalleryCardsLoading(true);
+    setGalleryCardsError(null);
+    void (async () => {
+      try {
+        const response = await fetch('/api/cards/gallery-media-index', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error('Could not load Card groups.');
+        const cards = (await response.json().catch(() => [])) as Card[];
+        if (!controller.signal.aborted) setGalleryCardsForGrouping(cards);
+      } catch (fetchError) {
+        if ((fetchError as Error).name === 'AbortError') return;
+        if (!controller.signal.aborted) {
+          setGalleryCardsForGrouping([]);
+          setGalleryCardsError(
+            fetchError instanceof Error ? fetchError.message : 'Could not load Card groups.'
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setGalleryCardsLoading(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [browseGroupBy, hasMore]);
 
   const importFolderOptions = useMemo(() => {
     if (libraryFilterOptions.folders.length > 0) return libraryFilterOptions.folders;
@@ -407,8 +446,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [libraryFilterOptions.folders, media]);
 
   const browseGroups = useMemo(
-    () => groupMediaForBrowse(browseScopedMedia, browseGroupBy),
-    [browseGroupBy, browseScopedMedia]
+    () => groupMediaForBrowse(browseScopedMedia, browseGroupBy, galleryCardsForGrouping),
+    [browseGroupBy, browseScopedMedia, galleryCardsForGrouping]
   );
 
   const groupingNeedsMoreMedia =
@@ -705,8 +744,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       ) : null}
 
       {!showOnlyAssigned && !(loading && media.length === 0) && (
-        groupingNeedsMoreMedia ? (
+        groupingNeedsMoreMedia || (browseGroupBy === 'card' && galleryCardsLoading) ? (
           <p className={styles.studioPopulationNotice}>Loading the complete Library for grouping…</p>
+        ) : browseGroupBy === 'card' && galleryCardsError ? (
+          <div className={styles.error}>{galleryCardsError}</div>
         ) : browseGroupBy !== 'none' ? (
           <MediaBrowseGroupedView
             groups={browseGroups}
@@ -1062,7 +1103,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 value={browseGroupBy}
                 onChange={(e) =>
                   setBrowseGroupBy(
-                    e.target.value as 'none' | 'folder' | 'day' | 'batch' | 'metadata'
+                    e.target.value as 'none' | 'folder' | 'day' | 'batch' | 'metadata' | 'card'
                   )
                 }
               >
@@ -1071,6 +1112,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 <option value="batch">Group by: Import batch</option>
                 <option value="metadata">Group by: Metadata</option>
                 <option value="day">Group by: Day</option>
+                <option value="card">Group by: Card</option>
               </select>
             </label>
             {filters.codification === 'incomplete' ? (

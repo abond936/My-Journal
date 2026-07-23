@@ -62,7 +62,7 @@ export type MediaAdminStoredFilterPreferences = {
 export type MediaAdminLocalFilterPreferences = {
   duplicateTriageMode: boolean;
   dimensionFilters: AdminDimensionFilterState;
-  browseGroupBy: 'none' | 'folder' | 'day' | 'batch' | 'metadata';
+  browseGroupBy: 'none' | 'folder' | 'day' | 'batch' | 'metadata' | 'card';
   browseImportBatchFilter: string;
   browseImportFolderFilter: string;
   gridTileMinPx: number;
@@ -300,7 +300,7 @@ function parseMediaAdminLocalFilterPreferences(value: unknown): MediaAdminLocalF
   const candidate = value as Partial<Record<keyof MediaAdminLocalFilterPreferences, unknown>>;
   const groupBy = candidate.browseGroupBy;
   const browseGroupBy =
-    groupBy === 'folder' || groupBy === 'day' || groupBy === 'batch' || groupBy === 'metadata'
+    groupBy === 'folder' || groupBy === 'day' || groupBy === 'batch' || groupBy === 'metadata' || groupBy === 'card'
       ? groupBy
       : 'none';
   const tilePx =

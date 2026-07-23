@@ -1,11 +1,12 @@
 import type { Media } from '@/lib/types/photo';
+import type { Card } from '@/lib/types/card';
 import {
   dayKeyFromTimestamp,
   folderLabelFromSourcePath,
   formatDayTitle,
 } from '@/lib/utils/reviewClusterHeuristics';
 
-export type MediaBrowseGroupMode = 'none' | 'folder' | 'day' | 'batch' | 'metadata';
+export type MediaBrowseGroupMode = 'none' | 'folder' | 'day' | 'batch' | 'metadata' | 'card';
 
 export type MediaBrowseGroup = {
   id: string;
@@ -27,9 +28,48 @@ export function dayLabelFromMedia(item: Pick<Media, 'createdAt'>): string {
 
 export function groupMediaForBrowse(
   mediaItems: Media[],
-  mode: MediaBrowseGroupMode
+  mode: MediaBrowseGroupMode,
+  galleryCards: Pick<Card, 'docId' | 'title' | 'subtitle' | 'status' | 'galleryMedia'>[] = []
 ): MediaBrowseGroup[] {
   if (mode === 'none' || mediaItems.length === 0) return [];
+  if (mode === 'card') {
+    const visibleMediaIds = new Set(mediaItems.map((item) => item.docId));
+    const groupedMediaIds = new Set<string>();
+    const cardGroups = galleryCards
+      .map((card) => {
+        const memberMediaIds = Array.from(
+          new Set(
+            (card.galleryMedia ?? [])
+              .map((item) => item.mediaId)
+              .filter((mediaId) => visibleMediaIds.has(mediaId))
+          )
+        );
+        memberMediaIds.forEach((mediaId) => groupedMediaIds.add(mediaId));
+        return {
+          id: `card:${card.docId}`,
+          title: card.title?.trim() || card.subtitle?.trim() || 'Untitled Card',
+          subtitle: card.status === 'draft' ? 'Draft Gallery Card' : 'Published Gallery Card',
+          memberMediaIds,
+          oversized: memberMediaIds.length > 40,
+        };
+      })
+      .filter((group) => group.memberMediaIds.length > 0)
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    const unassignedMediaIds = mediaItems
+      .map((item) => item.docId)
+      .filter((mediaId) => !groupedMediaIds.has(mediaId));
+    if (unassignedMediaIds.length > 0) {
+      cardGroups.push({
+        id: 'card:unassigned',
+        title: 'Not in a Gallery Card',
+        subtitle: 'Filtered media without Gallery membership',
+        memberMediaIds: unassignedMediaIds,
+        oversized: unassignedMediaIds.length > 40,
+      });
+    }
+    return cardGroups;
+  }
 
   const map = new Map<string, Media[]>();
   for (const item of mediaItems) {
