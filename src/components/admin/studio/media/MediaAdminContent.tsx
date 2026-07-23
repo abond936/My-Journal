@@ -745,7 +745,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
       {!showOnlyAssigned && !(loading && media.length === 0) && (
         groupingNeedsMoreMedia || (browseGroupBy === 'card' && galleryCardsLoading) ? (
-          <p className={styles.studioPopulationNotice}>Loading the complete Library for grouping…</p>
+          <p className={styles.studioPopulationNotice}>Loading all filtered media for grouping…</p>
         ) : browseGroupBy === 'card' && galleryCardsError ? (
           <div className={styles.error}>{galleryCardsError}</div>
         ) : browseGroupBy !== 'none' ? (

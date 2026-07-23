@@ -466,7 +466,7 @@ describe('MediaProvider', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('tagScope=subject'),
+        expect.stringMatching(/(?=.*tagScope=subject)(?=.*who=siblings)/),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
     });
