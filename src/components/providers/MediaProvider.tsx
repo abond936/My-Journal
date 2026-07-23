@@ -258,7 +258,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const mediaPageLimit = pathname?.startsWith('/admin/studio') ? '100' : '50';
 
   const { selectedTags } = useCardContext();
-  const { tags: allTags } = useTag();
+  const { tags: allTags, mutate: mutateTags } = useTag();
 
   const dimensionalTagMap = useMemo(
     () => groupSelectedTagIdsByDimension(selectedTags, allTags),
@@ -792,6 +792,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           mediaRef.current = next;
           return next;
         });
+        if (updates.tags !== undefined) await mutateTags();
         return updated;
       }
 
@@ -803,7 +804,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('Error updating media:', error);
       return undefined;
     }
-  }, [adjustPaginationAfterDelete, cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, refreshMedia]);
+  }, [adjustPaginationAfterDelete, cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, mutateTags, refreshMedia]);
 
   const deleteMedia = useCallback(async (id: string) => {
     try {
@@ -824,6 +825,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setMedia(prev => prev.filter(m => m.docId !== id));
       setSelectedMediaIds(prev => prev.filter(selectedId => selectedId !== id));
       adjustPaginationAfterDelete(1);
+      await mutateTags();
       
     } catch (err) {
       const error = err instanceof Error ? err : new Error('An unknown error occurred');
@@ -831,7 +833,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('Error deleting media:', error);
       throw error;
     }
-  }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache, mutateTags]);
 
   const deleteMultipleMedia = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -863,6 +865,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         setMedia((prev) => prev.filter((m) => !deletedIds.includes(m.docId)));
         setSelectedMediaIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
         adjustPaginationAfterDelete(deletedIds.length);
+        await mutateTags();
 
       }
       if (failedCount > 0) {
@@ -888,7 +891,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setError(error);
       console.error('Error deleting multiple media:', error);
     }
-  }, [adjustPaginationAfterDelete, clearMediaQueryCache]);
+  }, [adjustPaginationAfterDelete, clearMediaQueryCache, mutateTags]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -950,18 +953,20 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         } else {
           await refreshMedia();
         }
+        if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) await mutateTags();
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         throw error;
       }
     },
-    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, refreshMedia]
+    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, mutateTags, refreshMedia]
   );
 
   const registerCreatedMedia = useCallback(
     (item: Media) => {
       if (!item?.docId) return;
+      if ((item.tags?.length ?? 0) > 0) void mutateTags();
       cacheMediaRecord(item);
       clearMediaQueryCache();
 
@@ -988,7 +993,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         };
       });
     },
-    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView]
+    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, mutateTags]
   );
 
   const reconcileCardMediaAssignments = useCallback(

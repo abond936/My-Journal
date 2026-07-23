@@ -4,11 +4,13 @@ import StudioTreeCandidateCardBank from '@/components/admin/studio/StudioTreeCan
 import type { Card } from '@/lib/types/card';
 
 const mockCardAdminGrid = jest.fn(() => <div data-testid="mock-card-grid" />);
+const mutateTagsMock = jest.fn();
 const mockTagContext = {
   tags: [],
   studioCardFilterTagIds: [],
   setStudioCardFilterTagIds: jest.fn(),
   studioCardFiltersHydrated: true,
+  mutate: mutateTagsMock,
 };
 
 jest.mock('@dnd-kit/core', () => ({
@@ -69,6 +71,8 @@ describe('StudioTreeCandidateCardBank', () => {
 
   beforeEach(() => {
     mockCardAdminGrid.mockClear();
+    mutateTagsMock.mockReset();
+    mutateTagsMock.mockResolvedValue(undefined);
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/api/cards')) {
@@ -86,6 +90,7 @@ describe('StudioTreeCandidateCardBank', () => {
     render(
       <StudioTreeCandidateCardBank
         refreshCards={jest.fn()}
+        upsertCard={jest.fn()}
         collectionCards={[baseCard]}
         search=""
         setSearch={jest.fn()}
@@ -104,6 +109,52 @@ describe('StudioTreeCandidateCardBank', () => {
 
     expect(props.studioCuratedTreeDrag).toBe(true);
     expect(props.studioCuratedTreeUnparentedRowTarget).toBeUndefined();
+  });
+
+  it('refreshes shared tag counts after a successful card tag reassignment', async () => {
+    (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/cards/card-1' && init?.method === 'PATCH') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ...baseCard, tags: ['elementary'] }),
+        } as Response;
+      }
+      if (url.includes('/api/cards')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ items: [baseCard], hasMore: false, lastDocId: null }),
+        } as Response;
+      }
+      throw new Error(`Unhandled fetch in test: ${url}`);
+    });
+
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        upsertCard={jest.fn()}
+        collectionCards={[baseCard]}
+        search=""
+        setSearch={jest.fn()}
+        statusFilter="all"
+        setStatusFilter={jest.fn()}
+        selectedCardId={null}
+        onSelectCard={jest.fn()}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+      />
+    );
+
+    await waitFor(() => expect(mockCardAdminGrid).toHaveBeenCalled());
+    const props = mockCardAdminGrid.mock.calls.at(-1)?.[0] as {
+      onUpdateCard: (cardId: string, update: Partial<Card>) => Promise<void>;
+    };
+    await act(async () => props.onUpdateCard('card-1', { tags: ['elementary'] }));
+
+    expect(mutateTagsMock).toHaveBeenCalledTimes(1);
   });
 
   it('stops after the first workspace page instead of draining the full query immediately', async () => {

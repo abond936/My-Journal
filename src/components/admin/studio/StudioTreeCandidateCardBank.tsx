@@ -124,6 +124,11 @@ function shouldRefreshCollectionsStructureAfterCardUpdate(updateData: Partial<Ca
   );
 }
 
+function shouldRefreshTagCountsAfterCardUpdate(updateData: Partial<Card>): boolean {
+  return Object.prototype.hasOwnProperty.call(updateData, 'tags') ||
+    Object.prototype.hasOwnProperty.call(updateData, 'status');
+}
+
 type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
   autoSelectFirstCard?: boolean;
   registerCatalogRemove?: ((fn: ((cardId: string) => void) | null) => void) | undefined;
@@ -157,6 +162,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     studioCardFilterTagIds: filterTagIds,
     setStudioCardFilterTagIds: setFilterTagIds,
     studioCardFiltersHydrated,
+    mutate: mutateTags,
   } = useTag();
   const initialLocalFilterPrefsRef = useRef(readStoredStudioCardBankLocalFilterPreferences());
   const [workspaceCards, setWorkspaceCards] = useState<Card[]>([]);
@@ -773,6 +779,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           upsertCatalogCard(card);
           upsertCard(card);
         });
+        if (field === 'status') await mutateTags();
         setWorkspaceQueryRefreshTick((t) => t + 1);
         setBulkSelectedCardIds(new Set());
       } catch (err) {
@@ -784,7 +791,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         setWorkspaceQueryRefreshTick((t) => t + 1);
       }
     },
-    [bulkSelectedCardIds, feedback, upsertCard, upsertCatalogCard]
+    [bulkSelectedCardIds, feedback, mutateTags, upsertCard, upsertCatalogCard]
   );
 
   const handleBulkDelete = useCallback(async () => {
@@ -828,6 +835,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           notifyQuestionCardDeleted(card.docId, card.questionId ?? null);
         }
       });
+      await mutateTags();
       setWorkspaceQueryRefreshTick((t) => t + 1);
     } catch (err) {
       console.error('Error deleting cards:', err);
@@ -838,7 +846,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       setWorkspaceQueryRefreshTick((t) => t + 1);
       await refreshStructure();
     }
-  }, [bulkSelectedCardIds, feedback, mergedWorkspaceCards, notifyQuestionCardDeleted, parentIdsByChild, refreshStructure, removeCollectionsCardStructure, titleById]);
+  }, [bulkSelectedCardIds, feedback, mergedWorkspaceCards, mutateTags, notifyQuestionCardDeleted, parentIdsByChild, refreshStructure, removeCollectionsCardStructure, titleById]);
 
   const handleOpenBulkTags = useCallback(() => {
     setBulkTagModalOpen(true);
@@ -855,6 +863,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       throwIfJsonApiFailed(res, data, 'This card could not be updated. Try again.');
       upsertCatalogCard(data as Card);
       upsertCard(data as Card);
+      if (shouldRefreshTagCountsAfterCardUpdate(updateData)) await mutateTags();
       if (shouldRefreshWorkspaceQueryAfterCardUpdate(updateData)) {
         setWorkspaceQueryRefreshTick((t) => t + 1);
       }
@@ -862,7 +871,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         await refreshStructure();
       }
     },
-    [refreshStructure, upsertCard, upsertCatalogCard]
+    [mutateTags, refreshStructure, upsertCard, upsertCatalogCard]
   );
 
   const onDeleteCard = useCallback(
@@ -875,8 +884,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       removeCollectionsCardStructure(cardId);
       notifyQuestionCardDeleted(cardId, questionId ?? null);
       setWorkspaceQueryRefreshTick((t) => t + 1);
+      await mutateTags();
     },
-    [notifyQuestionCardDeleted, removeCatalogCard, removeCollectionsCardStructure]
+    [mutateTags, notifyQuestionCardDeleted, removeCatalogCard, removeCollectionsCardStructure]
   );
 
   const requestDeleteCard = useCallback(async (card: Card) => {
@@ -1258,6 +1268,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
             upsertCatalogCard(card);
             upsertCard(card);
           });
+          await mutateTags();
           setWorkspaceQueryRefreshTick((t) => t + 1);
           setBulkSelectedCardIds(new Set());
         }}

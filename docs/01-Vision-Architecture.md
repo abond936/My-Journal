@@ -115,7 +115,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Provisional truth** — Machine suggestions remain separate until accepted; dismissing them never removes confirmed data.
 - **Acceptance** — Accepted suggestions use the same accounting path as manual assignment.
 - **Hierarchy authority** — `parentId` owns taxonomy structure; stored paths, counts, dimensional fields, and search data are projections that must agree with it.
-- **Identity** — Each named Who subject, human or non-human, has one stable identity; names and aliases describe that identity rather than creating duplicates.
+- **Identity** — Each person or named animal used as a Who subject has one stable identity; names and aliases describe that identity rather than creating duplicates. Employers, schools, teams, and other named organizations do not become Who identities merely because they matter to a story; reusable broad meaning belongs in What, while the specific name can remain in the title, caption, or narrative.
 - **Family structure** — Stable Who identities may be connected by parent and partner facts to support a family-tree view. Father, grandmother, cousin, and similar perspective-relative words are optional derived descriptions, not assignable tags, story truth, or a reason to reorganize authored content for each viewer.
 - **Migration** — Existing assignments remain authoritative until an author-approved, auditable migration replaces them.
 - **Subject** — Subject is metadata on an assigned tag, not a fifth dimension or separate count source.

@@ -15,6 +15,7 @@ This file is an **index only**.
 | Scripts and operational commands (support reference) | `docs/NPM-SCRIPTS.md` |
 | Import-specific operational reference (support reference) | `docs/IMPORT-REFERENCE.md` |
 | Media intake and tagging definition evidence (support doc; active only through `03`) | `docs/06-Media-Intake-Tagging.md` |
+| Author operating guidance for tags, media, cards, and collections (support guide; product status remains under canon) | `docs/07-Users-Guide.md` |
 | Working prompts | `docs/Prompts.txt` |
 
 This file routes to canonical owners and does not own process, behavior, or operational policy.

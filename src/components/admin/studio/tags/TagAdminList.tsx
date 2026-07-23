@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Tag } from '@/lib/types/tag';
 import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { TagAdminRow } from './TagAdminRow';
@@ -22,6 +22,14 @@ import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
 import styles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 
 type TagRow = TagWithChildren & { depth: number };
+const STUDIO_COLLAPSED_TAGS_KEY = 'myjournal:studio-tag-admin:collapsed';
+
+function expandableIds(nodes: TagWithChildren[] | undefined): string[] {
+  return (nodes ?? []).flatMap((node) => [
+    ...(node.children?.length && node.docId ? [node.docId] : []),
+    ...expandableIds(node.children),
+  ]);
+}
 
 function flattenDimensionTree(
   roots: TagWithChildren[] | undefined,
@@ -202,6 +210,7 @@ interface DimensionColumn {
   id: string;
   title: string;
   rows: TagRow[];
+  expandableIds: string[];
 }
 
 function TagAdminDimensionColumn({
@@ -261,6 +270,13 @@ function TagAdminDimensionColumn({
 }) {
   const columnRows = col.rows;
   const sortedIds = useMemo(() => columnRows.map((r) => r.docId!), [columnRows]);
+  const hoverExpandRef = useRef<{ tagId: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const clearHoverExpand = useCallback(() => {
+    if (hoverExpandRef.current) clearTimeout(hoverExpandRef.current.timer);
+    hoverExpandRef.current = null;
+  }, []);
+
+  useEffect(() => clearHoverExpand, [clearHoverExpand]);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -278,6 +294,7 @@ function TagAdminDimensionColumn({
       const { active, over } = event;
 
       if (!over) {
+        clearHoverExpand();
         setDragState((prev) => ({
           ...prev,
           overId: null,
@@ -313,6 +330,21 @@ function TagAdminDimensionColumn({
         columnRows
       );
 
+      const overId = over.id as string;
+      const shouldExpand = isReparenting && collapsedNodes.has(overId) && Boolean(overTag.children?.length);
+      if (shouldExpand && hoverExpandRef.current?.tagId !== overId) {
+        clearHoverExpand();
+        hoverExpandRef.current = {
+          tagId: overId,
+          timer: setTimeout(() => {
+            if (collapsedNodes.has(overId)) onToggleCollapse(overId);
+            hoverExpandRef.current = null;
+          }, 700),
+        };
+      } else if (!shouldExpand) {
+        clearHoverExpand();
+      }
+
       setDragState({
         activeId: active.id as string,
         overId: over.id as string,
@@ -322,11 +354,12 @@ function TagAdminDimensionColumn({
         reparentTarget: isReparenting ? (over.id as string) : null,
       });
     },
-    [columnRows, isShiftPressed, setDragState, tagMap]
+    [clearHoverExpand, collapsedNodes, columnRows, isShiftPressed, onToggleCollapse, setDragState, tagMap]
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      clearHoverExpand();
       const { active, over } = event;
 
       if (!over) {
@@ -380,14 +413,28 @@ function TagAdminDimensionColumn({
         reparentTarget: null,
       });
     },
-    [columnRows, isShiftPressed, onReparent, onReorder, setDragState, tagMap]
+    [clearHoverExpand, columnRows, isShiftPressed, onReparent, onReorder, setDragState, tagMap]
   );
 
   return (
     <section className={styles.dimensionColumn} id={`tag-dimension-${col.id}`}>
-      {hideDimensionColumnHeadings ? null : (
-        <h2 className={styles.dimensionColumnHeading} tabIndex={-1}>{col.title}</h2>
-      )}
+      <div className={styles.dimensionColumnHeader}>
+        {hideDimensionColumnHeadings ? null : (
+          <h2 className={styles.dimensionColumnHeading} tabIndex={-1}>{col.title}</h2>
+        )}
+        <div className={styles.dimensionExpansionActions} aria-label={`${col.title} tree display`}>
+          <button type="button" onClick={() => {
+            col.expandableIds.forEach((tagId) => {
+              if (collapsedNodes.has(tagId)) onToggleCollapse(tagId);
+            });
+          }}>Expand all</button>
+          <button type="button" onClick={() => {
+            col.expandableIds.forEach((tagId) => {
+              if (!collapsedNodes.has(tagId)) onToggleCollapse(tagId);
+            });
+          }}>Collapse all</button>
+        </div>
+      </div>
       <div className={styles.dimensionColumnDndRoot}>
         <DndContext
           sensors={sensors}
@@ -398,6 +445,17 @@ function TagAdminDimensionColumn({
             },
           }}
           onDragEnd={handleDragEnd}
+          onDragCancel={() => {
+            clearHoverExpand();
+            setDragState({
+              activeId: null,
+              overId: null,
+              isValidDrop: false,
+              dropIndicator: null,
+              isReparenting: false,
+              reparentTarget: null,
+            });
+          }}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
         >
@@ -446,7 +504,19 @@ export function TagAdminList({
   onMergeTag,
 }: TagAdminListProps) {
   const highlightTagIdSet = useMemo(() => new Set(highlightTagIds), [highlightTagIds]);
-  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(STUDIO_COLLAPSED_TAGS_KEY) ?? '[]');
+      return new Set(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(STUDIO_COLLAPSED_TAGS_KEY, JSON.stringify([...collapsedNodes]));
+  }, [collapsedNodes]);
   const [dragState, setDragState] = useState<{
     activeId: string | null;
     overId: string | null;
@@ -493,6 +563,7 @@ export function TagAdminList({
         id: dim.docId!,
         title: dim.name,
         rows: flattenDimensionTree(dim.children, collapsedNodes, 0),
+        expandableIds: expandableIds(dim.children),
       })),
     [tagTree, collapsedNodes]
   );

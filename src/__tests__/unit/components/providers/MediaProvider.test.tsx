@@ -5,6 +5,7 @@ import type { Media } from '@/lib/types/photo';
 import type { DimensionalTagIdMap } from '@/lib/utils/tagUtils';
 
 const usePathnameMock = jest.fn(() => '/admin/media-admin');
+const mutateTagsMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
@@ -19,6 +20,7 @@ jest.mock('@/components/providers/CardProvider', () => ({
 jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({
     tags: [],
+    mutate: mutateTagsMock,
   }),
 }));
 
@@ -111,6 +113,9 @@ function MediaHarness() {
       <button type="button" onClick={() => void updateMedia('media-1', { subjectTagId: null })}>
         Clear Subject
       </button>
+      <button type="button" onClick={() => void updateMedia('media-1', { tags: ['elementary'] })}>
+        Change Tags
+      </button>
       <button
         type="button"
         onClick={() =>
@@ -142,9 +147,50 @@ describe('MediaProvider', () => {
 
   beforeEach(() => {
     fetchMock.mockReset();
+    mutateTagsMock.mockReset();
+    mutateTagsMock.mockResolvedValue(undefined);
     window.localStorage.clear();
     global.fetch = fetchMock;
     usePathnameMock.mockReturnValue('/admin/media-admin');
+  });
+
+  it('refreshes shared tag counts after a successful media tag edit', async () => {
+    fetchMock.mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/images/media-1' && init?.method === 'PATCH') {
+        return okJson({ media: baseMedia({ tags: ['elementary'] }) });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Change Tags'));
+
+    await waitFor(() => expect(mutateTagsMock).toHaveBeenCalledTimes(1));
+  });
+
+  it('does not refresh shared tag counts after a failed media tag edit', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      statusText: 'Failed',
+      json: async () => ({ message: 'No change', retryable: false }),
+    } as Response);
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Change Tags'));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(mutateTagsMock).not.toHaveBeenCalled();
   });
 
   it('uses a larger batch size for Studio media so the pane stays warm longer while scrolling', async () => {

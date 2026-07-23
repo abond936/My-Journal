@@ -74,7 +74,7 @@ export default function StudioCardEditPane({
     openSelectedCardMediaEditor,
     registerBodyMediaInsert,
   } = useStudioShell();
-  const { tags: allTags } = useTag();
+  const { tags: allTags, mutate: mutateTags } = useTag();
   const handleSave = useCallback(
     async (cardData: CardUpdate): Promise<Card | null> => {
       const isCreate = !selectedCardId;
@@ -87,6 +87,9 @@ export default function StudioCardEditPane({
       });
       const data = (await res.json().catch(() => ({}))) as Card & { message?: string; error?: string };
       throwIfJsonApiFailed(res, data, 'This card could not be saved. Your changes are still here. Try again.');
+      if (isCreate || Object.prototype.hasOwnProperty.call(cardData, 'tags') || Object.prototype.hasOwnProperty.call(cardData, 'status')) {
+        await mutateTags();
+      }
       if (isCreate && data.docId) {
         onCardCreated?.(data.docId);
         upsertCollectionsCardList(data as StudioCardContext);
@@ -98,7 +101,7 @@ export default function StudioCardEditPane({
       }
       return data;
     },
-    [feedback, onCardCreated, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
+    [feedback, mutateTags, onCardCreated, router, selectedCardId, setSelectedDetail, upsertCollectionsCardList]
   );
 
   const initialCard = useMemo(() => {

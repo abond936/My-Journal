@@ -431,13 +431,44 @@
 }
 
 .dimensionColumnHeading {
+  flex: 1 1 auto;
   margin: 0;
-  padding: var(--spacing-sm) var(--spacing-md);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--text1-color);
+}
+
+.dimensionColumnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  min-height: 34px;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) var(--spacing-md);
   border-bottom: var(--border-width-medium) solid var(--border1-color);
   background: var(--layout-background2-color);
+}
+
+.dimensionExpansionActions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.dimensionExpansionActions button {
+  padding: 2px var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-control-text-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+}
+
+.dimensionExpansionActions button:hover,
+.dimensionExpansionActions button:focus-visible {
+  background: var(--admin-support-control-hover-background-color);
+  outline: none;
 }
 
 /* Fills remaining column height under the heading; DndContext may not be a flex item by itself */
