@@ -145,7 +145,6 @@ const baseMediaContext = {
   clearError: jest.fn(),
   setSelectedMediaIds: jest.fn(),
   dimensionalQueryOverlay: {},
-  transientDimensionalQueryOverlay: {},
   setDimensionalQueryOverlay: jest.fn(),
   setTransientDimensionalQueryOverlay: jest.fn(),
   resolveMediaById: jest.fn(),

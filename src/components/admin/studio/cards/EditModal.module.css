@@ -44,6 +44,13 @@
     flex: 1;
 }
 
+.footer {
+    flex-shrink: 0;
+    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    border-top: var(--border-width-thin) solid var(--admin-window-border-color, var(--color-border-primary));
+}
+
 .header {
     display: flex;
     justify-content: space-between;

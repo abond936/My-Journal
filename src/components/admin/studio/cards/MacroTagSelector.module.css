@@ -531,6 +531,17 @@
   border-top: var(--border-width-thin) solid var(--admin-window-border-color);
 }
 
+.dimensionTreeFieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.dimensionTreeFieldset:disabled {
+  opacity: 0.48;
+}
+
 .saveButton {
   background-color: var(--primary-action-background-color);
   border-color: var(--primary-action-border-color);
@@ -580,6 +591,9 @@
 }
 
 .dimensionColumn h4 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 0;
   margin-bottom: var(--spacing-sm);
   color: var(--admin-support-title-color);
@@ -589,6 +603,10 @@
   line-height: var(--admin-support-title-line-height);
   border-bottom: var(--border-width-medium) solid var(--admin-window-border-color);
   padding-bottom: var(--spacing-sm);
+}
+
+.dimensionColumn h4 svg {
+  flex: 0 0 auto;
 }
 
 .dimensionColumn .tagNode {

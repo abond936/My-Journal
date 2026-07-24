@@ -38,12 +38,25 @@
 }
 
 .dimLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: var(--admin-support-meta-color);
   font-style: italic;
   font-weight: var(--font-weight-bold);
   font-family: var(--admin-support-meta-font-family);
   font-size: var(--admin-support-meta-font-size);
   line-height: var(--admin-support-meta-line-height);
+}
+
+.dimLabelButton {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dimensionLeadContent {
+  min-width: 0;
 }
 
 .dimLabelButton {
@@ -129,6 +142,22 @@
   max-width: 100%;
   padding-bottom: 1px;
   border-bottom: 1px solid currentColor;
+}
+
+.wrapUnderlineTags .chipNameText {
+  display: inline-block;
+  max-width: 100%;
+  padding-bottom: 1px;
+  border-bottom: 1px solid currentColor;
+}
+
+.wrapDimensionIcons .dimLabel,
+.wrapDimensionIcons .dimLabelButton {
+  color: var(--admin-support-label-color);
+  font-family: var(--admin-support-label-font-family);
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  font-weight: 700;
 }
 
 .chipDimWho {

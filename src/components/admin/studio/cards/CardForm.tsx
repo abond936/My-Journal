@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { closestCenter, DndContext, type DragEndEvent, type DragOverEvent } from '@dnd-kit/core';
-import { Pencil } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 import { Card, HydratedGalleryMediaItem } from '@/lib/types/card';
 import { Media } from '@/lib/types/photo';
 import { dehydrateCardForSave, generateExcerpt } from '@/lib/utils/cardUtils';
@@ -37,10 +37,12 @@ import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
 import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedTilePreview';
 import { validateQuestionRevealContent } from '@/lib/utils/questionReveal';
 import {
+  computeGalleryDimensionRollup,
   inheritedDimensionsChangedByTagEdit,
   newCardInheritanceOverrides,
   protectExistingCardInheritance,
 } from '@/lib/utils/galleryTagInheritance';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
 
@@ -171,14 +173,12 @@ const CardForm: React.FC = () => {
   }, [registerEditorContentGetter, cardData.content]);
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false);
   const [tagMacroExpanded, setTagMacroExpanded] = useState(false);
-  const [tagMacroDimension, setTagMacroDimension] = useState<TagDimension | null>(null);
   const [titleDraft, setTitleDraft] = useState(cardData.title || '');
   const [subtitleDraft, setSubtitleDraft] = useState(cardData.subtitle || '');
   const [excerptDraft, setExcerptDraft] = useState(cardData.excerpt || '');
 
   useEffect(() => {
     setTagMacroExpanded(false);
-    setTagMacroDimension(null);
   }, [cardData.docId]);
 
   useEffect(() => {
@@ -327,105 +327,55 @@ const CardForm: React.FC = () => {
     void persistFieldPatch({ subjectTagIds: nextSubjectTagIds });
   }, [persistFieldPatch, setField]);
 
-  const handleTagAssignmentChange = useCallback(async (
+  const handleTagAssignmentWithInheritance = useCallback(async (
     nextTagIds: string[],
-    nextSubjectTagIds: string[]
+    nextSubjectTagIds: string[],
+    inheritance: GalleryTagInheritanceToggles
   ) => {
-    const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
-    const inheritedDimensions = galleryInheritanceSettings
-      ? inheritedDimensionsChangedByTagEdit(
-          cardData.tags ?? [],
-          nextTagIds,
-          allTags,
-          galleryInheritanceSettings,
-          overrides
-        )
-      : [];
-    const patch: Pick<Card, 'tags' | 'subjectTagIds'> & Partial<Pick<Card, 'galleryTagInheritanceOverrides'>> = {
-      tags: nextTagIds,
-      subjectTagIds: nextSubjectTagIds,
+    const currentOverrides =
+      cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    const nextOverrides: GalleryTagInheritanceToggles = {
+      who: !inheritance.who,
+      what: !inheritance.what,
+      when: !inheritance.when,
+      where: !inheritance.where,
     };
+    const resumedDimensions = DIMENSION_ORDER.filter(
+      (dimension) => currentOverrides[dimension] && !nextOverrides[dimension]
+    );
 
-    if (inheritedDimensions.length > 0) {
-      const labels = inheritedDimensions.map((dimension) => DIMENSION_LABEL[dimension]);
-      const dimensionText = labels.length === 1
-        ? labels[0]
-        : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+    if (resumedDimensions.length > 0) {
+      const labels = resumedDimensions.map((dimension) => DIMENSION_LABEL[dimension]);
+      const dimensionText =
+        labels.length === 1
+          ? labels[0]
+          : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
       const confirmed = await feedback.confirm({
-        title: `Stop inheriting ${dimensionText}?`,
-        message: `Changing ${dimensionText} tags will stop inheriting ${dimensionText} from Gallery items for this card.`,
-        confirmLabel: 'Stop inheriting and change',
-        cancelLabel: 'Keep inheritance',
-        tone: 'default',
-      });
-      if (!confirmed) return false;
-      const nextOverrides = { ...overrides };
-      inheritedDimensions.forEach((dimension) => {
-        nextOverrides[dimension] = true;
-      });
-      patch.galleryTagInheritanceOverrides = nextOverrides;
-      setField('galleryTagInheritanceOverrides', nextOverrides);
-    }
-
-    setField('tags', nextTagIds);
-    setField('subjectTagIds', nextSubjectTagIds);
-    setField('subjectTagId', nextSubjectTagIds[0] ?? null);
-    await persistFieldPatch(patch);
-    return true;
-  }, [allTags, cardData.galleryTagInheritanceOverrides, cardData.tags, feedback, galleryInheritanceSettings, persistFieldPatch, setField]);
-
-  const handleGalleryInheritanceChange = useCallback(async (dimension: TagDimension, inherit: boolean) => {
-    const current = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
-    if (inherit && current[dimension]) {
-      const label = DIMENSION_LABEL[dimension];
-      const confirmed = await feedback.confirm({
-        title: `Resume inheriting ${label}?`,
-        message: `${label} tags on this card will be replaced by the Gallery rollup.`,
+        title: `Resume inheriting ${dimensionText}?`,
+        message: `${dimensionText} tags on this card will be replaced by the current Gallery tags.`,
         confirmLabel: 'Replace and inherit',
         cancelLabel: 'Keep override',
         tone: 'default',
       });
-      if (!confirmed) return;
+      if (!confirmed) return false;
     }
-    const next = { ...current, [dimension]: !inherit };
-    setField('galleryTagInheritanceOverrides', next);
-    await persistFieldPatch({ galleryTagInheritanceOverrides: next });
-  }, [cardData.galleryTagInheritanceOverrides, feedback, persistFieldPatch, setField]);
 
-  const galleryInheritanceControls = useMemo(() => {
-    const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
-    return (
-      <fieldset className={styles.galleryInheritanceControls}>
-        <legend>Gallery inheritance</legend>
-        <div className={styles.galleryInheritanceOptions}>
-          {DIMENSION_ORDER.map((dimension) => {
-            const available = galleryInheritanceSettings?.[dimension] === true;
-            return (
-              <label
-                key={dimension}
-                className={styles.galleryInheritanceOption}
-                title={available ? `Inherit ${DIMENSION_LABEL[dimension]} from Gallery items` : `Enable ${DIMENSION_LABEL[dimension]} Gallery inheritance in Settings first`}
-              >
-                <input
-                  type="checkbox"
-                  checked={available && !overrides[dimension]}
-                  disabled={isSaving || !available}
-                  onChange={(event) => void handleGalleryInheritanceChange(dimension, event.target.checked)}
-                />
-                {DIMENSION_LABEL[dimension]}
-              </label>
-            );
-          })}
-        </div>
-        <p className={styles.galleryInheritanceHelp}>
-          {galleryInheritanceConfigured === false
-            ? 'Choose the new-card defaults before using inheritance. '
-            : 'New-card defaults are controlled in Settings. '}
-          <a href="/admin/settings#inheritance-heading">Open Settings</a>
-        </p>
-      </fieldset>
-    );
-  }, [cardData.galleryTagInheritanceOverrides, galleryInheritanceConfigured, galleryInheritanceSettings, handleGalleryInheritanceChange, isSaving]);
+    const patch: Pick<
+      Card,
+      'tags' | 'subjectTagIds' | 'galleryTagInheritanceOverrides'
+    > = {
+      tags: nextTagIds,
+      subjectTagIds: nextSubjectTagIds,
+      galleryTagInheritanceOverrides: nextOverrides,
+    };
+
+    setField('tags', nextTagIds);
+    setField('subjectTagIds', nextSubjectTagIds);
+    setField('subjectTagId', nextSubjectTagIds[0] ?? null);
+    setField('galleryTagInheritanceOverrides', nextOverrides);
+    await persistFieldPatch(patch);
+    return true;
+  }, [cardData.galleryTagInheritanceOverrides, feedback, persistFieldPatch, setField]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
     if (newCoverImage && newPosition !== undefined) {
@@ -705,6 +655,67 @@ const CardForm: React.FC = () => {
     const tagIds = new Set(cardData.tags || []);
     return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
+
+  const galleryTagRollups = useMemo(() => {
+    const resolved = buildResolvedTagDimensionMap(allTags);
+    const galleryMedia = ((cardData.galleryMedia ?? []) as HydratedGalleryMediaItem[])
+      .map((item) => item.media)
+      .filter((media): media is Media => Boolean(media));
+    return Object.fromEntries(
+      DIMENSION_ORDER.map((dimension) => [
+        dimension,
+        computeGalleryDimensionRollup(galleryMedia, dimension, resolved),
+      ])
+    ) as Record<
+      TagDimension,
+      ReturnType<typeof computeGalleryDimensionRollup>
+    >;
+  }, [allTags, cardData.galleryMedia]);
+
+  const galleryTagIdsByDimension = useMemo(
+    () =>
+      Object.fromEntries(
+        DIMENSION_ORDER.map((dimension) => [
+          dimension,
+          galleryTagRollups[dimension].tagIds,
+        ])
+      ) as Record<TagDimension, string[]>,
+    [galleryTagRollups]
+  );
+
+  const galleryRollupStatuses = useMemo(
+    () =>
+      Object.fromEntries(
+        DIMENSION_ORDER.map((dimension) => [
+          dimension,
+          galleryTagRollups[dimension].status,
+        ])
+      ) as Record<
+        TagDimension,
+        ReturnType<typeof computeGalleryDimensionRollup>['status']
+      >,
+    [galleryTagRollups]
+  );
+
+  const inheritanceAvailableByDimension = useMemo(
+    () => ({
+      who: galleryInheritanceSettings?.who === true,
+      what: galleryInheritanceSettings?.what === true,
+      when: galleryInheritanceSettings?.when === true,
+      where: galleryInheritanceSettings?.where === true,
+    }),
+    [galleryInheritanceSettings]
+  );
+
+  const inheritanceByDimension = useMemo(() => {
+    const overrides = cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
+    return {
+      who: inheritanceAvailableByDimension.who && !overrides.who,
+      what: inheritanceAvailableByDimension.what && !overrides.what,
+      when: inheritanceAvailableByDimension.when && !overrides.when,
+      where: inheritanceAvailableByDimension.where && !overrides.where,
+    };
+  }, [cardData.galleryTagInheritanceOverrides, inheritanceAvailableByDimension]);
 
   const persistTitleOnBlur = useCallback(() => {
     setField('title', titleDraft);
@@ -1070,26 +1081,21 @@ const CardForm: React.FC = () => {
                   onUpdateSubjectTagIds={handleSubjectTagIdsChange}
                   tagError={errors.tags}
                   className={styles.tagCommandBar}
-                  onDimensionSelect={(dimension) => {
-                    setTagMacroDimension(dimension);
-                    setTagMacroExpanded(true);
-                  }}
+                  showDimensionIcons
+                  underlineTags
+                  hideSearch
                   trailingSlot={
                     <button
                       type="button"
                       className={styles.compactTagEditButton}
                       disabled={isSaving}
-                      onClick={() => {
-                        setTagMacroDimension(null);
-                        setTagMacroExpanded(true);
-                      }}
-                      aria-label="Browse all tags"
-                      title="Browse all tags"
+                      onClick={() => setTagMacroExpanded(true)}
+                      aria-label="Open Card Tags"
+                      title="Open Card Tags"
                     >
-                      <Pencil size={16} aria-hidden="true" />
+                      <TagIcon size={16} aria-hidden="true" />
                     </button>
                   }
-                  footerContent={galleryInheritanceControls}
                 />
                 <MacroTagSelector
                   selectedTags={selectedTagObjects}
@@ -1097,11 +1103,18 @@ const CardForm: React.FC = () => {
                   onChange={handleTagsChange}
                   subjectTagIds={cardData.subjectTagIds ?? (cardData.subjectTagId ? [cardData.subjectTagId] : [])}
                   onSubjectTagIdsChange={handleSubjectTagIdsChange}
-                  onSaveAssignment={handleTagAssignmentChange}
+                  onSaveAssignmentWithInheritance={handleTagAssignmentWithInheritance}
+                  galleryTagIdsByDimension={galleryTagIdsByDimension}
+                  inheritanceByDimension={inheritanceByDimension}
+                  inheritanceAvailableByDimension={inheritanceAvailableByDimension}
+                  galleryRollupStatuses={galleryRollupStatuses}
                   expanded={tagMacroExpanded}
                   onExpandedChange={setTagMacroExpanded}
-                  visibleDimensions={tagMacroDimension ? [tagMacroDimension] : [...DIMENSION_ORDER]}
-                  pickerTitle={tagMacroDimension ? `Assign ${DIMENSION_LABEL[tagMacroDimension]} tags` : 'Assign tags'}
+                  visibleDimensions={[...DIMENSION_ORDER]}
+                  pickerTitle="Card Tags"
+                  searchPlaceholder="Search tags..."
+                  unifiedAssignmentLayout
+                  includeAllTags
                   collapsedSummary="none"
                   className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
                 />
@@ -1327,26 +1340,21 @@ const CardForm: React.FC = () => {
               onUpdateTags={handleTagsChange}
               onUpdateSubjectTagId={handleSubjectTagChange}
               onUpdateSubjectTagIds={handleSubjectTagIdsChange}
-              footerContent={galleryInheritanceControls}
               tagError={errors.tags}
               className={styles.tagCommandBar}
-              onDimensionSelect={(dimension) => {
-                setTagMacroDimension(dimension);
-                setTagMacroExpanded(true);
-              }}
+              showDimensionIcons
+              underlineTags
+              hideSearch
               trailingSlot={
                 <button
                   type="button"
                   className={styles.compactTagEditButton}
                   disabled={isSaving}
-                  onClick={() => {
-                    setTagMacroDimension(null);
-                    setTagMacroExpanded(true);
-                  }}
-                  aria-label="Browse all tags"
-                  title="Browse all tags"
+                  onClick={() => setTagMacroExpanded(true)}
+                  aria-label="Open Card Tags"
+                  title="Open Card Tags"
                 >
-                  <Pencil size={16} aria-hidden="true" />
+                  <TagIcon size={16} aria-hidden="true" />
                 </button>
               }
             />
@@ -1356,11 +1364,18 @@ const CardForm: React.FC = () => {
               onChange={handleTagsChange}
               subjectTagIds={cardData.subjectTagIds ?? (cardData.subjectTagId ? [cardData.subjectTagId] : [])}
               onSubjectTagIdsChange={handleSubjectTagIdsChange}
-              onSaveAssignment={handleTagAssignmentChange}
+              onSaveAssignmentWithInheritance={handleTagAssignmentWithInheritance}
+              galleryTagIdsByDimension={galleryTagIdsByDimension}
+              inheritanceByDimension={inheritanceByDimension}
+              inheritanceAvailableByDimension={inheritanceAvailableByDimension}
+              galleryRollupStatuses={galleryRollupStatuses}
               expanded={tagMacroExpanded}
               onExpandedChange={setTagMacroExpanded}
-              visibleDimensions={tagMacroDimension ? [tagMacroDimension] : [...DIMENSION_ORDER]}
-              pickerTitle={tagMacroDimension ? `Assign ${DIMENSION_LABEL[tagMacroDimension]} tags` : 'Assign tags'}
+              visibleDimensions={[...DIMENSION_ORDER]}
+              pickerTitle="Card Tags"
+              searchPlaceholder="Search tags..."
+              unifiedAssignmentLayout
+              includeAllTags
               collapsedSummary="none"
               className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
             />

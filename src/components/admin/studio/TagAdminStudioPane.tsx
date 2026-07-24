@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
 import { WhoRelationshipModal } from '@/components/admin/studio/tags/WhoRelationshipModal';
 import { TagMergeModal } from '@/components/admin/studio/tags/TagMergeModal';
 import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
 import { useTag } from '@/components/providers/TagProvider';
-import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import type { Tag } from '@/lib/types/tag';
 import tagAdminStyles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 import studioStyles from './StudioWorkspace.module.css';
@@ -26,13 +25,6 @@ export default function TagAdminStudioPane({
   const [relationshipTag, setRelationshipTag] = useState<Tag | null>(null);
   const [mergeTag, setMergeTag] = useState<Tag | null>(null);
   const { tags } = useTag();
-  const studioShell = useStudioShellOptional();
-  const shellHighlightId = studioShell?.organizeReconcileTargetTagId ?? null;
-  const mergedHighlightTagIds = useMemo(() => {
-    const ids = new Set(highlightTagIds ?? []);
-    if (shellHighlightId) ids.add(shellHighlightId);
-    return Array.from(ids);
-  }, [highlightTagIds, shellHighlightId]);
   const {
     tagTree,
     loading,
@@ -74,14 +66,13 @@ export default function TagAdminStudioPane({
       <div className={studioStyles.tagPaneScroll}>
       {loading && <p className={studioStyles.tagPaneBody}>Loading tags…</p>}
       {error && <p className={tagAdminStyles.error}>{error.toString()}</p>}
-      {isSaving && <p className={studioStyles.tagPaneBody}>Saving…</p>}
-      {!loading && !error && (
-        <div>
+      {!loading && (
+        <div aria-busy={isSaving}>
           <TagAdminList
             tagTree={tagTree}
             stackDimensionColumns
             showDimensionNavigation
-            highlightTagIds={mergedHighlightTagIds}
+        highlightTagIds={highlightTagIds}
             onReorder={handleReorder}
             onReparent={handleReparent}
             onCreateTag={handleCreateTag}

@@ -117,4 +117,25 @@ describe('CardDimensionalTagCommandBar', () => {
     await userEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Subject' }));
     expect(onUpdateSubjectTagIds).toHaveBeenCalledWith(['alan', 'bob']);
   });
+
+  it('supports Compose dimension icons, read-only inheritance status, underlined tags, and no search field', () => {
+    render(
+      <CardDimensionalTagCommandBar
+        card={card}
+        allTags={tags}
+        onUpdateTags={jest.fn()}
+        showDimensionIcons
+        underlineTags
+        hideSearch
+        dimensionLeadContent={(dimension) => (
+          <span>{dimension} Inherited</span>
+        )}
+      />
+    );
+
+    expect(document.querySelectorAll('.lucide-user, .lucide-square, .lucide-calendar, .lucide-map-pin')).toHaveLength(4);
+    expect(screen.getAllByText(/Inherited/)).toHaveLength(4);
+    expect(screen.queryByPlaceholderText('Edit tags...')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alan, subject' }).closest('[class*="wrapUnderlineTags"]')).not.toBeNull();
+  });
 });

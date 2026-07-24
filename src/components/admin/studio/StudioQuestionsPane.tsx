@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilterX, FolderOpen, Link2Off, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { FilterX, FolderOpen, Link2Off, Plus, Save, Tag, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
+import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
 import DebouncedSearchInput from '@/components/admin/common/DebouncedSearchInput';
 import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import type { StudioSelectedDetail, StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
@@ -14,7 +15,7 @@ import { useTag, type TagWithChildren } from '@/components/providers/TagProvider
 import type { Question } from '@/lib/types/question';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { groupSelectedTagIdsByDimension } from '@/lib/utils/tagUtils';
-import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
+import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
 import styles from './StudioWorkspace.module.css';
 
 type QuestionsResponse = { questions?: Question[]; message?: string; error?: string };
@@ -188,13 +189,13 @@ export default function StudioQuestionsPane() {
   const [newSubjectTagIds, setNewSubjectTagIds] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createAdvancedTagEditorOpen, setCreateAdvancedTagEditorOpen] = useState(false);
-  const [createTagDimension, setCreateTagDimension] = useState<TagDimension | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
   const [editSubjectTagIds, setEditSubjectTagIds] = useState<string[]>([]);
   const [advancedTagEditorId, setAdvancedTagEditorId] = useState<string | null>(null);
-  const [editTagDimension, setEditTagDimension] = useState<TagDimension | null>(null);
+  const [editSaveState, setEditSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const editSaveTimerRef = useRef<number | null>(null);
   const [unlinkConfirmQuestion, setUnlinkConfirmQuestion] = useState<Question | null>(null);
   const [deleteConfirmQuestion, setDeleteConfirmQuestion] = useState<Question | null>(null);
 
@@ -222,8 +223,11 @@ export default function StudioQuestionsPane() {
     () => allTags.filter(tag => tag.docId && editTagIds.includes(tag.docId)),
     [allTags, editTagIds]
   );
+  const questionsLoadInFlightRef = useRef(false);
 
   const loadQuestions = useCallback(async () => {
+    if (questionsLoadInFlightRef.current) return;
+    questionsLoadInFlightRef.current = true;
     setLoading(true);
     try {
       const res = await fetch('/api/admin/questions', { cache: 'no-store', credentials: 'same-origin' });
@@ -233,6 +237,7 @@ export default function StudioQuestionsPane() {
     } catch (e) {
       feedback.showError(e instanceof Error ? e.message : 'Failed to load questions', 'Could not load questions');
     } finally {
+      questionsLoadInFlightRef.current = false;
       setLoading(false);
     }
   }, [feedback]);
@@ -314,6 +319,7 @@ export default function StudioQuestionsPane() {
   const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[]; subjectTagIds?: string[] }) => {
     setBusyId(questionId);
     setBusyLabel('Saving question...');
+    if (body.prompt !== undefined) setEditSaveState('saving');
     try {
       const res = await fetch(`/api/admin/questions/${encodeURIComponent(questionId)}`, {
         method: 'PATCH',
@@ -327,15 +333,47 @@ export default function StudioQuestionsPane() {
       if (data.question) {
         setQuestions(prev => prev.map(q => q.docId === questionId ? data.question! : q));
       }
-      setEditingId(null);
-      setAdvancedTagEditorId(null);
+      if (body.prompt !== undefined) setEditSaveState('saved');
+      return true;
     } catch (e) {
+      if (body.prompt !== undefined) setEditSaveState('error');
       feedback.showError(e instanceof Error ? e.message : 'Failed to update question', 'Could not save question');
+      return false;
     } finally {
       setBusyId(null);
       setBusyLabel(null);
     }
   }, [feedback]);
+
+  const clearEditSaveTimer = useCallback(() => {
+    if (editSaveTimerRef.current !== null) {
+      window.clearTimeout(editSaveTimerRef.current);
+      editSaveTimerRef.current = null;
+    }
+  }, []);
+
+  const flushPromptSave = useCallback(async () => {
+    clearEditSaveTimer();
+    if (!editingId) return;
+    const current = questions.find((question) => question.docId === editingId);
+    const nextPrompt = editPrompt.trim();
+    if (!current || !nextPrompt || nextPrompt === current.prompt) return;
+    await saveQuestion(editingId, { prompt: nextPrompt });
+  }, [clearEditSaveTimer, editPrompt, editingId, questions, saveQuestion]);
+
+  useEffect(() => {
+    clearEditSaveTimer();
+    if (!editingId) return;
+    const current = questions.find((question) => question.docId === editingId);
+    const nextPrompt = editPrompt.trim();
+    if (!current || !nextPrompt || nextPrompt === current.prompt) return;
+    setEditSaveState('idle');
+    editSaveTimerRef.current = window.setTimeout(() => {
+      editSaveTimerRef.current = null;
+      void saveQuestion(editingId, { prompt: nextPrompt });
+    }, 700);
+    return clearEditSaveTimer;
+  }, [clearEditSaveTimer, editPrompt, editingId, questions, saveQuestion]);
 
   const openQuestionCard = useCallback(async (question: Question) => {
     setBusyId(question.docId);
@@ -558,32 +596,26 @@ export default function StudioQuestionsPane() {
             placeholder="Question prompt"
             rows={3}
           />
-          <CardDimensionalTagCommandBar
-            card={{ tags: newTagIds, subjectTagIds: newSubjectTagIds }}
-            allTags={allTags}
-            onUpdateTags={setNewTagIds}
-            onUpdateSubjectTagIds={setNewSubjectTagIds}
-            variant="compact"
-            searchPlaceholder="Edit tags..."
-            onDimensionSelect={(dimension) => {
-              setCreateTagDimension(dimension);
-              setCreateAdvancedTagEditorOpen(true);
-            }}
-            trailingSlot={
-              <button
-                type="button"
-                className={styles.studioQuestionTagActionButton}
-                onClick={() => {
-                  setCreateTagDimension(null);
-                  setCreateAdvancedTagEditorOpen(open => !open);
-                }}
-                aria-label={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
-                title={createAdvancedTagEditorOpen ? 'Close tag editor' : 'Edit tags'}
-              >
-                {createAdvancedTagEditorOpen ? <X size={16} aria-hidden="true" /> : <Pencil size={16} aria-hidden="true" />}
-              </button>
-            }
-          />
+          <div className={styles.studioQuestionTagSummaryRow}>
+            <DimensionalTagVerticalChips
+              tagIds={newTagIds}
+              allTags={allTags}
+              subjectTagIds={newSubjectTagIds}
+              onUpdateTags={setNewTagIds}
+              onUpdateSubjectTagIds={setNewSubjectTagIds}
+              onOpenAssignment={() => setCreateAdvancedTagEditorOpen(true)}
+              variant="inline"
+            />
+            <button
+              type="button"
+              className={styles.studioQuestionTagActionButton}
+              onClick={() => setCreateAdvancedTagEditorOpen(true)}
+              aria-label="Open Question Tags"
+              title="Question Tags"
+            >
+              <Tag size={16} aria-hidden="true" />
+            </button>
+          </div>
           {createAdvancedTagEditorOpen ? (
             <MacroTagSelector
               selectedTags={allTags.filter(tag => tag.docId && newTagIds.includes(tag.docId))}
@@ -597,8 +629,11 @@ export default function StudioQuestionsPane() {
               }}
               expanded
               onExpandedChange={setCreateAdvancedTagEditorOpen}
-              visibleDimensions={createTagDimension ? [createTagDimension] : [...DIMENSION_ORDER]}
-              pickerTitle={createTagDimension ? `Assign ${DIMENSION_LABEL[createTagDimension]} tags` : 'Assign tags'}
+              visibleDimensions={[...DIMENSION_ORDER]}
+              pickerTitle="Question Tags"
+              searchPlaceholder="Search tags..."
+              unifiedAssignmentLayout
+              includeAllTags
               collapsedSummary="none"
             />
           ) : null}
@@ -668,14 +703,15 @@ export default function StudioQuestionsPane() {
           allTags={allTags}
           onUpdateTags={setFilterTagIds}
           variant="compact"
-          searchPlaceholder="Edit tags..."
+          hideSearch
+          showDimensionIcons
           trailingSlot={
             <button
               type="button"
               className={styles.studioQuestionTagActionButton}
               onClick={() => setTagFilterModalOpen(true)}
             >
-              <Pencil size={16} aria-hidden="true" />
+              <Tag size={16} aria-hidden="true" />
             </button>
           }
         />
@@ -762,8 +798,9 @@ export default function StudioQuestionsPane() {
               : busy
                 ? busyLabel ?? 'Updating question...'
                 : null;
-          const activeTagIds = editing ? editTagIds : question.tagIds;
-          const activeSubjectTagIds = editing ? editSubjectTagIds : question.subjectTagIds;
+          const tagEditorOpen = advancedTagEditorId === question.docId;
+          const activeTagIdsForDisplay = tagEditorOpen ? editTagIds : question.tagIds;
+          const activeSubjectTagIds = tagEditorOpen ? editSubjectTagIds : question.subjectTagIds;
           return (
             <article
               key={question.docId}
@@ -780,74 +817,102 @@ export default function StudioQuestionsPane() {
                   <textarea
                     className={styles.studioQuestionTextarea}
                     value={editPrompt}
-                    onChange={e => setEditPrompt(e.target.value)}
+                    onChange={e => {
+                      setEditPrompt(e.target.value);
+                      setEditSaveState('idle');
+                    }}
+                    onBlur={() => void flushPromptSave()}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        event.preventDefault();
+                        clearEditSaveTimer();
+                        setEditPrompt(question.prompt);
+                        setEditSaveState('idle');
+                        setEditingId(null);
+                      } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                        event.preventDefault();
+                        void flushPromptSave();
+                        event.currentTarget.blur();
+                      }
+                    }}
                     rows={3}
+                    autoFocus
                   />
                 </>
               ) : (
-                <div className={styles.studioQuestionPrompt}>{question.prompt}</div>
+                <button
+                  type="button"
+                  className={styles.studioQuestionPromptButton}
+                  onClick={() => {
+                    setEditingId(question.docId);
+                    setEditPrompt(question.prompt);
+                    setEditSaveState('idle');
+                  }}
+                  aria-label={`Edit question: ${question.prompt}`}
+                >
+                  <span className={styles.studioQuestionPrompt}>{question.prompt}</span>
+                </button>
               )}
+              {editing ? (
+                <div className={styles.studioQuestionAutosaveStatus} role="status" aria-live="polite">
+                  {editSaveState === 'saving'
+                    ? 'Saving…'
+                    : editSaveState === 'saved'
+                      ? 'Saved'
+                      : editSaveState === 'error'
+                        ? 'Retry'
+                        : ''}
+                </div>
+              ) : null}
               <div
                 className={styles.studioQuestionTagEditor}
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
               >
-                <CardDimensionalTagCommandBar
-                  card={{ tags: activeTagIds, subjectTagId: question.subjectTagId, subjectTagIds: activeSubjectTagIds }}
+                <div className={styles.studioQuestionTagSummaryRow}>
+                  <DimensionalTagVerticalChips
+                  tagIds={activeTagIdsForDisplay}
                   allTags={allTags}
-                  onUpdateTags={(nextTagIds) => {
-                    if (editing) {
+                  subjectTagId={question.subjectTagId}
+                  subjectTagIds={activeSubjectTagIds}
+                  onUpdateTags={async (nextTagIds) => {
+                    if (tagEditorOpen) {
                       setEditTagIds(nextTagIds);
                       return;
                     }
-                    return saveQuestion(question.docId, { tagIds: nextTagIds });
+                    await saveQuestion(question.docId, { tagIds: nextTagIds });
                   }}
-                  disabled={busy}
-                  onUpdateSubjectTagIds={(nextSubjectTagIds) => {
-                    if (editing) {
+                  onUpdateSubjectTagIds={async (nextSubjectTagIds) => {
+                    if (tagEditorOpen) {
                       setEditSubjectTagIds(nextSubjectTagIds);
                       return;
                     }
-                    return saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
+                    await saveQuestion(question.docId, { subjectTagIds: nextSubjectTagIds });
                   }}
-                  variant="compact"
-                  searchPlaceholder="Edit tags..."
-                  onDimensionSelect={(dimension) => {
-                    if (!editing) {
-                      setEditingId(question.docId);
-                      setEditPrompt(question.prompt);
-                      setEditTagIds(question.tagIds);
-                      setEditSubjectTagIds(question.subjectTagIds);
-                    }
-                    setEditTagDimension(dimension);
+                  disabled={busy}
+                  variant="inline"
+                  onOpenAssignment={() => {
+                    setEditTagIds(question.tagIds);
+                    setEditSubjectTagIds(question.subjectTagIds);
                     setAdvancedTagEditorId(question.docId);
                   }}
-                  trailingSlot={
+                />
                     <button
                       type="button"
                       className={styles.studioQuestionTagGhostButton}
                       disabled={busy}
                       onClick={() => {
-                        if (editing) {
-                          setEditTagDimension(null);
-                          setAdvancedTagEditorId(current => current === question.docId ? null : question.docId);
-                          return;
-                        }
-                        setEditingId(question.docId);
-                        setEditPrompt(question.prompt);
                         setEditTagIds(question.tagIds);
                         setEditSubjectTagIds(question.subjectTagIds);
-                        setEditTagDimension(null);
                         setAdvancedTagEditorId(question.docId);
                       }}
-                      aria-label={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
-                      title={editing && advancedTagEditorId === question.docId ? 'Close tag editor' : 'Edit tags'}
+                      aria-label="Open Question Tags"
+                      title="Question Tags"
                     >
-                      {editing && advancedTagEditorId === question.docId ? <X size={16} aria-hidden="true" /> : <Pencil size={16} aria-hidden="true" />}
+                      <Tag size={16} aria-hidden="true" />
                     </button>
-                  }
-                />
-                {editing && advancedTagEditorId === question.docId ? (
+                </div>
+                {tagEditorOpen ? (
                   <MacroTagSelector
                     selectedTags={selectedEditTags}
                     allTags={allTags}
@@ -857,11 +922,15 @@ export default function StudioQuestionsPane() {
                     onSaveAssignment={async (tagIds, subjectTagIds) => {
                       setEditTagIds(tagIds);
                       setEditSubjectTagIds(subjectTagIds);
+                      await saveQuestion(question.docId, { tagIds, subjectTagIds });
                     }}
                     expanded
                     onExpandedChange={(open) => setAdvancedTagEditorId(open ? question.docId : null)}
-                    visibleDimensions={editTagDimension ? [editTagDimension] : [...DIMENSION_ORDER]}
-                    pickerTitle={editTagDimension ? `Assign ${DIMENSION_LABEL[editTagDimension]} tags` : 'Assign tags'}
+                    visibleDimensions={[...DIMENSION_ORDER]}
+                    pickerTitle="Question Tags"
+                    searchPlaceholder="Search tags..."
+                    unifiedAssignmentLayout
+                    includeAllTags
                     collapsedSummary="none"
                   />
                 ) : null}
@@ -871,44 +940,7 @@ export default function StudioQuestionsPane() {
                 onClick={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
               >
-                {editing ? (
-                  <>
-                    <button
-                      type="button"
-                      className={styles.studioQuestionPrimaryButton}
-                      disabled={busy || !editPrompt.trim()}
-                      onClick={() => void saveQuestion(question.docId, { prompt: editPrompt, tagIds: editTagIds, subjectTagIds: editSubjectTagIds })}
-                      aria-label="Save question"
-                      title="Save question"
-                    >
-                      <Save size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.studioQuestionSmallButton}
-                      disabled={busy}
-                      onClick={() => {
-                        setEditingId(null);
-                        setAdvancedTagEditorId(null);
-                      }}
-                      aria-label="Cancel editing"
-                      title="Cancel editing"
-                    >
-                      <X size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.studioQuestionDeleteButton}
-                      disabled={busy}
-                      onClick={() => setDeleteConfirmQuestion(question)}
-                      aria-label="Delete question"
-                      title="Delete question"
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
-                  </>
-                ) : (
-                  <>
+                <>
                     <button
                       type="button"
                       className={styles.studioQuestionSmallButton}
@@ -918,22 +950,6 @@ export default function StudioQuestionsPane() {
                       title={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
                     >
                       <FolderOpen size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.studioQuestionPrimaryButton}
-                      disabled={busy}
-                      onClick={() => {
-                        setEditingId(question.docId);
-                        setAdvancedTagEditorId(null);
-                        setEditPrompt(question.prompt);
-                        setEditTagIds(question.tagIds);
-                        setEditSubjectTagIds(question.subjectTagIds);
-                      }}
-                      aria-label="Edit question"
-                      title="Edit question"
-                    >
-                      <Pencil size={16} aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -964,7 +980,6 @@ export default function StudioQuestionsPane() {
                       </button>
                     ) : null}
                   </>
-                )}
               </div>
             </article>
           );

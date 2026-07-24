@@ -15,6 +15,7 @@ interface EditModalProps {
   size?: 'default' | 'wide' | 'wideTall';
   modalClassName?: string;
   bodyClassName?: string;
+  footer?: React.ReactNode;
 }
 
 export default function EditModal({
@@ -25,6 +26,7 @@ export default function EditModal({
   size = 'default',
   modalClassName,
   bodyClassName,
+  footer,
 }: EditModalProps) {
   if (!isOpen) return null;
 
@@ -49,6 +51,7 @@ export default function EditModal({
         <div className={clsx(styles.body, bodyClassName)}>
           {children}
         </div>
+        {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
     </div>,
     document.body

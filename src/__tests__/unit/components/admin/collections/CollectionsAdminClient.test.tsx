@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import CollectionsAdminClient from '@/components/admin/collections/CollectionsAdminClient';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 
@@ -99,9 +99,8 @@ describe('CollectionsAdminClient', () => {
     });
   });
 
-  it('keeps embedded Collections on a roots-first path until the Collections tab is opened', async () => {
-    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+  it('keeps embedded Collections on a roots-first path until its independent pane is opened', async () => {
+    const fetchMock = jest.fn(async () => {
       return {
         ok: true,
         status: 200,
@@ -122,10 +121,11 @@ describe('CollectionsAdminClient', () => {
 
     global.fetch = fetchMock as typeof fetch;
 
-    render(
+    const { rerender } = render(
       <CollectionsAdminClient
         embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
         embeddedRightSlot={<div data-testid="right-slot" />}
+        embeddedCollectionsCollapsed
       />
     );
 
@@ -138,7 +138,13 @@ describe('CollectionsAdminClient', () => {
     );
     expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('sortBy=created'));
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Collections' }));
+    rerender(
+      <CollectionsAdminClient
+        embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
+        embeddedRightSlot={<div data-testid="right-slot" />}
+        embeddedCollectionsCollapsed={false}
+      />
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

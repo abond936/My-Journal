@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
-import { recomputeCardsMediaSignalsForMediaIds } from '@/lib/services/cards/cardMediaLifecycleService';
+import {
+  createMediaTagReconciliationOperation,
+  reconcileMediaTagDependents,
+} from '@/lib/services/mediaTagReconciliationService';
 import { API_INPUT_CAPS, isInputCapFailure, validateStringIdArray } from '@/lib/api/inputCaps';
 import {
   apiRouteError,
@@ -28,15 +31,23 @@ export async function POST(request: NextRequest) {
         mediaIds?: unknown;
         tags?: unknown;
         mode?: unknown;
+        addTagIds?: unknown;
+        removeTagIds?: unknown;
         subjectTagId?: unknown;
         subjectTagIds?: unknown;
+        addSubjectTagIds?: unknown;
+        removeSubjectTagIds?: unknown;
       };
       const mediaIds = body.mediaIds;
       const tagsProvided = Object.prototype.hasOwnProperty.call(body, 'tags');
       const tags = body.tags;
       const mode = body.mode;
+      const addTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'addTagIds');
+      const removeTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'removeTagIds');
       const subjectTagIdProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagId');
       const subjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagIds');
+      const addSubjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'addSubjectTagIds');
+      const removeSubjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'removeSubjectTagIds');
 
       const mediaIdsResult = validateStringIdArray(mediaIds, {
         field: 'mediaIds',
@@ -53,7 +64,15 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (!tagsProvided && !subjectTagIdProvided && !subjectTagIdsProvided) {
+      if (
+        !tagsProvided &&
+        !addTagIdsProvided &&
+        !removeTagIdsProvided &&
+        !subjectTagIdProvided &&
+        !subjectTagIdsProvided &&
+        !addSubjectTagIdsProvided &&
+        !removeSubjectTagIdsProvided
+      ) {
         return apiRouteError({
           code: 'MEDIA_TAGS_UPDATES_REQUIRED',
           message: 'Provide tags, subjectTagId, and/or subjectTagIds.',
@@ -79,6 +98,50 @@ export async function POST(request: NextRequest) {
         }
         validatedTagList = tagsResult.ids;
       }
+      const validateOptionalIds = (
+        provided: boolean,
+        value: unknown,
+        field: string,
+        code: string
+      ) => {
+        if (!provided) return { ids: undefined as string[] | undefined };
+        const result = validateStringIdArray(value, {
+          field,
+          max: API_INPUT_CAPS.bulkTagIdsMax,
+        });
+        if (isInputCapFailure(result)) {
+          return { response: apiRouteInputCapError(result.error, { code }) };
+        }
+        return { ids: result.ids };
+      };
+      const addTagIdsResult = validateOptionalIds(
+        addTagIdsProvided,
+        body.addTagIds,
+        'addTagIds',
+        'MEDIA_TAGS_ADD_IDS_INVALID'
+      );
+      if (addTagIdsResult.response) return addTagIdsResult.response;
+      const removeTagIdsResult = validateOptionalIds(
+        removeTagIdsProvided,
+        body.removeTagIds,
+        'removeTagIds',
+        'MEDIA_TAGS_REMOVE_IDS_INVALID'
+      );
+      if (removeTagIdsResult.response) return removeTagIdsResult.response;
+      const addSubjectTagIdsResult = validateOptionalIds(
+        addSubjectTagIdsProvided,
+        body.addSubjectTagIds,
+        'addSubjectTagIds',
+        'MEDIA_TAGS_ADD_SUBJECT_IDS_INVALID'
+      );
+      if (addSubjectTagIdsResult.response) return addSubjectTagIdsResult.response;
+      const removeSubjectTagIdsResult = validateOptionalIds(
+        removeSubjectTagIdsProvided,
+        body.removeSubjectTagIds,
+        'removeSubjectTagIds',
+        'MEDIA_TAGS_REMOVE_SUBJECT_IDS_INVALID'
+      );
+      if (removeSubjectTagIdsResult.response) return removeSubjectTagIdsResult.response;
 
       if (mode !== undefined && mode !== 'add' && mode !== 'replace' && mode !== 'remove') {
         return apiRouteError({
@@ -125,6 +188,8 @@ export async function POST(request: NextRequest) {
 
       const { updatedIds, updatedMedia } = await bulkApplyMediaTags(ids, {
         ...(tagsProvided ? { tagIds: validatedTagList ?? [], mode: effectiveMode } : {}),
+        ...(addTagIdsProvided ? { addTagIds: addTagIdsResult.ids ?? [] } : {}),
+        ...(removeTagIdsProvided ? { removeTagIds: removeTagIdsResult.ids ?? [] } : {}),
         ...(subjectTagIdProvided
           ? {
               subjectTagId: typeof body.subjectTagId === 'string' ? body.subjectTagId.trim() : null,
@@ -134,9 +199,21 @@ export async function POST(request: NextRequest) {
         ...(subjectTagIdsProvided
           ? { subjectTagIds: validatedSubjectTagIds ?? [], subjectTagIdsProvided: true }
           : {}),
-      });
+        ...(addSubjectTagIdsProvided
+          ? { addSubjectTagIds: addSubjectTagIdsResult.ids ?? [] }
+          : {}),
+        ...(removeSubjectTagIdsProvided
+          ? { removeSubjectTagIds: removeSubjectTagIdsResult.ids ?? [] }
+          : {}),
+      }, { reconcile: false });
+      let reconciliationOperationId: string | null = null;
       if (updatedIds.length) {
-        await recomputeCardsMediaSignalsForMediaIds(updatedIds);
+        try {
+          reconciliationOperationId = await createMediaTagReconciliationOperation(updatedIds);
+        } catch (operationError) {
+          console.error('[media tags] Could not persist reconciliation operation; reconciling inline.', operationError);
+          await reconcileMediaTagDependents(updatedIds);
+        }
       }
 
       return apiRouteSuccess({
@@ -144,6 +221,7 @@ export async function POST(request: NextRequest) {
         updated: updatedIds.length,
         mode: effectiveMode,
         media: updatedMedia,
+        reconciliationOperationId,
       });
     }
   );

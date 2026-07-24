@@ -13,8 +13,25 @@ jest.mock('@/components/providers/TagProvider', () => ({
 
 jest.mock('@/components/admin/studio/cards/TagPickerDimensionColumn', () => ({
   __esModule: true,
-  default: ({ dimension }: { dimension: { docId: string } }) => (
-    <div data-testid={`mock-dimension-${dimension.docId}`} />
+  default: ({
+    dimension,
+    showManagementControls,
+    hideHeader,
+    disabled,
+  }: {
+    dimension: { docId: string; children?: Array<{ name: string }> };
+    showManagementControls?: boolean;
+    hideHeader?: boolean;
+    disabled?: boolean;
+  }) => (
+    <div
+      data-testid={`mock-dimension-${dimension.docId}`}
+      data-management={showManagementControls ? 'shown' : 'hidden'}
+      data-header={hideHeader ? 'hidden' : 'shown'}
+      data-disabled={disabled ? 'true' : 'false'}
+    >
+      {(dimension.children ?? []).map((child) => child.name).join(', ')}
+    </div>
   ),
 }));
 
@@ -116,6 +133,100 @@ describe('MacroTagSelector', () => {
 
     await waitFor(() => {
       expect(onSaveAssignment).toHaveBeenCalledWith(['alan', 'party'], ['party']);
+    });
+  });
+
+  it('shows every taxonomy tag when used as a filter picker', () => {
+    const completeTreeTags = [
+      ...tags,
+      { docId: 'z-what', name: 'z-what', dimension: 'what' },
+    ] as Tag[];
+
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={[completeTreeTags[2]]}
+        allTags={completeTreeTags}
+        onChange={jest.fn()}
+        includeAllTags
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.getByTestId('mock-dimension-dim-what')).toHaveTextContent('z-what');
+  });
+
+  it('uses the Media Tags assignment layout for Card Tags', async () => {
+    const onSaveAssignment = jest.fn(async () => undefined);
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={tags}
+        allTags={tags}
+        onChange={jest.fn()}
+        subjectTagIds={['alan']}
+        onSaveAssignment={onSaveAssignment}
+        pickerTitle="Card Tags"
+        searchPlaceholder="Search tags..."
+        visibleDimensions={['who', 'what', 'when', 'where']}
+        unifiedAssignmentLayout
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Card Tags' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search tags...')).toBeInTheDocument();
+    expect(screen.getByText('(Choose one or more assigned tags as subjects.)')).toBeInTheDocument();
+    expect(document.querySelectorAll('[data-subject-dimension]')).toHaveLength(4);
+    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-management', 'shown');
+    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-header', 'hidden');
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Birthday Party' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() => {
+      expect(onSaveAssignment).toHaveBeenCalledWith(['alan', 'party'], ['alan', 'party']);
+    });
+  });
+
+  it('stages Gallery inheritance by dimension while keeping inherited subjects editable', async () => {
+    const onSaveAssignmentWithInheritance = jest.fn(async () => undefined);
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={tags}
+        allTags={tags}
+        onChange={jest.fn()}
+        subjectTagIds={['alan']}
+        onSaveAssignmentWithInheritance={onSaveAssignmentWithInheritance}
+        pickerTitle="Card Tags"
+        unifiedAssignmentLayout
+        visibleDimensions={['who', 'what', 'when', 'where']}
+        galleryTagIdsByDimension={{ who: ['alan'], what: ['party'], when: [], where: [] }}
+        galleryRollupStatuses={{ who: 'reviewed', what: 'reviewed', when: 'empty', where: 'empty' }}
+        inheritanceByDimension={{ who: true, what: false, when: true, where: true }}
+        inheritanceAvailableByDimension={{ who: true, what: true, when: true, where: true }}
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.getByText('Gallery tags')).toBeInTheDocument();
+    expect(screen.getByText('Tag source')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.getByTestId('mock-dimension-dim-what')).toHaveAttribute('data-disabled', 'false');
+    expect(screen.getByRole('checkbox', { name: 'Alan' })).toBeEnabled();
+
+    const inheritControls = screen.getAllByRole('checkbox', { name: 'Inherit?' });
+    await userEvent.click(inheritControls[0]);
+    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-disabled', 'false');
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() => {
+      expect(onSaveAssignmentWithInheritance).toHaveBeenCalledWith(
+        ['alan', 'party'],
+        ['alan'],
+        { who: false, what: false, when: true, where: true }
+      );
     });
   });
 });

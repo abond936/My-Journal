@@ -222,7 +222,7 @@ describe('reader access boundary', () => {
     );
   });
 
-  it('scans additional ordered card batches before paginating subject-scoped results', async () => {
+  it('scans additional ordered card batches before paginating dimension-subject results', async () => {
     mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
     mockedGetCards
       .mockResolvedValueOnce({
@@ -255,7 +255,7 @@ describe('reader access boundary', () => {
       });
 
     const res = await listCards(
-      makeRequest('https://example.test/api/cards?status=all&who=who-target&tagScope=subject&limit=1')
+      makeRequest('https://example.test/api/cards?status=all&who=who-target&subjectDimensions=who&limit=1')
     );
     const payload = await res.json();
 

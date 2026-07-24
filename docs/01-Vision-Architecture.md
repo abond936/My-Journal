@@ -95,6 +95,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Stable lists** — Filters apply to the full server-side population; chunked results preserve filters and deterministic ordering.
 - **Bulk work** — Bulk mutations use bounded batch work rather than repeated full-card saves.
 - **Targeted refresh** — Patch or invalidate the affected query when possible; do not reload full catalogs by default.
+- **Responsive authoring** — An authoring mutation commits its authoritative record and immediately reconciles the visible working set. Dependent inheritance, Card media signals, and search projections may continue outside the interaction path only through a durable, retryable operation with truthful failure reporting.
 - **Hydration** — Parent reads include relationship identifiers; full child hydration is optional and skipped when unnecessary.
 - **Search limits** — Typesense requests respect its 250-hit page limit and page or chunk larger populations.
 

@@ -1,4 +1,4 @@
-import { getCardsReferencingMedia } from '@/lib/services/cards/cardMediaLifecycleService';
+import { getMaintainedCardsReferencingMedia } from '@/lib/services/cards/cardMediaLifecycleService';
 import { API_INPUT_CAPS, isInputCapFailure, validateRepeatedIdQueryParams } from '@/lib/api/inputCaps';
 import {
   apiRouteInputCapError,
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
       const summaries = Object.fromEntries(
         await Promise.all(
-          idsResult.ids.map(async (id) => [id, await getCardsReferencingMedia(id)] as const)
+          idsResult.ids.map(async (id) => [id, await getMaintainedCardsReferencingMedia(id)] as const)
         )
       );
 

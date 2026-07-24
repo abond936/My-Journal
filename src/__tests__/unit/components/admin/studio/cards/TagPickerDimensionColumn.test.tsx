@@ -54,4 +54,40 @@ describe('TagPickerDimensionColumn', () => {
 
     expect(screen.getByText('Father')).toBeInTheDocument();
   });
+
+  it('reveals a deeply selected tag without showing tag-creation controls', () => {
+    render(
+      <TagPickerDimensionColumn
+        dimension={whoDimension}
+        selection={new Set(['father'])}
+        onSelectionChange={jest.fn()}
+        expandedNodeIds={new Set(['family'])}
+        checkboxIdPrefix="filter"
+        showManagementControls={false}
+        initialExpandLevels={1}
+      />
+    );
+
+    expect(screen.getByText('Father')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('New tag')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add child tag under Family' })).not.toBeInTheDocument();
+    expect(screen.getByText('▼')).toBeInTheDocument();
+  });
+
+  it('disables the tag tree while preserving controls rendered above it', () => {
+    render(
+      <TagPickerDimensionColumn
+        dimension={whoDimension}
+        selection={new Set()}
+        onSelectionChange={jest.fn()}
+        checkboxIdPrefix="empty-filter"
+        showManagementControls={false}
+        headerControl={<label><input type="checkbox" />Subjects only</label>}
+        disabled
+      />
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'Subjects only' })).toBeEnabled();
+    expect(screen.getByRole('checkbox', { name: 'Family' })).toBeDisabled();
+  });
 });

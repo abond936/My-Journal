@@ -437,6 +437,49 @@ export async function updateTag(docId: string, tagData: Partial<Omit<Tag, 'docId
   }
 }
 
+export async function reorderTagSiblings(
+  activeId: string,
+  overId: string,
+  placement: 'before' | 'after'
+): Promise<Array<{ docId: string; order: number }>> {
+  const tags = await getAllTags();
+  const active = tags.find((tag) => tag.docId === activeId);
+  const over = tags.find((tag) => tag.docId === overId);
+  if (!active || !over) throw new Error('Tag not found');
+  if ((active.parentId || '') !== (over.parentId || '')) {
+    throw new Error('Tags must share a parent to be reordered');
+  }
+  if (!active.parentId && active.dimension !== over.dimension) {
+    throw new Error('Root tags must share a dimension to be reordered');
+  }
+
+  const siblings = tags
+    .filter((tag) =>
+      (tag.parentId || '') === (active.parentId || '') &&
+      (active.parentId ? true : tag.dimension === active.dimension)
+    )
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const remaining = siblings.filter((tag) => tag.docId !== activeId);
+  const targetIndex = remaining.findIndex((tag) => tag.docId === overId);
+  if (targetIndex < 0) throw new Error('Drop target is not a sibling');
+  const insertAt = placement === 'before' ? targetIndex : targetIndex + 1;
+  const reordered = [...remaining.slice(0, insertAt), active, ...remaining.slice(insertAt)];
+  const updates = reordered
+    .map((tag, index) => ({ docId: tag.docId!, order: index * 10, previousOrder: tag.order ?? 0 }))
+    .filter((tag) => tag.order !== tag.previousOrder)
+    .map(({ docId, order }) => ({ docId, order }));
+
+  const batch = firestore.batch();
+  for (const update of updates) {
+    batch.update(firestore.collection(TAGS_COLLECTION).doc(update.docId), {
+      order: update.order,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
+  return updates;
+}
+
 /**
  * Deletes a tag and all its descendants.
  * @param docId The document ID of the tag to delete

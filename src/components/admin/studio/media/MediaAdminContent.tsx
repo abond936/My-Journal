@@ -20,7 +20,6 @@ import styles from './mediaAdminShell.module.css';
 import {
   flattenDimensionalTagMapToTagIds,
   groupSelectedTagIdsByDimension,
-  mergeDimensionalTagMaps,
 } from '@/lib/utils/tagUtils';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
@@ -37,9 +36,7 @@ import {
   formatImportBatchLabel,
 } from '@/lib/utils/mediaOrganizeUtils';
 import { groupMediaForBrowse, importFolderLabelFromMedia } from '@/lib/utils/mediaBrowseUtils';
-import { buildReconcileMediaFilter } from '@/lib/utils/tagReconciliationUtils';
 import { resolveGalleryEntriesFromSelection } from '@/lib/utils/mediaStackDisplayUtils';
-import { getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
 import { useMediaStacks } from '@/components/admin/studio/media/useMediaStacks';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
@@ -110,8 +107,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setSelectedMediaIds,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
-    transientDimensionalQueryOverlay,
-    setTransientDimensionalQueryOverlay,
     resolveMediaById,
   } = useMedia();
 
@@ -146,6 +141,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
   const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
+  const [tagEditorMediaIds, setTagEditorMediaIds] = useState<string[]>([]);
   const [browseGroupBy, setBrowseGroupBy] = useState(initialLocalFilterPrefsRef.current.browseGroupBy);
   const [galleryCardsForGrouping, setGalleryCardsForGrouping] = useState<Card[]>([]);
   const [galleryCardsLoading, setGalleryCardsLoading] = useState(false);
@@ -188,8 +184,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   ]);
 
   const handleOpenBulkTags = () => {
+    setTagEditorMediaIds(selectedMediaIds);
     setBulkTagModalOpen(true);
   };
+
+  const handleOpenMediaTags = useCallback((mediaId: string) => {
+    setSelectedMediaIds([mediaId]);
+    setTagEditorMediaIds([mediaId]);
+    setBulkTagModalOpen(true);
+  }, [setBulkTagModalOpen, setSelectedMediaIds]);
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const {
@@ -288,7 +291,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const handleClearFilters = () => {
     clearFilters();
-    studioShell?.clearOrganizeReconcile();
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setClientSort('none');
   };
@@ -334,8 +336,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     (newIds: string[]) => {
       const next = groupSelectedTagIdsByDimension(newIds, allTags);
       setDimensionalQueryOverlay(Object.keys(next).length === 0 ? {} : next);
-      setTransientDimensionalQueryOverlay({});
-      studioShell?.clearOrganizeReconcile();
       setDimensionFilters((prev) => {
         let changed = false;
         const updated = { ...prev };
@@ -343,7 +343,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         for (const dimension of ['who', 'what', 'when', 'where'] as DimensionKey[]) {
           const state = updated[dimension];
           if (state.mode === 'matches' && state.tagId && !idSet.has(state.tagId)) {
-            updated[dimension] = { mode: 'any', tagId: '' };
+            updated[dimension] = {
+              mode: 'any',
+              tagId: '',
+              subjectOnly: state.subjectOnly,
+            };
             changed = true;
           }
         }
@@ -351,17 +355,49 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       });
       void fetchMedia(1);
     },
-    [allTags, fetchMedia, setDimensionalQueryOverlay, setTransientDimensionalQueryOverlay, studioShell]
-  );
-
-  const studioActiveTagFilterMap = useMemo(
-    () => mergeDimensionalTagMaps(dimensionalQueryOverlay, transientDimensionalQueryOverlay),
-    [dimensionalQueryOverlay, transientDimensionalQueryOverlay]
+    [allTags, fetchMedia, setDimensionalQueryOverlay]
   );
 
   const studioSelectedFilterTagIds = useMemo(
-    () => flattenDimensionalTagMapToTagIds(studioActiveTagFilterMap),
-    [studioActiveTagFilterMap]
+    () => flattenDimensionalTagMapToTagIds(dimensionalQueryOverlay),
+    [dimensionalQueryOverlay]
+  );
+
+  const applyUnifiedTagFilters = useCallback(
+    ({
+      selectedTagIds,
+      dimensionFilters: nextDimensionFilters,
+    }: {
+      selectedTagIds: string[];
+      dimensionFilters: AdminDimensionFilterState;
+    }) => {
+      const nextDimensionalMap = groupSelectedTagIdsByDimension(selectedTagIds, allTags);
+      const normalizedMap = Object.keys(nextDimensionalMap).length === 0 ? {} : nextDimensionalMap;
+      const dimensionPresence = Object.fromEntries(
+        (['who', 'what', 'when', 'where'] as const)
+          .filter(
+            (key) =>
+              nextDimensionFilters[key].mode === 'isEmpty'
+          )
+          .map((key) => [key, nextDimensionFilters[key].mode])
+      ) as NonNullable<MediaFilters['dimensionPresence']>;
+      const subjectDimensions = (['who', 'what', 'when', 'where'] as const).filter(
+        (dimension) => nextDimensionFilters[dimension].subjectOnly
+      );
+
+      setDimensionalQueryOverlay(normalizedMap);
+      setDimensionFilters(nextDimensionFilters);
+      void fetchMedia(
+        1,
+        { tagScope: 'all', subjectDimensions, dimensionPresence },
+        normalizedMap
+      );
+    },
+    [
+      allTags,
+      fetchMedia,
+      setDimensionalQueryOverlay,
+    ]
   );
 
   useEffect(() => {
@@ -482,25 +518,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     void fetchMedia(1, next);
   }, [activeStudioCardId, cardOrientedLibrary, fetchMedia, filters.codification, setFilter]);
 
-  const organizeReconcileSourceTagId = studioShell?.organizeReconcileSourceTagId ?? null;
-  const reconcileSourceTag = useMemo(
-    () =>
-      organizeReconcileSourceTagId
-        ? allTags.find((tag) => tag.docId === organizeReconcileSourceTagId) ?? null
-        : null,
-    [allTags, organizeReconcileSourceTagId]
-  );
-  const tagByIdForReconcile = useMemo(
-    () => new Map(allTags.filter((tag) => tag.docId).map((tag) => [tag.docId!, tag])),
-    [allTags]
-  );
-  const reconcileFilterActive = Boolean(embedded && organizeReconcileSourceTagId);
   const hasActiveMediaStructuralFilters =
     filters.source !== 'all' ||
     filters.hasCaption !== 'all' ||
     filters.dimensions !== 'all' ||
     filters.assignment !== 'all' ||
-    filters.tagScope !== 'all' ||
+    Object.values(dimensionFilters).some(state => state.subjectOnly) ||
     studioSelectedFilterTagIds.length > 0 ||
     Object.values(dimensionFilters).some(state => state.mode !== 'any') ||
     filters.codification !== 'all' ||
@@ -508,35 +531,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     filters.importBatchId !== '' ||
     filters.importFolder !== 'all' ||
     filters.metadataOutcome !== 'all' ||
-    mediaPopulation === 'this_card' ||
-    reconcileFilterActive;
-  const prevReconcileSourceTagIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!embedded) return;
-    const previousSourceTagId = prevReconcileSourceTagIdRef.current;
-    prevReconcileSourceTagIdRef.current = organizeReconcileSourceTagId;
-
-    if (organizeReconcileSourceTagId) {
-      const filter = buildReconcileMediaFilter(organizeReconcileSourceTagId, tagByIdForReconcile);
-      if (!filter) return;
-      setMediaPopulation('bank');
-      setTransientDimensionalQueryOverlay(filter);
-      void fetchMedia(1);
-      return;
-    }
-
-    if (previousSourceTagId !== null) {
-      setTransientDimensionalQueryOverlay({});
-      void fetchMedia(1);
-    }
-  }, [
-    embedded,
-    fetchMedia,
-    organizeReconcileSourceTagId,
-    setTransientDimensionalQueryOverlay,
-    tagByIdForReconcile,
-  ]);
+    mediaPopulation === 'this_card';
   const activeStudioCardAssignedMediaIds = useMemo(
     () => collectAssignedMediaIdsForCard(activeStudioCard),
     [activeStudioCard]
@@ -658,7 +653,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const updateDimensionFilter = (
     dimension: DimensionKey,
-    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>
+    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string; subjectOnly: boolean }>
   ) => {
     setDimensionFilters((prev) => {
       const next = {
@@ -670,10 +665,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       };
       const dimensionPresence = Object.fromEntries(
         (['who', 'what', 'when', 'where'] as const)
-          .filter((key) => next[key].mode === 'hasAny' || next[key].mode === 'isEmpty')
+          .filter((key) => next[key].mode === 'isEmpty')
           .map((key) => [key, next[key].mode])
       ) as NonNullable<MediaFilters['dimensionPresence']>;
-      void fetchMedia(1, { dimensionPresence });
+      const subjectDimensions = (['who', 'what', 'when', 'where'] as const).filter(
+        (key) => next[key].subjectOnly
+      );
+      void fetchMedia(1, { tagScope: 'all', subjectDimensions, dimensionPresence });
       return next;
     });
   };
@@ -753,7 +751,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             groups={browseGroups}
             sourcePathFirst={false}
             dimensionFilters={dimensionFilters}
-            tagFilterScope={filters.tagScope}
+            tagFilterScope="all"
             studioSourceDraggable={embedded && studioSourceDraggable}
             inlineCaptionEditing={embedded}
             clientSort={embedded ? clientSort : 'none'}
@@ -762,13 +760,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
             gridTileMinPx={gridTileMinPx}
             resolveMediaById={resolveMediaById}
             allLoadedMedia={browseScopedMedia}
+            onEditTags={handleOpenMediaTags}
             {...stackGridProps}
           />
         ) : (
         <MediaAdminGrid
           sourcePathFirst={false}
           dimensionFilters={dimensionFilters}
-          tagFilterScope={filters.tagScope}
+          tagFilterScope="all"
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={embedded ? clientSort : 'none'}
@@ -776,6 +775,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           onVisibleHighlightedCountChange={setVisibleAssignedCount}
           gridTileMinPx={gridTileMinPx}
           mediaOverride={browseScopedMedia.length !== media.length ? browseScopedMedia : undefined}
+          onEditTags={handleOpenMediaTags}
           emptyState={
             filters.search.trim() ? (
               <div className={styles.studioEmptyRecovery}>
@@ -799,12 +799,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
           emptyMessage="No media are assigned to the current card."
           sourcePathFirst={false}
           dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
-          tagFilterScope={filters.tagScope}
+          tagFilterScope="all"
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
           clientSort={clientSort}
           highlightedMediaIds={activeStudioCardAssignedMediaIds}
           onVisibleHighlightedCountChange={setVisibleAssignedCount}
+          onEditTags={handleOpenMediaTags}
           {...stackGridProps}
         />
       ) : null}
@@ -879,21 +880,6 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               </button>
             </div>
           </div>
-          {reconcileFilterActive && reconcileSourceTag ? (
-            <div className={styles.studioReconcileMediaBanner}>
-              <span>
-                Map preview — showing media tagged with{' '}
-                <strong>{getTagPathDisplay(reconcileSourceTag, tagByIdForReconcile)}</strong>
-              </span>
-              <button
-                type="button"
-                className={styles.studioClearButton}
-                onClick={() => studioShell?.clearOrganizeReconcile()}
-              >
-                Clear preview
-              </button>
-            </div>
-          ) : null}
           {embedded ? (
             <div className={styles.studioPopulationRow}>
               <div className={styles.mediaModeToggle} role="group" aria-label="Media population">
@@ -1089,11 +1075,10 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               selectedTagIds={studioSelectedFilterTagIds}
               allTags={allTags}
               onSelectedTagIdsChange={handleStudioDimensionalFilterChange}
-              tagScope={filters.tagScope}
-              onTagScopeChange={(scope) => handleFilterChange('tagScope', scope)}
               dimensionFilters={dimensionFilters}
               onDimensionFilterChange={updateDimensionFilter}
               surfaceLabel="Media"
+              onApply={applyUnifiedTagFilters}
             />
           </div>
           <div className={styles.studioMediaBrowseRow}>
@@ -1260,11 +1245,15 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         </div>
       </EditModal>
       <BulkEditMediaTagsModal
-        mediaIds={selectedMediaIds}
+        mediaIds={tagEditorMediaIds}
         isOpen={bulkTagModalOpen}
-        onClose={() => setBulkTagModalOpen(false)}
+        onClose={() => {
+          setBulkTagModalOpen(false);
+          setTagEditorMediaIds([]);
+        }}
         onSave={async () => {
           setBulkTagModalOpen(false);
+          setTagEditorMediaIds([]);
         }}
       />
 

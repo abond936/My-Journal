@@ -270,7 +270,7 @@ describe('MediaProvider', () => {
     usePathnameMock.mockReturnValue('/admin/studio');
     fetchMock.mockImplementation((input) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url === '/api/media?limit=100&includeTotal=false') {
+      if (url === '/api/media?limit=100&includeTotal=false&includeReconciliationStatus=true') {
         return okJson({
           media: [baseMedia({ docId: 'media-1' })],
           pagination: {
@@ -297,7 +297,89 @@ describe('MediaProvider', () => {
     fireEvent.click(screen.getByText('Load Default'));
 
     await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const mediaRequests = fetchMock.mock.calls.filter(([input]) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      return url.startsWith('/api/media?');
+    });
+    expect(mediaRequests).toHaveLength(1);
+  });
+
+  it('does not run expensive media-tag reconciliation when Studio has no pending work', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [],
+          pendingTagReconciliation: false,
+          pagination: {
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(
+      fetchMock.mock.calls.some(([input, init]) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        return url === '/api/admin/media/tags/reconcile' && init?.method === 'POST';
+      })
+    ).toBe(false);
+  });
+
+  it('recovers pending media-tag reconciliation when Studio opens', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    fetchMock.mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [],
+          pendingTagReconciliation: true,
+          pagination: {
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      if (url === '/api/admin/media/tags/reconcile' && init?.method === 'POST') {
+        return okJson({ results: [] });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/media/tags/reconcile',
+        expect.objectContaining({ method: 'POST', body: '{}' })
+      );
+    });
   });
 
   it('deletes bulk-selected media sequentially so shared card cleanup cannot race across requests', async () => {
@@ -648,52 +730,4 @@ describe('MediaProvider', () => {
     await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe(''));
   });
 
-  it('merges transient dimensional overlay into Studio media fetch query params', async () => {
-    usePathnameMock.mockReturnValue('/admin/studio');
-    const capturedUrls: string[] = [];
-    fetchMock.mockImplementation((input) => {
-      const url = typeof input === 'string' ? input : input.toString();
-      capturedUrls.push(url);
-      if (url.startsWith('/api/media?')) {
-        return okJson({
-          media: [],
-          pagination: {
-            page: 1,
-            limit: 100,
-            total: null,
-            totalPages: null,
-            hasNext: false,
-            hasPrev: false,
-            nextCursor: null,
-            prevCursor: null,
-          },
-        });
-      }
-      throw new Error(`Unexpected fetch: ${url}`);
-    });
-
-    function StudioTransientHarness() {
-      const { setTransientDimensionalQueryOverlay, fetchMedia } = useMedia();
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            setTransientDimensionalQueryOverlay({ when: ['import-tag-1'] });
-            void fetchMedia(1);
-          }}
-        >
-          Load Map Preview
-        </button>
-      );
-    }
-
-    render(
-      <MediaProvider>
-        <StudioTransientHarness />
-      </MediaProvider>
-    );
-
-    fireEvent.click(screen.getByText('Load Map Preview'));
-    await waitFor(() => expect(capturedUrls.some((url) => url.includes('when=import-tag-1'))).toBe(true));
-  });
 });

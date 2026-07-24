@@ -28,11 +28,15 @@ import type { Card } from '@/lib/types/card';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
-import { DND_POINTER_IGNORE_ATTR } from '@/lib/hooks/useDefaultDndSensors';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import cardAdminPageStyles from '@/components/admin/studio/cards/studioCardsShell.module.css';
 import styles from './StudioWorkspace.module.css';
-import { MIN_CARD_EDIT_PX, MIN_QUESTIONS_PX } from './studioPaneLayout';
+import {
+  DEFAULT_CARD_EDIT_WIDTH,
+  DEFAULT_QUESTIONS_WIDTH,
+  MIN_CARD_EDIT_PX,
+  MIN_QUESTIONS_PX,
+} from './studioPaneLayout';
 import { useStudioPaneLayout } from './useStudioPaneLayout';
 import { useStudioSelectedCard } from './useStudioSelectedCard';
 import { collectAssignedMediaIds, mediaRolesOnCard, removeCardFromCardsCache } from './studioCardSelectionModel';
@@ -59,27 +63,17 @@ export default function StudioWorkspace() {
   );
   const {
     wideLayout,
-    cardEditWidth,
-    questionsWidth,
     paneVisibility,
-    setPaneVisibility,
-    resizableWorkspaceLayout,
     studioRightColumnRef,
     cardEditColumnRef,
     questionsColumnRef,
     bindStudioMediaCardRowRef,
     togglePane,
     embeddedRightSlotMinWidth,
-    onCardEditResizePointerDown,
-    onCardEditResizeDoubleClick,
-    onQuestionsResizePointerDown,
-    onQuestionsResizeDoubleClick,
   } = useStudioPaneLayout();
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
-  const [organizeReconcileSourceTagId, setOrganizeReconcileSourceTagId] = useState<string | null>(null);
-  const [organizeReconcileTargetTagId, setOrganizeReconcileTargetTagId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionInfo, setActionInfo] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
@@ -138,6 +132,16 @@ export default function StudioWorkspace() {
     setActionError,
     setActionInfo,
   });
+  useEffect(() => {
+    const handleMediaTagReconciliation = (event: Event) => {
+      const detail = (event as CustomEvent<{ affectedCardIds?: string[] }>).detail;
+      if (!selectedCardId || !detail?.affectedCardIds?.includes(selectedCardId)) return;
+      void loadSelectedCard(selectedCardId, { quiet: true });
+    };
+    window.addEventListener('media-tag-reconciliation-complete', handleMediaTagReconciliation);
+    return () =>
+      window.removeEventListener('media-tag-reconciliation-complete', handleMediaTagReconciliation);
+  }, [loadSelectedCard, selectedCardId]);
   const resolveBankMediaById = useCallback(
     (id: string) => bankMediaPage.find((m) => m.docId === id) ?? resolveMediaById(id),
     [bankMediaPage, resolveMediaById]
@@ -178,8 +182,6 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     selectNoneMedia();
-    setOrganizeReconcileSourceTagId(null);
-    setOrganizeReconcileTargetTagId(null);
   }, [selectedCardId, selectNoneMedia]);
 
   useEffect(() => {
@@ -388,17 +390,6 @@ export default function StudioWorkspace() {
     [selectedDetail, selectedPreview]
   );
 
-  const clearOrganizeReconcile = useCallback(() => {
-    setOrganizeReconcileSourceTagId(null);
-    setOrganizeReconcileTargetTagId(null);
-  }, []);
-
-  const openMediaPane = useCallback(() => {
-    setPaneVisibility((prev) =>
-      prev.mediaCollapsed ? { ...prev, mediaCollapsed: false } : prev
-    );
-  }, [setPaneVisibility]);
-
   const registerStoryPileMembershipChanged = useCallback(
     (fn: (() => void | Promise<void>) | null) => {
       studioImperatives.register('storyPileMembershipChanged', fn);
@@ -439,12 +430,6 @@ export default function StudioWorkspace() {
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
       bodyMediaInsertRef,
-      organizeReconcileSourceTagId,
-      organizeReconcileTargetTagId,
-      setOrganizeReconcileSourceTagId,
-      setOrganizeReconcileTargetTagId,
-      clearOrganizeReconcile,
-      openMediaPane,
       registerStoryPileMembershipChanged,
     }),
     [
@@ -479,10 +464,6 @@ export default function StudioWorkspace() {
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
       bodyMediaInsertRef,
-      organizeReconcileSourceTagId,
-      organizeReconcileTargetTagId,
-      clearOrganizeReconcile,
-      openMediaPane,
       registerStoryPileMembershipChanged,
     ]
   );
@@ -496,11 +477,19 @@ export default function StudioWorkspace() {
             <div className={styles.studioPaneToolbar} aria-label="Studio panes">
               <button
                 type="button"
-                className={`${styles.studioPaneToggle} ${!paneVisibility.organizationCollapsed ? styles.studioPaneToggleActive : ''}`}
-                aria-pressed={!paneVisibility.organizationCollapsed}
-                onClick={() => togglePane('organizationCollapsed')}
+                className={`${styles.studioPaneToggle} ${!paneVisibility.tagsCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.tagsCollapsed}
+                onClick={() => togglePane('tagsCollapsed')}
               >
-                Organize
+                Tags
+              </button>
+              <button
+                type="button"
+                className={`${styles.studioPaneToggle} ${!paneVisibility.collectionsCollapsed ? styles.studioPaneToggleActive : ''}`}
+                aria-pressed={!paneVisibility.collectionsCollapsed}
+                onClick={() => togglePane('collectionsCollapsed')}
+              >
+                Collections
               </button>
               <button
                 type="button"
@@ -541,6 +530,17 @@ export default function StudioWorkspace() {
           <div className={styles.collectionsHost}>
               <CollectionsAdminClient
               onSelectCard={requestSelectCard}
+              onDeleteCard={async (card) => {
+                const confirmed = await feedback.confirm({
+                  title: 'Delete card?',
+                  message: `Delete “${card.title || card.subtitle || 'Untitled'}”? This permanently removes the card, not its Media.`,
+                  confirmLabel: 'Delete',
+                  cancelLabel: 'Cancel',
+                  tone: 'danger',
+                });
+                if (!confirmed) return;
+                await deleteSelectedCard(card.docId);
+              }}
               selectedCardIdExternal={selectedCardId}
               embeddedExternalDragEnd={onStudioRelationshipDragEnd}
               embeddedOnStudioParentAttachComplete={(parentId) => {
@@ -550,7 +550,8 @@ export default function StudioWorkspace() {
                 }
                 void requestSelectCard(parentId);
               }}
-              embeddedOrganizationCollapsed={paneVisibility.organizationCollapsed}
+              embeddedTagsCollapsed={paneVisibility.tagsCollapsed}
+              embeddedCollectionsCollapsed={paneVisibility.collectionsCollapsed}
               embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
               embeddedRightSlotMinWidth={embeddedRightSlotMinWidth}
               embeddedUnparentedReplacement={(ctx) => (
@@ -590,29 +591,17 @@ export default function StudioWorkspace() {
                     ) : null}
                     <div
                       ref={bindStudioMediaCardRowRef}
-                      className={
-                        resizableWorkspaceLayout
-                          ? `${styles.studioMediaCardRow} ${styles.studioMediaCardRowResizable}`
-                          : styles.studioMediaCardRow
-                      }
+                      className={styles.studioMediaCardRow}
                     >
                         {showComposePane ? (
                           <div
                             ref={cardEditColumnRef}
                             className={styles.studioCardEditInBankColumn}
-                            style={
-                              resizableWorkspaceLayout && (showQuestionsPane || showMediaPane)
-                                ? {
-                                    flex: `0 0 ${cardEditWidth}px`,
-                                    width: cardEditWidth,
-                                    minWidth: MIN_CARD_EDIT_PX,
-                                  }
-                                : {
-                                    flex: '1 1 auto',
-                                    width: 'auto',
-                                    minWidth: 0,
-                                  }
-                            }
+                            style={{
+                              flex: `0 0 ${DEFAULT_CARD_EDIT_WIDTH}px`,
+                              width: DEFAULT_CARD_EDIT_WIDTH,
+                              minWidth: MIN_CARD_EDIT_PX,
+                            }}
                           >
                             <StudioCardEditPane
                               newCardRequested={newCardRequested && !selectedCardId}
@@ -620,50 +609,18 @@ export default function StudioWorkspace() {
                             />
                           </div>
                         ) : null}
-                        {resizableWorkspaceLayout && showComposePane && (showQuestionsPane || showMediaPane) ? (
-                          <div
-                            className={`${styles.resizeHandle} ${styles.cardEditColumnResizeHandle}`}
-                            role="separator"
-                            aria-orientation="vertical"
-                            aria-label="Resize Compose and workspace columns"
-                            title="Drag to resize Compose and workspace. Double-click to reset width."
-                            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-                            onPointerDown={onCardEditResizePointerDown}
-                            onDoubleClick={onCardEditResizeDoubleClick}
-                          />
-                        ) : null}
                         {showQuestionsPane ? (
                           <div
                             ref={questionsColumnRef}
                             className={styles.studioQuestionsColumn}
-                            style={
-                              resizableWorkspaceLayout && showMediaPane
-                                ? {
-                                    flex: `0 0 ${questionsWidth}px`,
-                                    width: questionsWidth,
-                                    minWidth: MIN_QUESTIONS_PX,
-                                  }
-                                : {
-                                    flex: '1 1 auto',
-                                    width: 'auto',
-                                    minWidth: 0,
-                                  }
-                            }
+                            style={{
+                              flex: `0 0 ${DEFAULT_QUESTIONS_WIDTH}px`,
+                              width: DEFAULT_QUESTIONS_WIDTH,
+                              minWidth: MIN_QUESTIONS_PX,
+                            }}
                           >
                             <StudioQuestionsPane />
                           </div>
-                        ) : null}
-                        {resizableWorkspaceLayout && showQuestionsPane && showMediaPane ? (
-                          <div
-                            className={`${styles.resizeHandle} ${styles.questionsColumnResizeHandle}`}
-                            role="separator"
-                            aria-orientation="vertical"
-                            aria-label="Resize Questions and Media columns"
-                            title="Drag to resize Questions and Media. Double-click to reset width."
-                            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-                            onPointerDown={onQuestionsResizePointerDown}
-                            onDoubleClick={onQuestionsResizeDoubleClick}
-                          />
                         ) : null}
                         {showMediaPane ? (
                           <div className={styles.studioMediaBankColumn}>

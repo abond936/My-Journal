@@ -585,6 +585,26 @@
   cursor: not-allowed;
 }
 
+.inlineInheritanceOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--admin-support-meta-color);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  line-height: var(--admin-support-meta-line-height);
+  cursor: pointer;
+}
+
+.inlineInheritanceOption input {
+  margin: 0;
+}
+
+.inlineInheritanceOption:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .editorSection {
   width: var(--card-form-shell-width);
   max-width: none;

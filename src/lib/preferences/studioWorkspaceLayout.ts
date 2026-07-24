@@ -12,7 +12,8 @@ const LEGACY_STUDIO_PANE_VISIBILITY_KEY = 'studioPaneVisibility';
 const VIEWPORT_DELTA_FOR_RATIO_PX = 120;
 
 export type StudioPaneVisibility = {
-  organizationCollapsed: boolean;
+  tagsCollapsed: boolean;
+  collectionsCollapsed: boolean;
   cardsCollapsed: boolean;
   composeCollapsed: boolean;
   questionsCollapsed: boolean;
@@ -33,7 +34,8 @@ export type StudioWorkspaceLayoutPreferences = {
 };
 
 export const DEFAULT_STUDIO_PANE_VISIBILITY: StudioPaneVisibility = {
-  organizationCollapsed: true,
+  tagsCollapsed: true,
+  collectionsCollapsed: true,
   cardsCollapsed: false,
   composeCollapsed: false,
   questionsCollapsed: false,
@@ -57,13 +59,22 @@ function clamp(n: number, min: number, max: number): number {
 function normalizePaneVisibility(value: unknown): StudioPaneVisibility {
   if (!value || typeof value !== 'object') return DEFAULT_STUDIO_PANE_VISIBILITY;
   const candidate = value as Partial<Record<keyof StudioPaneVisibility, unknown>>;
+  const legacyCandidate = value as { organizationCollapsed?: unknown };
   const defaults = DEFAULT_STUDIO_PANE_VISIBILITY;
 
   return {
-    organizationCollapsed:
-      typeof candidate.organizationCollapsed === 'boolean'
-        ? candidate.organizationCollapsed
-        : defaults.organizationCollapsed,
+    tagsCollapsed:
+      typeof candidate.tagsCollapsed === 'boolean'
+        ? candidate.tagsCollapsed
+        : typeof legacyCandidate.organizationCollapsed === 'boolean'
+          ? legacyCandidate.organizationCollapsed
+          : defaults.tagsCollapsed,
+    collectionsCollapsed:
+      typeof candidate.collectionsCollapsed === 'boolean'
+        ? candidate.collectionsCollapsed
+        : typeof legacyCandidate.organizationCollapsed === 'boolean'
+          ? legacyCandidate.organizationCollapsed
+          : defaults.collectionsCollapsed,
     cardsCollapsed:
       typeof candidate.cardsCollapsed === 'boolean'
         ? candidate.cardsCollapsed

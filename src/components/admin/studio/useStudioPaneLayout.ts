@@ -16,8 +16,6 @@ import {
   CARD_EDIT_RESIZE_HANDLE,
   DEFAULT_CARD_EDIT_WIDTH,
   DEFAULT_QUESTIONS_WIDTH,
-  MAX_CARD_EDIT_WIDTH,
-  MAX_QUESTIONS_WIDTH,
   MIN_CARD_EDIT_PX,
   MIN_MEDIA_BANK_PX,
   MIN_QUESTIONS_PX,
@@ -99,12 +97,8 @@ export function useStudioPaneLayout() {
     const stored = readStoredStudioWorkspaceLayoutPreferences();
     preferencesRef.current = stored;
     setPaneVisibility(stored.paneVisibility);
-    if (stored.composeWidth?.px != null) {
-      setCardEditWidth(clampPaneWidth(stored.composeWidth.px, MIN_CARD_EDIT_PX, MAX_CARD_EDIT_WIDTH));
-    }
-    if (stored.questionsWidth?.px != null) {
-      setQuestionsWidth(clampPaneWidth(stored.questionsWidth.px, MIN_QUESTIONS_PX, MAX_QUESTIONS_WIDTH));
-    }
+    setCardEditWidth(DEFAULT_CARD_EDIT_WIDTH);
+    setQuestionsWidth(DEFAULT_QUESTIONS_WIDTH);
     setPreferencesHydrated(true);
   }, []);
 
@@ -125,8 +119,8 @@ export function useStudioPaneLayout() {
 
   const embeddedRightSlotMinWidth = useMemo(() => {
     const minimums = [
-      !paneVisibility.composeCollapsed ? MIN_CARD_EDIT_PX : 0,
-      !paneVisibility.questionsCollapsed ? MIN_QUESTIONS_PX : 0,
+      !paneVisibility.composeCollapsed ? DEFAULT_CARD_EDIT_WIDTH : 0,
+      !paneVisibility.questionsCollapsed ? DEFAULT_QUESTIONS_WIDTH : 0,
       !paneVisibility.mediaCollapsed ? MIN_MEDIA_BANK_PX : 0,
     ].filter((width) => width > 0);
     const handles = Math.max(0, minimums.length - 1);

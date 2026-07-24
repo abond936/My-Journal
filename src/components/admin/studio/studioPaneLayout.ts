@@ -1,9 +1,9 @@
 export const CARD_EDIT_RESIZE_HANDLE = 8;
-export const MIN_CARD_EDIT_PX = 220;
-export const MIN_QUESTIONS_PX = 200;
-export const MIN_MEDIA_BANK_PX = 180;
-export const DEFAULT_CARD_EDIT_WIDTH = 357;
-export const DEFAULT_QUESTIONS_WIDTH = 272;
+export const MIN_CARD_EDIT_PX = 480;
+export const MIN_QUESTIONS_PX = 432;
+export const MIN_MEDIA_BANK_PX = 320;
+export const DEFAULT_CARD_EDIT_WIDTH = 480;
+export const DEFAULT_QUESTIONS_WIDTH = 432;
 export const MAX_CARD_EDIT_WIDTH = 1200;
 export const MAX_QUESTIONS_WIDTH = 840;
 

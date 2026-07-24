@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useDraggable, useDroppable, useDndContext } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,6 @@ import {
   getCoreTagsByDimensionFromTagIds,
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './CardAdminGrid.module.css';
-import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import AdminClosedCardTileShell from '@/components/admin/studio/cards/AdminClosedCardTileShell';
 import {
   getPreviewObjectFit,
@@ -168,8 +167,7 @@ function isCardGridChromeInteractiveTarget(target: EventTarget | null): boolean 
   return Boolean(
     t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopStart)) ||
       t.closest(adminChromeSelector(ADMIN_GRID_CHROME.overlayTopEnd)) ||
-      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagRail)) ||
-      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagSearchFoot))
+      t.closest(adminChromeSelector(ADMIN_GRID_CHROME.tagRail))
   );
 }
 
@@ -198,7 +196,6 @@ function CardAdminGridPlainCell({
   isSelected,
   allTags,
   secondaryMeta,
-  onUpdateCard,
   onBulkPointer,
   onFocusStudio,
   onEdit,
@@ -208,14 +205,6 @@ function CardAdminGridPlainCell({
   compactStudioGrid,
   pendingFocus,
 }: CardAdminGridPlainCellProps) {
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!saveNotice) return;
-    const id = window.setTimeout(() => setSaveNotice(null), 2500);
-    return () => window.clearTimeout(id);
-  }, [saveNotice]);
-
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
       onBulkPointer(e, card.docId, cardIndex);
@@ -230,22 +219,6 @@ function CardAdminGridPlainCell({
   const handleDelete = useCallback(() => {
     onDelete(card);
   }, [card, onDelete]);
-
-  const handleTagUpdate = useCallback(
-    async (nextTagIds: string[]) => {
-      await onUpdateCard(card.docId, { tags: nextTagIds });
-      setSaveNotice('Tags saved');
-    },
-    [card.docId, onUpdateCard]
-  );
-
-  const handleSubjectUpdate = useCallback(
-    async (nextSubjectTagId: string | null) => {
-      await onUpdateCard(card.docId, { subjectTagId: nextSubjectTagId });
-      setSaveNotice('Subject saved');
-    },
-    [card.docId, onUpdateCard]
-  );
 
   const activatePrimary = (e: React.MouseEvent | React.KeyboardEvent) => {
     if (studioEmbedCellClickSelects) {
@@ -357,29 +330,11 @@ function CardAdminGridPlainCell({
         />
       }
       belowThumbnail={
-        <>
-          {!compactStudioGrid && captionLine ? (
-            <div className={styles.caption} title={captionLine}>
-              {captionLine}
-            </div>
-          ) : null}
-          <div
-            className={styles.tagSearchFoot}
-            data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}
-            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-          >
-            <CardDimensionalTagCommandBar
-              card={card}
-              allTags={allTags}
-              variant="searchOnly"
-              suggestionsDensity="dense"
-              disabled={interactionDisabled}
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
-            />
+        !compactStudioGrid && captionLine ? (
+          <div className={styles.caption} title={captionLine}>
+            {captionLine}
           </div>
-          {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
-        </>
+        ) : null
       }
     />
   );
@@ -416,7 +371,6 @@ function CardAdminGridStudioCell({
   isSelected,
   allTags,
   secondaryMeta,
-  onUpdateCard,
   onBulkPointer,
   onFocusStudio,
   onEdit,
@@ -428,14 +382,6 @@ function CardAdminGridStudioCell({
   compactStudioGrid,
   pendingFocus,
 }: CardAdminGridStudioCellProps) {
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!saveNotice) return;
-    const id = window.setTimeout(() => setSaveNotice(null), 2500);
-    return () => window.clearTimeout(id);
-  }, [saveNotice]);
-
   const handleBulkPointer = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {
       onBulkPointer(e, card.docId, cardIndex);
@@ -450,22 +396,6 @@ function CardAdminGridStudioCell({
   const handleDelete = useCallback(() => {
     onDelete(card);
   }, [card, onDelete]);
-
-  const handleTagUpdate = useCallback(
-    async (nextTagIds: string[]) => {
-      await onUpdateCard(card.docId, { tags: nextTagIds });
-      setSaveNotice('Tags saved');
-    },
-    [card.docId, onUpdateCard]
-  );
-
-  const handleSubjectUpdate = useCallback(
-    async (nextSubjectTagId: string | null) => {
-      await onUpdateCard(card.docId, { subjectTagId: nextSubjectTagId });
-      setSaveNotice('Subject saved');
-    },
-    [card.docId, onUpdateCard]
-  );
 
   const { active } = useDndContext();
   const reparentFromCard = isCollectionsCardDragData(active?.data.current);
@@ -633,29 +563,11 @@ function CardAdminGridStudioCell({
         />
       }
       belowThumbnail={
-        <>
-          {!compactStudioGrid && captionLine ? (
-            <div className={styles.caption} title={captionLine}>
-              {captionLine}
-            </div>
-          ) : null}
-          <div
-            className={styles.tagSearchFoot}
-            data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}
-            {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
-          >
-            <CardDimensionalTagCommandBar
-              card={card}
-              allTags={allTags}
-              variant="searchOnly"
-              suggestionsDensity="dense"
-              disabled={interactionDisabled}
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
-            />
+        !compactStudioGrid && captionLine ? (
+          <div className={styles.caption} title={captionLine}>
+            {captionLine}
           </div>
-          {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
-        </>
+        ) : null
       }
     />
   );

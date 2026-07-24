@@ -58,8 +58,8 @@ describe('adminFilters preferences', () => {
       filterTagIds: ['tag-1'],
       tagFilterScope: 'all',
       dimensionFilters: {
-        who: { mode: 'matches', tagId: 'tag-who' },
-        what: { mode: 'any', tagId: 'tag-what' },
+        who: { mode: 'matches', tagId: 'tag-who', subjectOnly: false },
+        what: { mode: 'any', tagId: 'tag-what', subjectOnly: false },
         when: DEFAULT_ADMIN_DIMENSION_FILTERS.when,
         where: DEFAULT_ADMIN_DIMENSION_FILTERS.where,
       },
@@ -98,6 +98,8 @@ describe('adminFilters preferences', () => {
         importFolder: 'all',
         metadataOutcome: 'all',
         tagScope: 'all',
+        subjectDimensions: [],
+        dimensionPresence: {},
       },
       dimensionalQueryOverlay: {
         who: ['tag-1'],
@@ -122,7 +124,7 @@ describe('adminFilters preferences', () => {
       dimensionFilters: {
         who: DEFAULT_ADMIN_DIMENSION_FILTERS.who,
         what: DEFAULT_ADMIN_DIMENSION_FILTERS.what,
-        when: { mode: 'isEmpty', tagId: 'ignored' },
+        when: { mode: 'isEmpty', tagId: 'ignored', subjectOnly: false },
         where: DEFAULT_ADMIN_DIMENSION_FILTERS.where,
       },
     });

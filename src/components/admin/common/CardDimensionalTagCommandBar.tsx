@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Calendar, MapPin, Square, User } from 'lucide-react';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
@@ -16,6 +17,12 @@ import clsx from 'clsx';
 const MAX_SUGGESTIONS = 25;
 const LONG_PRESS_MS = 450;
 const ACTION_MENU_WIDTH = 132;
+const DIMENSION_ICON = {
+  who: User,
+  what: Square,
+  when: Calendar,
+  where: MapPin,
+} satisfies Record<TagDimension, React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }>>;
 
 function norm(s: string): string {
   return s.trim().toLowerCase();
@@ -94,6 +101,10 @@ export interface CardDimensionalTagCommandBarProps {
   /** Compose/card-edit surfaces: render one tag per line within each dimension. */
   stackTagsWithinDimension?: boolean;
   onDimensionSelect?: (dimension: TagDimension) => void;
+  showDimensionIcons?: boolean;
+  dimensionLeadContent?: (dimension: TagDimension) => React.ReactNode;
+  underlineTags?: boolean;
+  hideSearch?: boolean;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -114,6 +125,10 @@ export default function CardDimensionalTagCommandBar({
   footerContent,
   stackTagsWithinDimension = false,
   onDimensionSelect,
+  showDimensionIcons = false,
+  dimensionLeadContent,
+  underlineTags = false,
+  hideSearch = false,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -420,6 +435,8 @@ export default function CardDimensionalTagCommandBar({
         variant === 'searchOnly' && styles.wrapSearchOnly,
         tableEmbed && styles.wrapTable,
         stackTagsWithinDimension && styles.wrapStackWithinDimension,
+        underlineTags && styles.wrapUnderlineTags,
+        showDimensionIcons && styles.wrapDimensionIcons,
         suggestionsDensity === 'dense' && styles.wrapDenseSuggestions,
         tagError && styles.wrapError,
         className
@@ -431,8 +448,15 @@ export default function CardDimensionalTagCommandBar({
       {variant !== 'searchOnly' ? (
         <div className={styles.chipsToolbar}>
           <div className={styles.dimensionRow}>
-            {DIMENSION_ORDER.map((dim) => (
-              <div key={dim} className={styles.dimCell}>
+            {DIMENSION_ORDER.map((dim) => {
+              const Icon = DIMENSION_ICON[dim];
+              const heading = (
+                <>
+                  {showDimensionIcons ? <Icon size={14} aria-hidden={true} /> : null}
+                  <span>{DIMENSION_LABEL[dim]}</span>
+                </>
+              );
+              return <div key={dim} className={styles.dimCell}>
                 {hideDimensionRowLabels ? null : onDimensionSelect ? (
                   <button
                     type="button"
@@ -440,9 +464,14 @@ export default function CardDimensionalTagCommandBar({
                     onClick={() => onDimensionSelect(dim)}
                     aria-label={`Browse ${DIMENSION_LABEL[dim]} tags`}
                   >
-                    {DIMENSION_LABEL[dim]}
+                    {heading}
                   </button>
-                ) : <div className={styles.dimLabel}>{DIMENSION_LABEL[dim]}</div>}
+                ) : <div className={styles.dimLabel}>{heading}</div>}
+                {dimensionLeadContent ? (
+                  <div className={styles.dimensionLeadContent}>
+                    {dimensionLeadContent(dim)}
+                  </div>
+                ) : null}
                 <div className={styles.chipStrip}>
                   {core[dim].length === 0 ? (
                     card.galleryTagRollupStatuses?.[dim] === 'unreviewed' ? (
@@ -460,13 +489,13 @@ export default function CardDimensionalTagCommandBar({
                   )}
                 </div>
               </div>
-            ))}
+            })}
           </div>
           {trailingSlot ? <div className={styles.trailing}>{trailingSlot}</div> : null}
         </div>
       ) : null}
 
-      <div className={clsx(styles.searchRow, variant === 'searchOnly' && styles.searchRowFoot)}>
+      {hideSearch ? null : <div className={clsx(styles.searchRow, variant === 'searchOnly' && styles.searchRowFoot)}>
         <input
           ref={searchInputRef}
           type="text"
@@ -481,9 +510,9 @@ export default function CardDimensionalTagCommandBar({
           aria-autocomplete="list"
         />
         {variant === 'searchOnly' && trailingSlot ? <div className={styles.searchTrailing}>{trailingSlot}</div> : null}
-      </div>
+      </div>}
 
-      {query.trim() && suggestions.length > 0 ? (
+      {!hideSearch && query.trim() && suggestions.length > 0 ? (
         <div className={styles.suggestions} role="listbox" aria-label="Matching tags">
           {suggestions.map((row, index) => (
             <button
@@ -500,7 +529,7 @@ export default function CardDimensionalTagCommandBar({
             </button>
           ))}
         </div>
-      ) : query.trim() && suggestions.length === 0 ? (
+      ) : !hideSearch && query.trim() && suggestions.length === 0 ? (
         <div className={styles.error}>No matching tags.</div>
       ) : null}
 

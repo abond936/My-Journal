@@ -16,6 +16,7 @@ export type AdminDimensionFilterState = Record<
   {
     mode: AdminDimensionFilterMode;
     tagId: string;
+    subjectOnly?: boolean;
   }
 >;
 
@@ -52,6 +53,8 @@ export type MediaAdminStoredFilters = {
   importFolder: string;
   metadataOutcome: 'all' | 'found' | 'none' | 'error' | 'not_requested' | 'unknown';
   tagScope: AdminTagFilterScope;
+  subjectDimensions?: AdminDimensionKey[];
+  dimensionPresence?: Partial<Record<AdminDimensionKey, 'hasAny' | 'isEmpty'>>;
 };
 
 export type MediaAdminStoredFilterPreferences = {
@@ -109,10 +112,10 @@ const ADMIN_TAG_FILTER_SCOPE_VALUES = new Set<AdminTagFilterScope>(['all', 'subj
 const ADMIN_DIMENSION_FILTER_MODE_VALUES = new Set<AdminDimensionFilterMode>(['any', 'hasAny', 'isEmpty', 'matches']);
 
 export const DEFAULT_ADMIN_DIMENSION_FILTERS: AdminDimensionFilterState = {
-  who: { mode: 'any', tagId: '' },
-  what: { mode: 'any', tagId: '' },
-  when: { mode: 'any', tagId: '' },
-  where: { mode: 'any', tagId: '' },
+  who: { mode: 'any', tagId: '', subjectOnly: false },
+  what: { mode: 'any', tagId: '', subjectOnly: false },
+  when: { mode: 'any', tagId: '', subjectOnly: false },
+  where: { mode: 'any', tagId: '', subjectOnly: false },
 };
 
 export const DEFAULT_STUDIO_CARD_BANK_SHARED_FILTER_PREFERENCES: StudioCardBankSharedFilterPreferences = {
@@ -143,6 +146,8 @@ export const DEFAULT_MEDIA_ADMIN_STORED_FILTERS: MediaAdminStoredFilters = {
   importFolder: 'all',
   metadataOutcome: 'all',
   tagScope: 'all',
+  subjectDimensions: [],
+  dimensionPresence: {},
 };
 
 export const DEFAULT_MEDIA_ADMIN_STORED_FILTER_PREFERENCES: MediaAdminStoredFilterPreferences = {
@@ -199,10 +204,11 @@ function normalizeAdminDimensionFilterEntry(
   fallback: AdminDimensionFilterState[AdminDimensionKey]
 ): AdminDimensionFilterState[AdminDimensionKey] {
   if (!value || typeof value !== 'object') return fallback;
-  const candidate = value as Partial<Record<'mode' | 'tagId', unknown>>;
+  const candidate = value as Partial<Record<'mode' | 'tagId' | 'subjectOnly', unknown>>;
   return {
     mode: normalizeEnumValue(candidate.mode, ADMIN_DIMENSION_FILTER_MODE_VALUES, fallback.mode),
     tagId: normalizeString(candidate.tagId),
+    subjectOnly: candidate.subjectOnly === true,
   };
 }
 
@@ -277,6 +283,23 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
         ? normalizeEnumValue(rawFilters.metadataOutcome, MEDIA_ADMIN_METADATA_VALUES, 'all')
         : 'all',
       tagScope: normalizeEnumValue(rawFilters.tagScope, ADMIN_TAG_FILTER_SCOPE_VALUES, 'all'),
+      subjectDimensions: normalizeStringArray(rawFilters.subjectDimensions).filter(
+        (dimension): dimension is AdminDimensionKey =>
+          dimension === 'who' || dimension === 'what' || dimension === 'when' || dimension === 'where'
+      ),
+      dimensionPresence:
+        rawFilters.dimensionPresence && typeof rawFilters.dimensionPresence === 'object'
+          ? Object.fromEntries(
+              Object.entries(rawFilters.dimensionPresence as Record<string, unknown>).filter(
+                ([dimension, mode]) =>
+                  (dimension === 'who' ||
+                    dimension === 'what' ||
+                    dimension === 'when' ||
+                    dimension === 'where') &&
+                  mode === 'isEmpty'
+              )
+            ) as Partial<Record<AdminDimensionKey, 'isEmpty'>>
+          : {},
     },
     dimensionalQueryOverlay: normalizeDimensionalTagIdMap(candidate.dimensionalQueryOverlay),
   };

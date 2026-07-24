@@ -62,32 +62,33 @@ export function useTagManagement() {
 
       if (!activeTag || !overTag) {
         console.error('Tags not found:', { activeId, overId });
-        return;
-      }
-
-      try {
-        buildReparentedTagPaths(currentTags, activeId, overId);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'That move would create an invalid tag hierarchy.');
         setIsSaving(false);
         return;
       }
 
-      if (activeTag.parentId !== overTag.parentId) {
-        console.log('Cannot reorder: tags have different parents');
+      const targetParentId = overTag.parentId || undefined;
+      const changesParent = (activeTag.parentId || undefined) !== targetParentId;
+      let prospectivePaths: Map<string, string[]> | null = null;
+      if (activeTag.dimension !== overTag.dimension) {
+        setError('Tags can only be moved within the same dimension.');
+        setIsSaving(false);
         return;
       }
-
-      if (!activeTag.parentId && (activeTag.dimension || '') !== (overTag.dimension || '')) {
-        console.log('Cannot reorder: root tags are in different dimensions');
-        return;
+      if (changesParent) {
+        try {
+          prospectivePaths = buildReparentedTagPaths(currentTags, activeId, targetParentId);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'That move would create an invalid tag hierarchy.');
+          setIsSaving(false);
+          return;
+        }
       }
 
       const allSiblings = currentTags
         .filter((t) => {
-          if ((t.parentId || '') !== (activeTag.parentId || '')) return false;
-          if (!activeTag.parentId) {
-            return (t.dimension || '') === (activeTag.dimension || '');
+          if ((t.parentId || '') !== (targetParentId || '')) return false;
+          if (!targetParentId) {
+            return (t.dimension || '') === (overTag.dimension || '');
           }
           return true;
         })
@@ -107,23 +108,49 @@ export function useTagManagement() {
 
       try {
         const optimisticOrderById = new Map(updates.map((update) => [update.id, update.order]));
-        const optimisticTags = currentTags.map((tag) =>
-          tag.docId && optimisticOrderById.has(tag.docId)
-            ? { ...tag, order: optimisticOrderById.get(tag.docId) }
-            : tag
-        );
+        const optimisticTags = currentTags.map((tag) => {
+          if (!tag.docId) return tag;
+          const nextPath = prospectivePaths?.get(tag.docId);
+          const nextOrder = optimisticOrderById.get(tag.docId);
+          if (tag.docId === activeId) {
+            return {
+              ...tag,
+              parentId: targetParentId,
+              path: nextPath ?? tag.path,
+              dimension: overTag.dimension,
+              order: nextOrder ?? tag.order,
+            };
+          }
+          if (nextPath) return { ...tag, path: nextPath };
+          return nextOrder !== undefined ? { ...tag, order: nextOrder } : tag;
+        });
         await mutate(optimisticTags, { revalidate: false });
-        await Promise.all(updates.map((update) => updateTag(update.id!, { order: update.order })));
-        await mutate();
+        if (changesParent) {
+          const reparentResponse = await fetch(`/api/tags/${activeId}/reparent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newParentId: targetParentId }),
+          });
+          const reparentBody = await reparentResponse.json().catch(() => null);
+          throwIfJsonApiFailed(reparentResponse, reparentBody, 'Failed to move tag.');
+        }
+        const response = await fetch('/api/tags/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activeId, overId, placement }),
+        });
+        const responseBody = await response.json().catch(() => null);
+        throwIfJsonApiFailed(response, responseBody, 'Failed to reorder tags.');
       } catch (err) {
-        await mutate(currentTags, { revalidate: false });
+        if (changesParent) await mutate();
+        else await mutate(currentTags, { revalidate: false });
         console.error('Failed to reorder tags:', err);
         setError('Failed to reorder tags. Please try again.');
       } finally {
         setIsSaving(false);
       }
     },
-    [swrTags, updateTag, mutate]
+    [swrTags, mutate]
   );
 
   const handleReparent = useCallback(
@@ -140,16 +167,25 @@ export function useTagManagement() {
         return;
       }
 
-      const optimisticTags = currentTags.map((tag) =>
-        tag.docId === activeId
-          ? {
-              ...tag,
-              parentId: overId,
-              path: [...(overTag.path || []), overId],
-              dimension: activeTag.parentId ? tag.dimension : undefined,
-            }
-          : tag
-      );
+      let prospectivePaths: Map<string, string[]>;
+      try {
+        if (activeTag.dimension !== overTag.dimension) {
+          throw new Error('Tags can only be nested within the same dimension.');
+        }
+        prospectivePaths = buildReparentedTagPaths(currentTags, activeId, overId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'That move would create an invalid tag hierarchy.');
+        setIsSaving(false);
+        return;
+      }
+
+      const optimisticTags = currentTags.map((tag) => {
+        if (!tag.docId || !prospectivePaths.has(tag.docId)) return tag;
+        const path = prospectivePaths.get(tag.docId)!;
+        return tag.docId === activeId
+          ? { ...tag, parentId: overId, path, dimension: overTag.dimension }
+          : { ...tag, path };
+      });
 
       try {
         await mutate(optimisticTags, { revalidate: false });

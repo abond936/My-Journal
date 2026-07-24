@@ -18,6 +18,11 @@ interface TagPickerDimensionColumnProps {
   checkboxIdPrefix: string;
   forceExpandAll?: boolean;
   showManagementControls?: boolean;
+  headerControl?: React.ReactNode;
+  initialExpandLevels?: number;
+  disabled?: boolean;
+  headerIcon?: React.ReactNode;
+  hideHeader?: boolean;
 }
 
 export default function TagPickerDimensionColumn({
@@ -30,6 +35,11 @@ export default function TagPickerDimensionColumn({
   checkboxIdPrefix,
   forceExpandAll = false,
   showManagementControls = true,
+  headerControl,
+  initialExpandLevels,
+  disabled = false,
+  headerIcon,
+  hideHeader = false,
 }: TagPickerDimensionColumnProps) {
   const { createTag } = useTag();
   const dimensionKey = dimension.dimension as TagDimension;
@@ -95,8 +105,14 @@ export default function TagPickerDimensionColumn({
 
   return (
     <div className={styles.dimensionColumn}>
-      <h4>{dimension.name}</h4>
+      {hideHeader ? null : (
+        <>
+          <h4>{headerIcon}{dimension.name}</h4>
+          {headerControl}
+        </>
+      )}
 
+      <fieldset className={styles.dimensionTreeFieldset} disabled={disabled}>
       {showManagementControls ? (
         <div className={styles.addTagBlock}>
           <div className={styles.addTagRow}>
@@ -184,9 +200,11 @@ export default function TagPickerDimensionColumn({
             onRequestAddChild={requestAddChild}
             forceExpandAll={forceExpandAll}
             showManagementControls={showManagementControls}
+            initialExpandLevels={initialExpandLevels}
           />
         ))}
       </div>
+      </fieldset>
     </div>
   );
 }
@@ -204,6 +222,7 @@ interface TagPickerInteractiveTagNodeProps {
   onRequestAddChild: (id: string, name: string) => void;
   forceExpandAll?: boolean;
   showManagementControls?: boolean;
+  initialExpandLevels?: number;
 }
 
 function TagPickerInteractiveTagNode({
@@ -219,8 +238,10 @@ function TagPickerInteractiveTagNode({
   onRequestAddChild,
   forceExpandAll = false,
   showManagementControls = true,
+  initialExpandLevels,
 }: TagPickerInteractiveTagNodeProps) {
-  const expandLevels = getTagTreeExpandLevelsForDimension(dimensionKey);
+  const expandLevels =
+    initialExpandLevels ?? getTagTreeExpandLevelsForDimension(dimensionKey);
   const [isCollapsed, setIsCollapsed] = useState(() => depth >= expandLevels);
   const selectionState = getSelectionState ? getSelectionState(node.docId) : (selection.has(node.docId) ? 'checked' : 'unchecked');
   const isSelected = selectionState === 'checked';
@@ -245,9 +266,8 @@ function TagPickerInteractiveTagNode({
   const checkboxId = `${checkboxIdPrefix}-${node.docId}`;
 
   return (
-    <div className={styles.interactiveNode}>
+      <div className={styles.interactiveNode}>
       <div className={styles.nodeControl}>
-        {showManagementControls ? (
         <span className={styles.nodeGutter}>
           {hasChildren ? (
             <button
@@ -260,17 +280,18 @@ function TagPickerInteractiveTagNode({
           ) : (
             <span className={styles.collapseSpacer} aria-hidden />
           )}
-          <button
-            type="button"
-            className={styles.addChildIconButton}
-            title={`Add child tag under “${node.name}”`}
-            aria-label={`Add child tag under ${node.name}`}
-            onClick={() => onRequestAddChild(node.docId!, node.name)}
-          >
-            +
-          </button>
+          {showManagementControls ? (
+            <button
+              type="button"
+              className={styles.addChildIconButton}
+              title={`Add child tag under “${node.name}”`}
+              aria-label={`Add child tag under ${node.name}`}
+              onClick={() => onRequestAddChild(node.docId!, node.name)}
+            >
+              +
+            </button>
+          ) : null}
         </span>
-        ) : null}
         <input
           type="checkbox"
           id={checkboxId}
@@ -302,6 +323,7 @@ function TagPickerInteractiveTagNode({
               onRequestAddChild={onRequestAddChild}
               forceExpandAll={forceExpandAll}
               showManagementControls={showManagementControls}
+              initialExpandLevels={initialExpandLevels}
             />
           ))}
         </div>

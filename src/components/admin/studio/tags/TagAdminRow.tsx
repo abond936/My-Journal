@@ -2,11 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
   Ellipsis,
-  PanelLeftClose,
-  PanelLeftOpen,
   Pencil,
   Plus,
   GitMerge,
@@ -31,6 +27,7 @@ interface TagAdminRowProps {
   highlighted?: boolean;
   onEditRelationships?: (tag: Tag) => void;
   onMergeTag?: (tag: Tag) => void;
+  dragHandle?: React.ReactNode;
 }
 
 export function TagAdminRow({
@@ -44,6 +41,7 @@ export function TagAdminRow({
   highlighted = false,
   onEditRelationships,
   onMergeTag,
+  dragHandle,
 }: TagAdminRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [tagName, setTagName] = useState(tag.name);
@@ -112,14 +110,24 @@ export function TagAdminRow({
               aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${tag.name}`}
               aria-expanded={!isCollapsed}
             >
-              {isCollapsed ? (
-                <ChevronRight size={14} aria-hidden="true" />
-              ) : (
-                <ChevronDown size={14} aria-hidden="true" />
-              )}
+              <span aria-hidden="true">{isCollapsed ? '▶' : '▼'}</span>
             </button>
           )}
         </div>
+        {dragHandle}
+        {hasChildren ? (
+          <button
+            type="button"
+            className={styles.readerExpansionButton}
+            onClick={() => onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false })}
+            aria-label={`${tag.defaultExpanded === false ? 'Expand' : 'Collapse'} ${tag.name} in Reader`}
+            title={`${tag.defaultExpanded === false ? 'Expand' : 'Collapse'} in Reader`}
+          >
+            {tag.defaultExpanded === false ? '⊞' : '⊟'}
+          </button>
+        ) : (
+          <span className={styles.readerExpansionSpacer} aria-hidden="true" />
+        )}
 
         <div className={styles.tagNameContainer}>
           {isEditing ? (
@@ -189,23 +197,6 @@ export function TagAdminRow({
               {onMergeTag && (
                 <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onMergeTag(tag); }}>
                   <GitMerge size={14} aria-hidden="true" /> Merge into…
-                </button>
-              )}
-              {hasChildren && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onUpdateTag(tag.docId!, { defaultExpanded: tag.defaultExpanded === false });
-                  }}
-                >
-                  {tag.defaultExpanded === false ? (
-                    <PanelLeftOpen size={14} aria-hidden="true" />
-                  ) : (
-                    <PanelLeftClose size={14} aria-hidden="true" />
-                  )}
-                  {tag.defaultExpanded === false ? 'Expand in Reader' : 'Collapse in Reader'}
                 </button>
               )}
               <button

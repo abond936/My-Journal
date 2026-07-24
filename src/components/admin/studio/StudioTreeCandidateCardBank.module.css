@@ -22,11 +22,11 @@
 
 .studioCardFilters {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--spacing-xs);
   align-items: flex-end;
   margin-bottom: var(--spacing-xs);
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 /* Matched in media-admin `studioPaneSearchField` — keeps Tags + Grid/Table rows aligned across Studio columns. */

@@ -9,6 +9,7 @@ import {
   DragEndEvent,
   DragOverEvent,
   DragStartEvent,
+  DragOverlay,
   closestCenter,
   pointerWithin,
   rectIntersection,
@@ -17,12 +18,18 @@ import {
   type CollisionDetection,
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { useDefaultDndSensors } from '@/lib/hooks/useDefaultDndSensors';
+import { Calendar, ChevronsDown, ChevronsUp, MapPin, Square, User } from 'lucide-react';
 import styles from '@/components/admin/studio/tags/tagAdminShell.module.css';
 
 type TagRow = TagWithChildren & { depth: number };
 const STUDIO_COLLAPSED_TAGS_KEY = 'myjournal:studio-tag-admin:collapsed';
+const DIMENSION_ICON = {
+  who: User,
+  what: Square,
+  when: Calendar,
+  where: MapPin,
+};
 
 function expandableIds(nodes: TagWithChildren[] | undefined): string[] {
   return (nodes ?? []).flatMap((node) => [
@@ -48,13 +55,16 @@ function flattenDimensionTree(
 }
 
 /** Drop semantics for one column’s visual row order (scroll + tree flattened). */
-function computeTagAdminDropSemantics(
+export function computeTagAdminDropSemantics(
   activeId: string,
   overId: string,
   activatorEvent: Event | null | undefined,
   isShiftPressed: boolean,
   tagMap: Map<string, TagRow>,
-  columnRows: TagRow[]
+  columnRows: TagRow[],
+  pointerY?: number,
+  overTop?: number,
+  overHeight?: number
 ) {
   const activeTag = tagMap.get(activeId);
   const overTag = tagMap.get(overId);
@@ -62,7 +72,7 @@ function computeTagAdminDropSemantics(
     return {
       isReparenting: false,
       isSameParent: false,
-      dropIndicator: null as 'before' | 'after' | null,
+      dropIndicator: null as 'before' | 'inside' | 'after' | null,
       isValidDrop: false,
     };
   }
@@ -71,7 +81,19 @@ function computeTagAdminDropSemantics(
   const shiftFromActivator = Boolean(
     ae && 'shiftKey' in ae && (ae as MouseEvent | KeyboardEvent).shiftKey
   );
-  const reparentMode = isShiftPressed || shiftFromActivator;
+  const relativeY =
+    pointerY !== undefined && overTop !== undefined && overHeight
+      ? (pointerY - overTop) / overHeight
+      : undefined;
+  const pointerIntent =
+    relativeY === undefined
+      ? null
+      : relativeY < 0.38
+        ? 'before'
+        : relativeY > 0.62
+          ? 'after'
+          : 'inside';
+  const reparentMode = pointerIntent === 'inside' || isShiftPressed || shiftFromActivator;
 
   const sameParentId = (activeTag.parentId || '') === (overTag.parentId || '');
   const sameRootDimension =
@@ -79,18 +101,29 @@ function computeTagAdminDropSemantics(
     !overTag.parentId &&
     (activeTag.dimension || '') === (overTag.dimension || '');
   const isSameParent = sameParentId && (activeTag.parentId ? true : sameRootDimension);
-  const isReparenting = reparentMode && activeTag.docId !== overTag.docId;
+  const isDescendant = Boolean(overTag.path?.includes(activeId));
+  const isReparenting =
+    reparentMode &&
+    activeTag.docId !== overTag.docId &&
+    !isDescendant &&
+    activeTag.dimension === overTag.dimension;
 
   const activeIndex = columnRows.findIndex((t) => t.docId === activeId);
   const overIndex = columnRows.findIndex((t) => t.docId === overId);
-  const dropIndicator: 'before' | 'after' | null =
-    activeIndex >= 0 && overIndex >= 0
+  const dropIndicator: 'before' | 'inside' | 'after' | null =
+    pointerIntent ??
+    (activeIndex >= 0 && overIndex >= 0
       ? activeIndex > overIndex
         ? 'before'
         : 'after'
-      : null;
+      : null);
 
-  const isValidDrop = isSameParent || isReparenting;
+  const canAdoptTargetParent =
+    dropIndicator !== 'inside' &&
+    activeTag.docId !== overTag.docId &&
+    !isDescendant &&
+    activeTag.dimension === overTag.dimension;
+  const isValidDrop = canAdoptTargetParent || isReparenting;
   return { isReparenting, isSameParent, dropIndicator, isValidDrop };
 }
 
@@ -138,21 +171,19 @@ function SortableTag({
   dragState,
 }: {
   tag: TagRow;
-  children: React.ReactNode;
+  children: (dragHandle: React.ReactNode) => React.ReactNode;
   dragState: {
     activeId: string | null;
     overId: string | null;
     isValidDrop: boolean;
-    dropIndicator: 'before' | 'after' | null;
+    dropIndicator: 'before' | 'inside' | 'after' | null;
     isReparenting: boolean;
     reparentTarget: string | null;
   };
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tag.docId! });
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id: tag.docId! });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
     marginLeft: `${tag.depth * 12}px`,
   };
 
@@ -163,9 +194,9 @@ function SortableTag({
   }
 
   const isOverTag = dragState.overId === tag.docId;
-  const dropIndicator = isOverTag && dragState.isValidDrop && !dragState.isReparenting ? dragState.dropIndicator : null;
+  const dropIndicator = isOverTag && dragState.isValidDrop ? dragState.dropIndicator : null;
   const isReparentTarget = isOverTag && dragState.isReparenting;
-  const showReorderHighlight = isOverTag && dragState.isValidDrop && !dragState.isReparenting;
+  const showReorderHighlight = false;
 
   return (
     <div
@@ -176,11 +207,15 @@ function SortableTag({
       data-valid-drop={showReorderHighlight ? 'true' : undefined}
       data-drop-indicator={dropIndicator}
       data-reparent-target={isReparentTarget ? 'true' : undefined}
+      data-invalid-drop={isOverTag && !dragState.isValidDrop ? 'true' : undefined}
     >
-      <span {...attributes} {...listeners} className={styles.dragHandle}>
-        &#x2630;
-      </span>
-      <div style={{ flexGrow: 1 }}>{children}</div>
+      <div style={{ flexGrow: 1 }}>
+        {children(
+          <span {...attributes} {...listeners} className={styles.dragHandle} aria-label={`Move ${tag.name}`}>
+            &#x2630;
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -191,8 +226,8 @@ interface TagAdminListProps {
   onUpdateTag: (id: string, tagData: Partial<Omit<Tag, 'docId'>>) => Promise<Tag | undefined>;
   onDeleteTag: (id: string) => Promise<void>;
   onCreateTag: (tagData: Omit<Tag, 'docId' | 'createdAt' | 'updatedAt'>) => Promise<Tag | undefined>;
-  onReorder: (activeId: string, overId: string, placement: 'before' | 'after') => void;
-  onReparent: (activeId: string, overId: string) => void;
+  onReorder: (activeId: string, overId: string, placement: 'before' | 'after') => Promise<void> | void;
+  onReparent: (activeId: string, overId: string) => Promise<void> | void;
   /** When true, each dimension stays in its own full-width row (e.g. resizable Studio tags pane). */
   stackDimensionColumns?: boolean;
   /** Studio embedded: hide Who/What/When/Where column titles. */
@@ -242,7 +277,7 @@ function TagAdminDimensionColumn({
     activeId: string | null;
     overId: string | null;
     isValidDrop: boolean;
-    dropIndicator: 'before' | 'after' | null;
+    dropIndicator: 'before' | 'inside' | 'after' | null;
     isReparenting: boolean;
     reparentTarget: string | null;
   };
@@ -251,7 +286,7 @@ function TagAdminDimensionColumn({
       activeId: string | null;
       overId: string | null;
       isValidDrop: boolean;
-      dropIndicator: 'before' | 'after' | null;
+      dropIndicator: 'before' | 'inside' | 'after' | null;
       isReparenting: boolean;
       reparentTarget: string | null;
     }>
@@ -269,6 +304,8 @@ function TagAdminDimensionColumn({
   onMergeTag?: TagAdminListProps['onMergeTag'];
 }) {
   const columnRows = col.rows;
+  const dimensionKey = col.id.replace(/^dim-/, '') as keyof typeof DIMENSION_ICON;
+  const DimensionIcon = DIMENSION_ICON[dimensionKey];
   const sortedIds = useMemo(() => columnRows.map((r) => r.docId!), [columnRows]);
   const hoverExpandRef = useRef<{ tagId: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const clearHoverExpand = useCallback(() => {
@@ -321,13 +358,18 @@ function TagAdminDimensionColumn({
         return;
       }
 
-      const { isReparenting, isSameParent, dropIndicator, isValidDrop } = computeTagAdminDropSemantics(
+      const { isReparenting, dropIndicator, isValidDrop } = computeTagAdminDropSemantics(
         active.id as string,
         over.id as string,
         event.activatorEvent,
         isShiftPressed,
         tagMap,
-        columnRows
+        columnRows,
+        active.rect.current.translated
+          ? active.rect.current.translated.top + active.rect.current.translated.height / 2
+          : undefined,
+        over.rect.top,
+        over.rect.height
       );
 
       const overId = over.id as string;
@@ -349,7 +391,7 @@ function TagAdminDimensionColumn({
         activeId: active.id as string,
         overId: over.id as string,
         isValidDrop,
-        dropIndicator: isSameParent ? dropIndicator : null,
+        dropIndicator: isValidDrop ? dropIndicator : null,
         isReparenting,
         reparentTarget: isReparenting ? (over.id as string) : null,
       });
@@ -358,7 +400,7 @@ function TagAdminDimensionColumn({
   );
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
       clearHoverExpand();
       const { active, over } = event;
 
@@ -389,21 +431,26 @@ function TagAdminDimensionColumn({
         return;
       }
 
-      const { isReparenting, isSameParent, dropIndicator: placement } = computeTagAdminDropSemantics(
+      const { isReparenting, dropIndicator: placement } = computeTagAdminDropSemantics(
         active.id as string,
         over.id as string,
         event.activatorEvent,
         isShiftPressed,
         tagMap,
-        columnRows
+        columnRows,
+        active.rect.current.translated
+          ? active.rect.current.translated.top + active.rect.current.translated.height / 2
+          : undefined,
+        over.rect.top,
+        over.rect.height
       );
 
+      let movePromise: Promise<void> | void = undefined;
       if (isReparenting) {
-        onReparent(active.id as string, over.id as string);
-      } else if (isSameParent && placement && active.id !== over.id) {
-        onReorder(active.id as string, over.id as string, placement);
+        movePromise = onReparent(active.id as string, over.id as string);
+      } else if (placement && placement !== 'inside' && active.id !== over.id) {
+        movePromise = onReorder(active.id as string, over.id as string, placement);
       }
-
       setDragState({
         activeId: null,
         overId: null,
@@ -412,6 +459,7 @@ function TagAdminDimensionColumn({
         isReparenting: false,
         reparentTarget: null,
       });
+      await movePromise;
     },
     [clearHoverExpand, columnRows, isShiftPressed, onReparent, onReorder, setDragState, tagMap]
   );
@@ -420,19 +468,26 @@ function TagAdminDimensionColumn({
     <section className={styles.dimensionColumn} id={`tag-dimension-${col.id}`}>
       <div className={styles.dimensionColumnHeader}>
         {hideDimensionColumnHeadings ? null : (
-          <h2 className={styles.dimensionColumnHeading} tabIndex={-1}>{col.title}</h2>
+          <h2 className={styles.dimensionColumnHeading} tabIndex={-1}>
+            {DimensionIcon ? <DimensionIcon size={16} aria-hidden="true" /> : null}
+            <span>{col.title}</span>
+          </h2>
         )}
         <div className={styles.dimensionExpansionActions} aria-label={`${col.title} tree display`}>
           <button type="button" onClick={() => {
             col.expandableIds.forEach((tagId) => {
               if (collapsedNodes.has(tagId)) onToggleCollapse(tagId);
             });
-          }}>Expand all</button>
+          }} aria-label={`Expand all ${col.title} tags`} title={`Expand all ${col.title} tags`}>
+            <ChevronsDown size={16} aria-hidden="true" />
+          </button>
           <button type="button" onClick={() => {
             col.expandableIds.forEach((tagId) => {
               if (!collapsedNodes.has(tagId)) onToggleCollapse(tagId);
             });
-          }}>Collapse all</button>
+          }} aria-label={`Collapse all ${col.title} tags`} title={`Collapse all ${col.title} tags`}>
+            <ChevronsUp size={16} aria-hidden="true" />
+          </button>
         </div>
       </div>
       <div className={styles.dimensionColumnDndRoot}>
@@ -466,7 +521,7 @@ function TagAdminDimensionColumn({
             <SortableContext items={sortedIds} strategy={verticalListSortingStrategy}>
               {columnRows.map((tag) => (
                 <SortableTag key={tag.docId} tag={tag} dragState={dragState}>
-                  <TagAdminRow
+                  {(dragHandle) => <TagAdminRow
                     tag={tag}
                     depth={tag.depth}
                     onUpdateTag={onUpdateTag}
@@ -477,12 +532,22 @@ function TagAdminDimensionColumn({
                     highlighted={Boolean(tag.docId && highlightTagIds?.has(tag.docId))}
                     onEditRelationships={onEditRelationships}
                     onMergeTag={onMergeTag}
+                    dragHandle={dragHandle}
                   />
+                  }
                 </SortableTag>
               ))}
             </SortableContext>
           )}
           </div>
+          <DragOverlay dropAnimation={null}>
+            {dragState.activeId ? (
+              <div className={styles.dragOverlay}>
+                <span className={styles.dragHandle} aria-hidden="true">&#x2630;</span>
+                <span>{tagMap.get(dragState.activeId)?.name}</span>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </div>
     </section>
@@ -521,7 +586,7 @@ export function TagAdminList({
     activeId: string | null;
     overId: string | null;
     isValidDrop: boolean;
-    dropIndicator: 'before' | 'after' | null;
+    dropIndicator: 'before' | 'inside' | 'after' | null;
     isReparenting: boolean;
     reparentTarget: string | null;
   }>({
@@ -598,35 +663,22 @@ export function TagAdminList({
       {showDimensionNavigation && (
         <nav className={styles.dimensionNavigation} aria-label="Tag dimensions">
           {columns.map((column) => (
-            <button
+            (() => {
+              const dimensionKey = column.id.replace(/^dim-/, '') as keyof typeof DIMENSION_ICON;
+              const Icon = DIMENSION_ICON[dimensionKey];
+              return <button
               key={column.id}
               type="button"
               className={styles.dimensionNavigationButton}
               aria-current={activeDimensionId === column.id ? 'location' : undefined}
               onClick={() => navigateToDimension(column)}
             >
-              {column.title}
-            </button>
+              {Icon ? <Icon size={14} aria-hidden="true" /> : null}
+              <span>{column.title}</span>
+            </button>;
+            })()
           ))}
         </nav>
-      )}
-      {isShiftPressed && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '10px',
-            right: '10px',
-            background: '#28a745',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            zIndex: 1000,
-            fontSize: '14px',
-            fontWeight: 'bold',
-          }}
-        >
-          🔄 Reparenting Mode Active (Release Shift to exit)
-        </div>
       )}
       <div
         className={

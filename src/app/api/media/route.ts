@@ -141,11 +141,21 @@ async function loadExactMatchMediaIds(firestore: Firestore): Promise<Set<string>
   return new Set(groupExactMediaDuplicates(evidenceRows).flatMap((group) => group.mediaIds));
 }
 
+async function hasPendingMediaTagReconciliation(firestore: Firestore): Promise<boolean> {
+  const snapshot = await firestore
+    .collection('media_tag_reconciliation_operations')
+    .where('status', 'in', ['pending', 'failed', 'running'])
+    .limit(1)
+    .get();
+  return !snapshot.empty;
+}
+
 /** Aligns with getCards dimensional filtering: intra-dimension OR, inter-dimension AND. */
 function mediaMatchesDimensionalTags(
   item: Media,
   dt: DimensionalTagIdMap,
   tagScope: 'all' | 'subject',
+  subjectDimensions: Set<'who' | 'what' | 'when' | 'where'> = new Set(),
   tagSelectionMode: TagSelectionMode = 'any'
 ): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
@@ -155,7 +165,7 @@ function mediaMatchesDimensionalTags(
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
-    const candidates = tagScope === 'subject'
+    const candidates = tagScope === 'subject' || subjectDimensions.has(dim)
       ? Object.keys(item.subjectFilterTags ?? {}).filter((id) => item.subjectFilterTags?.[id])
       : [...idsOnMedia, ...Object.keys(item.filterTags ?? {}).filter((id) => item.filterTags?.[id])];
     const ok = matchesSelectedTags(candidates, selected, tagSelectionMode);
@@ -268,6 +278,13 @@ export async function GET(request: NextRequest) {
     const importFolder = searchParams.get('importFolder');
     const metadataOutcome = searchParams.get('metadataOutcome');
     const tagScope = searchParams.get('tagScope') === 'subject' ? 'subject' : 'all';
+    const subjectDimensions = new Set(
+      (searchParams.get('subjectDimensions') ?? '')
+        .split(',')
+        .filter((dimension): dimension is 'who' | 'what' | 'when' | 'where' =>
+          dimension === 'who' || dimension === 'what' || dimension === 'when' || dimension === 'where'
+        )
+    );
     const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
     const dimensionPresence = Object.fromEntries(
       (['who', 'what', 'when', 'where'] as const)
@@ -276,6 +293,8 @@ export async function GET(request: NextRequest) {
     ) as Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
     const hasDimensionPresenceSeek = Object.keys(dimensionPresence).length > 0;
     const includeTotal = searchParams.get('includeTotal') !== 'false';
+    const includeReconciliationStatus =
+      searchParams.get('includeReconciliationStatus') === 'true';
     const tagDimension = searchParams.get('tagDimension');
     const tagMode = searchParams.get('tagMode');
     const tagValue = searchParams.get('tagValue');
@@ -286,6 +305,9 @@ export async function GET(request: NextRequest) {
     const firestore = app.firestore();
     const mediaRef = firestore.collection('media');
     const baseQuery = buildBaseQuery(mediaRef, source);
+    const pendingTagReconciliationPromise = includeReconciliationStatus
+      ? hasPendingMediaTagReconciliation(firestore)
+      : Promise.resolve(undefined);
 
     const shouldUseLegacyTagSeek = !!tagMode && tagMode !== 'all';
     const hasCaptionSeek = !!hasCaption && hasCaption !== 'all';
@@ -311,7 +333,7 @@ export async function GET(request: NextRequest) {
       !hasLibraryWorkflowSeek &&
       !shouldUseLegacyTagSeek &&
       !hasDimensionPresenceSeek &&
-      !(tagScope === 'subject' && hasDimensionalTagSeek) &&
+      !((tagScope === 'subject' || subjectDimensions.size > 0) && hasDimensionalTagSeek) &&
       (hasSearchSeek ||
         hasCaptionSeek ||
         hasDimensionalTagSeek ||
@@ -338,12 +360,19 @@ export async function GET(request: NextRequest) {
 
       const media = await fetchMediaByIdsInOrder(firestore, tsResult.docIds);
       const filteredMedia = media.filter((item) =>
-        mediaMatchesDimensionalTags(item, dimensionalTags, tagScope, tagSelectionMode)
+        mediaMatchesDimensionalTags(
+          item,
+          dimensionalTags,
+          tagScope,
+          subjectDimensions,
+          tagSelectionMode
+        )
       );
       const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
 
       return NextResponse.json({
         media: mediaWithUrls,
+        pendingTagReconciliation: await pendingTagReconciliationPromise,
         pagination: {
           limit,
           total: tsResult.found,
@@ -379,12 +408,18 @@ export async function GET(request: NextRequest) {
           metadataOutcome,
         })) return false;
         if (hasDimensionalTagSeek) {
-          if (!mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode)) return false;
+          if (!mediaMatchesDimensionalTags(
+            row,
+            dimensionalTags,
+            tagScope,
+            subjectDimensions,
+            tagSelectionMode
+          )) return false;
         }
         for (const dimension of ['who', 'what', 'when', 'where'] as const) {
           const presence = dimensionPresence[dimension];
           if (!presence) continue;
-          const hasValue = tagScope === 'subject'
+          const hasValue = tagScope === 'subject' || subjectDimensions.has(dimension)
             ? Boolean((row[dimension] ?? []).some((tagId) => row.subjectFilterTags?.[tagId]))
             : (row[dimension] ?? []).length > 0;
           if (presence === 'hasAny' && !hasValue) return false;
@@ -405,6 +440,7 @@ export async function GET(request: NextRequest) {
       const mediaWithUrls = applyPublicStorageUrls(media);
       return NextResponse.json({
         media: mediaWithUrls,
+        pendingTagReconciliation: await pendingTagReconciliationPromise,
         pagination: {
           limit,
           total: null,
@@ -434,6 +470,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         media: mediaWithUrls,
+        pendingTagReconciliation: await pendingTagReconciliationPromise,
         pagination: {
           limit,
           total: null,
@@ -516,6 +553,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       media: mediaWithUrls,
+      pendingTagReconciliation: await pendingTagReconciliationPromise,
       pagination: {
         limit,
         total,

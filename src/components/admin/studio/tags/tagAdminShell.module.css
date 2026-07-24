@@ -248,8 +248,9 @@
 }
 
 .rowWrapper[data-is-dragging="true"] {
-  opacity: 0.5;
-  z-index: 1000;
+  opacity: 0.22;
+  outline: var(--border-width-thin) dashed var(--color3);
+  border-radius: var(--border-radius-sm);
 }
 
 .rowWrapper:hover {
@@ -279,11 +280,42 @@
   background: var(--color3);
 }
 
+.rowWrapper[data-drop-indicator="inside"] {
+  background-color: var(--admin-state-success-background-color);
+  box-shadow: inset 0 0 0 var(--border-width-medium) var(--admin-state-success-border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.rowWrapper[data-invalid-drop="true"] {
+  cursor: not-allowed;
+  background-color: color-mix(in srgb, var(--admin-state-error-border-color) 12%, transparent);
+  box-shadow: inset 0 0 0 var(--border-width-thin) var(--admin-state-error-border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.dragOverlay {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: max-content;
+  max-width: 360px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--color3);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.2;
+  pointer-events: none;
+  transform: translate(10px, calc(-100% - 10px));
+}
+
 /* Drag handle improvements */
 .dragHandle {
   cursor: grab;
   padding: 4px 8px;
-  margin-right: 8px;
+  margin-right: 0;
   border-radius: 4px;
   transition: background-color 0.2s ease;
   user-select: none;
@@ -401,6 +433,10 @@
 
 .dimensionNavigationButton {
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width-thin) solid transparent;
   border-radius: var(--border-radius-sm);
@@ -419,6 +455,7 @@
 }
 
 .dimensionColumn {
+  scroll-margin-top: 44px;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -432,6 +469,9 @@
 
 .dimensionColumnHeading {
   flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   margin: 0;
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
@@ -455,7 +495,12 @@
 }
 
 .dimensionExpansionActions button {
-  padding: 2px var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 2px;
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-sm);
   background: transparent;

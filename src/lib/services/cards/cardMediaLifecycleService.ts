@@ -1,6 +1,6 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getAllTags } from '@/lib/firebase/tagService';
-import { computeCardMediaSignalsFromMediaIds, computeCardMediaSignalsFromMediaMap, getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationService';
+import { computeCardMediaSignalsFromMediaIds, computeCardMediaSignalsFromMediaMap, getMediaIdsFromCard, loadMediaMapByIds } from '@/lib/services/cards/cardMediaHydrationService';
 import { syncCardProjection as syncCardToTypesense, withCardMutationRetry as withRetry } from '@/lib/services/cards/cardMutationSupport';
 import { getCardById } from '@/lib/services/cards/cardReadService';
 import { deleteMediaAsset } from '@/lib/services/images/mediaStorage';
@@ -13,6 +13,18 @@ import { FieldValue } from 'firebase-admin/firestore';
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
+
+/** Fast ordinary-work reference lookup from the maintained Media back-reference. */
+export async function getMaintainedCardsReferencingMedia(mediaId: string): Promise<string[]> {
+  const mediaDoc = await firestore.collection(MEDIA_COLLECTION).doc(mediaId).get();
+  if (!mediaDoc.exists) return [];
+  return Array.from(
+    new Set(
+      ((mediaDoc.data() as Media).referencedByCardIds ?? [])
+        .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+    )
+  );
+}
 
 /** Finds card IDs that reference the given mediaId by authoritative surface scan (cover, gallery, content ids, inline content media ids). */
 export async function getCardsReferencingMedia(mediaId: string): Promise<string[]> {
@@ -61,24 +73,54 @@ export async function recomputeCardMediaSignals(cardId: string): Promise<void> {
   });
 }
 
-export async function recomputeCardsMediaSignalsForMedia(mediaId: string): Promise<void> {
-  const cardIds = await getCardsReferencingMedia(mediaId);
-  if (!cardIds.length) return;
-  await Promise.all(cardIds.map((id) => recomputeCardMediaSignals(id)));
+export async function recomputeCardsMediaSignalsForMedia(mediaId: string): Promise<string[]> {
+  return recomputeCardsMediaSignalsForMediaIds([mediaId]);
 }
 
-export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]): Promise<void> {
-  if (!mediaIds.length) return;
+export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]): Promise<string[]> {
+  if (!mediaIds.length) return [];
   const allCardIds = new Set<string>();
   const uniqueMediaIds = Array.from(
     new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
   );
-  const cardIdLists = await Promise.all(uniqueMediaIds.map((mediaId) => getCardsReferencingMedia(mediaId)));
-  for (const ids of cardIdLists) {
-    ids.forEach((id) => allCardIds.add(id));
+  const mediaDocs = await Promise.all(
+    uniqueMediaIds.map((mediaId) => firestore.collection(MEDIA_COLLECTION).doc(mediaId).get())
+  );
+  for (const doc of mediaDocs) {
+    if (!doc.exists) continue;
+    const references = (doc.data() as Media).referencedByCardIds ?? [];
+    references.forEach((id) => allCardIds.add(id));
   }
-  if (!allCardIds.size) return;
-  await Promise.all(Array.from(allCardIds).map((id) => recomputeCardMediaSignals(id)));
+  if (!allCardIds.size) return [];
+
+  const cardDocs = await Promise.all(
+    Array.from(allCardIds).map((id) => firestore.collection(CARDS_COLLECTION).doc(id).get())
+  );
+  const cards = cardDocs
+    .filter((doc) => doc.exists)
+    .map((doc) => ({ docId: doc.id, ...(doc.data() as Card) }));
+  const allMediaIds = new Set<string>();
+  cards.forEach((card) => getMediaIdsFromCard(card).forEach((id) => allMediaIds.add(id)));
+  const [allTags, mediaMap] = await Promise.all([
+    getAllTags(),
+    loadMediaMapByIds(allMediaIds),
+  ]);
+  await Promise.all(
+    cards.map(async (card) => {
+      const cardMediaMap = new Map<string, Media>();
+      getMediaIdsFromCard(card).forEach((id) => {
+        const item = mediaMap.get(id);
+        if (item) cardMediaMap.set(id, item);
+      });
+      const mediaSignals = computeCardMediaSignalsFromMediaMap(cardMediaMap, allTags);
+      await firestore.collection(CARDS_COLLECTION).doc(card.docId!).update({
+        ...mediaSignals,
+        updatedAt: Date.now(),
+      });
+      void syncCardToTypesense({ ...card, ...mediaSignals });
+    })
+  );
+  return cards.map((card) => card.docId!).filter(Boolean);
 }
 
 function cardReferencesMediaId(card: Card, mediaId: string): boolean {
@@ -223,4 +265,3 @@ export async function deleteMediaWithCardCleanup(mediaId: string): Promise<void>
  * @param cardData The data for the new card, excluding 'id'.
  * @returns The newly created card with its ID.
  */
-

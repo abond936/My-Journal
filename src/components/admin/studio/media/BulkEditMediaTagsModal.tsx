@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { Calendar, MapPin, Square, User } from 'lucide-react';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 import { useTag } from '@/components/providers/TagProvider';
@@ -19,6 +20,77 @@ interface BulkEditMediaTagsModalProps {
   onSave: (payload: { mediaIds: string[]; addTagIds: string[]; removeTagIds: string[] }) => Promise<void>;
 }
 
+type SelectionState = 'checked' | 'unchecked' | 'mixed';
+
+const DIMENSION_ICON = {
+  who: User,
+  what: Square,
+  when: Calendar,
+  where: MapPin,
+} satisfies Record<TagDimension, React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }>>;
+
+function SelectionStateExample({
+  state,
+  label,
+}: {
+  state: SelectionState;
+  label: string;
+}) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.indeterminate = state === 'mixed';
+  }, [state]);
+
+  return (
+    <span className={styles.stateExample}>
+      <input
+        ref={inputRef}
+        type="checkbox"
+        checked={state === 'checked'}
+        readOnly
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function SubjectDecisionRow({
+  id,
+  label,
+  state,
+  disabled,
+  onToggle,
+}: {
+  id: string;
+  label: string;
+  state: SelectionState;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.indeterminate = state === 'mixed';
+  }, [state]);
+  return (
+    <label className={styles.subjectOption} htmlFor={`media-subject-${id}`}>
+      <input
+        ref={inputRef}
+        id={`media-subject-${id}`}
+        type="checkbox"
+        checked={state === 'checked'}
+        disabled={disabled}
+        onChange={onToggle}
+      />
+      <span className={styles.subjectOptionCopy}>
+        <span>{label}</span>
+        {state === 'mixed' ? <small>Some selected media</small> : null}
+      </span>
+    </label>
+  );
+}
+
 export default function BulkEditMediaTagsModal({
   mediaIds,
   isOpen,
@@ -31,11 +103,8 @@ export default function BulkEditMediaTagsModal({
   const [error, setError] = useState<string | null>(null);
   const [selectedMedia, setSelectedMedia] = useState<Media[]>([]);
   const [tagDecisions, setTagDecisions] = useState<Map<string, boolean>>(new Map());
+  const [subjectDecisions, setSubjectDecisions] = useState<Map<string, boolean>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
-  const [subjectDecision, setSubjectDecision] = useState<{ touched: boolean; value: string | null }>({
-    touched: false,
-    value: null,
-  });
 
   const mediaIdsKey = useMemo(() => [...new Set(mediaIds)].sort().join('\u001e'), [mediaIds]);
 
@@ -44,8 +113,8 @@ export default function BulkEditMediaTagsModal({
       setError(null);
       setSelectedMedia([]);
       setTagDecisions(new Map());
+      setSubjectDecisions(new Map());
       setSearchTerm('');
-      setSubjectDecision({ touched: false, value: null });
       return;
     }
 
@@ -79,7 +148,7 @@ export default function BulkEditMediaTagsModal({
         if (cancelled) return;
         setSelectedMedia(fetched.filter((item): item is Media => Boolean(item?.docId)));
         setTagDecisions(new Map());
-        setSubjectDecision({ touched: false, value: null });
+        setSubjectDecisions(new Map());
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -119,19 +188,17 @@ export default function BulkEditMediaTagsModal({
     return counts;
   }, [selectedMedia]);
 
-  const subjectConsensus = useMemo(() => {
-    const normalized = selectedMedia.map((item) => {
-      const raw = item.subjectTagId;
-      if (typeof raw !== 'string') return null;
-      const trimmed = raw.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    });
-    if (normalized.length === 0) {
-      return { mixed: false, value: null as string | null };
+  const subjectPresenceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of selectedMedia) {
+      const subjects = item.subjectTagIds?.length
+        ? item.subjectTagIds
+        : item.subjectTagId
+          ? [item.subjectTagId]
+          : [];
+      for (const tagId of subjects) counts.set(tagId, (counts.get(tagId) || 0) + 1);
     }
-    const first = normalized[0] ?? null;
-    const mixed = normalized.some((value) => value !== first);
-    return { mixed, value: mixed ? null : first };
+    return counts;
   }, [selectedMedia]);
 
   const getSelectionState = React.useCallback(
@@ -154,6 +221,18 @@ export default function BulkEditMediaTagsModal({
     return selected;
   }, [allTags, getSelectionState]);
 
+  const getSubjectState = React.useCallback(
+    (tagId: string): SelectionState => {
+      const explicit = subjectDecisions.get(tagId);
+      if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
+      const count = subjectPresenceCounts.get(tagId) || 0;
+      if (count === 0) return 'unchecked';
+      if (count === selectedMedia.length) return 'checked';
+      return 'mixed';
+    },
+    [selectedMedia.length, subjectDecisions, subjectPresenceCounts]
+  );
+
   const tagById = useMemo(() => buildTagByIdMap(allTags || []), [allTags]);
   const resolvedDimension = useMemo(
     () => buildResolvedTagDimensionMap(allTags || []),
@@ -169,11 +248,17 @@ export default function BulkEditMediaTagsModal({
         return {
           tagId,
           dimension,
+          name: tag.name,
           label: getTagPathDisplay(tag, tagById),
         };
       })
       .filter(
-        (row): row is { tagId: string; dimension: TagDimension; label: string } => Boolean(row)
+        (row): row is {
+          tagId: string;
+          dimension: TagDimension;
+          name: string;
+          label: string;
+        } => Boolean(row)
       );
 
     rows.sort((a, b) => {
@@ -185,17 +270,18 @@ export default function BulkEditMediaTagsModal({
   }, [checkedSelection, resolvedDimension, tagById]);
 
   useEffect(() => {
-    if (!subjectDecision.touched) return;
-    if (!subjectDecision.value) return;
-    if (checkedSelection.has(subjectDecision.value)) return;
-    setSubjectDecision({ touched: true, value: null });
-  }, [checkedSelection, subjectDecision]);
-
-  const subjectSelectValue = subjectDecision.touched
-    ? subjectDecision.value ?? ''
-    : subjectConsensus.mixed
-      ? '__mixed__'
-      : (subjectConsensus.value ?? '');
+    setSubjectDecisions((current) => {
+      let changed = false;
+      const next = new Map(current);
+      for (const [tagId, decision] of next) {
+        if (decision && !checkedSelection.has(tagId)) {
+          next.set(tagId, false);
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [checkedSelection]);
 
   const expandedNodeIds = useMemo(() => {
     const expanded = new Set<string>();
@@ -227,17 +313,24 @@ export default function BulkEditMediaTagsModal({
       const removeTagIds = Array.from(tagDecisions.entries())
         .filter(([, value]) => !value)
         .map(([tagId]) => tagId);
+      const addSubjectTagIds = Array.from(subjectDecisions.entries())
+        .filter(([, value]) => value)
+        .map(([tagId]) => tagId);
+      const removeSubjectTagIds = Array.from(subjectDecisions.entries())
+        .filter(([, value]) => !value)
+        .map(([tagId]) => tagId);
 
-      if (removeTagIds.length > 0) {
-        await bulkApplyTags(mediaIds, { tagIds: removeTagIds, mode: 'remove' });
-      }
-      if (addTagIds.length > 0) {
-        await bulkApplyTags(mediaIds, { tagIds: addTagIds, mode: 'add' });
-      }
-      if (subjectDecision.touched) {
+      if (
+        addTagIds.length > 0 ||
+        removeTagIds.length > 0 ||
+        addSubjectTagIds.length > 0 ||
+        removeSubjectTagIds.length > 0
+      ) {
         await bulkApplyTags(mediaIds, {
-          subjectTagId: subjectDecision.value,
-          subjectTagIdProvided: true,
+          addTagIds,
+          removeTagIds,
+          addSubjectTagIds,
+          removeSubjectTagIds,
         });
       }
 
@@ -275,16 +368,7 @@ export default function BulkEditMediaTagsModal({
   return (
     <div className={styles.overlay}>
       <div className={styles.modalContainer}>
-        <h2 className={styles.modalHeader}>Edit Tags for {mediaIds.length} Media Items</h2>
-        <p className={styles.helpText}>
-          Tag states reflect the selected media: <strong>checked = all</strong>, <strong>dash = some</strong>, <strong>empty = none</strong>.
-          Click once to set for all, click again to remove from all.
-        </p>
-        <div className={styles.stateLegend} aria-hidden>
-          <span>checked all</span>
-          <span>dash some</span>
-          <span>empty none</span>
-        </div>
+        <h2 className={styles.modalHeader}>Media Tags</h2>
 
         <div className={styles.searchBar}>
           <input
@@ -306,69 +390,99 @@ export default function BulkEditMediaTagsModal({
           ) : null}
         </div>
 
-        <div className={styles.subjectSection}>
-          <label htmlFor="bulk-media-subject" className={styles.subjectLabel}>
-            Subject tag
-          </label>
-          <select
-            id="bulk-media-subject"
-            className={styles.subjectSelect}
-            value={subjectSelectValue}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              if (nextValue === '__mixed__') return;
-              setSubjectDecision({
-                touched: true,
-                value: nextValue ? nextValue : null,
-              });
-            }}
-            disabled={isLoading || tagsLoading}
-          >
-            {!subjectDecision.touched && subjectConsensus.mixed ? (
-              <option value="__mixed__">Keep mixed existing subjects</option>
-            ) : null}
-            <option value="">No subject</option>
-            {subjectOptions.map((option) => (
-              <option key={option.tagId} value={option.tagId}>
-                {DIMENSION_LABEL[option.dimension]}: {option.label}
-              </option>
-            ))}
-          </select>
-          <p className={styles.subjectHelp}>
-            Subject must be one of the tags assigned to every selected media item after this edit.
-          </p>
-        </div>
-
         {isLoading || tagsLoading ? (
           <LoadingSpinner />
         ) : error ? (
           <div className={styles.error}>{error}</div>
         ) : (
-          <div className={styles.interactiveColumns}>
-            {filteredDimensionalTree.map((dimension) => (
-              <TagPickerDimensionColumn
-                key={dimension.docId}
-                dimension={dimension}
-                selection={checkedSelection}
-                onSelectionChange={handleTagChange}
-                getSelectionState={getSelectionState}
-                onToggleTag={handleToggleTag}
-                expandedNodeIds={expandedNodeIds}
-                checkboxIdPrefix="bulk-media-tag"
-                forceExpandAll
-                showManagementControls={false}
-              />
-            ))}
+          <div className={styles.mediaTagWorkspace}>
+            <div className={styles.dimensionHeadings}>
+              {DIMENSION_ORDER.map((dimension) => {
+                const Icon = DIMENSION_ICON[dimension];
+                return (
+                  <h4 key={dimension} className={styles.dimensionHeading}>
+                    <Icon size={16} aria-hidden={true} />
+                    <span>{DIMENSION_LABEL[dimension]}</span>
+                  </h4>
+                );
+              })}
+            </div>
+
+            <div className={styles.subjectBand}>
+              <div className={styles.dimensionSubjectLabel}>
+                Subjects <span>(Choose one or more assigned tags as subjects.)</span>
+              </div>
+              <div className={styles.subjectColumns}>
+                {DIMENSION_ORDER.map((dimension) => {
+                  const options = subjectOptions.filter(
+                    (option) => option.dimension === dimension
+                  );
+                  return (
+                    <div
+                      key={dimension}
+                      className={styles.dimensionSubjectOptions}
+                      data-subject-dimension={dimension}
+                    >
+                      {options.map((option) => {
+                        const state = getSubjectState(option.tagId);
+                        return (
+                          <SubjectDecisionRow
+                            key={option.tagId}
+                            id={option.tagId}
+                            label={option.name}
+                            state={state}
+                            disabled={isLoading || tagsLoading}
+                            onToggle={() =>
+                              setSubjectDecisions((current) => {
+                                const next = new Map(current);
+                                next.set(option.tagId, state !== 'checked');
+                                return next;
+                              })
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={`${styles.interactiveColumns} ${styles.mediaInteractiveColumns}`}>
+              {filteredDimensionalTree.map((dimension) => (
+                <TagPickerDimensionColumn
+                  key={dimension.docId}
+                  dimension={dimension}
+                  selection={checkedSelection}
+                  onSelectionChange={handleTagChange}
+                  getSelectionState={getSelectionState}
+                  onToggleTag={handleToggleTag}
+                  expandedNodeIds={expandedNodeIds}
+                  checkboxIdPrefix="bulk-media-tag"
+                  forceExpandAll
+                  showManagementControls
+                  hideHeader
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        <div className={styles.actions}>
-          <button onClick={onClose} className={styles.cancelButton} disabled={isLoading}>
-            Cancel
-          </button>
-          <button onClick={handleSaveChanges} className={styles.saveButton} disabled={isLoading || tagsLoading}>
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </button>
+        <div className={styles.mediaFooter}>
+          <div className={styles.stateLegend} aria-label="Tag selection states">
+            <span className={styles.legendLabel}>Legend:</span>
+            <SelectionStateExample state="unchecked" label="Empty" />
+            <SelectionStateExample state="mixed" label="Some" />
+            <SelectionStateExample state="checked" label="All" />
+          </div>
+          <div className={styles.mediaActions}>
+            <button onClick={onClose} className={styles.cancelButton} disabled={isLoading}>
+              Cancel
+            </button>
+            <button onClick={handleSaveChanges} className={styles.saveButton} disabled={isLoading || tagsLoading}>
+              {isLoading ? 'Applying...' : 'Apply'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

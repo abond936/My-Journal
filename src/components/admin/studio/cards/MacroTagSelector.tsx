@@ -1,18 +1,22 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Calendar, MapPin, Square, User } from 'lucide-react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
+import bulkStyles from './BulkEditTagsModal.module.css';
 import {
   buildSparseTagTree,
   createUITreeFromDimensions,
   filterTreesBySearch,
   normalizeTagDimensionKey,
 } from '@/lib/utils/tagUtils';
-import { DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
+import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
+import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
+import type { GalleryTagRollupStatuses } from '@/lib/utils/galleryTagInheritance';
 
 export type MacroTagCollapsedSummary = 'sparseTrees' | 'none';
 
@@ -42,6 +46,39 @@ const SUBJECT_DIMENSION_ORDER: Record<string, number> = {
   where: 3,
 };
 
+const DIMENSION_ICON = {
+  who: User,
+  what: Square,
+  when: Calendar,
+  where: MapPin,
+} satisfies Record<TagDimension, React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }>>;
+
+function SelectionStateExample({
+  state,
+  label,
+}: {
+  state: 'checked' | 'unchecked' | 'mixed';
+  label: string;
+}) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  React.useEffect(() => {
+    if (inputRef.current) inputRef.current.indeterminate = state === 'mixed';
+  }, [state]);
+  return (
+    <span className={bulkStyles.stateExample}>
+      <input
+        ref={inputRef}
+        type="checkbox"
+        checked={state === 'checked'}
+        readOnly
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 interface MacroTagSelectorProps {
   selectedTags: Tag[];
   allTags: Tag[];
@@ -70,6 +107,27 @@ interface MacroTagSelectorProps {
   pickerTitle?: string;
   searchPlaceholder?: string;
   hidePickerHeading?: boolean;
+  /** Hide the picker's action row when a containing modal owns Cancel/Apply. */
+  hideActions?: boolean;
+  pickerToolbar?: React.ReactNode;
+  dimensionHeaderControl?: (dimension: TagDimension) => React.ReactNode;
+  showManagementControls?: boolean;
+  initialExpandLevels?: number;
+  /** Show the complete taxonomy, including legacy/system-named tags. Filters use this so every tree tag remains selectable. */
+  includeAllTags?: boolean;
+  dimensionDisabled?: (dimension: TagDimension) => boolean;
+  dimensionHeaderIcon?: (dimension: TagDimension) => React.ReactNode;
+  /** Use the same assignment layout as the Media Tags modal. */
+  unifiedAssignmentLayout?: boolean;
+  galleryTagIdsByDimension?: Record<TagDimension, string[]>;
+  inheritanceByDimension?: GalleryTagInheritanceToggles;
+  inheritanceAvailableByDimension?: GalleryTagInheritanceToggles;
+  galleryRollupStatuses?: Partial<GalleryTagRollupStatuses>;
+  onSaveAssignmentWithInheritance?: (
+    nextTagIds: string[],
+    nextSubjectTagIds: string[],
+    inheritance: GalleryTagInheritanceToggles
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 export default function MacroTagSelector({
@@ -95,6 +153,20 @@ export default function MacroTagSelector({
   pickerTitle = 'Assign tags',
   searchPlaceholder = 'Find tags…',
   hidePickerHeading = false,
+  hideActions = false,
+  pickerToolbar,
+  dimensionHeaderControl,
+  showManagementControls = true,
+  initialExpandLevels,
+  includeAllTags = false,
+  dimensionDisabled,
+  dimensionHeaderIcon,
+  unifiedAssignmentLayout = false,
+  galleryTagIdsByDimension,
+  inheritanceByDimension,
+  inheritanceAvailableByDimension,
+  galleryRollupStatuses,
+  onSaveAssignmentWithInheritance,
 }: MacroTagSelectorProps) {
   const isControlled =
     typeof expandedProp === 'boolean' && typeof onExpandedChange === 'function';
@@ -109,8 +181,8 @@ export default function MacroTagSelector({
   const { tags: providerTags } = useTag();
   const effectiveAllTags = useMemo(() => {
     const source = providerTags.length > 0 ? providerTags : allTags;
-    return source.filter(isAuthorFacingTag);
-  }, [providerTags, allTags]);
+    return includeAllTags ? source : source.filter(isAuthorFacingTag);
+  }, [providerTags, allTags, includeAllTags]);
 
   const handleSave = async (newSelection: string[]) => {
     await onChange(newSelection);
@@ -191,6 +263,19 @@ export default function MacroTagSelector({
         pickerTitle={pickerTitle}
         searchPlaceholder={searchPlaceholder}
         hidePickerHeading={hidePickerHeading}
+        hideActions={hideActions}
+        pickerToolbar={pickerToolbar}
+        dimensionHeaderControl={dimensionHeaderControl}
+        showManagementControls={showManagementControls}
+        initialExpandLevels={initialExpandLevels}
+        dimensionDisabled={dimensionDisabled}
+        dimensionHeaderIcon={dimensionHeaderIcon}
+        unifiedAssignmentLayout={unifiedAssignmentLayout}
+        galleryTagIdsByDimension={galleryTagIdsByDimension}
+        inheritanceByDimension={inheritanceByDimension}
+        inheritanceAvailableByDimension={inheritanceAvailableByDimension}
+        galleryRollupStatuses={galleryRollupStatuses}
+        onSaveAssignmentWithInheritance={onSaveAssignmentWithInheritance}
       />
     );
   }
@@ -274,6 +359,19 @@ interface ExpandedViewProps {
   pickerTitle: string;
   searchPlaceholder: string;
   hidePickerHeading: boolean;
+  hideActions: boolean;
+  pickerToolbar?: React.ReactNode;
+  dimensionHeaderControl?: (dimension: TagDimension) => React.ReactNode;
+  showManagementControls: boolean;
+  initialExpandLevels?: number;
+  dimensionDisabled?: (dimension: TagDimension) => boolean;
+  dimensionHeaderIcon?: (dimension: TagDimension) => React.ReactNode;
+  unifiedAssignmentLayout: boolean;
+  galleryTagIdsByDimension?: Record<TagDimension, string[]>;
+  inheritanceByDimension?: GalleryTagInheritanceToggles;
+  inheritanceAvailableByDimension?: GalleryTagInheritanceToggles;
+  galleryRollupStatuses?: Partial<GalleryTagRollupStatuses>;
+  onSaveAssignmentWithInheritance?: MacroTagSelectorProps['onSaveAssignmentWithInheritance'];
 }
 
 function ExpandedView({
@@ -294,6 +392,19 @@ function ExpandedView({
   pickerTitle,
   searchPlaceholder,
   hidePickerHeading,
+  hideActions,
+  pickerToolbar,
+  dimensionHeaderControl,
+  showManagementControls,
+  initialExpandLevels,
+  dimensionDisabled,
+  dimensionHeaderIcon,
+  unifiedAssignmentLayout,
+  galleryTagIdsByDimension,
+  inheritanceByDimension,
+  inheritanceAvailableByDimension,
+  galleryRollupStatuses,
+  onSaveAssignmentWithInheritance,
 }: ExpandedViewProps) {
   const { tags } = useTag();
   const tagSource = useMemo(() => {
@@ -310,6 +421,22 @@ function ExpandedView({
     }
     return Array.from(map.values());
   }, [tags, allTags]);
+  const tagById = useMemo(
+    () => new Map(tagSource.filter((tag) => tag.docId).map((tag) => [tag.docId, tag])),
+    [tagSource]
+  );
+  const dimensionByTagId = useMemo(
+    () =>
+      new Map(
+        tagSource
+          .filter((tag) => tag.docId)
+          .map((tag) => [
+            tag.docId,
+            normalizeTagDimensionKey(tag.dimension as string | undefined),
+          ])
+      ),
+    [tagSource]
+  );
 
   const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set(initialSelection));
   const [currentSubjectTagIds, setCurrentSubjectTagIds] = useState<Set<string>>(
@@ -317,6 +444,9 @@ function ExpandedView({
   );
   const initialSubjectTagIdsKey = initialSubjectTagIds.join('\u001e');
   const [searchTerm, setSearchTerm] = useState('');
+  const [draftInheritance, setDraftInheritance] = useState<GalleryTagInheritanceToggles>(
+    inheritanceByDimension ?? { who: false, what: false, when: false, where: false }
+  );
 
   React.useEffect(() => {
     setCurrentSelection((prev) => {
@@ -331,6 +461,10 @@ function ExpandedView({
   React.useEffect(() => {
     setCurrentSubjectTagIds(new Set(initialSubjectTagIdsKey ? initialSubjectTagIdsKey.split('\u001e') : []));
   }, [initialSubjectTagIdsKey]);
+
+  React.useEffect(() => {
+    if (inheritanceByDimension) setDraftInheritance(inheritanceByDimension);
+  }, [inheritanceByDimension]);
 
   const dimensionalTree = useMemo(() => {
     if (!tagSource.length) return [];
@@ -398,6 +532,15 @@ function ExpandedView({
     const resolvedSubjectTagIds = Array.from(currentSubjectTagIds).filter((tagId) =>
       currentSelection.has(tagId)
     );
+    if (onSaveAssignmentWithInheritance) {
+      const saved = await onSaveAssignmentWithInheritance(
+        resolvedTagIds,
+        resolvedSubjectTagIds,
+        draftInheritance
+      );
+      if (saved !== false) onCancel();
+      return;
+    }
     if (onSaveAssignment) {
       const saved = await onSaveAssignment(resolvedTagIds, resolvedSubjectTagIds);
       if (saved !== false) onCancel();
@@ -431,6 +574,43 @@ function ExpandedView({
     });
   }, [currentSelection, tagSource, visibleDimensions]);
 
+  const toggleSubjectTag = (tagId: string) => {
+    setCurrentSubjectTagIds((current) => {
+      const isSubject = current.has(tagId);
+      if (!onSaveSubjectTagIds && !onSaveAssignment && !onSaveAssignmentWithInheritance) {
+        return isSubject ? new Set<string>() : new Set([tagId]);
+      }
+      const next = new Set(current);
+      if (isSubject) next.delete(tagId);
+      else next.add(tagId);
+      return next;
+    });
+  };
+
+  const setDimensionInheritance = (dimension: TagDimension, inherit: boolean) => {
+    if (inheritanceAvailableByDimension && !inheritanceAvailableByDimension[dimension]) return;
+    setDraftInheritance((current) => ({ ...current, [dimension]: inherit }));
+    if (!inherit) return;
+
+    const galleryIds = galleryTagIdsByDimension?.[dimension] ?? [];
+    setCurrentSelection((current) => {
+      const next = new Set(
+        Array.from(current).filter((tagId) => dimensionByTagId.get(tagId) !== dimension)
+      );
+      galleryIds.forEach((tagId) => next.add(tagId));
+      return next;
+    });
+    setCurrentSubjectTagIds((current) => {
+      const next = new Set(
+        Array.from(current).filter(
+          (tagId) =>
+            dimensionByTagId.get(tagId) !== dimension || galleryIds.includes(tagId)
+        )
+      );
+      return next;
+    });
+  };
+
   React.useEffect(() => {
     if (suppressOverlay) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -440,7 +620,7 @@ function ExpandedView({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [onCancel, suppressOverlay]);
 
-  const panel = (
+  const standardPanel = (
     <div
       className={clsx(
         suppressOverlay ? styles.embeddedModalContainer : styles.modalContainer,
@@ -471,7 +651,8 @@ function ExpandedView({
           </button>
         )}
       </div>
-      {onSaveSubjectTagId || onSaveSubjectTagIds || onSaveAssignment ? (
+      {pickerToolbar}
+      {onSaveSubjectTagId || onSaveSubjectTagIds || onSaveAssignment || onSaveAssignmentWithInheritance ? (
         <div className={styles.subjectPanel}>
           <div className={styles.subjectPanelHeader}>Subject</div>
           <div className={styles.subjectPanelHint}>Click a selected tag to toggle subject.</div>
@@ -488,15 +669,7 @@ function ExpandedView({
                       subjectChipDimensionClass(tag.dimension),
                       isSubject && styles.subjectChipActive
                     )}
-                    onClick={() => setCurrentSubjectTagIds((current) => {
-                      if (!onSaveSubjectTagIds && !onSaveAssignment) {
-                        return isSubject ? new Set<string>() : new Set([tag.docId]);
-                      }
-                      const next = new Set(current);
-                      if (isSubject) next.delete(tag.docId);
-                      else next.add(tag.docId);
-                      return next;
-                    })}
+                    onClick={() => toggleSubjectTag(tag.docId)}
                   >
                     <span className={styles.subjectChipText}>{tag.name}</span>
                   </button>
@@ -523,24 +696,238 @@ function ExpandedView({
             expandedNodeIds={expandedNodeIds}
             checkboxIdPrefix="tag"
             forceExpandAll={!!searchTerm.trim()}
+            showManagementControls={showManagementControls}
+            headerControl={dimensionHeaderControl?.(
+              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+            )}
+            initialExpandLevels={initialExpandLevels}
+            disabled={dimensionDisabled?.(
+              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+            )}
+            headerIcon={dimensionHeaderIcon?.(
+              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+            )}
           />
         ))}
       </div>
-      <div className={styles.actions}>
+      {hideActions ? null : <div className={styles.actions}>
         <button onClick={onCancel} className={styles.cancelButton} disabled={saving}>Cancel</button>
         <button onClick={() => void handleSaveClick()} className={styles.saveButton} disabled={saving}>
           {saving ? 'Saving…' : applySelectionOnChange ? 'Done' : 'Save'}
         </button>
+      </div>}
+    </div>
+  );
+
+  const unifiedPanel = (
+    <div
+      className={clsx(bulkStyles.modalContainer, className)}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      {hidePickerHeading ? null : <h2 className={bulkStyles.modalHeader}>{pickerTitle}</h2>}
+      {pickerToolbar}
+      <div className={bulkStyles.mediaTagWorkspace}>
+        <div className={bulkStyles.dimensionHeadings}>
+          {visibleDimensions.map((dimension) => {
+            const Icon = DIMENSION_ICON[dimension];
+            return (
+              <h4 key={dimension} className={bulkStyles.dimensionHeading}>
+                <Icon size={16} aria-hidden={true} />
+                <span>{DIMENSION_LABEL[dimension]}</span>
+              </h4>
+            );
+          })}
+        </div>
+
+        {galleryTagIdsByDimension ? (
+          <>
+            <div className={bulkStyles.galleryTagBand}>
+              <div className={bulkStyles.assignmentBandLabel}>Gallery tags</div>
+              <div className={bulkStyles.subjectColumns}>
+                {visibleDimensions.map((dimension) => {
+                  const tagIds = galleryTagIdsByDimension[dimension] ?? [];
+                  const status = galleryRollupStatuses?.[dimension] ?? 'empty';
+                  return (
+                    <div
+                      key={dimension}
+                      className={clsx(
+                        bulkStyles.galleryTagColumn,
+                        !draftInheritance[dimension] && bulkStyles.galleryTagColumnReference
+                      )}
+                      data-gallery-dimension={dimension}
+                    >
+                      {status === 'unreviewed' ? (
+                        <span className={bulkStyles.galleryTagState}>Unreviewed</span>
+                      ) : tagIds.length > 0 ? (
+                        tagIds.map((tagId) => (
+                          <span key={tagId} className={bulkStyles.galleryTagChip}>
+                            {tagById.get(tagId)?.name ?? tagId}
+                          </span>
+                        ))
+                      ) : (
+                        <span className={bulkStyles.galleryTagState}>No Gallery tags</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={bulkStyles.inheritanceBand}>
+              <div className={bulkStyles.assignmentBandLabel}>Tag source</div>
+              <div className={bulkStyles.subjectColumns}>
+                {visibleDimensions.map((dimension) => {
+                  const available = inheritanceAvailableByDimension?.[dimension] ?? false;
+                  return (
+                    <label
+                      key={dimension}
+                      className={bulkStyles.inheritanceOption}
+                      title={
+                        available
+                          ? `Inherit ${DIMENSION_LABEL[dimension]} from Gallery items`
+                          : `${DIMENSION_LABEL[dimension]} inheritance is unavailable`
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={available && draftInheritance[dimension]}
+                        disabled={!available}
+                        onChange={(event) =>
+                          setDimensionInheritance(dimension, event.target.checked)
+                        }
+                      />
+                      <span>Inherit?</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        <div className={bulkStyles.searchBar}>
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className={bulkStyles.searchInput}
+            autoFocus
+          />
+          {searchTerm ? (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className={bulkStyles.searchClear}
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+
+        {onSaveSubjectTagId || onSaveSubjectTagIds || onSaveAssignment || onSaveAssignmentWithInheritance ? (
+          <div className={bulkStyles.subjectBand}>
+            <div className={bulkStyles.dimensionSubjectLabel}>
+              Subjects <span>(Choose one or more assigned tags as subjects.)</span>
+            </div>
+            <div className={bulkStyles.subjectColumns}>
+              {visibleDimensions.map((dimension) => (
+                <div
+                  key={dimension}
+                  className={bulkStyles.dimensionSubjectOptions}
+                  data-subject-dimension={dimension}
+                >
+                  {selectedTagsById
+                    .filter(
+                      (tag) =>
+                        normalizeTagDimensionKey(tag.dimension as string | undefined) === dimension
+                    )
+                    .map((tag) => (
+                      <label
+                        key={tag.docId}
+                        className={bulkStyles.subjectOption}
+                        htmlFor={`card-subject-${tag.docId}`}
+                      >
+                        <input
+                          id={`card-subject-${tag.docId}`}
+                          type="checkbox"
+                          checked={currentSubjectTagIds.has(tag.docId)}
+                          onChange={() => toggleSubjectTag(tag.docId)}
+                        />
+                        <span className={bulkStyles.subjectOptionCopy}>
+                          <span>{tag.name}</span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className={`${bulkStyles.interactiveColumns} ${bulkStyles.mediaInteractiveColumns}`}>
+          {filteredDimensionalTree.map((dimension) => (
+            <TagPickerDimensionColumn
+              key={dimension.docId}
+              dimension={dimension}
+              selection={currentSelection}
+              onSelectionChange={handleTagChange}
+              expandedNodeIds={expandedNodeIds}
+              checkboxIdPrefix="card-tag"
+              forceExpandAll
+              showManagementControls={showManagementControls}
+              hideHeader
+              disabled={Boolean(galleryTagIdsByDimension && draftInheritance[
+                normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+              ])}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={bulkStyles.mediaFooter}>
+        <div className={bulkStyles.stateLegend} aria-label="Tag selection states">
+          <span className={bulkStyles.legendLabel}>Legend:</span>
+          <SelectionStateExample state="unchecked" label="Empty" />
+          <SelectionStateExample state="mixed" label="Some" />
+          <SelectionStateExample state="checked" label="All" />
+        </div>
+        <div className={bulkStyles.mediaActions}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className={bulkStyles.cancelButton}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSaveClick()}
+            className={bulkStyles.saveButton}
+            disabled={saving}
+          >
+            {saving ? 'Applying…' : 'Apply'}
+          </button>
+        </div>
       </div>
     </div>
   );
+
+  const panel = unifiedAssignmentLayout ? unifiedPanel : standardPanel;
 
   if (suppressOverlay) {
     return panel;
   }
 
   return (
-    <div className={clsx(styles.overlay, className)} onClick={onCancel} role="presentation">
+    <div
+      className={clsx(unifiedAssignmentLayout ? bulkStyles.overlay : styles.overlay, className)}
+      onClick={onCancel}
+      role="presentation"
+    >
       {panel}
     </div>
   );

@@ -11,6 +11,7 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
+import { ChevronsDown, ChevronsUp } from 'lucide-react';
 import { Card } from '@/lib/types/card';
 import { CuratedTreeNode } from '@/components/admin/studio/cards/CuratedTreeNode';
 import {
@@ -50,10 +51,6 @@ import {
   writeStoredStudioCardBankSharedFilterPreferences,
 } from '@/lib/preferences/adminFilters';
 import TagAdminStudioPane from '@/components/admin/studio/TagAdminStudioPane';
-import TagReconciliationPane, {
-  countIncomingReconcileTags,
-} from '@/components/admin/studio/tags/TagReconciliationPane';
-import { useTag } from '@/components/providers/TagProvider';
 import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
@@ -66,7 +63,9 @@ const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
 const COL_HANDLE = 8;
 const MIN_TREE_COL = 180;
-const MIN_UNPARENT_COL = 180;
+const MIN_UNPARENT_COL = 300;
+const STUDIO_TAGS_COL = 432;
+const STUDIO_COLLECTIONS_COL = 432;
 /** Minimum width for the Media / Studio right column (grid area); user-resizable. Kept below old 280px to reduce default horizontal sprawl. */
 const MIN_MEDIA_COL = 200;
 
@@ -350,21 +349,25 @@ export default function CollectionsAdminClient({
   selectedCardIdExternal,
   embeddedExternalDragEnd,
   embeddedOnStudioParentAttachComplete,
+  onDeleteCard,
   embeddedRightSlot,
   embeddedRightSlotMinWidth,
   embeddedUnparentedReplacement,
-  embeddedOrganizationCollapsed = false,
+  embeddedTagsCollapsed = false,
+  embeddedCollectionsCollapsed = false,
   embeddedCardsCollapsed = false,
 }: {
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
   selectedCardIdExternal?: string | null;
   embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
   embeddedOnStudioParentAttachComplete?: (parentId: string) => void;
+  onDeleteCard?: (card: Card) => void | Promise<void>;
   embeddedRightSlot: React.ReactNode | ((ctx: EmbeddedStudioSlotContext) => React.ReactNode);
   embeddedRightSlotMinWidth?: number;
   /** Replaces the title-only unparented list with the Studio card bank (or similar). */
   embeddedUnparentedReplacement?: (ctx: EmbeddedUnparentedBankContext) => React.ReactNode;
-  embeddedOrganizationCollapsed?: boolean;
+  embeddedTagsCollapsed?: boolean;
+  embeddedCollectionsCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
 }) {
   const initialStudioCardBankSharedPrefsRef = useRef(readStoredStudioCardBankSharedFilterPreferences());
@@ -385,6 +388,7 @@ export default function CollectionsAdminClient({
   const hasInitializedTreeExpansionRef = useRef(false);
   /** Stale-stream guard: each `load()` call increments this; chunks for older calls bail. */
   const loadRequestIdRef = useRef(0);
+  const loadInFlightRef = useRef(false);
   const [bulkParentId, setBulkParentId] = useState<string | null>(null);
   const [bulkSearch, setBulkSearch] = useState('');
   const [bulkStatus, setBulkStatus] = useState<'all' | 'draft' | 'published'>('all');
@@ -397,22 +401,13 @@ export default function CollectionsAdminClient({
   const [treeExpansionHydrated, setTreeExpansionHydrated] = useState(false);
   const [embeddedTreeDescendantsLoaded, setEmbeddedTreeDescendantsLoaded] = useState(false);
   const [embeddedTreeDescendantsLoading, setEmbeddedTreeDescendantsLoading] = useState(false);
-  const [studioLeftTab, setStudioLeftTab] = useState<'tags' | 'tree'>(() => {
-    if (typeof window === 'undefined') return 'tags';
-    const stored = window.localStorage.getItem('studioLeftTab');
-    return stored === 'tree' ? 'tree' : 'tags';
-  });
-  const [reconcilePaneOpen, setReconcilePaneOpen] = useState(false);
-  const { tags: allTagsForReconcile } = useTag();
-  const incomingReconcileCount = useMemo(
-    () => countIncomingReconcileTags(allTagsForReconcile),
-    [allTagsForReconcile]
-  );
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
   /** Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
   const studioAttachBank = Boolean(embeddedUnparentedReplacement);
-  const showOrganizationPane = !(studioAttachBank && embeddedOrganizationCollapsed);
+  const showTagsPane = studioAttachBank && !embeddedTagsCollapsed;
+  const showCollectionsPane = !studioAttachBank || !embeddedCollectionsCollapsed;
+  const showOrganizationPane = showTagsPane || showCollectionsPane;
   const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
   const rightSlotMinWidth = Math.max(MIN_MEDIA_COL, embeddedRightSlotMinWidth ?? MIN_MEDIA_COL);
   const treeDropZonesReadOnly = !curatedTreeDnd;
@@ -444,20 +439,6 @@ export default function CollectionsAdminClient({
   }, []);
 
   useEffect(() => {
-    if (incomingReconcileCount === 0) {
-      setReconcilePaneOpen(false);
-    }
-  }, [incomingReconcileCount]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('studioLeftTab', studioLeftTab);
-    } catch {
-      /* ignore */
-    }
-  }, [studioLeftTab]);
-
-  useEffect(() => {
     writeStoredStudioCardBankSharedFilterPreferences({ search, statusFilter });
   }, [search, statusFilter]);
 
@@ -486,6 +467,16 @@ export default function CollectionsAdminClient({
     (tree: number, unparent: number) => {
       const el = layoutRef.current;
       if (!el || !wideCenterLayout) return;
+      if (studioAttachBank) {
+        const columns = [
+          ...(showTagsPane ? [`${STUDIO_TAGS_COL}px`] : []),
+          ...(showCollectionsPane ? [`${STUDIO_COLLECTIONS_COL}px`] : []),
+          ...(showCardsPane ? [`${unparent}px`, `${COL_HANDLE}px`] : []),
+          `minmax(${rightSlotMinWidth}px, 1fr)`,
+        ];
+        el.style.gridTemplateColumns = columns.join(' ');
+        return;
+      }
       if (!showOrganizationPane && !showCardsPane) {
         el.style.gridTemplateColumns = `minmax(${rightSlotMinWidth}px, 1fr)`;
         return;
@@ -500,13 +491,36 @@ export default function CollectionsAdminClient({
       }
       el.style.gridTemplateColumns = `${tree}px ${COL_HANDLE}px ${unparent}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)`;
     },
-    [rightSlotMinWidth, showCardsPane, showOrganizationPane, wideCenterLayout]
+    [
+      rightSlotMinWidth,
+      showCardsPane,
+      showCollectionsPane,
+      showOrganizationPane,
+      showTagsPane,
+      studioAttachBank,
+      wideCenterLayout,
+    ]
   );
 
   const normalizeWidthsToContainer = useCallback(() => {
     const el = layoutRef.current;
     if (!el || !wideCenterLayout || colDragSessionRef.current) return;
     const gapPx = parseGapPx(el);
+    if (studioAttachBank) {
+      if (!showCardsPane) return;
+      const columnCount =
+        Number(showTagsPane) + Number(showCollectionsPane) + 3;
+      const fixedWidth =
+        (showTagsPane ? STUDIO_TAGS_COL : 0) +
+        (showCollectionsPane ? STUDIO_COLLECTIONS_COL : 0) +
+        COL_HANDLE +
+        rightSlotMinWidth +
+        Math.max(0, columnCount - 1) * gapPx;
+      const maxCards = Math.max(MIN_UNPARENT_COL, el.clientWidth - fixedWidth);
+      const nextCards = clamp(wUnparentRef.current, MIN_UNPARENT_COL, maxCards);
+      if (nextCards !== wUnparentRef.current) setWUnparent(nextCards);
+      return;
+    }
     const usable = el.clientWidth - 2 * COL_HANDLE - 4 * gapPx;
     if (usable < MIN_TREE_COL + MIN_UNPARENT_COL + rightSlotMinWidth) return;
 
@@ -529,7 +543,14 @@ export default function CollectionsAdminClient({
     }
     if (nt !== t) setWTree(nt);
     if (nu !== u) setWUnparent(nu);
-  }, [rightSlotMinWidth, wideCenterLayout]);
+  }, [
+    rightSlotMinWidth,
+    showCardsPane,
+    showCollectionsPane,
+    showTagsPane,
+    studioAttachBank,
+    wideCenterLayout,
+  ]);
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -596,7 +617,17 @@ export default function CollectionsAdminClient({
           nextTree = clamp(session.startTree + dx, MIN_TREE_COL, s - MIN_UNPARENT_COL);
           nextUnparent = s - nextTree;
         } else {
-          const maxWidth = usable - session.fixedLeading - rightSlotMinWidth;
+          const studioColumnCount =
+            Number(showTagsPane) + Number(showCollectionsPane) + 3;
+          const studioFixedWidth =
+            (showTagsPane ? STUDIO_TAGS_COL : 0) +
+            (showCollectionsPane ? STUDIO_COLLECTIONS_COL : 0) +
+            COL_HANDLE +
+            rightSlotMinWidth +
+            Math.max(0, studioColumnCount - 1) * gapPx;
+          const maxWidth = studioAttachBank
+            ? el.clientWidth - studioFixedWidth
+            : usable - session.fixedLeading - rightSlotMinWidth;
           const minWidth = session.target === 'tree' ? MIN_TREE_COL : MIN_UNPARENT_COL;
           const raw = session.startWidth + dx;
           const nextWidth = maxWidth < minWidth ? minWidth : clamp(raw, minWidth, maxWidth);
@@ -644,7 +675,17 @@ export default function CollectionsAdminClient({
       window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onUp);
     },
-    [applyCenterGridTemplate, persistCenterWidths, rightSlotMinWidth, showCardsPane, showOrganizationPane, wideCenterLayout]
+    [
+      applyCenterGridTemplate,
+      persistCenterWidths,
+      rightSlotMinWidth,
+      showCardsPane,
+      showCollectionsPane,
+      showOrganizationPane,
+      showTagsPane,
+      studioAttachBank,
+      wideCenterLayout,
+    ]
   );
 
   const centerGridStyle = useMemo((): React.CSSProperties | undefined => {
@@ -675,6 +716,8 @@ export default function CollectionsAdminClient({
   // Studio Collections loads tree roots first, then optional descendants when the card
   // bank is mounted — never a broad all-cards catalog pass.
   const load = useCallback(async (opts?: { soft?: boolean }) => {
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
     const soft = opts?.soft === true;
     const requestId = ++loadRequestIdRef.current;
     const isCurrent = () => loadRequestIdRef.current === requestId;
@@ -701,7 +744,7 @@ export default function CollectionsAdminClient({
       firstChunkPainted = true;
       if (!soft) setLoading(false);
 
-      if (!studioAttachBank || studioLeftTab !== 'tree') {
+      if (!studioAttachBank || !showCollectionsPane) {
         setEmbeddedTreeDescendantsLoading(false);
         return;
       }
@@ -731,11 +774,12 @@ export default function CollectionsAdminClient({
         setError(e instanceof Error ? e.message : 'Failed to load cards');
       }
     } finally {
+      loadInFlightRef.current = false;
       if (isCurrent() && !soft && !firstChunkPainted) {
         setLoading(false);
       }
     }
-  }, [studioAttachBank, studioLeftTab]);
+  }, [showCollectionsPane, studioAttachBank]);
 
   useEffect(() => {
     void load();
@@ -743,7 +787,7 @@ export default function CollectionsAdminClient({
 
   useEffect(() => {
     if (!studioAttachBank) return;
-    if (studioLeftTab !== 'tree') return;
+    if (!showCollectionsPane) return;
     if (embeddedTreeDescendantsLoaded || embeddedTreeDescendantsLoading || loading) return;
     void load({ soft: true });
   }, [
@@ -751,8 +795,8 @@ export default function CollectionsAdminClient({
     embeddedTreeDescendantsLoading,
     loading,
     load,
+    showCollectionsPane,
     studioAttachBank,
-    studioLeftTab,
   ]);
 
   const cardById = useMemo(() => new Map(cards.map(c => [c.docId, c])), [cards]);
@@ -792,6 +836,20 @@ export default function CollectionsAdminClient({
       else next.add(id);
       return next;
     });
+  }, []);
+
+  const expandAllCollections = useCallback(() => {
+    setTreeExpandedIds(
+      new Set(
+        cards
+          .filter((card) => card.docId && normalizeCuratedChildIds(card.childrenIds).length > 0)
+          .map((card) => card.docId!)
+      )
+    );
+  }, [cards]);
+
+  const collapseAllCollections = useCallback(() => {
+    setTreeExpandedIds(new Set());
   }, []);
 
   const removeEmbeddedCard = useCallback((cardId: string) => {
@@ -1378,6 +1436,15 @@ export default function CollectionsAdminClient({
 
   const collectionsCenterGridStyle = useMemo((): React.CSSProperties | undefined => {
     if (!wideCenterLayout) return undefined;
+    if (studioAttachBank) {
+      const columns = [
+        ...(showTagsPane ? [`${STUDIO_TAGS_COL}px`] : []),
+        ...(showCollectionsPane ? [`${STUDIO_COLLECTIONS_COL}px`] : []),
+        ...(showCardsPane ? [`${wUnparent}px`, `${COL_HANDLE}px`] : []),
+        `minmax(${rightSlotMinWidth}px, 1fr)`,
+      ];
+      return { gridTemplateColumns: columns.join(' ') };
+    }
     if (!showOrganizationPane && !showCardsPane) {
       return { gridTemplateColumns: `minmax(${rightSlotMinWidth}px, 1fr)` };
     }
@@ -1388,7 +1455,18 @@ export default function CollectionsAdminClient({
       return { gridTemplateColumns: `${wTree}px ${COL_HANDLE}px minmax(${rightSlotMinWidth}px, 1fr)` };
     }
     return centerGridStyle;
-  }, [centerGridStyle, rightSlotMinWidth, showCardsPane, showOrganizationPane, wTree, wUnparent, wideCenterLayout]);
+  }, [
+    centerGridStyle,
+    rightSlotMinWidth,
+    showCardsPane,
+    showCollectionsPane,
+    showOrganizationPane,
+    showTagsPane,
+    studioAttachBank,
+    wTree,
+    wUnparent,
+    wideCenterLayout,
+  ]);
 
   const collectionsCenterGrid = (
           <div
@@ -1396,117 +1474,44 @@ export default function CollectionsAdminClient({
             className={wideCenterLayout ? styles.layout : styles.layoutStacked}
             style={collectionsCenterGridStyle}
           >
-            {showOrganizationPane ? (
-            studioAttachBank ? (
+            {showTagsPane ? (
               <section className={`${styles.panel} ${styles.panelStudioLeftTabs}`}>
-                <h2 className={styles.panelStudioColumnTitle}>Organize</h2>
-                <div className={styles.studioLeftTabToggleRow}>
-                  <div className={styles.studioLeftTabButtonGroup} role="tablist" aria-label="Organize tags and collections">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={studioLeftTab === 'tags'}
-                      className={`${styles.studioLeftTabButton} ${studioLeftTab === 'tags' ? styles.studioLeftTabButtonActive : ''}`}
-                      onClick={() => setStudioLeftTab('tags')}
-                    >
-                      Tags
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={studioLeftTab === 'tree'}
-                      className={`${styles.studioLeftTabButton} ${studioLeftTab === 'tree' ? styles.studioLeftTabButtonActive : ''}`}
-                      onClick={() => setStudioLeftTab('tree')}
-                    >
-                      Collections
-                    </button>
+                <h2 className={styles.panelStudioColumnTitle}>Tags</h2>
+                <div className={styles.studioLeftTabPanel}>
+                  <div className={styles.organizeTreePane}>
+                    <TagAdminStudioPane embeddedColumn />
                   </div>
-                  {studioLeftTab === 'tags' && incomingReconcileCount > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.studioReconcileToggle}
-                      aria-pressed={reconcilePaneOpen}
-                      onClick={() => setReconcilePaneOpen((open) => !open)}
-                    >
-                      {reconcilePaneOpen
-                        ? 'Hide import map'
-                        : `Map import tags (${incomingReconcileCount})`}
-                    </button>
-                  ) : null}
                 </div>
-                {studioLeftTab === 'tags' ? (
-                  <div
-                    className={`${styles.studioLeftTabPanel} ${
-                      reconcilePaneOpen && incomingReconcileCount > 0
-                        ? styles.organizeSplitPanel
-                        : ''
-                    }`}
-                    role="tabpanel"
-                  >
-                    <div className={styles.organizeTreePane}>
-                      <TagAdminStudioPane embeddedColumn />
-                    </div>
-                    {reconcilePaneOpen && incomingReconcileCount > 0 ? (
-                      <div className={styles.organizeReconcilePane}>
-                        <TagReconciliationPane />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className={styles.studioLeftTabPanel} role="tabpanel">
-                    <div className={styles.panelScroll}>
-                      {embeddedTreeDescendantsLoading || !embeddedTreeDescendantsLoaded ? (
-                        <p className={styles.hint}>Loading collections...</p>
-                      ) : rootedCollections.length === 0 ? (
-                        <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
-                          <p className={styles.emptyTreeHint}>
-                            {curatedTreeDnd
-                              ? 'Drop a card here to start your curated tree.'
-                              : 'No collection roots yet.'}
-                          </p>
-                        </TreeRootDropZone>
-                      ) : (
-                        <>
-                          <ul className={styles.treeList}>
-                            {rootedCollections.map((root) => (
-                              <CuratedTreeNode
-                                key={root.docId}
-                                node={root}
-                                seen={new Set()}
-                                cardById={cardById}
-                                parentByChild={parentIdsByChild}
-                                expandedIds={treeExpandedIds}
-                                toggleExpanded={toggleTreeExpanded}
-                                saving={saving}
-                                onDetachChild={handleDetachChildAction}
-                                onClearRoot={handleClearRootAction}
-                                onSelectCard={handleSelectCard}
-                                selectedCardId={selectedCardId}
-                                disableCuratedDrag={treeDropZonesReadOnly}
-                              />
-                            ))}
-                          </ul>
-                          {curatedTreeDnd ? (
-                            <TreeRootDropZone
-                              readOnly={treeDropZonesReadOnly}
-                              className={`${styles.treeRootDropZone} ${styles.treeRootAppendStrip}`}
-                            >
-                              <p className={styles.treeRootAppendHint}>
-                                Drop here to start a new Collection.
-                              </p>
-                            </TreeRootDropZone>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
               </section>
-            ) : (
+            ) : null}
+
+            {showCollectionsPane ? (
               <section className={styles.panel}>
-                <h2>Collections</h2>
+                <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>Collections</h2>
+                <div className={styles.collectionsToolbarRow}>
+                  <div className={styles.treeToolbar} aria-label="Collections tree display">
+                    <button
+                      type="button"
+                      onClick={expandAllCollections}
+                      aria-label="Expand all Collections"
+                      title="Expand all"
+                    >
+                      <ChevronsDown size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={collapseAllCollections}
+                      aria-label="Collapse all Collections"
+                      title="Collapse all"
+                    >
+                      <ChevronsUp size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
                 <div className={styles.panelScroll}>
-                  {loading ? (
+                  {studioAttachBank && (embeddedTreeDescendantsLoading || !embeddedTreeDescendantsLoaded) ? (
+                    <p className={styles.hint}>Loading collections...</p>
+                  ) : loading ? (
                     <p className={styles.hint} aria-busy="true">Loading collections...</p>
                   ) : rootedCollections.length === 0 ? (
                     <TreeRootDropZone readOnly={treeDropZonesReadOnly} className={styles.treeRootDropZone}>
@@ -1531,6 +1536,8 @@ export default function CollectionsAdminClient({
                              saving={saving}
                              onDetachChild={handleDetachChildAction}
                              onClearRoot={handleClearRootAction}
+                             onAddChildren={setBulkParentId}
+                             onDeleteCard={onDeleteCard}
                              onSelectCard={handleSelectCard}
                              selectedCardId={selectedCardId}
                              disableCuratedDrag={treeDropZonesReadOnly}
@@ -1551,18 +1558,14 @@ export default function CollectionsAdminClient({
                   )}
                 </div>
               </section>
-            )) : null}
+            ) : null}
 
-            {wideCenterLayout && showOrganizationPane && showCardsPane ? (
+            {!studioAttachBank && wideCenterLayout && showCollectionsPane && showCardsPane ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
                 aria-orientation="vertical"
-                aria-label={
-                  studioAttachBank
-                    ? 'Resize Tags or Tree column and Cards column'
-                    : 'Resize collections tree and orphaned columns'
-                }
+                aria-label="Resize collections tree and orphaned columns"
                 {...{ [DND_POINTER_IGNORE_ATTR]: '' }}
                 onPointerDown={onColResizePointerDown(1)}
               />
@@ -1656,14 +1659,14 @@ export default function CollectionsAdminClient({
             </section>
             ) : null}
 
-            {wideCenterLayout && (showOrganizationPane || showCardsPane) ? (
+            {wideCenterLayout && (studioAttachBank ? showCardsPane : (showOrganizationPane || showCardsPane)) ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
                 aria-orientation="vertical"
                 aria-label={
                   studioAttachBank && showCardsPane
-                    ? 'Resize Cards and media columns'
+                    ? 'Allocate space between Cards and Media'
                     : showCardsPane
                       ? 'Resize orphaned and media columns'
                       : 'Resize Organize and workspace columns'

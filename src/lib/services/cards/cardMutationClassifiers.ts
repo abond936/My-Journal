@@ -37,6 +37,26 @@ export function isTagsOnlyPayload(updates: CardTagAssignmentUpdates): updates is
   return !('subjectTagIds' in updates && updates.subjectTagIds !== undefined && !Array.isArray(updates.subjectTagIds));
 }
 
+export type CardTagAssignmentWithInheritanceUpdates = CardTagAssignmentUpdates &
+  Pick<Card, 'galleryTagInheritanceOverrides'>;
+
+export function isTagsAndInheritancePayload(
+  updates: CardTagAssignmentWithInheritanceUpdates
+): updates is CardTagAssignmentWithInheritanceUpdates {
+  const keys = Object.keys(updates);
+  return (
+    keys.includes('galleryTagInheritanceOverrides') &&
+    updates.galleryTagInheritanceOverrides !== undefined &&
+    keys.every(
+      (key) =>
+        key === 'tags' ||
+        key === 'subjectTagId' ||
+        key === 'subjectTagIds' ||
+        key === 'galleryTagInheritanceOverrides'
+    )
+  );
+}
+
 export function isGalleryInheritanceOverridesOnlyPayload(updates: Partial<Pick<Card, 'galleryTagInheritanceOverrides'>>): boolean {
   const keys = Object.keys(updates);
   return keys.length === 1 && keys[0] === 'galleryTagInheritanceOverrides' && updates.galleryTagInheritanceOverrides !== undefined;

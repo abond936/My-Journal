@@ -1094,19 +1094,31 @@ export async function bulkApplyMediaTags(
   updates: {
     tagIds?: string[];
     mode?: 'add' | 'replace' | 'remove';
+    addTagIds?: string[];
+    removeTagIds?: string[];
     subjectTagId?: string | null;
     subjectTagIds?: string[];
     subjectTagIdProvided?: boolean;
     subjectTagIdsProvided?: boolean;
-  }
+    addSubjectTagIds?: string[];
+    removeSubjectTagIds?: string[];
+  },
+  options?: { reconcile?: boolean }
 ): Promise<{ updatedIds: string[]; updatedMedia: Media[] }> {
   const ids = Array.from(
     new Set(mediaIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
   );
   if (!ids.length) return { updatedIds: [], updatedMedia: [] };
 
-  const hasTagMutation = Object.prototype.hasOwnProperty.call(updates, 'tagIds');
-  const hasSubjectMutation = updates.subjectTagIdProvided === true || updates.subjectTagIdsProvided === true;
+  const hasTagMutation =
+    Object.prototype.hasOwnProperty.call(updates, 'tagIds') ||
+    Object.prototype.hasOwnProperty.call(updates, 'addTagIds') ||
+    Object.prototype.hasOwnProperty.call(updates, 'removeTagIds');
+  const hasSubjectMutation =
+    updates.subjectTagIdProvided === true ||
+    updates.subjectTagIdsProvided === true ||
+    Object.prototype.hasOwnProperty.call(updates, 'addSubjectTagIds') ||
+    Object.prototype.hasOwnProperty.call(updates, 'removeSubjectTagIds');
   if (!hasTagMutation && !hasSubjectMutation) {
     return { updatedIds: [], updatedMedia: [] };
   }
@@ -1115,6 +1127,18 @@ export async function bulkApplyMediaTags(
     updates.mode === 'replace' || updates.mode === 'remove' ? updates.mode : 'add';
   const incomingTags = Array.from(
     new Set((updates.tagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0))
+  );
+  const addTagIds = new Set(
+    (updates.addTagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  );
+  const removeTagIds = new Set(
+    (updates.removeTagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  );
+  const addSubjectTagIds = new Set(
+    (updates.addSubjectTagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  );
+  const removeSubjectTagIds = new Set(
+    (updates.removeSubjectTagIds ?? []).filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
   );
 
   const app = getAdminApp();
@@ -1139,7 +1163,7 @@ export async function bulkApplyMediaTags(
         );
 
         let nextTags = existingTags;
-        if (hasTagMutation) {
+        if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) {
           if (normalizedMode === 'replace') {
             nextTags = incomingTags;
           } else if (normalizedMode === 'remove') {
@@ -1149,19 +1173,44 @@ export async function bulkApplyMediaTags(
             nextTags = Array.from(new Set([...existingTags, ...incomingTags]));
           }
         }
+        if (removeTagIds.size > 0) {
+          nextTags = nextTags.filter((id) => !removeTagIds.has(id));
+        }
+        if (addTagIds.size > 0) {
+          nextTags = Array.from(new Set([...nextTags, ...addTagIds]));
+        }
 
         const tagsUnchanged =
           nextTags.length === existingTags.length &&
           nextTags.every((id) => existingTags.includes(id));
 
+        const existingSubjectIds = normalizeSubjectTagIds(media.subjectTagIds).length
+          ? normalizeSubjectTagIds(media.subjectTagIds)
+          : normalizeSubjectTagId(media.subjectTagId)
+            ? [normalizeSubjectTagId(media.subjectTagId)!]
+            : [];
+        const requestedSubjectTagIds =
+          addSubjectTagIds.size > 0 || removeSubjectTagIds.size > 0
+            ? Array.from(
+                new Set(
+                  existingSubjectIds
+                    .filter((id) => !removeSubjectTagIds.has(id))
+                    .concat([...addSubjectTagIds])
+                    .filter((id) => nextTags.includes(id))
+                )
+              )
+            : updates.subjectTagIds;
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: nextTags,
           existingSubjectTagId: media.subjectTagId,
           existingSubjectTagIds: media.subjectTagIds,
           requestedSubjectTagId: updates.subjectTagId,
-          requestedSubjectTagIds: updates.subjectTagIds,
+          requestedSubjectTagIds,
           subjectTagIdProvided: hasSubjectMutation,
-          subjectTagIdsProvided: updates.subjectTagIdsProvided === true,
+          subjectTagIdsProvided:
+            updates.subjectTagIdsProvided === true ||
+            addSubjectTagIds.size > 0 ||
+            removeSubjectTagIds.size > 0,
           allTags,
         });
         const subjectUnchanged =
@@ -1209,14 +1258,14 @@ export async function bulkApplyMediaTags(
   }
 
   const uniqueUpdatedIds = Array.from(new Set(updatedIds));
-  uniqueUpdatedIds.forEach((id) => void syncMediaToTypesenseById(id));
-  if (uniqueUpdatedIds.length > 0) {
-    const { syncGalleryTagInheritanceForMediaId } = await import(
+  if (options?.reconcile !== false) {
+    uniqueUpdatedIds.forEach((id) => void syncMediaToTypesenseById(id));
+  }
+  if (uniqueUpdatedIds.length > 0 && options?.reconcile !== false) {
+    const { syncGalleryTagInheritanceForMediaIds } = await import(
       '@/lib/services/galleryTagInheritanceService'
     );
-    for (const id of uniqueUpdatedIds) {
-      await syncGalleryTagInheritanceForMediaId(id);
-    }
+    await syncGalleryTagInheritanceForMediaIds(uniqueUpdatedIds);
   }
   return {
     updatedIds: uniqueUpdatedIds,

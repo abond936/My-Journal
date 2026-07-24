@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import AdminDimensionalTagFilter from '@/components/admin/common/AdminDimensionalTagFilter';
 import { DEFAULT_ADMIN_DIMENSION_FILTERS } from '@/lib/preferences/adminFilters';
 import type { Tag } from '@/lib/types/tag';
@@ -10,8 +10,19 @@ jest.mock('@/components/providers/TagProvider', () => ({
 
 jest.mock('@/components/admin/studio/cards/TagPickerDimensionColumn', () => ({
   __esModule: true,
-  default: ({ dimension }: { dimension: { docId: string } }) => (
-    <div data-testid={`dimension-${dimension.docId}`} />
+  default: ({
+    dimension,
+    headerControl,
+    headerIcon,
+  }: {
+    dimension: { docId: string; dimension: 'who' | 'what' | 'when' | 'where' };
+    headerControl?: React.ReactNode;
+    headerIcon?: React.ReactNode;
+  }) => (
+    <div data-testid={`dimension-${dimension.docId}`}>
+      {headerIcon}
+      {headerControl}
+    </div>
   ),
 }));
 
@@ -21,52 +32,89 @@ const tags = [
 ] as Tag[];
 
 describe('AdminDimensionalTagFilter', () => {
-  it('opens a dimension independently and keeps the complete picker available', () => {
+  it('opens one complete four-dimension filter modal', () => {
     render(
       <AdminDimensionalTagFilter
         selectedTagIds={['alan', 'party']}
         allTags={tags}
         onSelectedTagIdsChange={jest.fn()}
-        tagScope="all"
-        onTagScopeChange={jest.fn()}
         dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
         onDimensionFilterChange={jest.fn()}
         surfaceLabel="Cards"
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Browse Who tags' }));
-    expect(screen.getByTestId('dimension-dim-who')).toBeInTheDocument();
-    expect(screen.queryByTestId('dimension-dim-what')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Browse all cards tag filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open all cards tag filters' }));
+    expect(screen.getByPlaceholderText('Enter tags…')).toBeInTheDocument();
     expect(screen.getByTestId('dimension-dim-who')).toBeInTheDocument();
     expect(screen.getByTestId('dimension-dim-what')).toBeInTheDocument();
+    expect(screen.getByTestId('dimension-dim-who').querySelector('.lucide-user')).toBeTruthy();
   });
 
-  it('keeps presence and scope rules behind the rules control', () => {
-    const onScopeChange = jest.fn();
-    const onRuleChange = jest.fn();
+  it('shows the applied presence rule and selected tags while closed', () => {
+    render(
+      <AdminDimensionalTagFilter
+        selectedTagIds={['alan', 'party']}
+        allTags={tags}
+        onSelectedTagIdsChange={jest.fn()}
+        dimensionFilters={{
+          ...DEFAULT_ADMIN_DIMENSION_FILTERS,
+          who: { mode: 'isEmpty', tagId: '', subjectOnly: true },
+        }}
+        onDimensionFilterChange={jest.fn()}
+        surfaceLabel="Media"
+      />
+    );
+
+    expect(screen.queryByText('Alan')).not.toBeInTheDocument();
+    expect(screen.getByText('Party')).toBeInTheDocument();
+    expect(screen.getByText('Subjects empty')).toBeInTheDocument();
+  });
+
+  it('uses an icon-only trigger while preserving its accessible name', () => {
     render(
       <AdminDimensionalTagFilter
         selectedTagIds={[]}
         allTags={tags}
         onSelectedTagIdsChange={jest.fn()}
-        tagScope="all"
-        onTagScopeChange={onScopeChange}
+        dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
+        onDimensionFilterChange={jest.fn()}
+        surfaceLabel="Media"
+      />
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Open all media tag filters' });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).not.toHaveTextContent('Tags');
+  });
+
+  it('stages per-dimension subject and empty rules until one Apply action', () => {
+    const onRuleChange = jest.fn();
+    const onApply = jest.fn();
+    render(
+      <AdminDimensionalTagFilter
+        selectedTagIds={[]}
+        allTags={tags}
+        onSelectedTagIdsChange={jest.fn()}
         dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
         onDimensionFilterChange={onRuleChange}
         surfaceLabel="Cards"
+        onApply={onApply}
       />
     );
 
     expect(screen.queryByRole('group', { name: 'Cards tag rules' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Cards tag rules' }));
-    fireEvent.change(screen.getByLabelText('Who tag presence'), { target: { value: 'hasAny' } });
-    fireEvent.change(screen.getByDisplayValue('Any assigned tag'), { target: { value: 'subject' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Open all cards tag filters' }));
+    const whoColumn = within(screen.getByTestId('dimension-dim-who'));
+    fireEvent.click(whoColumn.getByLabelText('Subjects only'));
+    fireEvent.click(whoColumn.getByLabelText('Empty'));
 
-    expect(onRuleChange).toHaveBeenCalledWith('who', { mode: 'hasAny', tagId: '' });
-    expect(onScopeChange).toHaveBeenCalledWith('subject');
+    expect(onRuleChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      dimensionFilters: expect.objectContaining({
+        who: { mode: 'isEmpty', tagId: '', subjectOnly: true },
+      }),
+    }));
   });
 });

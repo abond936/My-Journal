@@ -29,6 +29,7 @@ type MediaBrowseGroupedViewProps = {
   gridTileMinPx: number;
   resolveMediaById: (id: string) => Media | undefined;
   allLoadedMedia: Media[];
+  onEditTags: (mediaId: string) => void;
 } & MediaStackGridProps;
 
 export default function MediaBrowseGroupedView(props: MediaBrowseGroupedViewProps) {
@@ -45,6 +46,7 @@ export default function MediaBrowseGroupedView(props: MediaBrowseGroupedViewProp
     gridTileMinPx,
     resolveMediaById,
     allLoadedMedia,
+    onEditTags,
     stackById,
     showAllStacks,
     expandedStackIds,
@@ -90,6 +92,7 @@ export default function MediaBrowseGroupedView(props: MediaBrowseGroupedViewProp
               expandedStackIds={expandedStackIds}
               onToggleStackExpand={onToggleStackExpand}
               onDissolveStack={onDissolveStack}
+              onEditTags={onEditTags}
             />
           </section>
         );

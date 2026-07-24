@@ -28,10 +28,12 @@ import {
   isTagsOnlyPayload,
   isGalleryInheritanceOverridesOnlyPayload,
   isStatusOnlyPayload,
+  isTagsAndInheritancePayload,
 } from '@/lib/services/cards/cardMutationClassifiers';
 import { getCardById, getPaginatedCardsByIds } from '@/lib/services/cards/cardReadService';
 import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
 import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
+import { updateCardTagAssignmentWithInheritance } from '@/lib/services/galleryTagInheritanceService';
 import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
@@ -246,6 +248,25 @@ export async function PATCH(
       updatedCard = await updateCardChildren(id, childrenIds);
     } else if (isCollectionRootOnlyPayload(validatedData)) {
       updatedCard = await updateCardCollectionRoot(id, validatedData);
+    } else if (isTagsAndInheritancePayload(validatedData)) {
+      const {
+        tags,
+        subjectTagId,
+        subjectTagIds,
+        galleryTagInheritanceOverrides,
+      } = validatedData as Pick<
+        Card,
+        'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryTagInheritanceOverrides'
+      >;
+      updatedCard = await updateCardTagAssignmentWithInheritance(
+        id,
+        {
+          tags,
+          subjectTagId,
+          subjectTagIds,
+        },
+        galleryTagInheritanceOverrides
+      );
     } else if (isGalleryInheritanceOverridesOnlyPayload(validatedData)) {
       const { galleryTagInheritanceOverrides } = validatedData as Pick<Card, 'galleryTagInheritanceOverrides'>;
       updatedCard = await updateCardGalleryInheritanceOverrides(

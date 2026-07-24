@@ -7,6 +7,7 @@ import {
   recomputeCardsMediaSignalsForMediaIds,
 } from '@/lib/services/cards/cardMediaLifecycleService';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
+import { createMediaTagReconciliationOperation } from '@/lib/services/mediaTagReconciliationService';
 
 jest.mock('next/server', () => {
   const NextResponse = function NextResponse(_body?: unknown, init?: { status?: number }) {
@@ -57,6 +58,11 @@ jest.mock('@/lib/services/cards/cardMediaLifecycleService', () => ({
   deleteMediaWithCardCleanup: jest.fn(),
 }));
 
+jest.mock('@/lib/services/mediaTagReconciliationService', () => ({
+  createMediaTagReconciliationOperation: jest.fn(),
+  reconcileMediaTagDependents: jest.fn(),
+}));
+
 import { POST } from '@/app/api/admin/media/tags/route';
 import { DELETE, PATCH } from '@/app/api/images/[id]/route';
 
@@ -69,12 +75,15 @@ const mockedRecomputeCardsMediaSignalsForMediaIds =
   recomputeCardsMediaSignalsForMediaIds as jest.MockedFunction<typeof recomputeCardsMediaSignalsForMediaIds>;
 const mockedDeleteMediaWithCardCleanup =
   deleteMediaWithCardCleanup as jest.MockedFunction<typeof deleteMediaWithCardCleanup>;
+const mockedCreateMediaTagReconciliationOperation =
+  createMediaTagReconciliationOperation as jest.MockedFunction<typeof createMediaTagReconciliationOperation>;
 const adminSession = { user: { role: 'admin' } } as Awaited<ReturnType<typeof getServerSession>>;
 
 describe('POST /api/admin/media/tags', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedBulkApplyMediaTags.mockResolvedValue({ updatedIds: [] });
+    mockedCreateMediaTagReconciliationOperation.mockResolvedValue('reconcile-1');
   });
 
   it('returns 403 when user is not admin', async () => {
@@ -101,12 +110,18 @@ describe('POST /api/admin/media/tags', () => {
     const payload = await res.json();
 
     expect(res.status).toBe(200);
-    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1', 'm2'], {
-      tagIds: ['t1'],
-      mode: 'add',
-    });
-    expect(mockedRecomputeCardsMediaSignalsForMediaIds).toHaveBeenCalledWith(['m1', 'm2']);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1', 'm2'],
+      {
+        tagIds: ['t1'],
+        mode: 'add',
+      },
+      { reconcile: false }
+    );
+    expect(mockedCreateMediaTagReconciliationOperation).toHaveBeenCalledWith(['m1', 'm2']);
+    expect(mockedRecomputeCardsMediaSignalsForMediaIds).not.toHaveBeenCalled();
     expect(payload.updated).toBe(2);
+    expect(payload.reconciliationOperationId).toBe('reconcile-1');
   });
 
   it('accepts subject-only bulk media updates', async () => {
@@ -120,12 +135,43 @@ describe('POST /api/admin/media/tags', () => {
     const payload = await res.json();
 
     expect(res.status).toBe(200);
-    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1'], {
-      subjectTagId: 'siblings',
-      subjectTagIdProvided: true,
-    });
-    expect(mockedRecomputeCardsMediaSignalsForMediaIds).toHaveBeenCalledWith(['m1']);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1'],
+      {
+        subjectTagId: 'siblings',
+        subjectTagIdProvided: true,
+      },
+      { reconcile: false }
+    );
     expect(payload).toMatchObject({ ok: true, updated: 1 });
+  });
+
+  it('accepts one combined add, remove, and Subject decision', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1', 'm2'], updatedMedia: [] });
+    const req = {
+      json: async () => ({
+        mediaIds: ['m1', 'm2'],
+        addTagIds: ['alan'],
+        removeTagIds: ['bob'],
+        addSubjectTagIds: ['alan'],
+        removeSubjectTagIds: ['bob'],
+      }),
+    } as NextRequest;
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1', 'm2'],
+      {
+        addTagIds: ['alan'],
+        removeTagIds: ['bob'],
+        addSubjectTagIds: ['alan'],
+        removeSubjectTagIds: ['bob'],
+      },
+      { reconcile: false }
+    );
   });
 
   it('accepts multiple subjects in a bulk media update', async () => {
@@ -137,10 +183,14 @@ describe('POST /api/admin/media/tags', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(['m1'], {
-      subjectTagIds: ['alan', 'bob'],
-      subjectTagIdsProvided: true,
-    });
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1'],
+      {
+        subjectTagIds: ['alan', 'bob'],
+        subjectTagIdsProvided: true,
+      },
+      { reconcile: false }
+    );
   });
 });
 

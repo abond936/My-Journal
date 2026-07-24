@@ -42,10 +42,6 @@
   font-size: var(--font-size-md);
 }
 
-.gridStudioCompact .tagSearchFoot {
-  padding-top: 6px;
-}
-
 .thumbnailWrap {
   position: relative;
   width: 100%;
@@ -164,18 +160,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.tagSearchFoot {
-  margin-top: auto;
-  padding: 6px 6px 6px;
-  min-width: 0;
-}
-
-.saveNotice {
-  margin: 0 6px 6px;
-  font-size: var(--font-size-xs);
-  color: var(--admin-state-success-border-color);
 }
 
 .emptyState {

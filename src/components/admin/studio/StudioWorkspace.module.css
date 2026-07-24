@@ -197,6 +197,7 @@
   min-height: 0;
   overflow: auto;
   padding: 0 var(--spacing-sm) var(--spacing-sm);
+  color: var(--text1-color);
 }
 
 .collectionsHost {
@@ -313,8 +314,8 @@
 .studioComposeHeader {
   flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--spacing-xs);
   padding-top: 2px;
   min-width: 0;
@@ -328,6 +329,7 @@
   justify-content: flex-end;
   margin-left: auto;
   flex: 0 0 auto;
+  width: 100%;
 }
 
 .studioComposeNewButton {
@@ -618,9 +620,13 @@
 
 .studioQuestionsHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--spacing-sm);
+}
+
+.studioQuestionsHeader > button {
+  align-self: flex-end;
 }
 
 .studioQuestionInlineStatus {
@@ -891,6 +897,18 @@
   gap: var(--spacing-xs);
 }
 
+.studioQuestionTagSummaryRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.studioQuestionTagSummaryRow > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .studioQuestionTagChip,
 .studioQuestionEditTagsChip,
 .studioQuestionNoTags {
@@ -978,6 +996,15 @@
 
 .studioQuestionPromptButton:focus-visible {
   outline: none;
+}
+
+.studioQuestionAutosaveStatus {
+  min-height: 1rem;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-font-meta);
+  font-size: 0.72rem;
+  line-height: 1rem;
+  text-align: right;
 }
 
 .studioQuestionConfirmBody {

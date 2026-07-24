@@ -1,15 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MediaStack } from '@/lib/types/mediaStack';
 import { buildStackByIdMap } from '@/lib/utils/mediaStackDisplayUtils';
 
 export function useMediaStacks(enabled = true) {
   const [stacks, setStacks] = useState<MediaStack[]>([]);
   const [loading, setLoading] = useState(false);
+  const refreshInFlightRef = useRef(false);
 
   const refreshStacks = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled || refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
     setLoading(true);
     try {
       const response = await fetch('/api/admin/media/stacks', {
@@ -22,6 +24,7 @@ export function useMediaStacks(enabled = true) {
       }
       setStacks(payload.stacks ?? []);
     } finally {
+      refreshInFlightRef.current = false;
       setLoading(false);
     }
   }, [enabled]);

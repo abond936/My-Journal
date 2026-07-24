@@ -4,10 +4,12 @@ import MediaAdminGrid from '@/components/admin/studio/media/MediaAdminGrid';
 import type { Media } from '@/lib/types/photo';
 
 const updateMedia = jest.fn(async () => true);
+const mockRouterPush = jest.fn();
+let mockReferenceSummaries: Record<string, string[]> = {};
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: mockRouterPush,
   }),
 }));
 
@@ -62,7 +64,9 @@ jest.mock('@/components/common/JournalImage', () => ({
 
 jest.mock('@/components/admin/common/DimensionalTagVerticalChips', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ onOpenAssignment }: { onOpenAssignment?: () => void }) => (
+    <button type="button" onClick={onOpenAssignment}>Open tags</button>
+  ),
 }));
 
 jest.mock('@/components/admin/common/CardDimensionalTagCommandBar', () => ({
@@ -82,7 +86,7 @@ jest.mock('@/components/admin/studio/media/MediaLinkedCardsModal', () => ({
 
 jest.mock('@/components/admin/studio/media/useMediaReferenceSummaries', () => ({
   __esModule: true,
-  default: () => ({}),
+  default: () => mockReferenceSummaries,
 }));
 
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({
@@ -117,6 +121,8 @@ const DEFAULT_DIMENSION_FILTERS = {
 describe('MediaAdminGrid', () => {
   beforeEach(() => {
     updateMedia.mockClear();
+    mockRouterPush.mockClear();
+    mockReferenceSummaries = {};
   });
 
   it('starts inline captions at one row', () => {
@@ -132,10 +138,27 @@ describe('MediaAdminGrid', () => {
   });
 
   it('separates delete and edit into the upper-right and lower-right chrome slots', () => {
-    render(<MediaAdminGrid dimensionFilters={DEFAULT_DIMENSION_FILTERS} />);
+    render(<MediaAdminGrid dimensionFilters={DEFAULT_DIMENSION_FILTERS} onEditTags={jest.fn()} />);
 
     expect(screen.getByRole('button', { name: 'Delete media' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit media' })).toBeInTheDocument();
+  });
+
+  it('opens the unified tag editor from the tile tag summary', () => {
+    const onEditTags = jest.fn();
+    render(<MediaAdminGrid dimensionFilters={DEFAULT_DIMENSION_FILTERS} onEditTags={onEditTags} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open tags' }));
+    expect(onEditTags).toHaveBeenCalledWith('media-1');
+  });
+
+  it('uses the Assigned chip to open a single linked Card directly', () => {
+    mockReferenceSummaries = { 'media-1': ['card-1'] };
+    render(<MediaAdminGrid dimensionFilters={DEFAULT_DIMENSION_FILTERS} onEditTags={jest.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open assigned card' }));
+    expect(mockRouterPush).toHaveBeenCalledWith('/admin/studio?card=card-1');
+    expect(screen.queryByRole('button', { name: /Open 1 linked card/i })).not.toBeInTheDocument();
   });
 
   it('grows the inline caption field when the caption wraps beyond one row', () => {

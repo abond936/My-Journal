@@ -91,7 +91,7 @@ describe('studioWorkspaceLayout', () => {
       questionsWidth: null,
       paneVisibility: {
         ...DEFAULT_STUDIO_PANE_VISIBILITY,
-        organizationCollapsed: false,
+        tagsCollapsed: false,
       },
     };
 

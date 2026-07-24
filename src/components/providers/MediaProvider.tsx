@@ -31,6 +31,7 @@ import {
 
 interface MediaListResponse {
   media: Media[];
+  pendingTagReconciliation?: boolean;
   pagination: {
     page?: number;
     limit: number;
@@ -68,10 +69,14 @@ export type MediaUiError = Error & {
 export type MediaBulkTagUpdateRequest = {
   tagIds?: string[];
   mode?: 'add' | 'replace' | 'remove';
+  addTagIds?: string[];
+  removeTagIds?: string[];
   subjectTagId?: string | null;
   subjectTagIdProvided?: boolean;
   subjectTagIds?: string[];
   subjectTagIdsProvided?: boolean;
+  addSubjectTagIds?: string[];
+  removeSubjectTagIds?: string[];
 };
 
 function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
@@ -137,16 +142,18 @@ function mediaMatchesCaptionFilter(item: Media, hasCaption: string): boolean {
 function mediaMatchesDimensionalTags(
   item: Media,
   dt: DimensionalTagIdMap,
-  tagScope: MediaFilters['tagScope']
+  tagScope: MediaFilters['tagScope'],
+  subjectDimensions: MediaFilters['subjectDimensions'] = []
 ): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   const dims: (keyof DimensionalTagIdMap)[] = ['who', 'what', 'when', 'where'];
+  const subjectDimensionSet = new Set(subjectDimensions);
   for (const dim of dims) {
     const selected = dt[dim];
     if (!selected?.length) continue;
     const idsOnMedia = getDimensionIds(item, dim);
     const ok = selected.some((tid) =>
-      tagScope === 'subject'
+      tagScope === 'subject' || subjectDimensionSet.has(dim)
         ? Boolean(item.subjectFilterTags?.[tid])
         : idsOnMedia.includes(tid) || Boolean(item.filterTags?.[tid])
     );
@@ -176,6 +183,7 @@ export interface MediaFilters {
   metadataOutcome: 'all' | 'found' | 'none' | 'error' | 'not_requested' | 'unknown';
   tagScope: 'all' | 'subject';
   dimensionPresence?: Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
+  subjectDimensions?: Array<'who' | 'what' | 'when' | 'where'>;
 }
 
 type CachedMediaQueryResult = {
@@ -205,7 +213,11 @@ interface MediaContextType {
   filters: MediaFilters;
   
   // Actions
-  fetchMedia: (page?: number, newFilters?: Partial<MediaFilters>) => Promise<void>;
+  fetchMedia: (
+    page?: number,
+    newFilters?: Partial<MediaFilters>,
+    dimensionalOverride?: DimensionalTagIdMap
+  ) => Promise<void>;
   loadMore: () => Promise<void>;
   refreshMedia: () => Promise<void>;
   updateMedia: (id: string, updates: Partial<Media>) => Promise<Media | undefined>;
@@ -227,11 +239,6 @@ interface MediaContextType {
   /** Admin Studio: who/what/when/where tag ids for GET /api/media (single MacroTagSelector in embedded Studio). */
   dimensionalQueryOverlay: DimensionalTagIdMap;
   setDimensionalQueryOverlay: (
-    map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
-  ) => void;
-  /** Studio Map preview only — merged at fetch time, never persisted to localStorage. */
-  transientDimensionalQueryOverlay: DimensionalTagIdMap;
-  setTransientDimensionalQueryOverlay: (
     map: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)
   ) => void;
   
@@ -271,6 +278,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<MediaListResponse['pagination'] | null>(null);
+  const [pendingTagReconciliationDetected, setPendingTagReconciliationDetected] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [prevCursor, setPrevCursor] = useState<string | null>(null);
@@ -283,9 +291,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const dimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>(
     initialMediaAdminPrefsRef.current.dimensionalQueryOverlay
   );
-  const [transientDimensionalQueryOverlay, setTransientDimensionalQueryOverlayState] =
-    useState<DimensionalTagIdMap>({});
-  const transientDimensionalQueryOverlayRef = useRef<DimensionalTagIdMap>({});
   const lastMediaEngineRef = useRef<'typesense' | 'firestore' | null>(null);
   const mediaRequestSeqRef = useRef(0);
   const activeMediaRequestControllerRef = useRef<AbortController | null>(null);
@@ -412,33 +417,22 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
   const setDimensionalQueryOverlay = useCallback(
     (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
-      setDimensionalQueryOverlayState((prev) => {
-        const next = typeof mapOrFn === 'function' ? mapOrFn(prev) : mapOrFn;
-        dimensionalQueryOverlayRef.current = next;
-        return next;
-      });
+      const next =
+        typeof mapOrFn === 'function' ? mapOrFn(dimensionalQueryOverlayRef.current) : mapOrFn;
+      dimensionalQueryOverlayRef.current = next;
+      setDimensionalQueryOverlayState(next);
     },
     []
   );
 
-  const setTransientDimensionalQueryOverlay = useCallback(
-    (mapOrFn: DimensionalTagIdMap | ((prev: DimensionalTagIdMap) => DimensionalTagIdMap)) => {
-      setTransientDimensionalQueryOverlayState((prev) => {
-        const next = typeof mapOrFn === 'function' ? mapOrFn(prev) : mapOrFn;
-        transientDimensionalQueryOverlayRef.current = next;
-        return next;
-      });
-    },
-    []
-  );
-
-  const resolveDimensionalTagsForFetch = useCallback((): DimensionalTagIdMap => {
+  const resolveDimensionalTagsForFetch = useCallback((
+    persistentOverride?: DimensionalTagIdMap
+  ): DimensionalTagIdMap => {
     const isStudioPath = pathname?.startsWith('/admin/studio');
     const cardDimensionalForFetch = isStudioPath ? ({} as DimensionalTagIdMap) : dimensionalTagMap;
     return mergeDimensionalTagMaps(
       cardDimensionalForFetch,
-      dimensionalQueryOverlayRef.current,
-      transientDimensionalQueryOverlayRef.current
+      persistentOverride ?? dimensionalQueryOverlayRef.current
     );
   }, [dimensionalTagMap, pathname]);
 
@@ -476,7 +470,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const buildQueryString = useCallback((
     mediaFilters: MediaFilters,
     dimMap: DimensionalTagIdMap,
-    opts?: { cursor?: string; prevCursor?: string; listPage?: number; includeTotal?: boolean }
+    opts?: {
+      cursor?: string;
+      prevCursor?: string;
+      listPage?: number;
+      includeTotal?: boolean;
+      includeReconciliationStatus?: boolean;
+    }
   ) => {
     const params = new URLSearchParams();
     params.append('limit', mediaPageLimit);
@@ -487,6 +487,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
     if (opts?.includeTotal === false) {
       params.set('includeTotal', 'false');
+    }
+    if (opts?.includeReconciliationStatus) {
+      params.set('includeReconciliationStatus', 'true');
     }
 
     if (mediaFilters.source !== 'all') params.append('source', mediaFilters.source);
@@ -501,6 +504,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (mediaFilters.importFolder !== 'all') params.append('importFolder', mediaFilters.importFolder);
     if (mediaFilters.metadataOutcome !== 'all') params.append('metadataOutcome', mediaFilters.metadataOutcome);
     if (mediaFilters.tagScope === 'subject') params.append('tagScope', 'subject');
+    if (mediaFilters.subjectDimensions?.length) {
+      params.set('subjectDimensions', mediaFilters.subjectDimensions.join(','));
+    }
     for (const dimension of ['who', 'what', 'when', 'where'] as const) {
       const presence = mediaFilters.dimensionPresence?.[dimension];
       if (presence) params.set(`${dimension}Presence`, presence);
@@ -510,7 +516,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     return params.toString();
   }, []);
 
-  const fetchMedia = useCallback(async (page = 1, newFilters?: Partial<MediaFilters>) => {
+  const fetchMedia = useCallback(async (
+    page = 1,
+    newFilters?: Partial<MediaFilters>,
+    dimensionalOverride?: DimensionalTagIdMap
+  ) => {
     const requestSeq = mediaRequestSeqRef.current + 1;
     mediaRequestSeqRef.current = requestSeq;
     activeMediaRequestControllerRef.current?.abort();
@@ -534,7 +544,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const updatedFilters = { ...filtersRef.current, ...newFilters };
       const isStudioPath = pathname?.startsWith('/admin/studio');
       const allowBackgroundPrefetch = !isStudioPath;
-      const mergedDimensional = resolveDimensionalTagsForFetch();
+      const mergedDimensional = resolveDimensionalTagsForFetch(dimensionalOverride);
       const includeTotal = !isStudioPath;
       const assignmentSeek =
         updatedFilters.assignment === 'unassigned' || updatedFilters.assignment === 'assigned';
@@ -568,6 +578,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const queryString = buildQueryString(updatedFilters, mergedDimensional, {
         ...opts,
         includeTotal,
+        includeReconciliationStatus: isStudioPath,
       });
       const cacheKey = queryString;
       const cached = cacheMediaQueryEntryIfFresh(cacheKey);
@@ -631,6 +642,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
       const data: MediaListResponse = await response.json();
       if (requestSeq !== mediaRequestSeqRef.current) return;
+      if (data.pendingTagReconciliation) {
+        setPendingTagReconciliationDetected(true);
+      }
       lastMediaEngineRef.current = data.pagination.engine ?? 'firestore';
       cacheMediaRecords(data.media);
       const nextPagination = {
@@ -755,7 +769,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         mediaMatchesCaptionFilter(item, currentFilters.hasCaption) &&
         mediaMatchesSearch(item, currentFilters.search) &&
         assignmentMatches &&
-        mediaMatchesDimensionalTags(item, currentDimensional, currentFilters.tagScope)
+        mediaMatchesDimensionalTags(
+          item,
+          currentDimensional,
+          currentFilters.tagScope,
+          currentFilters.subjectDimensions
+        )
       );
     },
     [resolveDimensionalTagsForFetch]
@@ -897,6 +916,40 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
+  const runMediaTagReconciliation = useCallback(async (operationId?: string | null) => {
+    try {
+      const response = await fetch('/api/admin/media/tags/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(operationId ? { operationId } : {}),
+      });
+      const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse & {
+        results?: Array<{ affectedCardIds?: string[] }>;
+      };
+      if (!response.ok) {
+        throw toUserFacingError(
+          'Media tags were saved, but Card synchronization needs retry',
+          payload,
+          response.statusText
+        );
+      }
+      const affectedCardIds = Array.from(
+        new Set(
+          (payload.results ?? []).flatMap((result) => result.affectedCardIds ?? [])
+        )
+      );
+      if (typeof window !== 'undefined' && affectedCardIds.length > 0) {
+        window.dispatchEvent(
+          new CustomEvent('media-tag-reconciliation-complete', {
+            detail: { affectedCardIds },
+          })
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
+    }
+  }, []);
+
   const bulkApplyTags = useCallback(
     async (mediaIds: string[], updates: MediaBulkTagUpdateRequest) => {
       if (mediaIds.length === 0) return;
@@ -906,8 +959,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           mediaIds: string[];
           tags?: string[];
           mode?: 'add' | 'replace' | 'remove';
+          addTagIds?: string[];
+          removeTagIds?: string[];
           subjectTagId?: string | null;
           subjectTagIds?: string[];
+          addSubjectTagIds?: string[];
+          removeSubjectTagIds?: string[];
         } = { mediaIds };
 
         if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) {
@@ -920,6 +977,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         if (updates.subjectTagIdsProvided) {
           payload.subjectTagIds = updates.subjectTagIds ?? [];
         }
+        if (updates.addTagIds?.length) payload.addTagIds = updates.addTagIds;
+        if (updates.removeTagIds?.length) payload.removeTagIds = updates.removeTagIds;
+        if (updates.addSubjectTagIds?.length) payload.addSubjectTagIds = updates.addSubjectTagIds;
+        if (updates.removeSubjectTagIds?.length) payload.removeSubjectTagIds = updates.removeSubjectTagIds;
 
         const response = await fetch('/api/admin/media/tags', {
           method: 'POST',
@@ -930,7 +991,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           const data = (await response.json().catch(() => ({}))) as ApiErrorResponse;
           throw toUserFacingError('Bulk tag update failed', data, response.statusText);
         }
-        const body = (await response.json().catch(() => ({}))) as { media?: Media[] };
+        const body = (await response.json().catch(() => ({}))) as {
+          media?: Media[];
+          reconciliationOperationId?: string | null;
+        };
         const updatedItems = Array.isArray(body.media)
           ? body.media.filter((item): item is Media => Boolean(item?.docId))
           : [];
@@ -953,15 +1017,39 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         } else {
           await refreshMedia();
         }
-        if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) await mutateTags();
+        if (
+          Object.prototype.hasOwnProperty.call(updates, 'tagIds') ||
+          (updates.addTagIds?.length ?? 0) > 0 ||
+          (updates.removeTagIds?.length ?? 0) > 0
+        ) {
+          void mutateTags().catch((tagError) => {
+            setError(tagError instanceof Error ? tagError : new Error(String(tagError)));
+          });
+        }
+        if (body.reconciliationOperationId) {
+          void runMediaTagReconciliation(body.reconciliationOperationId);
+        }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         throw error;
       }
     },
-    [cacheMediaRecord, clearMediaQueryCache, mediaMatchesCurrentView, mutateTags, refreshMedia]
+    [
+      cacheMediaRecord,
+      clearMediaQueryCache,
+      mediaMatchesCurrentView,
+      mutateTags,
+      refreshMedia,
+      runMediaTagReconciliation,
+    ]
   );
+
+  useEffect(() => {
+    if (!pendingTagReconciliationDetected) return;
+    setPendingTagReconciliationDetected(false);
+    void runMediaTagReconciliation();
+  }, [pendingTagReconciliationDetected, runMediaTagReconciliation]);
 
   const registerCreatedMedia = useCallback(
     (item: Media) => {
@@ -1054,9 +1142,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;
     dimensionalQueryOverlayRef.current = {};
-    transientDimensionalQueryOverlayRef.current = {};
     setDimensionalQueryOverlayState({});
-    setTransientDimensionalQueryOverlayState({});
     setFilters(defaultFilters);
     filtersRef.current = defaultFilters;
     setCursorStack([]);
@@ -1115,8 +1201,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     clearFilters,
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
-    transientDimensionalQueryOverlay,
-    setTransientDimensionalQueryOverlay,
     selectedMediaIds,
     setSelectedMediaIds,
     toggleMediaSelection,

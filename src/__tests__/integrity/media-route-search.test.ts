@@ -258,6 +258,58 @@ describe('GET /api/media fallback text search', () => {
     expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['media-with-who']);
   });
 
+  it('treats Empty as subject-empty only for dimensions marked Subjects only', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('ordinary-who-only', {
+            filename: 'ordinary.jpg',
+            source: 'local',
+            who: ['person-1'],
+            subjectFilterTags: {},
+            createdAt: 2,
+            updatedAt: 2,
+          }),
+          makeMediaDoc('who-subject', {
+            filename: 'subject.jpg',
+            source: 'local',
+            who: ['person-1'],
+            subjectFilterTags: { 'person-1': true },
+            createdAt: 1,
+            updatedAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest(
+        'https://example.test/api/media?limit=40&whoPresence=isEmpty&subjectDimensions=who'
+      )
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual([
+      'ordinary-who-only',
+    ]);
+  });
+
   it('applies codification, unresolved, batch, folder, and metadata filters on the server', async () => {
     const mediaQuery = {
       orderBy: jest.fn().mockReturnThis(),

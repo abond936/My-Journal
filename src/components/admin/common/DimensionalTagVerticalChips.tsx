@@ -51,6 +51,7 @@ export interface DimensionalTagVerticalChipsProps {
   subjectTagIds?: string[];
   onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
   onUpdateSubjectTagIds?: (nextSubjectTagIds: string[]) => void | Promise<void>;
+  onOpenAssignment?: () => void;
   disabled?: boolean;
   className?: string;
   variant?: 'rail' | 'inline';
@@ -69,6 +70,7 @@ export default function DimensionalTagVerticalChips({
   subjectTagIds,
   onUpdateSubjectTagId,
   onUpdateSubjectTagIds,
+  onOpenAssignment,
   disabled = false,
   className,
   variant = 'rail',
@@ -209,7 +211,10 @@ export default function DimensionalTagVerticalChips({
       ref={rootRef}
       className={clsx(styles.root, inline && styles.rootInline, className)}
       title={railSummaryTitle}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onOpenAssignment) onOpenAssignment();
+      }}
     >
       {dimensionsToRender.map((dim, dimIndex) => {
         const ids = core[dim];
@@ -280,7 +285,8 @@ export default function DimensionalTagVerticalChips({
               )}
               title={rowTitle}
               aria-haspopup="dialog"
-              aria-expanded={activeMenu?.dimension === dim}
+              aria-expanded={onOpenAssignment ? false : activeMenu?.dimension === dim}
+              aria-label={onOpenAssignment ? `Edit all tags and subjects. ${rowTitle}` : undefined}
               disabled={disabled || saving}
               onClick={(event) => {
                 event.stopPropagation();
@@ -288,15 +294,23 @@ export default function DimensionalTagVerticalChips({
                   longPressHandledRef.current = false;
                   return;
                 }
+                if (onOpenAssignment) {
+                  onOpenAssignment();
+                  return;
+                }
                 openDimensionMenu(dim, event.currentTarget);
               }}
               onContextMenu={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
+                if (onOpenAssignment) {
+                  onOpenAssignment();
+                  return;
+                }
                 openDimensionMenu(dim, event.currentTarget);
               }}
               onPointerDown={(event) => {
-                if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+                if (!onOpenAssignment && (event.pointerType === 'touch' || event.pointerType === 'pen')) {
                   beginLongPress(dim, event.currentTarget);
                 }
               }}
@@ -314,7 +328,7 @@ export default function DimensionalTagVerticalChips({
         );
       })}
 
-      {activeMenu ? (
+      {activeMenu && !onOpenAssignment ? (
         <div
           className={styles.dimensionMenu}
           role="dialog"

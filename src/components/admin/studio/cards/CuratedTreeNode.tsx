@@ -1,7 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useDraggable, useDndContext, useDroppable } from '@dnd-kit/core';
+import {
+  Ellipsis,
+  ExternalLink,
+  ListPlus,
+  Menu,
+  Trash2,
+  Unlink,
+} from 'lucide-react';
 import type { Card } from '@/lib/types/card';
 import {
   buildCuratedInsertBeforeDropId,
@@ -55,9 +63,11 @@ function ReadOnlyInsertBeforeGap() {
 function TreeExpandControl({
   expanded,
   onToggle,
+  dragHandle,
 }: {
   expanded: boolean;
   onToggle: () => void;
+  dragHandle: React.ReactNode;
 }) {
   return (
     <>
@@ -80,6 +90,7 @@ function TreeExpandControl({
       >
         <span className={styles.treeExpandIcon}>{expanded ? '▼' : '▶'}</span>
       </button>
+      {dragHandle}
       <span
         className={styles.treePersistedMarker}
         title={expanded ? 'Saved as expanded' : 'Saved as collapsed'}
@@ -97,6 +108,9 @@ function DraggableCard({
   children,
   disabled,
   onClick,
+  expanded,
+  hasChildren,
+  onToggleExpanded,
   sourceParentId,
   sourceIsRoot,
 }: {
@@ -105,6 +119,9 @@ function DraggableCard({
   children: React.ReactNode;
   disabled?: boolean;
   onClick?: () => void;
+  expanded: boolean;
+  hasChildren: boolean;
+  onToggleExpanded: () => void;
   sourceParentId?: string;
   sourceIsRoot?: boolean;
 }) {
@@ -127,19 +144,45 @@ function DraggableCard({
       className={`${className} ${isDragging ? styles.dragSourceActive : ''}`}
       onClick={onClick}
     >
-      <button
-        type="button"
-        className={styles.treeDragHandle}
-        aria-label="Drag to move card in curated tree"
-        title="Drag to move"
-        onMouseDown={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        {...attributes}
-        {...listeners}
-      >
-        ⋮⋮
-      </button>
+      {hasChildren ? (
+        <TreeExpandControl
+          expanded={expanded}
+          onToggle={onToggleExpanded}
+          dragHandle={
+            <button
+              type="button"
+              className={styles.treeDragHandle}
+              aria-label="Drag to move card in curated tree"
+              title="Drag to move"
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              {...attributes}
+              {...listeners}
+            >
+              <Menu size={15} aria-hidden="true" />
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <span className={styles.treeExpandSpacer} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.treeDragHandle}
+            aria-label="Drag to move card in curated tree"
+            title="Drag to move"
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            {...attributes}
+            {...listeners}
+          >
+            <Menu size={15} aria-hidden="true" />
+          </button>
+          <span className={styles.treePersistedMarkerSpacer} aria-hidden="true" />
+        </>
+      )}
       <div className={styles.nodeDragContent}>{children}</div>
     </div>
   );
@@ -227,6 +270,8 @@ export interface CuratedTreeNodeProps {
   saving: boolean;
   onDetachChild: (id: string, parentId: string) => void;
   onClearRoot: (id: string) => void;
+  onAddChildren: (id: string) => void;
+  onDeleteCard?: (card: Card) => void | Promise<void>;
   onSelectCard: (id: string) => void | Promise<boolean>;
   selectedCardId: string | null;
   disableCuratedDrag?: boolean;
@@ -243,11 +288,24 @@ function CuratedTreeNodeComponent({
   saving,
   onDetachChild,
   onClearRoot,
+  onAddChildren,
+  onDeleteCard,
   onSelectCard,
   selectedCardId,
   disableCuratedDrag = false,
 }: CuratedTreeNodeProps) {
   const isCycle = seen.has(node.docId);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [menuOpen]);
 
   if (isCycle) {
     return (
@@ -275,8 +333,14 @@ function CuratedTreeNodeComponent({
     <TreeExpandControl
       expanded={isExpanded}
       onToggle={() => toggleExpanded(node.docId)}
+      dragHandle={null}
     />
-  ) : null;
+  ) : (
+    <>
+      <span className={styles.treeExpandSpacer} aria-hidden="true" />
+      <span className={styles.treePersistedMarkerSpacer} aria-hidden="true" />
+    </>
+  );
 
   return (
     <li className={styles.treeNode}>
@@ -317,7 +381,6 @@ function CuratedTreeNodeComponent({
           </div>
         ) : (
           <ParentDropZone parentId={node.docId!} className={styles.nodeLead}>
-            {expandControl}
             <DraggableCard
               card={node}
               className={styles.nodeDragSurface}
@@ -325,6 +388,9 @@ function CuratedTreeNodeComponent({
               onClick={() => onSelectCard(node.docId)}
               sourceParentId={sourceParentId}
               sourceIsRoot={!sourceParentId && node.isCollectionRoot === true}
+              expanded={isExpanded}
+              hasChildren={hasChildren}
+              onToggleExpanded={() => toggleExpanded(node.docId)}
             >
               <span className={styles.nodeTitleWrap}>
                 <span className={styles.nodeTitle}>{cardLabel(node)}</span>
@@ -342,20 +408,59 @@ function CuratedTreeNodeComponent({
           </ParentDropZone>
         )}
         <div className={styles.nodeActions}>
-          {sourceParentId || node.isCollectionRoot === true ? (
+          <div ref={menuRef} className={styles.treeMenuWrap}>
             <button
               type="button"
-              onClick={() =>
-                sourceParentId ? void onDetachChild(node.docId, sourceParentId) : void onClearRoot(node.docId)
-              }
+              onClick={(event) => {
+                event.stopPropagation();
+                setMenuOpen((open) => !open);
+              }}
               disabled={saving}
-              className={styles.smallButton}
-              aria-label={sourceParentId ? 'Remove from this parent' : 'Remove root status'}
-              title={sourceParentId ? 'Remove from this parent' : 'Remove root status'}
+              className={styles.treeMenuButton}
+              aria-label={`Actions for ${cardLabel(node)}`}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
             >
-              ×
+              <Ellipsis size={17} aria-hidden="true" />
             </button>
-          ) : null}
+            {menuOpen ? (
+              <div className={styles.treeMenu} role="menu">
+                <button type="button" role="menuitem" onClick={() => {
+                  setMenuOpen(false);
+                  void onSelectCard(node.docId);
+                }}>
+                  <ExternalLink size={14} aria-hidden="true" /> Open in Compose
+                </button>
+                <button type="button" role="menuitem" onClick={() => {
+                  setMenuOpen(false);
+                  onAddChildren(node.docId);
+                }}>
+                  <ListPlus size={14} aria-hidden="true" /> Add child card
+                </button>
+                {sourceParentId || node.isCollectionRoot === true ? (
+                  <button type="button" role="menuitem" onClick={() => {
+                  setMenuOpen(false);
+                    if (sourceParentId) void onDetachChild(node.docId, sourceParentId);
+                    else void onClearRoot(node.docId);
+                  }}>
+                    <Unlink size={14} aria-hidden="true" />
+                    {sourceParentId ? 'Detach from parent' : 'Remove collection status'}
+                  </button>
+                ) : null}
+                {onDeleteCard ? (
+                  <>
+                    <div className={styles.treeMenuSeparator} />
+                    <button type="button" role="menuitem" className={styles.treeMenuDanger} onClick={() => {
+                      setMenuOpen(false);
+                      void onDeleteCard(node);
+                    }}>
+                      <Trash2 size={14} aria-hidden="true" /> Delete card
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       {hasChildren && isExpanded ? (
@@ -374,6 +479,8 @@ function CuratedTreeNodeComponent({
                 saving={saving}
                 onDetachChild={onDetachChild}
                 onClearRoot={onClearRoot}
+                onAddChildren={onAddChildren}
+                onDeleteCard={onDeleteCard}
                 onSelectCard={onSelectCard}
                 selectedCardId={selectedCardId}
                 disableCuratedDrag={disableCuratedDrag}

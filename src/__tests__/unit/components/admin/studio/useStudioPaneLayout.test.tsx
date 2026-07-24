@@ -9,7 +9,8 @@ jest.mock('@/lib/preferences/studioWorkspaceLayout', () => {
       composeWidth: { px: 444, ratio: null, viewportWidth: null, updatedAt: null },
       questionsWidth: { px: 333, ratio: null, viewportWidth: null, updatedAt: null },
       paneVisibility: {
-        organizationCollapsed: true,
+        tagsCollapsed: true,
+        collectionsCollapsed: true,
         cardsCollapsed: false,
         composeCollapsed: false,
         questionsCollapsed: false,
@@ -59,11 +60,11 @@ describe('useStudioPaneLayout', () => {
     };
   });
 
-  it('hydrates saved widths and visibility, owns responsive mode, and persists toggles', async () => {
+  it('uses fixed utility-pane widths, hydrates visibility, owns responsive mode, and persists toggles', async () => {
     render(<Harness />);
 
-    await waitFor(() => expect(screen.getByTestId('compose')).toHaveTextContent('444'));
-    expect(screen.getByTestId('questions')).toHaveTextContent('333');
+    await waitFor(() => expect(screen.getByTestId('compose')).toHaveTextContent('480'));
+    expect(screen.getByTestId('questions')).toHaveTextContent('432');
     expect(screen.getByTestId('media')).toHaveTextContent('true');
     expect(screen.getByTestId('wide')).toHaveTextContent('true');
 

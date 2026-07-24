@@ -186,6 +186,23 @@
   line-height: 1;
 }
 
+.assignedNavigationButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.assignedNavigationButton:hover,
+.assignedNavigationButton:focus-visible {
+  background: color-mix(
+    in srgb,
+    var(--admin-window-background-color) 68%,
+    var(--admin-state-success-border-color) 32%
+  );
+  outline: none;
+}
+
 .readinessPending,
 .readinessFailed {
   display: inline-flex;

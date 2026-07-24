@@ -40,8 +40,8 @@
 
 .studioHeaderRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--spacing-sm);
   min-width: 0;
 }
@@ -52,6 +52,7 @@
   justify-content: flex-end;
   gap: var(--spacing-xs);
   flex: 0 0 auto;
+  align-self: flex-end;
 }
 
 .mediaModeToggle {
@@ -145,21 +146,6 @@
   min-width: 0;
 }
 
-.studioReconcileMediaBanner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-xs);
-  margin: 0 0 var(--spacing-xs);
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--border-radius-sm);
-  border: var(--border-width-thin) solid color-mix(in srgb, var(--accent1-color) 35%, transparent);
-  background: color-mix(in srgb, var(--accent1-color) 10%, var(--surface1-color, var(--bg-color)));
-  font-size: var(--font-size-xs);
-  color: var(--text1-color);
-}
-
 /* Same flex basis as `StudioTreeCandidateCardBank` `.studioPaneSearchField` */
 .studioPaneSearchField {
   flex: 0 0 12rem;
@@ -221,12 +207,12 @@
 
 .studioMediaRowOne {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--spacing-xs);
   align-items: flex-end;
   width: 100%;
   min-width: 0;
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .embeddedTitle {

@@ -5,6 +5,7 @@ import { getCardById } from '@/lib/services/cards/cardReadService';
 import { syncCardProjection, withCardMutationRetry } from '@/lib/services/cards/cardMutationSupport';
 import { computeDimensionSortKeys } from '@/lib/services/cards/cardTagRules';
 import type { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { buildSubjectFilterTags, resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 
@@ -17,10 +18,12 @@ export async function updateCardTags(
   internal?: {
     galleryTagRollupStatuses?: Card['galleryTagRollupStatuses'];
     implicitSubjectTagIds?: string[];
+    allTags?: Tag[];
+    galleryTagInheritanceOverrides?: Card['galleryTagInheritanceOverrides'];
   }
 ): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  const allTags = await getAllTags();
+  const allTags = internal?.allTags ?? await getAllTags();
   const tagPathLookup = buildTagMap(allTags);
 
   return withCardMutationRetry(async () => {
@@ -75,6 +78,9 @@ export async function updateCardTags(
           : {}),
         ...(internal?.implicitSubjectTagIds
           ? { galleryImplicitSubjectTagIds: internal.implicitSubjectTagIds }
+          : {}),
+        ...(internal?.galleryTagInheritanceOverrides
+          ? { galleryTagInheritanceOverrides: internal.galleryTagInheritanceOverrides }
           : {}),
         updatedAt: Date.now(),
       };

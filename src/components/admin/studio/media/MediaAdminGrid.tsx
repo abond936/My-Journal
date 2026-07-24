@@ -8,10 +8,12 @@ import { CSS as DndCss } from '@dnd-kit/utilities';
 import JournalImage from '@/components/common/JournalImage';
 import { Media } from '@/lib/types/photo';
 import DimensionalTagVerticalChips from '@/components/admin/common/DimensionalTagVerticalChips';
-import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import { useMedia } from '@/components/providers/MediaProvider';
 import { useTag } from '@/components/providers/TagProvider';
-import type { AdminTagFilterScope } from '@/lib/preferences/adminFilters';
+import type {
+  AdminDimensionFilterState,
+  AdminTagFilterScope,
+} from '@/lib/preferences/adminFilters';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { formatCoreTagsTooltipLines, getCoreTagsByDimension } from '@/lib/utils/tagDisplay';
 import MediaEditModal from '@/components/admin/studio/media/MediaEditModal';
@@ -33,9 +35,7 @@ export interface MediaAdminGridCellProps {
   mediaIndex: number;
   tagNameMap: Map<string, string>;
   allTags: ReturnType<typeof useTag>['tags'];
-  onSaveTags: (mediaId: string, nextTags: string[]) => Promise<void>;
-  onSaveSubjectTag: (mediaId: string, nextSubjectTagId: string | null) => Promise<void>;
-  onSaveSubjectTags: (mediaId: string, nextSubjectTagIds: string[]) => Promise<void>;
+  onEditTags?: (mediaId: string) => void;
   onSaveMediaFields: (
     mediaId: string,
     updates: Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagIds'>>
@@ -66,14 +66,7 @@ export type MediaAdminGridStudioDragBind = {
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
-type DimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
-type DimensionFilters = Record<
-  DimensionKey,
-  {
-    mode: DimensionFilterMode;
-    tagId: string;
-  }
->;
+type DimensionFilters = AdminDimensionFilterState;
 
 function isMediaGridChromeInteractiveTarget(target: EventTarget | null): boolean {
   const t = eventTargetToElement(target);
@@ -92,7 +85,7 @@ function MediaAdminGridCell({
   mediaIndex,
   tagNameMap,
   allTags,
-  onSaveTags,
+  onEditTags,
   onSaveMediaFields,
   isSelected,
   onSelectionInteraction,
@@ -100,8 +93,6 @@ function MediaAdminGridCell({
   inlineCaptionEditing = false,
   isAssignedToActiveCard = false,
   authoritativeRelatedCardIds = null,
-  onSaveSubjectTag,
-  onSaveSubjectTags,
   stackMemberCount = 0,
   stackExpanded = false,
   onToggleStackExpand,
@@ -152,29 +143,6 @@ function MediaAdminGridCell({
   useLayoutEffect(() => {
     syncInlineCaptionHeight();
   }, [captionDraft, syncInlineCaptionHeight]);
-
-  const handleTagUpdate = useCallback(
-    async (nextTagIds: string[]) => {
-      await onSaveTags(media.docId!, nextTagIds);
-      setSaveNotice('Tags saved');
-    },
-    [media.docId, onSaveTags]
-  );
-
-  const handleSubjectUpdate = useCallback(
-    async (nextSubjectTagId: string | null) => {
-      await onSaveSubjectTag(media.docId!, nextSubjectTagId);
-      setSaveNotice('Subject saved');
-    },
-    [media.docId, onSaveSubjectTag]
-  );
-  const handleSubjectsUpdate = useCallback(
-    async (nextSubjectTagIds: string[]) => {
-      await onSaveSubjectTags(media.docId!, nextSubjectTagIds);
-      setSaveNotice('Subjects saved');
-    },
-    [media.docId, onSaveSubjectTags]
-  );
 
   const handleSelectionClick = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent, source: 'cell' | 'checkbox') => {
@@ -386,9 +354,28 @@ function MediaAdminGridCell({
               </button>
             ) : null}
             <span className={chromeStyles.metaBadgeMuted}>{media.source}</span>
-            <span className={assigned ? chromeStyles.metaBadgeAssigned : chromeStyles.metaBadgeUnassigned}>
-              {assigned ? 'Assigned' : 'Unassigned'}
-            </span>
+            {assigned ? (
+              <button
+                type="button"
+                className={`${chromeStyles.metaBadgeAssigned} ${styles.assignedNavigationButton}`}
+                onClick={handleOpenLinkedCards}
+                aria-label={
+                  linkedCardCount === 1
+                    ? 'Open assigned card'
+                    : `Choose among ${linkedCardCount} assigned cards`
+                }
+                title={
+                  linkedCardCount === 1
+                    ? 'Open assigned card'
+                    : `Choose among ${linkedCardCount} assigned cards`
+                }
+              >
+                <Link2 size={11} aria-hidden="true" />
+                <span>Assigned · {linkedCardCount}</span>
+              </button>
+            ) : (
+              <span className={chromeStyles.metaBadgeUnassigned}>Unassigned</span>
+            )}
             {isAssignedToActiveCard ? (
               <span className={styles.assignedToCardBadge}>On card</span>
             ) : null}
@@ -407,28 +394,6 @@ function MediaAdminGridCell({
               </button>
             ) : null}
           </div>
-          {linkedCardCount > 0 ? (
-            <div className={styles.overlayBottomStart}>
-              <button
-                type="button"
-                className={styles.overlayBottomLinkButton}
-                onClick={handleOpenLinkedCards}
-                aria-label={
-                  linkedCardCount === 1
-                    ? 'Open linked card'
-                    : `Open ${linkedCardCount} linked cards`
-                }
-                title={
-                  linkedCardCount === 1
-                    ? 'Open linked card'
-                    : `Open ${linkedCardCount} linked cards`
-                }
-              >
-                <Link2 size={13} aria-hidden="true" />
-                <span className={styles.overlayLinkedCardsCount}>{linkedCardCount}</span>
-              </button>
-            </div>
-          ) : null}
         </div>
       }
       overlayBottomEnd={
@@ -502,22 +467,12 @@ function MediaAdminGridCell({
               className={styles.tagChipsInline}
               tagIds={media.tags ?? []}
               subjectTagId={media.subjectTagId ?? null}
+              subjectTagIds={media.subjectTagIds ?? []}
               allTags={allTags}
               variant="inline"
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
+              onUpdateTags={() => undefined}
+              onOpenAssignment={onEditTags ? () => onEditTags(media.docId) : undefined}
             />
-          <div className={styles.tagSearchFoot} data-admin-chrome={ADMIN_GRID_CHROME.tagSearchFoot}>
-            <CardDimensionalTagCommandBar
-              card={{ tags: media.tags ?? [], subjectTagId: media.subjectTagId ?? null, subjectTagIds: media.subjectTagIds ?? [] }}
-              allTags={allTags ?? []}
-              variant="searchOnly"
-              suggestionsDensity="dense"
-              onUpdateTags={handleTagUpdate}
-              onUpdateSubjectTagId={handleSubjectUpdate}
-              onUpdateSubjectTagIds={handleSubjectsUpdate}
-            />
-          </div>
           {saveNotice ? <div className={styles.saveNotice}>{saveNotice}</div> : null}
         </>
       }
@@ -553,9 +508,7 @@ const MemoizedMediaAdminGridCell = React.memo(MediaAdminGridCell, (prev, next) =
     prev.mediaIndex === next.mediaIndex &&
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
-    prev.onSaveTags === next.onSaveTags &&
-    prev.onSaveSubjectTag === next.onSaveSubjectTag &&
-    prev.onSaveSubjectTags === next.onSaveSubjectTags &&
+    prev.onEditTags === next.onEditTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -604,9 +557,7 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
     prev.mediaIndex === next.mediaIndex &&
     prev.tagNameMap === next.tagNameMap &&
     prev.allTags === next.allTags &&
-    prev.onSaveTags === next.onSaveTags &&
-    prev.onSaveSubjectTag === next.onSaveSubjectTag &&
-    prev.onSaveSubjectTags === next.onSaveSubjectTags &&
+    prev.onEditTags === next.onEditTags &&
     prev.onSaveMediaFields === next.onSaveMediaFields &&
     prev.isSelected === next.isSelected &&
     prev.onSelectionInteraction === next.onSelectionInteraction &&
@@ -618,7 +569,6 @@ const MemoizedMediaAdminGridCellStudioSource = React.memo(
 export default function MediaAdminGrid({
   sourcePathFirst = false,
   dimensionFilters,
-  tagFilterScope = 'all',
   studioSourceDraggable = false,
   inlineCaptionEditing = false,
   clientSort = 'none',
@@ -634,6 +584,7 @@ export default function MediaAdminGrid({
   onToggleStackExpand,
   onDissolveStack,
   onMediaContextMenu,
+  onEditTags,
 }: {
   sourcePathFirst?: boolean;
   dimensionFilters: DimensionFilters;
@@ -653,6 +604,7 @@ export default function MediaAdminGrid({
   onToggleStackExpand?: (stackId: string) => void;
   onDissolveStack?: (stackId: string) => void;
   onMediaContextMenu?: (event: React.MouseEvent, mediaId: string) => void;
+  onEditTags?: (mediaId: string) => void;
 }) {
   const { media, selectedMediaIds, setSelectedMediaIds, updateMedia } = useMedia();
   const selectionAnchorIndexRef = useRef<number | null>(null);
@@ -674,7 +626,7 @@ export default function MediaAdminGrid({
           item.subjectTagId && ids.includes(item.subjectTagId)
         );
         if (state.mode === 'any') return true;
-        if (tagFilterScope === 'subject') {
+        if (state.subjectOnly) {
           if (state.mode === 'hasAny') return hasSubjectInDimension;
           if (state.mode === 'isEmpty') return !hasSubjectInDimension;
           if (state.mode === 'matches') {
@@ -709,7 +661,7 @@ export default function MediaAdminGrid({
       if (fileCompare !== 0) return fileCompare;
       return normalize(a.docId).localeCompare(normalize(b.docId));
     });
-  }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort, tagFilterScope]);
+  }, [sourceMedia, sourcePathFirst, dimensionFilters, clientSort]);
 
   const stackMap = stackById ?? new Map();
   const expandedSet = expandedStackIds ?? new Set<string>();
@@ -755,39 +707,12 @@ export default function MediaAdminGrid({
     [sortedIds, selectedMediaIds, setSelectedMediaIds]
   );
 
-  const handleSaveTags = useCallback(
-    async (mediaId: string, nextTags: string[]) => {
-      const updated = await updateMedia(mediaId, { tags: nextTags });
-      if (!updated) {
-        throw new Error('Tag update failed. Please retry.');
-      }
-    },
-    [updateMedia]
-  );
-
   const handleSaveMediaFields = useCallback(
     async (mediaId: string, updates: Partial<Pick<Media, 'caption' | 'objectPosition' | 'tags' | 'subjectTagIds'>>) => {
       const updated = await updateMedia(mediaId, updates);
       if (!updated) {
         throw new Error('Media update failed. Please retry.');
       }
-    },
-    [updateMedia]
-  );
-
-  const handleSaveSubjectTag = useCallback(
-    async (mediaId: string, nextSubjectTagId: string | null) => {
-      const updated = await updateMedia(mediaId, { subjectTagId: nextSubjectTagId });
-      if (!updated) {
-        throw new Error('Subject update failed. Please retry.');
-      }
-    },
-    [updateMedia]
-  );
-  const handleSaveSubjectTags = useCallback(
-    async (mediaId: string, nextSubjectTagIds: string[]) => {
-      const updated = await updateMedia(mediaId, { subjectTagIds: nextSubjectTagIds });
-      if (!updated) throw new Error('Subjects update failed. Please retry.');
     },
     [updateMedia]
   );
@@ -858,9 +783,7 @@ export default function MediaAdminGrid({
               mediaIndex={index}
               tagNameMap={tagNameMap}
               allTags={tags}
-              onSaveTags={handleSaveTags}
-              onSaveSubjectTag={handleSaveSubjectTag}
-              onSaveSubjectTags={handleSaveSubjectTags}
+              onEditTags={onEditTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}
@@ -877,9 +800,7 @@ export default function MediaAdminGrid({
               mediaIndex={index}
               tagNameMap={tagNameMap}
               allTags={tags}
-              onSaveTags={handleSaveTags}
-              onSaveSubjectTag={handleSaveSubjectTag}
-              onSaveSubjectTags={handleSaveSubjectTags}
+              onEditTags={onEditTags}
               onSaveMediaFields={handleSaveMediaFields}
               isSelected={selectedMediaIds.includes(item.docId)}
               onSelectionInteraction={handleGridSelection}

@@ -22,12 +22,14 @@ import {
   isCollectionRootOnlyPayload,
   isContentOnlyPayload,
   isTagsOnlyPayload,
+  isTagsAndInheritancePayload,
   isGalleryInheritanceOverridesOnlyPayload,
   isStatusOnlyPayload,
 } from '@/lib/services/cards/cardMutationClassifiers';
 import { getCardById } from '@/lib/services/cards/cardReadService';
 import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
 import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
+import { updateCardTagAssignmentWithInheritance } from '@/lib/services/galleryTagInheritanceService';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 
 jest.mock('next/server', () => ({
@@ -63,6 +65,9 @@ jest.mock('@/lib/services/cards/cardHierarchyMutationService', () => ({
 }));
 jest.mock('@/lib/services/cards/cardMetadataMutationService', () => ({ updateCardMetadata: jest.fn() }));
 jest.mock('@/lib/services/cards/cardTagMutationService', () => ({ updateCardTags: jest.fn() }));
+jest.mock('@/lib/services/galleryTagInheritanceService', () => ({
+  updateCardTagAssignmentWithInheritance: jest.fn(),
+}));
 jest.mock('@/lib/services/cards/cardStatusMutationService', () => ({ updateCardStatus: jest.fn() }));
 jest.mock('@/lib/services/cards/cardContentMutationService', () => ({ updateCardContent: jest.fn() }));
 jest.mock('@/lib/services/cards/cardLifecycleService', () => ({ deleteCard: jest.fn() }));
@@ -75,6 +80,7 @@ jest.mock('@/lib/services/cards/cardMutationClassifiers', () => ({
   isCollectionRootOnlyPayload: jest.fn(),
   isContentOnlyPayload: jest.fn(),
   isTagsOnlyPayload: jest.fn(),
+  isTagsAndInheritancePayload: jest.fn(),
   isGalleryInheritanceOverridesOnlyPayload: jest.fn(),
   isStatusOnlyPayload: jest.fn(),
 }));
@@ -106,6 +112,8 @@ const mockedIsChildrenReorderOnlyPayload = isChildrenReorderOnlyPayload as jest.
 const mockedIsCollectionRootOnlyPayload = isCollectionRootOnlyPayload as jest.MockedFunction<typeof isCollectionRootOnlyPayload>;
 const mockedIsContentOnlyPayload = isContentOnlyPayload as jest.MockedFunction<typeof isContentOnlyPayload>;
 const mockedIsTagsOnlyPayload = isTagsOnlyPayload as jest.MockedFunction<typeof isTagsOnlyPayload>;
+const mockedIsTagsAndInheritancePayload = isTagsAndInheritancePayload as jest.MockedFunction<typeof isTagsAndInheritancePayload>;
+const mockedUpdateCardTagAssignmentWithInheritance = updateCardTagAssignmentWithInheritance as jest.MockedFunction<typeof updateCardTagAssignmentWithInheritance>;
 const mockedIsGalleryInheritanceOverridesOnlyPayload = isGalleryInheritanceOverridesOnlyPayload as jest.MockedFunction<typeof isGalleryInheritanceOverridesOnlyPayload>;
 const mockedUpdateCardGalleryInheritanceOverrides = updateCardGalleryInheritanceOverrides as jest.MockedFunction<typeof updateCardGalleryInheritanceOverrides>;
 const mockedIsStatusOnlyPayload = isStatusOnlyPayload as jest.MockedFunction<typeof isStatusOnlyPayload>;
@@ -400,6 +408,32 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
 
     expect(res.status).toBe(200);
     expect(mockedUpdateCardGalleryInheritanceOverrides).toHaveBeenCalledWith('card-1', overrides);
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
+  });
+
+  it('routes tags, subjects, and Gallery inheritance through one authoritative mutation', async () => {
+    const overrides = { who: false, what: true, when: false, where: false };
+    mockedIsTagsAndInheritancePayload.mockReturnValue(true);
+    mockedUpdateCardTagAssignmentWithInheritance.mockResolvedValue({
+      docId: 'card-1',
+      tags: ['alan'],
+      subjectTagIds: ['alan'],
+      galleryTagInheritanceOverrides: overrides,
+    } as never);
+
+    const res = await PATCH(makeRequest({
+      tags: ['alan'],
+      subjectTagIds: ['alan'],
+      galleryTagInheritanceOverrides: overrides,
+    }) as never, { params: Promise.resolve({ id: 'card-1' }) });
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardTagAssignmentWithInheritance).toHaveBeenCalledWith(
+      'card-1',
+      { tags: ['alan'], subjectTagId: undefined, subjectTagIds: ['alan'] },
+      overrides
+    );
+    expect(mockedUpdateCardTags).not.toHaveBeenCalled();
     expect(mockedUpdateCard).not.toHaveBeenCalled();
   });
 });

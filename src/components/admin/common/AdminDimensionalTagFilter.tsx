@@ -1,171 +1,272 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ListTree, SlidersHorizontal } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Calendar, MapPin, Square, Tag as TagIcon, User } from 'lucide-react';
 import type { Tag } from '@/lib/types/tag';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import type {
   AdminDimensionFilterMode,
   AdminDimensionFilterState,
-  AdminTagFilterScope,
 } from '@/lib/preferences/adminFilters';
-import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import styles from './AdminDimensionalTagFilter.module.css';
+
+type AppliedTagFilterState = {
+  selectedTagIds: string[];
+  dimensionFilters: AdminDimensionFilterState;
+};
+
+const DIMENSION_ICON = {
+  who: User,
+  what: Square,
+  when: Calendar,
+  where: MapPin,
+} satisfies Record<TagDimension, React.ComponentType<{ size?: number; 'aria-hidden'?: boolean }>>;
 
 type AdminDimensionalTagFilterProps = {
   selectedTagIds: string[];
   allTags: Tag[];
   onSelectedTagIdsChange: (tagIds: string[]) => void;
-  tagScope: AdminTagFilterScope;
-  onTagScopeChange: (scope: AdminTagFilterScope) => void;
   dimensionFilters: AdminDimensionFilterState;
   onDimensionFilterChange: (
     dimension: TagDimension,
-    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>
+    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string; subjectOnly: boolean }>
   ) => void;
   className?: string;
   surfaceLabel: string;
+  onApply?: (value: AppliedTagFilterState) => void;
 };
 
 export default function AdminDimensionalTagFilter({
   selectedTagIds,
   allTags,
   onSelectedTagIdsChange,
-  tagScope,
-  onTagScopeChange,
   dimensionFilters,
   onDimensionFilterChange,
   className,
   surfaceLabel,
+  onApply,
 }: AdminDimensionalTagFilterProps) {
-  const [pickerDimensions, setPickerDimensions] = useState<TagDimension[] | null>(null);
-  const [rulesOpen, setRulesOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const selectedTags = useMemo(
-    () => allTags.filter((tag) => tag.docId && selectedTagIds.includes(tag.docId)),
-    [allTags, selectedTagIds]
+  const [open, setOpen] = useState(false);
+  const [draftTagIds, setDraftTagIds] = useState(selectedTagIds);
+  const [draftDimensionFilters, setDraftDimensionFilters] = useState(dimensionFilters);
+
+  const activeRuleCount = DIMENSION_ORDER.reduce(
+    (count, dimension) =>
+      count +
+      (dimensionFilters[dimension].mode === 'isEmpty' ? 1 : 0) +
+      (dimensionFilters[dimension].subjectOnly ? 1 : 0),
+    0
   );
-  const activeRuleCount = DIMENSION_ORDER.filter(
-    (dimension) => dimensionFilters[dimension].mode !== 'any'
-  ).length + (tagScope === 'subject' ? 1 : 0);
+  const activeCount = selectedTagIds.length + activeRuleCount;
+  const selectedTagsByDimension = useMemo(() => {
+    const resolvedDimensionById = buildResolvedTagDimensionMap(allTags);
+    const tagById = new Map(
+      allTags
+        .filter((tag): tag is Tag & { docId: string } => Boolean(tag.docId))
+        .map((tag) => [tag.docId, tag])
+    );
+    const grouped: Record<TagDimension, Tag[]> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+    };
+    selectedTagIds.forEach((tagId) => {
+      const tag = tagById.get(tagId);
+      const dimension = resolvedDimensionById.get(tagId);
+      if (tag && dimension) grouped[dimension].push(tag);
+    });
+    return grouped;
+  }, [allTags, selectedTagIds]);
 
   useEffect(() => {
-    if (!rulesOpen) return;
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setRulesOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setRulesOpen(false);
-    };
-    document.addEventListener('pointerdown', closeOnOutsidePointer);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePointer);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [rulesOpen]);
+    if (!open) return;
+    setDraftTagIds(selectedTagIds);
+    setDraftDimensionFilters(dimensionFilters);
+  }, [dimensionFilters, open, selectedTagIds]);
 
-  const pickerName = pickerDimensions?.length === 1
-    ? `${DIMENSION_LABEL[pickerDimensions[0]]} filters`
-    : `${surfaceLabel} tag filters`;
+  const applyDraft = () => {
+    const resolvedDimensionById = buildResolvedTagDimensionMap(allTags);
+    const appliedTagIds = draftTagIds.filter((tagId) => {
+      const dimension = resolvedDimensionById.get(tagId);
+      return !dimension || draftDimensionFilters[dimension].mode !== 'isEmpty';
+    });
+    if (onApply) {
+      onApply({
+        selectedTagIds: appliedTagIds,
+        dimensionFilters: draftDimensionFilters,
+      });
+    } else {
+      onSelectedTagIdsChange(appliedTagIds);
+      for (const dimension of DIMENSION_ORDER) {
+        const previous = dimensionFilters[dimension];
+        const next = draftDimensionFilters[dimension];
+        if (
+          previous.mode !== next.mode ||
+          previous.tagId !== next.tagId ||
+          Boolean(previous.subjectOnly) !== Boolean(next.subjectOnly)
+        ) {
+          onDimensionFilterChange(dimension, next);
+        }
+      }
+    }
+    setOpen(false);
+  };
 
   return (
-    <div ref={rootRef} className={`${styles.root} ${className ?? ''}`}>
-      <CardDimensionalTagCommandBar
-        card={{ tags: selectedTagIds }}
-        allTags={allTags}
-        onUpdateTags={onSelectedTagIdsChange}
-        variant="compact"
-        searchPlaceholder="Filter by tag…"
-        onDimensionSelect={(dimension) => setPickerDimensions([dimension])}
-        trailingSlot={
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={() => setPickerDimensions([...DIMENSION_ORDER])}
-              aria-label={`Browse all ${surfaceLabel.toLowerCase()} tag filters`}
-              title="Browse all dimensions"
-            >
-              <ListTree size={16} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className={styles.actionButton}
-              onClick={() => setRulesOpen((current) => !current)}
-              aria-label={`${surfaceLabel} tag rules`}
-              aria-expanded={rulesOpen}
-              title="Tag rules"
-            >
-              <SlidersHorizontal size={16} aria-hidden="true" />
-              {activeRuleCount > 0 ? <span className={styles.ruleCount}>{activeRuleCount}</span> : null}
-            </button>
-          </div>
-        }
-      />
-
-      {rulesOpen ? (
-        <div className={styles.rulesPopover} role="group" aria-label={`${surfaceLabel} tag rules`}>
-          <label className={styles.scopeRow}>
-            <span>Match</span>
-            <select value={tagScope} onChange={(event) => onTagScopeChange(event.target.value as AdminTagFilterScope)}>
-              <option value="all">Any assigned tag</option>
-              <option value="subject">Subjects only</option>
-            </select>
-          </label>
-          <div className={styles.ruleList}>
+    <div className={`${styles.root} ${className ?? ''}`}>
+      <div className={styles.summaryViewport}>
+        <div className={styles.summaryBar}>
+          <div className={styles.summaryColumns}>
             {DIMENSION_ORDER.map((dimension) => {
-              const state = dimensionFilters[dimension];
+              const Icon = DIMENSION_ICON[dimension];
+              const selectedTags =
+                dimensionFilters[dimension].mode === 'isEmpty'
+                  ? []
+                  : selectedTagsByDimension[dimension];
               return (
-                <label key={dimension} className={styles.ruleRow}>
-                  <span>{DIMENSION_LABEL[dimension]}</span>
-                  <select
-                    value={state.mode === 'matches' ? 'any' : state.mode}
-                    onChange={(event) =>
-                      onDimensionFilterChange(dimension, {
-                        mode: event.target.value as AdminDimensionFilterMode,
-                        tagId: '',
-                      })
-                    }
-                    aria-label={`${DIMENSION_LABEL[dimension]} tag presence`}
-                  >
-                    <option value="any">Any</option>
-                    <option value="hasAny">Has tags</option>
-                    <option value="isEmpty">Empty</option>
-                  </select>
-                </label>
+                <div
+                  key={dimension}
+                  className={styles.summaryColumn}
+                  data-dimension={dimension}
+                >
+                  <div className={styles.summaryHeading}>
+                    <Icon size={14} aria-hidden={true} />
+                    <span>{DIMENSION_LABEL[dimension]}</span>
+                  </div>
+                  <div className={styles.summaryPresence}>
+                    {dimensionFilters[dimension].mode === 'isEmpty'
+                      ? dimensionFilters[dimension].subjectOnly
+                        ? 'Subjects empty'
+                        : 'Empty'
+                      : dimensionFilters[dimension].subjectOnly
+                        ? 'Subjects only'
+                        : 'Any assigned'}
+                  </div>
+                  <div className={styles.summaryTags}>
+                    {selectedTags.length > 0 ? (
+                      selectedTags.map((tag) => (
+                        <span key={tag.docId} className={styles.summaryTag}>
+                          {tag.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.summaryEmpty}>—</span>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
+          <div className={styles.summaryActions}>
+            <button
+              type="button"
+              className={styles.filterButton}
+              onClick={() => setOpen(true)}
+              aria-label={`Open all ${surfaceLabel.toLowerCase()} tag filters`}
+              aria-expanded={open}
+            >
+              <TagIcon size={17} aria-hidden="true" />
+              {activeCount > 0 ? <span className={styles.ruleCount}>{activeCount}</span> : null}
+            </button>
+          </div>
         </div>
-      ) : null}
+      </div>
 
       <EditModal
-        isOpen={Boolean(pickerDimensions)}
-        onClose={() => setPickerDimensions(null)}
-        title={pickerName}
-        size={pickerDimensions?.length === 1 ? 'default' : 'wide'}
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title={`${surfaceLabel} tag filters`}
+        size="wide"
+        footer={(
+          <div className={styles.modalActions}>
+            <button type="button" className={styles.cancelButton} onClick={() => setOpen(false)}>
+              Cancel
+            </button>
+            <button type="button" className={styles.applyButton} onClick={applyDraft}>
+              Apply
+            </button>
+          </div>
+        )}
       >
         <MacroTagSelector
-          selectedTags={selectedTags}
+          selectedTags={allTags.filter((tag) => tag.docId && draftTagIds.includes(tag.docId))}
           allTags={allTags}
-          onChange={onSelectedTagIdsChange}
-          expanded={Boolean(pickerDimensions)}
-          onExpandedChange={(open) => {
-            if (!open) setPickerDimensions(null);
+          onChange={setDraftTagIds}
+          expanded={open}
+          onExpandedChange={(nextOpen) => {
+            if (!nextOpen) setOpen(false);
           }}
           collapsedSummary="none"
           suppressOverlay
           applySelectionOnChange
-          visibleDimensions={pickerDimensions ?? [...DIMENSION_ORDER]}
-          pickerTitle={pickerName}
-          searchPlaceholder={pickerDimensions?.length === 1
-            ? `Find ${DIMENSION_LABEL[pickerDimensions[0]].toLowerCase()} tags`
-            : 'Find tags'}
+          visibleDimensions={[...DIMENSION_ORDER]}
+          pickerTitle={`${surfaceLabel} tag filters`}
+          searchPlaceholder="Enter tags…"
           hidePickerHeading
+          hideActions
+          showManagementControls={false}
+          initialExpandLevels={1}
+          includeAllTags
+          dimensionDisabled={(dimension) =>
+            draftDimensionFilters[dimension].mode === 'isEmpty'
+          }
+          dimensionHeaderIcon={(dimension) => {
+            const Icon = DIMENSION_ICON[dimension];
+            return <Icon size={16} aria-hidden={true} />;
+          }}
+          dimensionHeaderControl={(dimension) => {
+            const state = draftDimensionFilters[dimension];
+            return (
+              <div className={styles.dimensionOptions}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(state.subjectOnly)}
+                    onChange={(event) =>
+                      setDraftDimensionFilters((current) => ({
+                        ...current,
+                        [dimension]: {
+                          ...current[dimension],
+                          subjectOnly: event.target.checked,
+                        },
+                      }))
+                    }
+                  />
+                  <span>Subjects only</span>
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={state.mode === 'isEmpty'}
+                    onChange={(event) => {
+                      const isEmpty = event.target.checked;
+                      setDraftDimensionFilters((current) => ({
+                        ...current,
+                        [dimension]: {
+                          ...current[dimension],
+                          mode: isEmpty ? 'isEmpty' : 'any',
+                          tagId: '',
+                        },
+                      }));
+                      if (isEmpty) {
+                        const resolved = buildResolvedTagDimensionMap(allTags);
+                        setDraftTagIds((current) =>
+                          current.filter((tagId) => resolved.get(tagId) !== dimension)
+                        );
+                      }
+                    }}
+                  />
+                  <span>Empty</span>
+                </label>
+              </div>
+            );
+          }}
         />
+
       </EditModal>
     </div>
   );

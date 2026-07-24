@@ -15,13 +15,10 @@ import {
   normalizeSubjectTagId,
   normalizeSubjectTagIds,
 } from '@/lib/utils/subjectTag';
+import type { CardTagAssignmentUpdates } from '@/lib/services/cards/cardMutationClassifiers';
 
 const CARDS_COLLECTION = 'cards';
 const MEDIA_COLLECTION = 'media';
-
-function cardUsesMediaInGallery(card: Card, mediaId: string): boolean {
-  return (card.galleryMedia ?? []).some((item) => item.mediaId === mediaId);
-}
 
 async function loadGalleryMediaForCard(card: Card): Promise<Media[]> {
   const galleryIds = (card.galleryMedia ?? [])
@@ -118,36 +115,148 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
   );
 }
 
+export async function updateCardTagAssignmentWithInheritance(
+  cardId: string,
+  updates: CardTagAssignmentUpdates,
+  overrides: NonNullable<Card['galleryTagInheritanceOverrides']>
+): Promise<Card> {
+  const firestore = getAdminApp().firestore();
+  const cardSnap = await firestore.collection(CARDS_COLLECTION).doc(cardId).get();
+  if (!cardSnap.exists) throw new Error(`Card with ID ${cardId} not found.`);
+
+  const card = cardSnap.data() as Card;
+  const settings = await getAuthorSettings();
+  const allTags = await getAllTags();
+  const galleryMedia = await loadGalleryMediaForCard(card);
+  const effectiveToggles = effectiveGalleryInheritanceToggles(
+    settings.galleryTagInheritance,
+    overrides
+  );
+  const result = computeGalleryInheritanceResult(
+    updates.tags ?? card.tags ?? [],
+    galleryMedia,
+    effectiveToggles,
+    allTags,
+    card.galleryTagRollupStatuses
+  );
+
+  return updateCardTags(
+    cardId,
+    {
+      ...updates,
+      tags: result.tags,
+    },
+    {
+      galleryTagRollupStatuses: result.statuses,
+      implicitSubjectTagIds: result.implicitSubjectTagIds,
+      galleryTagInheritanceOverrides: overrides,
+      allTags,
+    }
+  );
+}
+
 /**
  * After gallery-media tag changes, sync inheritance on cards that reference the media in gallery only.
  */
 export async function syncGalleryTagInheritanceForMediaId(mediaId: string): Promise<void> {
+  await syncGalleryTagInheritanceForMediaIds([mediaId]);
+}
+
+export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): Promise<void> {
   const settings = await getAuthorSettings();
   if (!galleryInheritanceTogglesActive(settings.galleryTagInheritance)) {
     return;
   }
 
   const firestore = getAdminApp().firestore();
-  const mediaSnap = await firestore.collection(MEDIA_COLLECTION).doc(mediaId).get();
-  if (!mediaSnap.exists) {
-    return;
-  }
-
-  const media = mediaSnap.data() as Media;
-  const candidateCardIds = media.referencedByCardIds ?? [];
-  if (candidateCardIds.length === 0) {
-    return;
-  }
+  const uniqueMediaIds = Array.from(new Set(mediaIds.filter(Boolean)));
+  const changedMediaIdSet = new Set(uniqueMediaIds);
+  const mediaSnaps = await Promise.all(
+    uniqueMediaIds.map((id) => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+  );
+  const candidateCardIds = new Set<string>();
+  mediaSnaps.forEach((snap) => {
+    if (!snap.exists) return;
+    ((snap.data() as Media).referencedByCardIds ?? []).forEach((id) => candidateCardIds.add(id));
+  });
+  if (candidateCardIds.size === 0) return;
 
   const cardSnaps = await Promise.all(
-    candidateCardIds.map((id) => firestore.collection(CARDS_COLLECTION).doc(id).get())
+    Array.from(candidateCardIds).map((id) => firestore.collection(CARDS_COLLECTION).doc(id).get())
   );
+  const candidateCards = cardSnaps
+    .filter((snap) => snap.exists)
+    .map((snap) => ({ id: snap.id, card: snap.data() as Card }))
+    .filter(({ card }) =>
+      (card.galleryMedia ?? []).some((item) => changedMediaIdSet.has(item.mediaId))
+    );
+  const galleryMediaIds = new Set<string>();
+  candidateCards.forEach(({ card }) =>
+    (card.galleryMedia ?? []).forEach((item) => item.mediaId && galleryMediaIds.add(item.mediaId))
+  );
+  const [galleryMediaSnaps, allTags] = await Promise.all([
+    Promise.all(
+      Array.from(galleryMediaIds).map((id) => firestore.collection(MEDIA_COLLECTION).doc(id).get())
+    ),
+    getAllTags(),
+  ]);
+  const mediaById = new Map<string, Media>();
+  galleryMediaSnaps.forEach((snap) => {
+    if (snap.exists) mediaById.set(snap.id, snap.data() as Media);
+  });
 
-  for (const snap of cardSnaps) {
-    if (!snap.exists) continue;
-    const card = snap.data() as Card;
-    if (!cardUsesMediaInGallery(card, mediaId)) continue;
-    await syncGalleryTagInheritanceForCard(snap.id);
+  for (const { id: cardId, card } of candidateCards) {
+    const effectiveToggles = effectiveGalleryInheritanceToggles(
+      settings.galleryTagInheritance,
+      card.galleryTagInheritanceOverrides
+    );
+    if (!galleryInheritanceTogglesActive(effectiveToggles)) continue;
+    const galleryMedia = (card.galleryMedia ?? [])
+      .map((item) => mediaById.get(item.mediaId))
+      .filter((item): item is Media => Boolean(item));
+    const currentTags = (card.tags ?? []).filter(Boolean);
+    const result = computeGalleryInheritanceResult(
+      currentTags,
+      galleryMedia,
+      effectiveToggles,
+      allTags,
+      card.galleryTagRollupStatuses
+    );
+    const statusesEqual =
+      JSON.stringify(card.galleryTagRollupStatuses ?? {}) === JSON.stringify(result.statuses);
+    const implicitSubjectsEqual = cardTagsEqual(
+      card.galleryImplicitSubjectTagIds ?? [],
+      result.implicitSubjectTagIds
+    );
+    const explicitSubjectTagIds = normalizeSubjectTagIds(card.subjectTagIds);
+    const legacySubjectTagId = normalizeSubjectTagId(card.subjectTagId);
+    const effectiveSubjectTagIds = [
+      ...(explicitSubjectTagIds.length > 0
+        ? explicitSubjectTagIds
+        : legacySubjectTagId ? [legacySubjectTagId] : []),
+      ...result.implicitSubjectTagIds,
+    ];
+    const expectedSubjectFilterTags = await buildSubjectFilterTags(effectiveSubjectTagIds, allTags);
+    const storedSubjectFilterTagIds = Object.entries(card.subjectFilterTags ?? {})
+      .filter(([, enabled]) => enabled === true)
+      .map(([tagId]) => tagId);
+    if (
+      cardTagsEqual(currentTags, result.tags) &&
+      statusesEqual &&
+      implicitSubjectsEqual &&
+      cardTagsEqual(storedSubjectFilterTagIds, Object.keys(expectedSubjectFilterTags))
+    ) {
+      continue;
+    }
+    await updateCardTags(
+      cardId,
+      { tags: result.tags },
+      {
+        galleryTagRollupStatuses: result.statuses,
+        implicitSubjectTagIds: result.implicitSubjectTagIds,
+        allTags,
+      }
+    );
   }
 }
 

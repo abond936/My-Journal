@@ -61,7 +61,7 @@ function cardDisplayMode(card: Card): NonNullable<Card['displayMode']> {
 function cardMatchesOnCardDimensionalMap(
   card: Card,
   dt: DimensionalTagIdMap,
-  tagFilterScope: AdminTagFilterScope
+  dimensionFilters: AdminDimensionFilterState
 ): boolean {
   if (!dimensionalTagMapHasFilters(dt)) return true;
   for (const dim of DIMENSION_KEYS) {
@@ -69,7 +69,7 @@ function cardMatchesOnCardDimensionalMap(
     if (!selected?.length) continue;
     const idsOnCard = (card[dim] as string[] | undefined) ?? [];
     const ok = selected.some((tid) =>
-      tagFilterScope === 'subject'
+      dimensionFilters[dim].subjectOnly
         ? Boolean(card.subjectFilterTags?.[tid])
         : idsOnCard.includes(tid)
     );
@@ -173,9 +173,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const selectionAnchorIndexRef = useRef<number | null>(null);
   const [bulkTagModalOpen, setBulkTagModalOpen] = useState(false);
   const [sortMode, setSortMode] = useState<CandidateSort>('titleAsc');
-  const [tagFilterScope, setTagFilterScope] = useState<AdminTagFilterScope>(
-    initialLocalFilterPrefsRef.current.tagFilterScope
-  );
+  const [tagFilterScope, setTagFilterScope] = useState<AdminTagFilterScope>('all');
   const [typeFilter, setTypeFilter] = useState<CardTypeFilter>(initialLocalFilterPrefsRef.current.typeFilter);
   const [displayModeFilter, setDisplayModeFilter] = useState<DisplayModeFilter>(
     initialLocalFilterPrefsRef.current.displayModeFilter
@@ -197,6 +195,20 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const [deleteConfirmLoading, setDeleteConfirmLoading] = useState(false);
   const deferredSearch = useDeferredValue(search);
   const deferredFilterTagIds = useDeferredValue(filterTagIds);
+  const tagFilterQuerySignature = useMemo(() => {
+    const grouped = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
+    const selected = new Set(deferredFilterTagIds);
+    const matchingHierarchyIds = (allTags ?? [])
+      .filter((tag) =>
+        Boolean(
+          tag.docId &&
+          (selected.has(tag.docId) || tag.path?.some((ancestorId) => selected.has(ancestorId)))
+        )
+      )
+      .map((tag) => tag.docId!)
+      .sort();
+    return JSON.stringify({ grouped, matchingHierarchyIds });
+  }, [allTags, deferredFilterTagIds]);
   const deferredTypeFilter = useDeferredValue(typeFilter);
   const deferredDisplayModeFilter = useDeferredValue(displayModeFilter);
   const deferredCodificationFilter = useDeferredValue(codificationFilter);
@@ -206,6 +218,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   const trimmedSearch = search.trim();
   const dragActiveRef = useRef(false);
   const workspaceRequestIdRef = useRef(0);
+  const workspaceQueryInFlightUrlRef = useRef<string | null>(null);
   const resultsScrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const autoSelectedCardIdRef = useRef<string | null>(null);
@@ -234,15 +247,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   // stable chunks so the pane keeps its growing-list behavior, but the server
   // now shapes the active card universe by the current workspace filters/sort.
   useEffect(() => {
-    let cancelled = false;
-    const requestId = ++workspaceRequestIdRef.current;
-    const isCurrent = () => workspaceRequestIdRef.current === requestId;
-    setLoadingWorkspaceCards(true);
-    setIsStreamingMore(false);
-    setWorkspaceHasMore(false);
-    setWorkspaceLastDocId(undefined);
-    setWorkspaceLoadMoreError(null);
-
     (async () => {
       const params = new URLSearchParams({
         limit: String(WORKSPACE_INITIAL_PAGE_SIZE),
@@ -274,33 +278,46 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           params.set(`${dimension}Present`, 'true');
         }
       }
-      const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
+      const subjectDimensions = DIMENSION_KEYS.filter(
+        (dimension) => deferredDimensionFilters[dimension].subjectOnly
+      );
+      if (subjectDimensions.length) params.set('subjectDimensions', subjectDimensions.join(','));
+      const groupedFilterTagIds = (
+        JSON.parse(tagFilterQuerySignature) as {
+          grouped: ReturnType<typeof groupSelectedTagIdsByDimension>;
+        }
+      ).grouped;
       for (const dimension of DIMENSION_KEYS) {
         const selected = groupedFilterTagIds[dimension];
         if (selected?.length) {
           params.set(dimension, selected.join(','));
         }
       }
-      const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
-        (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
-      );
-      if (
-        tagFilterScope === 'subject' &&
-        (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
-      ) {
-        params.set('tagScope', 'subject');
-      }
+      const requestUrl = `/api/cards?${params.toString()}`;
+      if (workspaceQueryInFlightUrlRef.current === requestUrl) return;
+      workspaceQueryInFlightUrlRef.current = requestUrl;
+      const requestId = ++workspaceRequestIdRef.current;
+      const isCurrent = () => workspaceRequestIdRef.current === requestId;
+      setLoadingWorkspaceCards(true);
+      setIsStreamingMore(false);
+      setWorkspaceHasMore(false);
+      setWorkspaceLastDocId(undefined);
+      setWorkspaceLoadMoreError(null);
 
       let pageData: { items?: Card[]; hasMore?: boolean; lastDocId?: string } = {};
       let ok = false;
       try {
-        const res = await fetch(`/api/cards?${params.toString()}`);
+        const res = await fetch(requestUrl);
         ok = res.ok;
         if (ok) pageData = (await res.json().catch(() => ({}))) as typeof pageData;
       } catch {
         ok = false;
+      } finally {
+        if (workspaceQueryInFlightUrlRef.current === requestUrl) {
+          workspaceQueryInFlightUrlRef.current = null;
+        }
       }
-      if (cancelled || !isCurrent()) return;
+      if (!isCurrent()) return;
       if (!ok) {
         setLoadingWorkspaceCards(false);
         setWorkspaceHasMore(false);
@@ -323,21 +340,15 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       setWorkspaceLastDocId(pageData.lastDocId);
       setLoadingWorkspaceCards(false);
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [
-    allTags,
     deferredDimensionFilters,
     deferredCodificationFilter,
     deferredDisplayModeFilter,
-    deferredFilterTagIds,
     deferredSearch,
     deferredSortMode,
     deferredStatusFilter,
     deferredTypeFilter,
-    tagFilterScope,
+    tagFilterQuerySignature,
     workspaceQueryRefreshTick,
   ]);
 
@@ -388,21 +399,16 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
         params.set(`${dimension}Present`, 'true');
       }
     }
+    const subjectDimensions = DIMENSION_KEYS.filter(
+      (dimension) => deferredDimensionFilters[dimension].subjectOnly
+    );
+    if (subjectDimensions.length) params.set('subjectDimensions', subjectDimensions.join(','));
     const groupedFilterTagIds = groupSelectedTagIdsByDimension(deferredFilterTagIds, allTags ?? []);
     for (const dimension of DIMENSION_KEYS) {
       const selected = groupedFilterTagIds[dimension];
       if (selected?.length) {
         params.set(dimension, selected.join(','));
       }
-    }
-    const hasScopedDimensionRules = Array.from(DIMENSION_KEYS).some(
-      (dimension) => deferredDimensionFilters[dimension].mode !== 'any'
-    );
-    if (
-      tagFilterScope === 'subject' &&
-      (dimensionalTagMapHasFilters(groupedFilterTagIds) || hasScopedDimensionRules)
-    ) {
-      params.set('tagScope', 'subject');
     }
 
     try {
@@ -453,7 +459,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     deferredTypeFilter,
     isStreamingMore,
     loadingWorkspaceCards,
-    tagFilterScope,
     workspaceHasMore,
     workspaceLastDocId,
   ]);
@@ -500,12 +505,12 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       if (deferredTypeFilter !== 'all' && card.type !== deferredTypeFilter) return false;
       if (deferredDisplayModeFilter !== 'all' && cardDisplayMode(card) !== deferredDisplayModeFilter) return false;
       if (!cardMatchesCodificationFilter(card, deferredCodificationFilter)) return false;
-      if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap, tagFilterScope)) return false;
+      if (!cardMatchesOnCardDimensionalMap(card, onCardTagDimensionalMap, deferredDimensionFilters)) return false;
       for (const dimension of DIMENSION_KEYS) {
         const state = deferredDimensionFilters[dimension];
         const ids = Array.isArray(card[dimension]) ? (card[dimension] as string[]) : [];
         if (state.mode === 'any') continue;
-        if (tagFilterScope === 'subject') {
+        if (state.subjectOnly) {
           const hasSubjectInDimension = cardHasSubjectInDimension(card, dimension);
           if (state.mode === 'hasAny' && !hasSubjectInDimension) return false;
           if (state.mode === 'isEmpty' && hasSubjectInDimension) return false;
@@ -525,7 +530,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
       deferredCodificationFilter,
       onCardTagDimensionalMap,
       deferredDimensionFilters,
-      tagFilterScope,
     ]
   );
 
@@ -543,7 +547,10 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
   }, [setFilterTagIds, setSearch, setStatusFilter]);
 
   const updateDimensionFilter = useCallback(
-    (dimension: DimensionKey, patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string }>) => {
+    (
+      dimension: DimensionKey,
+      patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string; subjectOnly: boolean }>
+    ) => {
       setDimensionFilters((prev) => ({
         ...prev,
         [dimension]: {
@@ -1053,8 +1060,6 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
           selectedTagIds={filterTagIds}
           allTags={allTags || []}
           onSelectedTagIdsChange={setFilterTagIds}
-          tagScope={tagFilterScope}
-          onTagScopeChange={setTagFilterScope}
           dimensionFilters={dimensionFilters}
           onDimensionFilterChange={updateDimensionFilter}
           surfaceLabel="Cards"
@@ -1261,6 +1266,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
 
       <BulkEditTagsModal
         cardIds={Array.from(bulkSelectedCardIds)}
+        selectedCards={mergedWorkspaceCards.filter(
+          (card) => Boolean(card.docId && bulkSelectedCardIds.has(card.docId))
+        )}
         isOpen={bulkTagModalOpen}
         onClose={() => setBulkTagModalOpen(false)}
         onSave={async ({ cards }) => {

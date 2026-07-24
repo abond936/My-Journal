@@ -1,8 +1,6 @@
 import {
   DEFAULT_CARD_EDIT_WIDTH,
   MAX_CARD_EDIT_WIDTH,
-  MIN_CARD_EDIT_PX,
-  MIN_QUESTIONS_PX,
   applyColumnWidth,
   cardEditWidthBounds,
   clampPaneWidth,
@@ -19,10 +17,10 @@ describe('Studio pane layout contract', () => {
     expect(paneHandleCount({ compose: false, questions: false, media: true })).toBe(0);
   });
 
-  it('reserves visible sibling minimums when bounding Compose', () => {
+  it('shrinks Compose below its preferred width when visible sibling minimums consume the row', () => {
     expect(cardEditWidthBounds(1000, { questions: true, media: true })).toEqual({
-      minEdit: MIN_CARD_EDIT_PX,
-      maxEdit: 604,
+      minEdit: 232,
+      maxEdit: 232,
     });
     expect(cardEditWidthBounds(140, { questions: true, media: true })).toBeNull();
     expect(cardEditWidthBounds(5000, { questions: false, media: false })?.maxEdit).toBe(
@@ -30,14 +28,14 @@ describe('Studio pane layout contract', () => {
     );
   });
 
-  it('reserves Compose and Media when bounding Questions', () => {
+  it('shrinks Questions below its preferred width when Compose and Media consume the row', () => {
     expect(
       questionsWidthBounds(1000, {
         compose: true,
         media: true,
         composeWidth: DEFAULT_CARD_EDIT_WIDTH,
       })
-    ).toEqual({ minQuestions: MIN_QUESTIONS_PX, maxQuestions: 447 });
+    ).toEqual({ minQuestions: 184, maxQuestions: 184 });
   });
 
   it('clamps stored and dragged widths to their real range', () => {

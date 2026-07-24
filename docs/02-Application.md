@@ -300,9 +300,9 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Grid** — Searchable, filterable card population with status and type context.
 - **Search** — Title search is temporary task state, identifies active no-result queries, and provides direct clearing instead of silently reopening an empty pane.
 - **Density** — A compact tile-size control opens continuous adjustment while retaining title, dimensional subjects, selection, and tag access at every permitted size.
-- **Selection** — Individual and bulk selection with bounded actions.
+- **Selection** — Individual and bulk selection with bounded actions. Card tiles display assignment truth but do not repeat the former inline `Edit tags…` entry; single-Card assignment belongs to Compose and multi-Card assignment belongs to the bulk `Card Tags` action. Bulk Card tagging uses the same four-column assignment language as Compose without merging unrelated Gallery truth: each dimension defaults to `Keep`, summarizes inherited and overridden Cards plus missing- or unreviewed-Gallery conditions, and can be changed explicitly to `Inherit` from each Card's own Gallery or `Override`. Only overridden dimensions enable mixed-state tag and Subject deltas; Empty/Some/All preserves per-Card differences unless the author explicitly adds or removes a value for every selected Card.
 - **Filters** — Status, form, dimensions, tags, subject scope, and assignment-related refinements.
-- **Tag filtering** — Direct known-tag entry, independent Who/What/When/Where tree browsing, an explicit all-dimensions picker, and compact presence and subject-scope rules shared with Media.
+- **Tag filtering** — One all-dimensions picker exposes the complete Who/What/When/Where trees. Each dimension independently supports `Subjects only` and `Empty`: selected tags match any assignment by default, `Subjects only` limits that dimension to subject assignments, `Empty` finds no assignments in that dimension, and `Subjects only` plus `Empty` finds no subject in that dimension.
 - **Forms** — Story, Gallery, Question, and Callout management.
 - **Subjects** — Card subject authoring.
 - **Compose** — Open the selected card for full authoring.
@@ -330,7 +330,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Editor** — Rich text with paste, drop, and library media insertion.
 - **Cover** — Cover selection and framing.
 - **Gallery** — Ordered membership, captions, insertion, and reorder.
-- **Tags** — Dimensional assignment and subject designation.
+- **Tags** — The closed Compose section uses the same icon-and-word dimensional-heading typography as the other Studio panes and underlined selected tags and subjects; inheritance state remains inside the assignment modal rather than repeating `Inherited` or `Overridden` labels on the Compose face. The former `Edit tags…` field, separate Gallery-inheritance block, and new-card help copy do not compete with the assignment surface. Its tag-icon action opens `Card Tags`. The modal begins with the dimensional headings, shows the current Gallery tags in matching columns, then stages one `Inherit?` choice per dimension; `Search tags…` follows that source row before the aligned Subjects band and four taxonomy trees. Inherited dimensions lock tag membership to Gallery truth while leaving their assigned tags available for explicit Subject choices. Overridden dimensions dim the Gallery tags as reference and enable ordinary tag and Subject editing. Turning inheritance off keeps the inherited tags as the editable starting selection; turning it back on confirms that manual assignments will be replaced by the current Gallery tags. Cancel discards every staged change, while Apply commits tags, subjects, and inheritance together through one server-authoritative mutation.
 - **Children** — Attach, remove, and order structural children.
 - **Preview** — Reader-oriented presentation preview.
 - **Alignment** — Compose, Reader, and compact previews share the applicable Reader rendering contracts.
@@ -356,22 +356,22 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Drag targets have distinct meaning: Cover replaces, Gallery appends, body inserts, Children attaches.
 - Story Assist is editorial, voice-preserving, and suggestion-only; guides may shape tone but never invent facts.
 
-### Studio Organize
+### Studio Tags and Collections
 
-*Intent* — Provide one place to describe the archive with Tags and structure it with Collections.
+*Intent* — Keep taxonomy management and Reader-path organization distinct while allowing both to participate in the shared Studio workflow.
 
 ✅ **Complete**
 
-- **Tags** — Dimensional taxonomy workspace.
-- **Collections** — Curated structure workspace.
-- **Switching** — Distinct contexts within one Organize area.
-- **Import map** — Reconcile operational import tags into the taxonomy.
+- **Tags pane** — Independent fixed-width dimensional-taxonomy workspace and future home of import vocabulary mapping.
+- **Collections pane** — Independent fixed-width curated Reader-structure workspace. Its compact hierarchy orders the solid-triangle expansion control, text-colored drag handle, and visible saved-state selector, provides text-colored master Expand all and Collapse all controls on a right-aligned row beneath the title, and measures nesting as a 12-pixel text-to-text indent. Text-colored per-row action menus open in Compose, attach child Cards, detach/remove collection status, and confirm Card deletion.
+- **Visibility** — Tags and Collections are separately closeable like every other Studio pane; Studio never closes a pane automatically.
 
 📋 **Contracts**
 
 - Tags describe content; Collections arrange authored reading paths.
 - The two systems cooperate but never merge into one model.
 - Each workspace retains its own selection and filters.
+- Studio preserves the order Tags → Collections → Cards → Compose → Questions → Media. Tags, Collections, Compose, and Questions use stable fixed widths; Cards and Media share the remaining adjustable space and stop at content-safe minima. Cards and Media control rows wrap rather than defining an oversized minimum. The author closes panes when more space is needed.
 
 ### Studio Tags
 
@@ -391,17 +391,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Subjects** — Subject authoring and Subject-only filtering.
 - **Inheritance** — Author-controlled per-dimension Gallery-media rollup with existing-card protection, Unreviewed precedence, overrides, subjects, and reconciled projections.
 - **Counts** — Confirmed card and media usage counts.
-- **Mapping** — Import-tag preview and confirmed remapping.
 - **Starter set** — Optional additive Tag Set 0.
 - **Reader filters** — Any assigned and Subject only.
 - **Reliability** — Shared modal ownership, exact lookup, scoped filters, and post-save reconciliation.
-- **Selection** — Direct entry handles known tags; Who, What, When, and Where open focused assignment trees; and the full four-dimensional selector remains available for comprehensive and bulk classification. Individual Card, Media, and Question assignment preserves hidden dimensions and supports multiple subjects.
+- **Selection** — Card, Media, and Question assignment uses one comprehensive four-dimensional modal rather than competing inline entry fields. Questions show compact colored dimensional chips and a tag-icon action; `Question Tags` uses the same search-first headings, aligned Subjects band, creation controls, trees, legend, and Cancel/Apply language as Media and Card assignment. Every assignment surface preserves hidden dimensions and supports multiple subjects.
 - **Integrity** — Canonical hierarchy with reconciled paths, counts, derived fields, and search projections.
 - **Identity compatibility** — Canonical Who tags own identity; the 10 existing compatibility profiles use those same tag IDs, and archive perspective resolves to the canonical Alan Bond Who tag.
 - **Family-tree facts** — Optional parent, spouse, and partner records can reference canonical Who tag IDs to construct a stable family-tree view. No relationship records currently exist, and derived kinship words do not become assignments or alter authored content.
 - **Groups** — Stored filtering Groups are not part of the target model. No Person Group records currently exist, and the rejected legacy role/group tag nodes have been removed through governed cleanup.
 - **Migration evidence** — The read-only vocabulary manifest covers all 138 Who tags, 10 compatibility profiles, 1,281 Cards, 3,503 Media records, and 270 Questions. It proves no ID remapping, assignment rewrite, count repair, or search reindex is required for the approved nested-name clusters.
-- **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets. Parent nodes have independent expand/collapse controls; each dimension provides Expand all and Collapse all; Studio collapse state persists locally; and a collapsed reparent target expands after a short drag hover. The dedicated drag handle continues to own reorder and Shift-drag reparent interaction. A reparent move is cycle-checked before optimistic display; a rejected server move reloads authoritative tags rather than leaving the editable tree unusable.
+- **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets. Parent rows place the solid-triangle expand/collapse control before the dedicated drag handle and expose their Reader expanded/collapsed state beside it; each dimension provides Expand all and Collapse all; Studio collapse state persists locally; and a collapsed nesting target expands after a short drag hover. The dedicated drag handle owns a stable, non-shifting drag presentation: a row's upper edge places before, its narrow center nests, and its lower edge places after, with visual target and invalid-state feedback rather than surface instructions. Edge placement adopts the target row's parent when necessary, so any tag can move directly between desired siblings in one gesture. The drag overlay stays above the pointer instead of covering the destination. Reorder commits every affected sibling atomically. Reparenting is dimension-safe and cycle-checked across the prospective subtree before optimistic display; a rejected server move reloads authoritative tags rather than leaving the editable tree unusable.
 - **Governed rename and reparent** — Rename and same-dimension reparent preserve stable direct assignments and reconcile descendant paths, Card and Media dimensional/filter projections, Card and Media subject ancestry, Question subject ancestry, Media completeness flags, hierarchical published-Card and Media counts, and both search indexes. Each operation records durable stage and failure evidence and is idempotent so the same request can safely resume reconciliation after a partial failure.
 
 ⭕1 **Planned**
@@ -470,8 +469,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ✅ **Complete**
 
-- **Prompts** — Create, edit, search, tag, and delete unlinked prompts.
-- **Filters** — Text, taxonomy, Assigned, Unassigned, Untagged, and descendant scope.
+- **Prompts** — Create new prompts explicitly; edit existing prompt text directly in place with quiet delayed saving, immediate blur saving, localized Saving/Saved/Retry status, and Escape-to-revert.
+- **Filters** — Text, taxonomy, Assigned, Unassigned, Untagged, and descendant scope. The closed taxonomy filter uses the shared icon-and-word dimensional headings with the selected tags visible beneath them.
 - **Answers** — Transactionally create or open the sole linked Question card in Compose.
 - **Unlink** — Preserve the answer as a draft Story.
 - **Integrity** — Reject conflicting links, protect linked prompts from deletion, and atomically unlink and convert answers.
@@ -481,6 +480,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - A Question is a prompt; its Reader content lives in one linked Question card.
 - A Question may have zero or one answer card; concurrent create requests resolve to that same card.
 - The prompt supplies the initial title and tags; prompt and answer then evolve independently.
+- Prompt-text autosave and `Question Tags` Apply are independent mutations; creating and deleting a Question remain explicit actions.
 - A linked prompt cannot be deleted.
 - Unlinking removes the relationship and converts the answer to a draft Story.
 
@@ -502,14 +502,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Import** — Bank import, card-oriented folder tools, paste, and drop.
 - **Browse** — Search, filters, grouping, batches, and population scopes.
 - **Library workflow filters** — Server-backed Complete/Incomplete, unresolved dimension, import batch, source folder, metadata outcome, and dimensional-tag filters operate across the matching Library rather than only the loaded page. Grouping fully hydrates the matching result before presenting Folder, Batch, Metadata, or Day groups.
-- **Editing** — Captions, tags, subjects, positioning, and replace-in-place.
+- **Editing** — Captions remain inline. One search-first `Media Tags` modal owns comprehensive single- and multi-Media assignment across Who, What, When, and Where. A single Subjects band beneath the icon-labelled headings divides into four equal dimensional columns for selected short-name tags and aligned Subject checkboxes; the shared band height keeps all four taxonomy trees vertically aligned. Root and child tag-creation affordances remain available. The Empty/Some/All checkbox legend and Cancel/Apply actions remain in the bottom margin. The general Media editor owns positioning, replace-in-place, relationships, and deletion without duplicating tag controls.
 - **Assignment** — Cover, Gallery, and body relationships through drag or library selection.
-- **Selection** — Bulk tags, subjects, and draft Gallery creation.
+- **Selection** — The same Tags-and-Subjects modal handles one or many selected Media records, including mixed-value add, remove, and preserve decisions, plus draft Gallery creation.
 - **Protection** — Reference-aware deletion.
 - **Renditions** — Optimized Reader and Studio images with originals retained.
 - **Piles** — Retired from the active product journey. Historical provisional-cluster records and backend compatibility remain dormant pending a later cleanup gate.
 - **Stacks** — Manual hero/member grouping without deleting assets.
-- **Map preview** — Transient media view from import-tag mapping.
+- **Tag filtering** — The closed filter surface keeps four fixed-width, compact Who/What/When/Where summaries visible with the Reader-sidebar icons, each dimension's applied role/empty rule, and its selected tag names; a tag-icon action sits at their upper right. One modal begins with `Enter tags…` and gives each icon-labelled dimension only `Subjects only`, `Empty`, and its complete taxonomy tree. A blank tree imposes no tag requirement; selected tags match any assignment unless that dimension is `Subjects only`; `Empty` disables that tree and finds no assignments, while `Subjects only` plus `Empty` finds no subject but allows ordinary tags. The modal excludes tag creation, opens one level by default and through every selected path, exposes every taxonomy tag, and keeps `Cancel` and `Apply` in a fixed footer outside the scrolling trees before applying the staged state as one server-backed Library query.
+- **Assigned navigation** — The tile's Assigned chip is the Card-navigation control: one referenced Card opens directly in Compose; multiple references open the existing Card selector. No separate overlapping Card-link button is rendered.
+- **Responsive synchronization** — A Media tag save updates the authoritative Media records, current Library results, shared tag counts, and filter behavior immediately. Gallery inheritance, affected-Card media signals, and Media/Card search projections run as one deduplicated durable reconciliation operation, reuse maintained Media-to-Card references during ordinary work, retry after interruption, and refresh an affected open Compose Card when complete. Studio does not run the expensive reconciliation processor merely because the workspace opened: the ordinary Media response reports whether durable work is pending, and only that positive signal starts recovery. Initial Questions, Media-stack, Collection-root, and Card-bank reads deduplicate an identical in-flight request so development Strict Mode and transient remounts do not double the server work.
 - **Identity evidence** — New imports retain source-byte SHA-256 identity and source provenance; concurrent exact matches reuse one canonical media record. Existing accessible local originals have verified evidence and uncontested registry entries.
 - **Exact-match filtering** — The Library can show all Media, only records that share exact source-byte evidence, or only records without such a match. The author uses ordinary Media selection and reference-aware deletion; prior duplicate-review evidence remains preserved but is not a separate author workflow.
 - **Evidence classification** — Media without source-byte evidence can be explicitly classified as a missing local original or a source whose original bytes were not retained; stored renditions never substitute for original-byte evidence.
@@ -519,6 +521,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕2 **Future**
 
+- **Import vocabulary mapping** — Preserve embedded source keywords and paths as provenance without automatically adding them to the curated taxonomy. After import, present a dense two-sided reconciliation workspace with the independently scrollable curated Who/What/When/Where tree beside one-row imported-keyword records. Each row shows source path, affected-Media count and preview, a reason-labelled recommendation, and compact accept/correct/create/ignore/defer actions. Dragging an imported keyword onto a curated tag corrects its destination; dropping onto a curated parent offers the explicit choice to map to that parent or create the imported name beneath it. Previously approved and exact-path mappings may be applied automatically, accepted mappings are reused on later imports, and resolved or ignored keywords leave the queue while their original evidence remains dormant. Applying accepted mappings uses the authoritative Media tag path, then ordinary curated-tag completeness—not unresolved or ignored source metadata—determines which Media enters Incomplete for bulk tagging.
 - **First-user workflow validation** — Observe a representative new archive owner using the implemented Import → Library → codify/caption → Card path without live instruction, then gate only the corrections supported by that evidence.
 - **Duplicate reconciliation** — Recover evidence where original source bytes are unavailable and reconcile confirmed same-asset records with recovery evidence. Likely-match discovery remains low priority unless archive pain proves otherwise.
 - **Compatibility retirement** — Remove dormant Pile, Person, Group, and old perspective compatibility only after zero-live-reference proof and a recoverable migration gate.
@@ -539,6 +542,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Card-oriented Media selection defaults the existing codification filter to Complete. The same All Codification / Complete / Incomplete selector remains visible; All Codification includes both Complete and Incomplete when Card context will help finish codification. Complete accepts intentional Unknown or N/A dimensional answers.
 - Automatic and manual Piles are not part of the target workflow. Filtering, grouping, search, and ordinary selection form working sets; a future saved-selection capability requires demonstrated user need rather than inheriting the provisional Pile model.
 - New imports persist whether embedded metadata was requested and whether useful caption or keyword metadata was found, absent, or unreadable. Paste imports record that metadata was not requested; legacy records without this evidence remain Unknown.
+- Future import vocabulary mapping must keep source metadata separate from confirmed assignments: imported keywords do not become curated tags merely because they were found in a file, and a mapping decision stops surfacing after it is accepted, ignored, or otherwise resolved.
 - Media caption and tags are frame truth; card placement overrides are explicit and local.
 - Future first-time guidance must explain source evidence, provisional versus confirmed truth, and the relationship between Media tags, Card tags, subjects, identities, and Gallery inheritance at the moment each distinction becomes relevant.
 - A successful import is not the end of onboarding: the system must truthfully show what is ready, what requires review, and the most useful next action without forcing a novice through every advanced tool.
