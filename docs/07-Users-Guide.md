@@ -16,6 +16,36 @@ My Stories is not merely a place to store photographs. It is a way to organize f
 
 An ordinary photo feed can preserve files and display them by date. My Stories asks the author to do more: identify what the material is about, explain what matters, connect related material, and create useful paths through the archive. That takes judgment. The purpose of the product and this guide is to make that judgment manageable and repeatable rather than leaving every author to invent a method.
 
+### Move through the archive in layers
+
+My Stories is designed to let people navigate, browse, or simply "swim through" their images in whatever ways make sense for their material. The product does not require one complete chronology, one universal hierarchy, or one correct route through a family's history.
+
+The author can add meaning progressively:
+
+1. **Explore Media** — At the simplest level, preserve images and use Who, What, When, and Where Tags to find and consume them more meaningfully than a date-based photo feed ordinarily allows. Captions can add the image-level context that Tags cannot carry.
+2. **Create Cards** — Bring one important image or a relevant group of images together when they express a moment, person, event, place, subject, or longer story worth opening.
+3. **Build Collections** — Arrange related Cards when intentional selection, context, and order help a reader understand a larger story.
+
+Each level adds an optional layer of authorship. Media remain useful without Cards. Cards remain useful without Collections. A Collection does not replace its Cards, and a Card does not replace its source Media.
+
+**Rule:** Use only as much structure as helps tell the stories the author wants to tell.
+
+### Selective authorship is a feature, not a failure
+
+No level is required to be complete or comprehensive:
+
+- not every Media item must be fully tagged;
+- not every Media item needs a caption;
+- not every Media item needs to appear in a Card;
+- not every Card needs to belong to a Collection; and
+- not every family, period, place, or topic needs a finished narrative.
+
+A large archive will ordinarily contain richly documented events, small coherent groups, one-off images, uncertain dates and locations, several family branches, and material whose meaning is not yet understood. The product is intended to accommodate that unevenness rather than pressure the author to disguise it.
+
+The author should concentrate effort where additional context or structure produces additional meaning. A particularly important photograph may justify a detailed caption or its own Card. Twenty nearly self-explanatory photographs may need only broad shared Tags. Unidentified or weakly understood Media may remain in the library until later evidence or interest gives them a useful place.
+
+**Default:** Aim for sufficient understanding, not universal processing. An archive is sufficiently authored when the stories the author cares about can be found, understood, and enjoyed.
+
 ### The five parts of an authored archive
 
 - **Media** are the historical evidence: photographs and other source material preserved in one library.
@@ -25,6 +55,19 @@ An ordinary photo feed can preserve files and display them by date. My Stories a
 - **Tags** describe Media and Cards so the same material can be found through Who, What, When, and Where.
 
 **Rule:** Do not ask one part of the system to do another part's job. Tags help people find material; Collections arrange a reading experience; Cards create meaning; captions explain individual Media.
+
+### Tags and Collections group for different reasons
+
+Tags and Collections can both gather related material, but they do not create the same kind of organization:
+
+- A **Tag** records a reusable truth and answers, "What material matches this person, event, life stage, period, or place?"
+- A **Collection** records an editorial choice and answers, "What selected Cards should a reader encounter together, and in what context or order?"
+
+For example, `What > Life > Childhood` is useful as a Tag when Childhood is a reusable way to retrieve Media and Cards across several people, families, and periods. A Collection such as `Alan's Childhood`, `Childhood on Cleveland Street`, or `Childhood Across Three Generations` makes a narrower promise: it presents selected Cards as a particular reading experience.
+
+The same concept may therefore appear in both systems when it performs both jobs. The Tag supports broad retrieval; the Collection supplies selection, context, and order. A generic Collection that merely contains everything carrying a Tag usually adds little value.
+
+**Rule:** Use a Tag to say what is true. Build a Collection when intentional selection or sequence helps tell a larger story.
 
 ### What the product can and cannot decide
 
@@ -36,7 +79,7 @@ Assistance may suggest, but it must not silently publish, delete, tag, or replac
 
 ### A useful definition of success
 
-A successful archive is not the archive with the most tags, Cards, or written words. It is one in which important material can be found, individual images have enough context to be understood, Cards feel worth opening, related Cards form coherent paths, and another person can navigate and understand the result without the author standing beside them.
+A successful archive is not the archive with the most tags, Cards, Collections, or written words. It is one in which the material that matters can be found, selected images have enough context to be understood, Cards feel worth opening, useful reading paths feel coherent, and another person can navigate and enjoy the result without the author standing beside them. Untagged Media, uncarded Media, and uncollected Cards may remain without making the authored parts unsuccessful.
 
 ---
 
@@ -52,7 +95,7 @@ Large imports create a natural temptation to design the complete taxonomy first 
 
 Avoid choosing the most confusing box of unidentified photographs as the first exercise. It is useful later, but it teaches uncertainty management before the basic authoring cycle is familiar.
 
-### Complete the whole cycle
+### Learn the whole cycle on the bounded set
 
 Take the learning set through the complete authoring path:
 
@@ -65,7 +108,7 @@ Take the learning set through the complete authoring path:
 7. Arrange related Cards in a Collection when a reading path adds value.
 8. Review the result in Reader as though encountering it for the first time.
 
-Only after completing that cycle should the author expand the taxonomy or accelerate work across a much larger population.
+Completing this learning cycle does not mean every item in the bounded set must receive every possible treatment. Some Media may remain lightly tagged, uncaptioned, or outside Cards. The purpose is to experience every authoring level at least once before expanding the taxonomy or accelerating work across a much larger population.
 
 ### Work in passes
 
@@ -80,7 +123,7 @@ Trying to perfect every image before moving to the next is slow and inconsistent
 5. **Arrange** — Add Cards to Collections where an intentional reading order helps.
 6. **Read** — Inspect the result in Reader and correct confusion, fragmentation, or excess.
 
-**Rule:** Do not treat import as completion. Imported Media become useful only as the author progressively understands, describes, connects, and presents them.
+**Rule:** Import makes Media available; later work adds meaning selectively. Do not confuse availability with authorship, and do not confuse authorship with an obligation to process everything.
 
 ### Preserve uncertainty
 
