@@ -34,4 +34,37 @@ describe('journal When sort keys', () => {
       journalWhenSortDesc: 19840000,
     });
   });
+
+  it('prefers the structured date over legacy When tags', () => {
+    const tags = new Map<string, Tag>([
+      ['legacy', { docId: 'legacy', name: '1984', dimension: 'when' } as Tag],
+    ]);
+
+    expect(computeJournalWhenSortKeys(['legacy'], tags, {
+      status: 'known',
+      year: 1968,
+      month: 10,
+      day: 12,
+      precision: 'day',
+      approximate: false,
+      source: 'manual',
+    })).toEqual({
+      journalWhenSortAsc: 19681012,
+      journalWhenSortDesc: 19681012,
+    });
+  });
+
+  it('falls back to legacy When tags for unresolved structured values', () => {
+    const tags = new Map<string, Tag>([
+      ['legacy', { docId: 'legacy', name: '1984', dimension: 'when' } as Tag],
+    ]);
+
+    expect(computeJournalWhenSortKeys(['legacy'], tags, {
+      status: 'unknown',
+      source: 'manual',
+    })).toEqual({
+      journalWhenSortAsc: 19840000,
+      journalWhenSortDesc: 19840000,
+    });
+  });
 });

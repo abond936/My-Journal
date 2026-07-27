@@ -9,12 +9,17 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import {
   createUITreeFromDimensions,
   filterTreesBySearch,
-  normalizeTagDimensionKey,
 } from '@/lib/utils/tagUtils';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import type { TagWithChildren } from '@/components/providers/TagProvider';
 import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 import styles from './BulkEditTagsModal.module.css';
+import TemporalValueControl from '@/components/admin/common/TemporalValueControl';
+import TagSearchSelect from '@/components/admin/common/TagSearchSelect';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { formatTemporalValue, temporalValuesEqual } from '@/lib/utils/temporalValue';
+import type { DimensionResolution } from '@/lib/types/dimensionReview';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 
 type SourceDecision = 'keep' | 'inherit' | 'override';
 type SelectionState = 'checked' | 'unchecked' | 'mixed';
@@ -80,6 +85,14 @@ export default function BulkEditTagsModal({
   const [inheritanceAvailable, setInheritanceAvailable] =
     useState<GalleryTagInheritanceToggles | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [temporalDraft, setTemporalDraft] = useState<TemporalValue | null | undefined>(undefined);
+  const [temporalTouched, setTemporalTouched] = useState(false);
+  const [temporalMixed, setTemporalMixed] = useState(false);
+  const [reviewDecisions, setReviewDecisions] =
+    useState<Map<TagDimension, boolean>>(new Map());
+  const [resolutionDecisions, setResolutionDecisions] =
+    useState<Map<TagDimension, DimensionResolution | null>>(new Map());
+  const cardIdsKey = useMemo(() => [...new Set(cardIds)].sort().join('\u001e'), [cardIds]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -88,6 +101,11 @@ export default function BulkEditTagsModal({
       setSubjectDecisions(new Map());
       setSourceDecisions({ who: 'keep', what: 'keep', when: 'keep', where: 'keep' });
       setSearchTerm('');
+      setTemporalDraft(undefined);
+      setTemporalTouched(false);
+      setTemporalMixed(false);
+      setReviewDecisions(new Map());
+      setResolutionDecisions(new Map());
       return;
     }
     setIsLoading(true);
@@ -107,13 +125,19 @@ export default function BulkEditTagsModal({
       .finally(() => setIsLoading(false));
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const firstTemporal = cards[0]?.temporal ?? null;
+    const mixedTemporal = cards.some((card) => !temporalValuesEqual(card.temporal ?? null, firstTemporal));
+    setTemporalDraft(mixedTemporal ? undefined : firstTemporal);
+    setTemporalMixed(mixedTemporal);
+    setTemporalTouched(false);
+  // The selected record set, rather than incidental array identity, owns initialization.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardIdsKey, isOpen]);
+
   const tagDimensionById = useMemo(() => {
-    const map = new Map<string, TagDimension>();
-    for (const tag of allTags ?? []) {
-      const dimension = normalizeTagDimensionKey(tag.dimension as string | undefined);
-      if (dimension) map.set(tag.docId, dimension);
-    }
-    return map;
+    return buildResolvedTagDimensionMap(allTags ?? []);
   }, [allTags]);
 
   const dimensionalTree = useMemo(
@@ -140,7 +164,7 @@ export default function BulkEditTagsModal({
   const subjectPresenceCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const card of cards) {
-      const ids = card.subjectTagIds?.length
+      const ids = card.subjectTagIds != null
         ? card.subjectTagIds
         : card.subjectTagId
           ? [card.subjectTagId]
@@ -178,6 +202,25 @@ export default function BulkEditTagsModal({
     }
     return selected;
   }, [allTags, getTagState]);
+
+  const getReviewState = React.useCallback((dimension: TagDimension): SelectionState => {
+    const decision = reviewDecisions.get(dimension);
+    if (decision !== undefined) return decision ? 'checked' : 'unchecked';
+    const reviewed = cards.filter((card) => card.dimensionReview?.[dimension]?.reviewed).length;
+    if (reviewed === 0) return 'unchecked';
+    if (reviewed === cards.length) return 'checked';
+    return 'mixed';
+  }, [cards, reviewDecisions]);
+
+  const getResolution = React.useCallback((dimension: TagDimension) => {
+    if (resolutionDecisions.has(dimension)) {
+      return resolutionDecisions.get(dimension) ?? null;
+    }
+    const values = new Set(
+      cards.map((card) => card.dimensionReview?.[dimension]?.resolution ?? null)
+    );
+    return values.size === 1 ? values.values().next().value ?? null : null;
+  }, [cards, resolutionDecisions]);
 
   const expandedNodeIds = useMemo(() => {
     const expanded = new Set<string>();
@@ -225,15 +268,35 @@ export default function BulkEditTagsModal({
         dimension,
         (allTags ?? []).filter((tag) => {
           if (tagDimensionById.get(tag.docId) !== dimension) return false;
+          if (dimension === 'when' && temporalDraft?.status === 'known') return false;
           return (tagPresenceCounts.get(tag.docId) ?? 0) > 0 || tagDecisions.get(tag.docId) === true;
         }),
       ])
     ) as Record<TagDimension, NonNullable<typeof allTags>>;
-  }, [allTags, tagDecisions, tagDimensionById, tagPresenceCounts]);
+  }, [allTags, tagDecisions, tagDimensionById, tagPresenceCounts, temporalDraft]);
 
   const setDimensionSource = (dimension: TagDimension, decision: SourceDecision) => {
     setSourceDecisions((current) => ({ ...current, [dimension]: decision }));
     if (decision !== 'override') {
+      setReviewDecisions((current) => {
+        const next = new Map(current);
+        next.delete(dimension);
+        return next;
+      });
+      setResolutionDecisions((current) => {
+        const next = new Map(current);
+        next.delete(dimension);
+        return next;
+      });
+      if (dimension === 'when') {
+        setTemporalTouched(false);
+        const firstTemporal = cards[0]?.temporal ?? null;
+        const mixedTemporal = cards.some(
+          (card) => !temporalValuesEqual(card.temporal ?? null, firstTemporal)
+        );
+        setTemporalDraft(mixedTemporal ? undefined : firstTemporal);
+        setTemporalMixed(mixedTemporal);
+      }
       setTagDecisions((current) => {
         const next = new Map(current);
         for (const id of next.keys()) {
@@ -261,12 +324,49 @@ export default function BulkEditTagsModal({
     return next;
   };
 
+  const setDimensionResolution = (
+    dimension: TagDimension,
+    resolution: DimensionResolution
+  ) => {
+    const nextResolution = getResolution(dimension) === resolution ? null : resolution;
+    setResolutionDecisions((current) =>
+      new Map(current).set(dimension, nextResolution)
+    );
+    setReviewDecisions((current) => new Map(current).set(dimension, true));
+    for (const tag of allTags ?? []) {
+      if (tagDimensionById.get(tag.docId) === dimension) {
+        setTagDecisions((current) => new Map(current).set(tag.docId, false));
+        setSubjectDecisions((current) => new Map(current).set(tag.docId, false));
+      }
+    }
+    if (dimension === 'when') {
+      setTemporalDraft(null);
+      setTemporalTouched(true);
+      setTemporalMixed(false);
+    }
+  };
+
+  const clearDimension = (dimension: TagDimension) => {
+    setReviewDecisions((current) => new Map(current).set(dimension, false));
+    setResolutionDecisions((current) => new Map(current).set(dimension, null));
+    for (const tag of allTags ?? []) {
+      if (tagDimensionById.get(tag.docId) === dimension) {
+        setTagDecisions((current) => new Map(current).set(tag.docId, false));
+        setSubjectDecisions((current) => new Map(current).set(tag.docId, false));
+      }
+    }
+    if (dimension === 'when') {
+      setTemporalDraft(null);
+      setTemporalTouched(true);
+      setTemporalMixed(false);
+    }
+  };
+
   const handleSaveChanges = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const updatedCards = await Promise.all(
-        cards.map(async (card) => {
+      const items = cards.map((card) => {
           const overrides = { ...(card.galleryTagInheritanceOverrides ?? PROTECTED) };
           for (const dimension of DIMENSION_ORDER) {
             if (sourceDecisions[dimension] === 'inherit') overrides[dimension] = false;
@@ -282,7 +382,7 @@ export default function BulkEditTagsModal({
             }
           }
 
-          const existingSubjects = card.subjectTagIds?.length
+          const existingSubjects = card.subjectTagIds != null
             ? card.subjectTagIds
             : card.subjectTagId
               ? [card.subjectTagId]
@@ -295,24 +395,82 @@ export default function BulkEditTagsModal({
               else nextSubjects.delete(id);
             }
           }
+          const effectiveTemporal = temporalTouched ? temporalDraft ?? null : card.temporal ?? null;
+          if (effectiveTemporal?.status === 'known') {
+            for (const subjectId of nextSubjects) {
+              if (tagDimensionById.get(subjectId) === 'when') nextSubjects.delete(subjectId);
+            }
+          }
 
-          const response = await fetch(`/api/cards/${card.docId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tags: [...nextTags],
-              subjectTagIds: [...nextSubjects],
-              galleryTagInheritanceOverrides: overrides,
-            }),
-          });
-          if (!response.ok) throw new Error(`Could not update ${card.title || 'a selected Card'}.`);
-          return response.json() as Promise<Card>;
-        })
-      );
+          return {
+            cardId: card.docId,
+            tags: [...nextTags],
+            subjectTagIds: [...nextSubjects],
+            overrides,
+            ...(temporalTouched ? { temporal: temporalDraft ?? null } : {}),
+            ...(reviewDecisions.size > 0 || resolutionDecisions.size > 0 ? {
+              dimensionReview: Object.fromEntries(
+                DIMENSION_ORDER.map((dimension) => {
+                  const existing = card.dimensionReview?.[dimension];
+                  const reviewed = reviewDecisions.has(dimension)
+                    ? reviewDecisions.get(dimension) === true
+                    : existing?.reviewed ?? false;
+                  const resolution = resolutionDecisions.has(dimension)
+                    ? resolutionDecisions.get(dimension) ?? null
+                    : existing?.resolution ?? null;
+                  return [dimension, { reviewed, resolution }];
+                })
+              ),
+            } : {}),
+          };
+        });
+      const response = await fetch('/api/cards/bulk-tag-assignment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      });
+      const result = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        operationId?: string;
+        cards?: Card[];
+        failed?: Array<{ cardId: string; error: string }>;
+      };
+      if (!response.ok) {
+        throw new Error(result.message ?? 'The selected Cards could not be updated.');
+      }
+      let updatedCards = result.cards ?? [];
+      let failed = result.failed ?? [];
+      if (failed.length && result.operationId) {
+        const retryResponse = await fetch('/api/cards/bulk-tag-assignment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operationId: result.operationId }),
+        });
+        const retry = (await retryResponse.json().catch(() => ({}))) as {
+          cards?: Card[];
+          failed?: Array<{ cardId: string; error: string }>;
+        };
+        const byId = new Map(
+          [...updatedCards, ...(retry.cards ?? [])]
+            .filter((card) => card.docId)
+            .map((card) => [card.docId, card] as const)
+        );
+        updatedCards = [...byId.values()];
+        failed = retry.failed ?? failed;
+      }
 
       const addTagIds = [...tagDecisions].filter(([, value]) => value).map(([id]) => id);
       const removeTagIds = [...tagDecisions].filter(([, value]) => !value).map(([id]) => id);
-      await onSave({ cardIds, addTagIds, removeTagIds, cards: updatedCards });
+      if (updatedCards.length > 0) {
+        await onSave({ cardIds, addTagIds, removeTagIds, cards: updatedCards });
+      }
+      if (failed.length) {
+        const failedIds = failed.map((item) => item.cardId).join(', ');
+        throw new Error(
+          `${updatedCards.length} Cards were updated; ${failed.length} need retry ` +
+          `(operation ${result.operationId ?? 'unknown'}; Cards: ${failedIds}).`
+        );
+      }
       onClose();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not update the selected Cards.');
@@ -386,15 +544,27 @@ export default function BulkEditTagsModal({
             </div>
 
             <div className={styles.searchBar}>
-              <input
-                type="text"
-                placeholder="Search tags..."
+              <TagSearchSelect
+                allTags={allTags}
+                selectedTagIds={checkedSelection}
                 value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className={styles.searchInput}
+                onValueChange={setSearchTerm}
+                onSelect={(tagId) => {
+                  const dimension = tagDimensionById.get(tagId);
+                  if (dimension) {
+                    setDimensionSource(dimension, 'override');
+                    setResolutionDecisions((current) =>
+                      new Map(current).set(dimension, null)
+                    );
+                  }
+                  setTagDecisions((current) => new Map(current).set(tagId, true));
+                }}
+                allowedDimensions={['who', 'what', 'where']}
+                inputClassName={styles.searchInput}
+                clearClassName={styles.searchClear}
                 autoFocus
               />
-              {searchTerm ? (
+              {false ? (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
@@ -442,25 +612,112 @@ export default function BulkEditTagsModal({
             <div className={styles.mediaInteractiveColumns}>
               {filteredDimensionalTree.map((dimension, index) => {
                 const dimensionKey = DIMENSION_ORDER[index];
+                const reviewState = getReviewState(dimensionKey);
+                const resolution = getResolution(dimensionKey);
+                const overridden = sourceDecisions[dimensionKey] === 'override';
                 return (
-                  <TagPickerDimensionColumn
+                  <div
                     key={dimension.docId}
-                    dimension={dimension}
-                    selection={checkedSelection}
-                    onSelectionChange={(id, selected) =>
-                      setTagDecisions((current) => new Map(current).set(id, selected))
-                    }
-                    getSelectionState={getTagState}
-                    onToggleTag={(id, state) =>
-                      setTagDecisions((current) => applyDecision(current, id, state))
-                    }
-                    expandedNodeIds={expandedNodeIds}
-                    checkboxIdPrefix="bulk-card-tag"
-                    forceExpandAll
-                    showManagementControls
-                    hideHeader
-                    disabled={sourceDecisions[dimensionKey] !== 'override'}
-                  />
+                    className={styles.reviewableDimensionColumn}
+                  >
+                    <div className={styles.dimensionReviewControls}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionKey} reviewed`}
+                          checked={reviewState === 'checked'}
+                          ref={(node) => {
+                            if (node) node.indeterminate = reviewState === 'mixed';
+                          }}
+                          disabled={!overridden}
+                          onChange={() =>
+                            setReviewDecisions((current) =>
+                              new Map(current).set(
+                                dimensionKey,
+                                reviewState !== 'checked'
+                              )
+                            )
+                          }
+                        />
+                        <span>Reviewed</span>
+                      </label>
+                      <button
+                        type="button"
+                        aria-label={`Clear ${dimensionKey}`}
+                        disabled={!overridden}
+                        onClick={() => clearDimension(dimensionKey)}
+                      >
+                        Clear
+                      </button>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionKey} unknown`}
+                          checked={resolution === 'unknown'}
+                          disabled={!overridden}
+                          onChange={() => setDimensionResolution(dimensionKey, 'unknown')}
+                        />
+                        <span>Unknown</span>
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionKey} not applicable`}
+                          checked={resolution === 'not_applicable'}
+                          disabled={!overridden}
+                          onChange={() =>
+                            setDimensionResolution(dimensionKey, 'not_applicable')
+                          }
+                        />
+                        <span>Not applicable</span>
+                      </label>
+                    </div>
+                    {dimensionKey === 'when' ? (
+                      <div className={styles.temporalColumnControl}>
+                        <TemporalValueControl
+                          idPrefix="bulk-card"
+                          value={temporalDraft}
+                          mixed={temporalMixed && !temporalTouched}
+                          disabled={!overridden || Boolean(resolution)}
+                          directEntryOnly
+                          showResolvedStates={false}
+                          onChange={(next) => {
+                            setTemporalDraft(next);
+                            setTemporalTouched(true);
+                            setTemporalMixed(false);
+                            if (next?.status === 'known') {
+                              setResolutionDecisions((current) =>
+                                new Map(current).set('when', null)
+                              );
+                            }
+                          }}
+                        />
+                        <small>
+                          {temporalMixed && !temporalTouched
+                            ? 'Mixed dates'
+                            : formatTemporalValue(temporalDraft)}
+                        </small>
+                      </div>
+                    ) : (
+                      <TagPickerDimensionColumn
+                        dimension={dimension}
+                        selection={checkedSelection}
+                        onSelectionChange={(id, selected) =>
+                          setTagDecisions((current) => new Map(current).set(id, selected))
+                        }
+                        getSelectionState={getTagState}
+                        onToggleTag={(id, state) =>
+                          setTagDecisions((current) => applyDecision(current, id, state))
+                        }
+                        expandedNodeIds={expandedNodeIds}
+                        checkboxIdPrefix="bulk-card-tag"
+                        forceExpandAll
+                        showManagementControls={false}
+                        hideHeader
+                        disabled={!overridden || Boolean(resolution)}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>

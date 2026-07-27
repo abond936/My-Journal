@@ -20,6 +20,13 @@ import {
 } from '@/lib/utils/tagUtils';
 import { groupExactMediaDuplicates } from '@/lib/utils/mediaDuplicateEvidence';
 import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
+import {
+  matchesTemporalValueFilter,
+  parseTemporalFilterParams,
+} from '@/lib/utils/temporalValue';
+import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
+import { matchesDimensionReviewFilter } from '@/lib/utils/dimensionReview';
+import type { AdminDimensionReviewFilter } from '@/lib/preferences/adminFilters';
 
 type ApiErrorPayload = {
   ok: false;
@@ -292,6 +299,17 @@ export async function GET(request: NextRequest) {
         .filter((entry): entry is [string, 'hasAny' | 'isEmpty'] => entry[1] === 'hasAny' || entry[1] === 'isEmpty')
     ) as Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
     const hasDimensionPresenceSeek = Object.keys(dimensionPresence).length > 0;
+    const dimensionReviewStates = Object.fromEntries(
+      (['who', 'what', 'where'] as const)
+        .map((dimension) => [dimension, searchParams.get(`${dimension}Review`)])
+        .filter(
+          (entry): entry is [string, AdminDimensionReviewFilter] =>
+            entry[1] === 'unreviewed' ||
+            entry[1] === 'unknown' ||
+            entry[1] === 'not_applicable'
+        )
+    ) as Partial<Record<'who' | 'what' | 'where', AdminDimensionReviewFilter>>;
+    const hasDimensionReviewSeek = Object.keys(dimensionReviewStates).length > 0;
     const includeTotal = searchParams.get('includeTotal') !== 'false';
     const includeReconciliationStatus =
       searchParams.get('includeReconciliationStatus') === 'true';
@@ -299,6 +317,8 @@ export async function GET(request: NextRequest) {
     const tagMode = searchParams.get('tagMode');
     const tagValue = searchParams.get('tagValue');
     const dimensionalTags = parseDimensionalTagParamsFromSearchParams(searchParams);
+    const temporalFilter = parseTemporalFilterParams(searchParams);
+    const hasTemporalFilter = temporalFilter !== undefined;
     const hasDimensionalTagSeek = dimensionalTagMapHasFilters(dimensionalTags);
 
     const app = getAdminApp();
@@ -331,6 +351,8 @@ export async function GET(request: NextRequest) {
       isTypesenseConfigured() &&
       !hasMatchStatusSeek &&
       !hasLibraryWorkflowSeek &&
+      !hasTemporalFilter &&
+      !hasDimensionReviewSeek &&
       !shouldUseLegacyTagSeek &&
       !hasDimensionPresenceSeek &&
       !((tagScope === 'subject' || subjectDimensions.size > 0) && hasDimensionalTagSeek) &&
@@ -390,7 +412,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek || hasDimensionPresenceSeek || hasLibraryWorkflowSeek || hasMatchStatusSeek) {
+    if (hasSearchSeek || hasDimensionalTagSeek || shouldUseLegacyTagSeek || hasCaptionSeek || hasSourceSeek || hasDimensionPresenceSeek || hasDimensionReviewSeek || hasLibraryWorkflowSeek || hasMatchStatusSeek || hasTemporalFilter) {
       const predicate = (row: Media) => {
         if (hasSourceSeek && row.source !== source) return false;
         if (assignment === 'assigned' && !isMediaAssigned(row)) return false;
@@ -400,6 +422,18 @@ export async function GET(request: NextRequest) {
         if (!mediaMatchesCaptionFilter(row, hasCaption)) return false;
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, searchTrimmed, tagNameLookup)) return false;
+        if (!matchesTemporalValueFilter(row.temporal, temporalFilter)) return false;
+        for (const dimension of ['who', 'what', 'where'] as const) {
+          if (
+            !matchesDimensionReviewFilter(
+              row.dimensionReview,
+              dimension,
+              dimensionReviewStates[dimension]
+            )
+          ) {
+            return false;
+          }
+        }
         if (!mediaMatchesLibraryWorkflowFilters(row, {
           codification,
           unresolvedDimension,
@@ -420,8 +454,11 @@ export async function GET(request: NextRequest) {
           const presence = dimensionPresence[dimension];
           if (!presence) continue;
           const hasValue = tagScope === 'subject' || subjectDimensions.has(dimension)
-            ? Boolean((row[dimension] ?? []).some((tagId) => row.subjectFilterTags?.[tagId]))
-            : (row[dimension] ?? []).length > 0;
+            ? (
+                (dimension === 'when' && row.temporalSubject === true) ||
+                Boolean((row[dimension] ?? []).some((tagId) => row.subjectFilterTags?.[tagId]))
+              )
+            : hasDimensionAssignment(row, dimension);
           if (presence === 'hasAny' && !hasValue) return false;
           if (presence === 'isEmpty' && hasValue) return false;
         }

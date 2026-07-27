@@ -36,8 +36,8 @@ export async function withCardMutationRetry<T>(
   throw lastError ?? new Error('Card mutation failed without an error.');
 }
 
-export function syncCardProjection(card: Card): void {
-  void syncCardToTypesense(card);
+export async function syncCardProjection(card: Card): Promise<void> {
+  await syncCardToTypesense(card);
 }
 
 export async function syncCardProjections(cards: Card[]): Promise<void> {

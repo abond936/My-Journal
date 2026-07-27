@@ -4,6 +4,19 @@ Run from the repo root. Most maintenance scripts need Firebase Admin env vars (s
 **Document role:** Support reference. Owns operator-facing command usage and script-specific caveats.
 **Does not own:** Product behavior (`02`), platform principles (`01`), or implementation priority (`03`). When a script reflects a required product/operational guarantee, the guarantee belongs in canon and this file only documents how to operate it.
 
+## Gallery inheritance reconciliation
+
+- `npm run reconcile:gallery-inheritance -- --manifest=temp/gallery-inheritance-reconciliation.json` — Read-only scan that writes a fingerprinted manifest of Cards whose stored Gallery-inherited tags, dates, review/resolution state, or implicit subjects differ from authoritative Gallery Media.
+- `npm run reconcile:gallery-inheritance -- --apply --manifest=<path> --confirm-project=my-journal-936 --firestore-backup-run=<run-directory>` — Applies only an unchanged manifest after validating the production project, Card update times, and a complete Firestore/Typesense checkpoint less than 24 hours old. The command audits the repaired Cards before succeeding.
+- `npm run reconcile:gallery-inheritance -- --audit --manifest=<path>` — Read-only post-write audit of the Cards recorded in a reconciliation manifest.
+
+## Subject and Tag-count reconciliation
+
+- `npm run reconcile:subject-contract -- --manifest=temp/subject-contract-repair.json` — Read-only scan that writes a fingerprinted manifest for stale singular/array subject state, subject-filter projections, and Known-date When-subject conflicts.
+- `npm run reconcile:subject-contract -- --apply --manifest=<path> --confirm-project=my-journal-936 --firestore-backup-run=<run-directory>` — Applies only an unchanged manifest after validating a fresh complete Firestore/Typesense checkpoint, then verifies the repaired records before succeeding.
+- `npm run repair:tag-counts -- --manifest=temp/tag-count-repair.json` — Read-only scan that writes a fingerprinted manifest for Card, Media, and unique-assignment count drift. Studio Card counts include draft and published assignments.
+- `npm run repair:tag-counts -- --apply --manifest=<path> --confirm-project=my-journal-936 --firestore-backup-run=<run-directory>` — Applies only an unchanged manifest after validating a fresh complete Firestore/Typesense checkpoint. Run the read-only command again to independently confirm zero remaining mismatches.
+
 ## Backup model (operator)
 
 | Plane | What | Where |
@@ -161,6 +174,8 @@ Use **dedicated test accounts** (rotatable), not personal logins. After adding s
 | `npm run export:csv` | Export data to CSV |
 | `npm run backfill:tags` | Tag path backfill (`src/lib/scripts/tags/backfill-tag-paths.ts`) |
 | `npm run backfill:journal-when-sort` | Backfill `journalWhenSortAsc` / `journalWhenSortDesc` from When tags (`src/lib/scripts/cards/backfill-journal-when-sort.ts`); dry-run by default, add `-- --apply` to write |
+| `npm run manifest:when-temporal` | Read-only inventory of deterministic When-tag conversions for the additive structured date field on Media and Cards. Writes a fingerprinted local manifest to `temp/when-temporal-migration.json`; never writes Firestore and rejects `--apply` / `--rollback`. |
+| `npm run migrate:when-temporal` | Guarded migration from the reviewed When-temporal manifest. Default previews. Apply requires `-- --apply --confirm-project=my-journal-936 --firestore-backup-run="<exact run directory>"`, an unchanged manifest, and a fresh internally consistent Firestore checkpoint with matching Card/Media Typesense exports. This scoped recovery gate is intentional because the migration changes Firestore temporal fields only and never touches Storage. `--audit` verifies every deterministic conversion and untouched exception; `--rollback` with the same guards restores the pre-migration temporal values. Legacy When tags and review state are never changed. |
 | `npm run update:tag-counts -- --apply` | Recalculate hierarchical `cardCount` and `mediaCount` on all tags (`--dry-run` to preview) |
 | `npm run diagnose:tag` | Debug single tag |
 | `npm run dry-run:import-metadata` | Scan `zMomDadPics` (or pass `-- <dir>`) for `__X` files; ExifTool read + keyword→tag map; no writes except Firestore tag read. Report: `tools/dry-run-import-metadata-report.txt` |

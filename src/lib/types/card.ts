@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { mediaSchema, Media } from './photo';
 import { galleryTagInheritanceTogglesSchema } from './authorSettings';
+import { temporalValueSchema } from './temporal';
+import { dimensionReviewMapSchema } from './dimensionReview';
 
 const galleryTagRollupStatusSchema = z.enum(['empty', 'reviewed', 'unreviewed']);
 export const galleryTagRollupStatusesSchema = z.object({
@@ -42,6 +44,10 @@ export const cardSchema = z.object({
   subtitle: z.string().optional().nullable(),
   excerpt: z.string().optional().nullable(),
   excerptAuto: z.boolean().optional(),
+
+  /** Additive pilot story date. Existing When tags and inheritance remain unchanged. */
+  temporal: temporalValueSchema.nullable().optional(),
+  dimensionReview: dimensionReviewMapSchema,
   
   // The content field stores HTML with embedded media references.
   content: z.string().default(''),
@@ -86,6 +92,7 @@ export const cardSchema = z.object({
   tags: z.array(z.string()).optional(),
   galleryTagInheritanceOverrides: galleryTagInheritanceTogglesSchema.optional(),
   galleryTagRollupStatuses: galleryTagRollupStatusesSchema.optional(),
+  galleryTemporalRollupStatus: galleryTagRollupStatusSchema.optional(),
   galleryImplicitSubjectTagIds: z.array(z.string().min(1)).optional(),
   subjectTagId: z.string().min(1).nullable().optional(),
   subjectTagIds: z.array(z.string().min(1)).optional(),

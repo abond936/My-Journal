@@ -8,6 +8,8 @@ import { useTag } from '@/components/providers/TagProvider';
 import { resolveFeedTileDirectTagIds } from '@/lib/reader/readerFeedPresentation';
 import { buildFeedTileDimensionSlots } from '@/lib/utils/readerCardContext';
 import { DIMENSION_LABEL } from '@/lib/utils/tagDisplay';
+import { formatTemporalValue, formatTemporalValueLong } from '@/lib/utils/temporalValue';
+import { formatDimensionResolution } from '@/lib/utils/dimensionReview';
 import styles from './FeedTileChipStrip.module.css';
 
 interface FeedTileChipStripProps {
@@ -43,19 +45,42 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, comp
     <div className={clsx(styles.feedTileChipStrip, compact && styles.compact, className)}>
       <div className={styles.feedTileChipStripRow}>
         {slots.map((slot) => {
-          const empty = !slot.label;
+          const resolutionLabel = formatDimensionResolution(
+            card.dimensionReview?.[slot.dimension]
+          );
+          const structuredWhen = slot.dimension === 'when'
+            ? card.galleryTemporalRollupStatus === 'unreviewed'
+              ? 'Unreviewed'
+              : card.temporal
+                ? formatTemporalValue(card.temporal)
+                : null
+            : null;
+          const displayLabel = resolutionLabel ?? structuredWhen ?? slot.label;
+          const empty = !displayLabel;
           const ariaLabel = empty
             ? `${DIMENSION_LABEL[slot.dimension]}: empty`
-            : `${DIMENSION_LABEL[slot.dimension]}: ${slot.label}`;
+            : `${DIMENSION_LABEL[slot.dimension]}: ${
+                slot.dimension === 'when' && card.galleryTemporalRollupStatus === 'unreviewed'
+                  ? 'Gallery dates conflict and require review'
+                  : slot.dimension === 'when' && card.temporal
+                  ? formatTemporalValueLong(card.temporal)
+                  : displayLabel
+              }`;
           return (
             <span
               key={slot.dimension}
               className={clsx(styles.slot, empty && styles.slotEmpty)}
               data-dimension={slot.dimension}
               aria-label={ariaLabel}
-              title={empty ? undefined : slot.tooltip ?? slot.label}
+              title={empty
+                ? undefined
+                : slot.dimension === 'when' && card.galleryTemporalRollupStatus === 'unreviewed'
+                  ? 'Gallery dates conflict and require an explicit Card date'
+                  : slot.dimension === 'when' && card.temporal
+                  ? formatTemporalValueLong(card.temporal)
+                  : slot.tooltip ?? displayLabel}
             >
-              {empty ? '-' : slot.label}
+              {empty ? '-' : displayLabel}
             </span>
           );
         })}

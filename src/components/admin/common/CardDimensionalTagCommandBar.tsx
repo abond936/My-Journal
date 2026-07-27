@@ -13,6 +13,10 @@ import {
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './CardDimensionalTagCommandBar.module.css';
 import clsx from 'clsx';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { formatTemporalValue, formatTemporalValueLong } from '@/lib/utils/temporalValue';
+import { formatDimensionResolution } from '@/lib/utils/dimensionReview';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 
 const MAX_SUGGESTIONS = 25;
 const LONG_PRESS_MS = 450;
@@ -76,7 +80,7 @@ function orderDimensionTagIds(tagIds: string[], subjectTagIds: string[]): string
 
 export interface CardDimensionalTagCommandBarProps {
   /** Tag assignment only; full `Card` is accepted at call sites. */
-  card: Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryTagRollupStatuses' | 'galleryImplicitSubjectTagIds'>;
+  card: Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryTagRollupStatuses' | 'galleryTemporalRollupStatus' | 'galleryImplicitSubjectTagIds' | 'dimensionReview'>;
   allTags: Tag[];
   onUpdateTags: (nextTagIds: string[]) => void | Promise<void>;
   onUpdateSubjectTagId?: (nextSubjectTagId: string | null) => void | Promise<void>;
@@ -105,6 +109,7 @@ export interface CardDimensionalTagCommandBarProps {
   dimensionLeadContent?: (dimension: TagDimension) => React.ReactNode;
   underlineTags?: boolean;
   hideSearch?: boolean;
+  temporalValue?: TemporalValue | null;
 }
 
 export default function CardDimensionalTagCommandBar({
@@ -129,6 +134,7 @@ export default function CardDimensionalTagCommandBar({
   dimensionLeadContent,
   underlineTags = false,
   hideSearch = false,
+  temporalValue,
 }: CardDimensionalTagCommandBarProps) {
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -167,7 +173,7 @@ export default function CardDimensionalTagCommandBar({
   );
   const subjectTagId = card.subjectTagId ?? null;
   const subjectTagIds = useMemo(
-    () => card.subjectTagIds?.length ? card.subjectTagIds : subjectTagId ? [subjectTagId] : [],
+    () => resolveStoredSubjectTagIds(card.subjectTagIds, subjectTagId),
     [card.subjectTagIds, subjectTagId]
   );
   const orderedCore = useMemo(
@@ -450,6 +456,7 @@ export default function CardDimensionalTagCommandBar({
           <div className={styles.dimensionRow}>
             {DIMENSION_ORDER.map((dim) => {
               const Icon = DIMENSION_ICON[dim];
+              const resolutionLabel = formatDimensionResolution(card.dimensionReview?.[dim]);
               const heading = (
                 <>
                   {showDimensionIcons ? <Icon size={14} aria-hidden={true} /> : null}
@@ -473,7 +480,35 @@ export default function CardDimensionalTagCommandBar({
                   </div>
                 ) : null}
                 <div className={styles.chipStrip}>
-                  {core[dim].length === 0 ? (
+                  {resolutionLabel ? (
+                    <span
+                      className={clsx(styles.chip, dimensionChipClassName(dim))}
+                      title={`${DIMENSION_LABEL[dim]}: ${resolutionLabel}`}
+                    >
+                      <span className={styles.chipName}>
+                        <span className={styles.chipNameText}>{resolutionLabel}</span>
+                      </span>
+                    </span>
+                  ) : dim === 'when' && card.galleryTemporalRollupStatus === 'unreviewed' ? (
+                    <span
+                      className={clsx(styles.chipEmpty, styles.chipUnreviewed)}
+                      title="Gallery dates conflict and require an explicit Card date."
+                    >
+                      Unreviewed
+                    </span>
+                  ) : dim === 'when' && temporalValue ? (
+                    <span
+                      className={clsx(styles.chip, dimensionChipClassName(dim))}
+                      title={formatTemporalValueLong(temporalValue)}
+                      aria-label={`When: ${formatTemporalValueLong(temporalValue)}`}
+                    >
+                      <span className={styles.chipName}>
+                        <span className={styles.chipNameText}>
+                          {formatTemporalValue(temporalValue)}
+                        </span>
+                      </span>
+                    </span>
+                  ) : core[dim].length === 0 ? (
                     card.galleryTagRollupStatuses?.[dim] === 'unreviewed' ? (
                       <span
                         className={clsx(styles.chipEmpty, styles.chipUnreviewed)}

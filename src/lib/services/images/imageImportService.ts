@@ -8,12 +8,16 @@ import {
 } from '@/lib/firebase/tagService';
 import { Media, type MediaReadinessStageName, type MediaSourceIdentity } from '@/lib/types/photo';
 import type { Tag } from '@/lib/types/tag';
+import type { TemporalValue } from '@/lib/types/temporal';
+import type { DimensionResolution, DimensionReviewMap } from '@/lib/types/dimensionReview';
 import {
   syncMediaToTypesenseById,
   syncMediaToTypesenseStrict,
 } from '@/lib/services/typesenseMediaService';
 import { getPublicStorageUrl } from '@/lib/utils/storageUrl';
 import { normalizeSubjectTagId, normalizeSubjectTagIds, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 import { normalizeBufferToWebp, isCardExportMarkedFilename } from '@/lib/services/images/inMemoryWebpNormalize';
 import {
   readEmbeddedCaptionAndKeywords,
@@ -477,7 +481,7 @@ async function createMediaAsset(
       });
     }
     if (tagIdsResolved.length > 0) {
-      await updateTagCountsForMedia([], tagIdsResolved, tx, tagPathLookup);
+      await updateTagCountsForMedia([], tagIdsResolved, tx, tagPathLookup, docId);
     }
     return { created: true, existingMediaId: '' };
   });
@@ -1046,9 +1050,10 @@ export async function patchMediaDocument(mediaId: string, updates: MediaPatchFie
         requestedSubjectTagIds: updates.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
         subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagIds'),
+        temporal: existingMedia.temporal ?? null,
         allTags,
       });
-      await updateTagCountsForMedia(oldTags, newTags, tx, tagPathLookup);
+      await updateTagCountsForMedia(oldTags, newTags, tx, tagPathLookup, mediaId);
 
       const payload: Record<string, unknown> = { updatedAt: Date.now() };
       if (updates.caption !== undefined) {
@@ -1102,6 +1107,14 @@ export async function bulkApplyMediaTags(
     subjectTagIdsProvided?: boolean;
     addSubjectTagIds?: string[];
     removeSubjectTagIds?: string[];
+    temporal?: TemporalValue | null;
+    temporalProvided?: boolean;
+    temporalSubject?: boolean;
+    temporalSubjectProvided?: boolean;
+    dimensionReviewUpdates?: Partial<Record<'who' | 'what' | 'when' | 'where', boolean>>;
+    dimensionResolutionUpdates?: Partial<
+      Record<'who' | 'what' | 'when' | 'where', DimensionResolution | null>
+    >;
   },
   options?: { reconcile?: boolean }
 ): Promise<{ updatedIds: string[]; updatedMedia: Media[] }> {
@@ -1119,7 +1132,18 @@ export async function bulkApplyMediaTags(
     updates.subjectTagIdsProvided === true ||
     Object.prototype.hasOwnProperty.call(updates, 'addSubjectTagIds') ||
     Object.prototype.hasOwnProperty.call(updates, 'removeSubjectTagIds');
-  if (!hasTagMutation && !hasSubjectMutation) {
+  const hasTemporalMutation = updates.temporalProvided === true;
+  const hasTemporalSubjectMutation = updates.temporalSubjectProvided === true;
+  const hasReviewMutation = Boolean(
+    updates.dimensionReviewUpdates || updates.dimensionResolutionUpdates
+  );
+  if (
+    !hasTagMutation &&
+    !hasSubjectMutation &&
+    !hasTemporalMutation &&
+    !hasTemporalSubjectMutation &&
+    !hasReviewMutation
+  ) {
     return { updatedIds: [], updatedMedia: [] };
   }
 
@@ -1144,6 +1168,20 @@ export async function bulkApplyMediaTags(
   const app = getAdminApp();
   const firestore = app.firestore();
   const allTags = await getAllTags();
+  const resolvedTagDimensions = buildResolvedTagDimensionMap(allTags);
+  const resolvedDimensionsToClear = new Set(
+    (['who', 'what', 'when', 'where'] as const).filter(
+      (dimension) => updates.dimensionResolutionUpdates?.[dimension] != null
+    )
+  );
+  const hasResolutionAssignmentClear = resolvedDimensionsToClear.size > 0;
+  const hasTemporalSubjectClear =
+    hasTemporalMutation && updates.temporal?.status === 'known';
+  const hasEffectiveTagMutation = hasTagMutation || hasResolutionAssignmentClear;
+  const hasEffectiveSubjectMutation =
+    hasSubjectMutation || hasResolutionAssignmentClear || hasTemporalSubjectClear;
+  const hasEffectiveTemporalMutation =
+    hasTemporalMutation || resolvedDimensionsToClear.has('when');
   const tagPathLookup = new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
   const derivedCache = new Map<string, MediaTagDerived>();
   const updatedIds: string[] = [];
@@ -1179,12 +1217,17 @@ export async function bulkApplyMediaTags(
         if (addTagIds.size > 0) {
           nextTags = Array.from(new Set([...nextTags, ...addTagIds]));
         }
+        if (hasResolutionAssignmentClear) {
+          nextTags = nextTags.filter(
+            (id) => !resolvedDimensionsToClear.has(resolvedTagDimensions.get(id)!)
+          );
+        }
 
         const tagsUnchanged =
           nextTags.length === existingTags.length &&
           nextTags.every((id) => existingTags.includes(id));
 
-        const existingSubjectIds = normalizeSubjectTagIds(media.subjectTagIds).length
+        const existingSubjectIds = media.subjectTagIds != null
           ? normalizeSubjectTagIds(media.subjectTagIds)
           : normalizeSubjectTagId(media.subjectTagId)
             ? [normalizeSubjectTagId(media.subjectTagId)!]
@@ -1199,7 +1242,24 @@ export async function bulkApplyMediaTags(
                     .filter((id) => nextTags.includes(id))
                 )
               )
-            : updates.subjectTagIds;
+            : hasResolutionAssignmentClear || hasTemporalSubjectClear
+              ? existingSubjectIds.filter(
+                  (id) =>
+                    nextTags.includes(id) &&
+                    (!hasTemporalSubjectClear || resolvedTagDimensions.get(id) !== 'when')
+                )
+              : updates.subjectTagIds;
+        const nextTemporal = resolvedDimensionsToClear.has('when')
+          ? null
+          : hasTemporalMutation
+            ? updates.temporal ?? null
+            : media.temporal ?? null;
+        const nextTemporalSubject =
+          nextTemporal?.status === 'known'
+            ? hasTemporalSubjectMutation
+              ? updates.temporalSubject === true
+              : media.temporalSubject === true
+            : false;
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: nextTags,
           existingSubjectTagId: media.subjectTagId,
@@ -1210,16 +1270,58 @@ export async function bulkApplyMediaTags(
           subjectTagIdsProvided:
             updates.subjectTagIdsProvided === true ||
             addSubjectTagIds.size > 0 ||
-            removeSubjectTagIds.size > 0,
+            removeSubjectTagIds.size > 0 ||
+            hasResolutionAssignmentClear ||
+            hasTemporalSubjectClear,
+          temporal: hasEffectiveTemporalMutation ? nextTemporal : media.temporal ?? null,
           allTags,
         });
         const subjectUnchanged =
           normalizeSubjectTagId(media.subjectTagId) === subjectState.subjectTagId &&
           JSON.stringify(normalizeSubjectTagIds(media.subjectTagIds)) === JSON.stringify(subjectState.subjectTagIds);
-        if (tagsUnchanged && subjectUnchanged) continue;
+        const temporalUnchanged =
+          !hasEffectiveTemporalMutation ||
+          JSON.stringify(media.temporal ?? null) === JSON.stringify(nextTemporal);
+        const temporalSubjectUnchanged =
+          Boolean(media.temporalSubject) === nextTemporalSubject;
+        const nextDimensionReview: DimensionReviewMap = {
+          ...(media.dimensionReview ?? {}),
+        };
+        for (const dimension of ['who', 'what', 'when', 'where'] as const) {
+          const reviewed = updates.dimensionReviewUpdates?.[dimension];
+          const resolution = updates.dimensionResolutionUpdates?.[dimension];
+          if (reviewed === undefined && resolution === undefined) continue;
+          const current = nextDimensionReview?.[dimension] ?? { reviewed: false };
+          const nextEntry = {
+            ...current,
+            ...(reviewed !== undefined ? { reviewed } : {}),
+            ...(resolution !== undefined ? { resolution } : {}),
+          };
+          if (reviewed === true) nextEntry.reviewedAt = Date.now();
+          if (reviewed === false) delete nextEntry.reviewedAt;
+          nextDimensionReview![dimension] = nextEntry;
+        }
+        const reconciledDimensionReview = reconcileDimensionReviewMap({
+          dimensionReview: nextDimensionReview,
+          assignedTagIds: nextTags,
+          temporal: nextTemporal,
+          allTags,
+        });
+        const dimensionReviewMustReconcile =
+          hasReviewMutation || hasEffectiveTagMutation || hasEffectiveTemporalMutation;
+        const reviewUnchanged =
+          !dimensionReviewMustReconcile ||
+          JSON.stringify(media.dimensionReview ?? {}) === JSON.stringify(reconciledDimensionReview ?? {});
+        if (
+          tagsUnchanged &&
+          subjectUnchanged &&
+          temporalUnchanged &&
+          temporalSubjectUnchanged &&
+          reviewUnchanged
+        ) continue;
 
         const payload: Record<string, unknown> = { updatedAt: Date.now() };
-        if (hasTagMutation) {
+        if (hasEffectiveTagMutation) {
           const cacheKey = [...nextTags].sort((a, b) => a.localeCompare(b)).join('\u001f');
           let derived = derivedCache.get(cacheKey);
           if (!derived) {
@@ -1227,7 +1329,13 @@ export async function bulkApplyMediaTags(
             derivedCache.set(cacheKey, derived);
           }
 
-          await updateTagCountsForMedia(existingTags, derived.tags, tx, tagPathLookup);
+          await updateTagCountsForMedia(
+            existingTags,
+            derived.tags,
+            tx,
+            tagPathLookup,
+            mediaDoc.id
+          );
           payload.tags = derived.tags;
           payload.filterTags = derived.filterTags;
           payload.who = derived.who;
@@ -1240,10 +1348,19 @@ export async function bulkApplyMediaTags(
           payload.hasWhen = derived.hasWhen;
           payload.hasWhere = derived.hasWhere;
         }
-        if (hasTagMutation || hasSubjectMutation) {
+        if (hasEffectiveTagMutation || hasEffectiveSubjectMutation) {
           payload.subjectTagId = subjectState.subjectTagId;
           payload.subjectTagIds = subjectState.subjectTagIds;
           payload.subjectFilterTags = subjectState.subjectFilterTags;
+        }
+        if (hasEffectiveTemporalMutation) {
+          payload.temporal = nextTemporal;
+        }
+        if (hasTemporalSubjectMutation || hasEffectiveTemporalMutation) {
+          payload.temporalSubject = nextTemporalSubject;
+        }
+        if (dimensionReviewMustReconcile) {
+          payload.dimensionReview = reconciledDimensionReview ?? {};
         }
 
         tx.update(mediaDoc.ref, payload);

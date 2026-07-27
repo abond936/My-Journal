@@ -518,6 +518,37 @@
   overflow-y: auto;
 }
 
+.constrainedTreeLayout {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.constrainedTreeLayout .interactiveColumns {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.constrainedTreeLayout .dimensionColumn {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.constrainedTreeLayout .dimensionTreeFieldset {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.constrainedTreeLayout .interactiveTree {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
 .interactiveNode {
   margin-bottom: var(--spacing-xs);
 }

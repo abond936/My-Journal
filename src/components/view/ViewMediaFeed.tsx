@@ -174,7 +174,9 @@ export default function ViewMediaFeed() {
               ...page,
               items: page.items.map((item) => (item.docId === updatedMedia.docId ? updatedMedia : item)),
             })),
-          { revalidate: false }
+          // Caption participates in Reader media search, so refresh membership
+          // after the optimistic visible-item patch.
+          { revalidate: true }
         );
         return true;
       } catch (err) {

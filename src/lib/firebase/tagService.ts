@@ -299,7 +299,11 @@ export async function updateCardsForTagChange(tagId: string): Promise<void> {
           const cardData = cardDoc.data();
 
           const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(cardData);
-          const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], journalTagMap);
+          const journal = computeJournalWhenSortKeys(
+            dimensionalTags.when || [],
+            journalTagMap,
+            cardData?.temporal
+          );
 
           // Update the card
           await firestore.collection('cards').doc(cardId).update({
@@ -581,7 +585,11 @@ export async function deleteTag(docId: string): Promise<void> {
           transaction,
           allTags
         );
-        const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
+        const journal = computeJournalWhenSortKeys(
+          dimensionalTags.when || [],
+          tagMap,
+          cardData?.temporal
+        );
 
         cardWrites.push({
           ref: cardRef,
@@ -794,24 +802,18 @@ export async function updateTagCountsForMedia(
   oldTags: string[] | undefined,
   newTags: string[] | undefined,
   transaction: FirebaseFirestore.Transaction,
-  tagPathLookup?: Map<string, Tag>
+  tagPathLookup?: Map<string, Tag>,
+  mediaId?: string
 ): Promise<void> {
-  const oldSet = new Set(oldTags || []);
-  const newSet = new Set(newTags || []);
-  const deltaMap: Record<string, number> = {};
-
-  for (const tagId of newSet) {
-    if (!oldSet.has(tagId)) {
-      deltaMap[tagId] = (deltaMap[tagId] || 0) + 1;
-    }
-  }
-  for (const tagId of oldSet) {
-    if (!newSet.has(tagId)) {
-      deltaMap[tagId] = (deltaMap[tagId] || 0) - 1;
-    }
-  }
-
-  await applyTagCountDeltas(deltaMap, transaction, 'mediaCount', tagPathLookup);
+  await applyObjectTagCoverageDiff({
+    oldTags,
+    newTags,
+    transaction,
+    tagPathLookup,
+    countField: 'mediaCount',
+    uniqueIdsField: 'uniqueMediaIds',
+    objectId: mediaId,
+  });
 }
 
 /**
@@ -823,37 +825,83 @@ export async function updateTagCountsForMedia(
  * @param transaction - The Firestore transaction to perform updates in
  */
 export async function updateTagCountsForCard(
-  oldCard: { tags?: string[]; status?: string } | null,
-  newCard: { tags?: string[]; status?: string },
+  oldCard: { docId?: string; tags?: string[]; status?: string } | null,
+  newCard: { docId?: string; tags?: string[]; status?: string },
   transaction: FirebaseFirestore.Transaction,
   tagPathLookup?: Map<string, Tag>
 ): Promise<void> {
-  const oldTags = new Set(oldCard?.tags || []);
-  const newTags = new Set(newCard.tags || []);
-  const wasPublished = (oldCard?.status ?? 'draft') === 'published';
-  const isPublished = (newCard.status ?? 'draft') === 'published';
-  
-  // Only count published cards
-  if (!isPublished && !wasPublished) return;
-  
-  const deltaMap: Record<string, number> = {};
-  
-  if (wasPublished && isPublished) {
-    // Card remains published - only count tag changes
-    const tagsAdded = [...newTags].filter(t => !oldTags.has(t));
-    const tagsRemoved = [...oldTags].filter(t => !newTags.has(t));
-    tagsAdded.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) + 1);
-    tagsRemoved.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) - 1);
-  } else if (!wasPublished && isPublished) {
-    // Card becomes published - count all new tags
-    newTags.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) + 1);
-  } else if (wasPublished && !isPublished) {
-    // Card becomes draft - decrement all old tags
-    oldTags.forEach(tagId => deltaMap[tagId] = (deltaMap[tagId] || 0) - 1);
+  await applyObjectTagCoverageDiff({
+    oldTags: oldCard?.tags,
+    newTags: newCard.tags,
+    transaction,
+    tagPathLookup,
+    countField: 'cardCount',
+    uniqueIdsField: 'uniqueCardIds',
+    objectId: newCard.docId ?? oldCard?.docId,
+  });
+}
+
+async function resolveTagCoverage(
+  tagIds: string[] | undefined,
+  transaction: FirebaseFirestore.Transaction,
+  tagPathLookup?: Map<string, Tag>
+): Promise<Set<string>> {
+  const directIds = Array.from(new Set((tagIds ?? []).filter(Boolean)));
+  const coverage = new Set<string>();
+  if (tagPathLookup) {
+    for (const tagId of directIds) {
+      const tag = tagPathLookup.get(tagId);
+      if (!tag) continue;
+      coverage.add(tagId);
+      for (const ancestorId of tag.path ?? []) coverage.add(ancestorId);
+    }
+    return coverage;
   }
-  
-  // Apply deltas with ancestor inclusion
-  await applyTagCountDeltas(deltaMap, transaction, 'cardCount', tagPathLookup);
+  if (directIds.length === 0) return coverage;
+  const docs = await transaction.getAll(
+    ...directIds.map((tagId) => firestore.collection('tags').doc(tagId))
+  );
+  for (const doc of docs) {
+    if (!doc.exists) continue;
+    coverage.add(doc.id);
+    for (const ancestorId of (doc.data() as Tag).path ?? []) coverage.add(ancestorId);
+  }
+  return coverage;
+}
+
+async function applyObjectTagCoverageDiff({
+  oldTags,
+  newTags,
+  transaction,
+  tagPathLookup,
+  countField,
+  uniqueIdsField,
+  objectId,
+}: {
+  oldTags: string[] | undefined;
+  newTags: string[] | undefined;
+  transaction: FirebaseFirestore.Transaction;
+  tagPathLookup?: Map<string, Tag>;
+  countField: 'cardCount' | 'mediaCount';
+  uniqueIdsField: 'uniqueCardIds' | 'uniqueMediaIds';
+  objectId?: string;
+}): Promise<void> {
+  const [oldCoverage, newCoverage] = await Promise.all([
+    resolveTagCoverage(oldTags, transaction, tagPathLookup),
+    resolveTagCoverage(newTags, transaction, tagPathLookup),
+  ]);
+  const added = [...newCoverage].filter((tagId) => !oldCoverage.has(tagId));
+  const removed = [...oldCoverage].filter((tagId) => !newCoverage.has(tagId));
+  for (const tagId of added) {
+    const payload: Record<string, unknown> = { [countField]: FieldValue.increment(1) };
+    if (objectId) payload[uniqueIdsField] = FieldValue.arrayUnion(objectId);
+    transaction.update(firestore.collection('tags').doc(tagId), payload);
+  }
+  for (const tagId of removed) {
+    const payload: Record<string, unknown> = { [countField]: FieldValue.increment(-1) };
+    if (objectId) payload[uniqueIdsField] = FieldValue.arrayRemove(objectId);
+    transaction.update(firestore.collection('tags').doc(tagId), payload);
+  }
 }
 
 /**
@@ -948,7 +996,6 @@ export async function updateTagCardCount(tagId: string): Promise<number> {
     // Get direct card assignments using the tags array
     const directSnapshot = await firestore.collection('cards')
       .where('tags', 'array-contains', tagId)
-      .where('status', '==', 'published')
       .get();
     
     const directCardIds = new Set(directSnapshot.docs.map(doc => doc.id));
@@ -1222,7 +1269,11 @@ export async function updateTagAndDescendantPaths(tagId: string, newParentId: st
   // 11. Update all affected cards with recalculated derived data
   for (const card of affectedCards) {
     const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(card.data, transaction, allTags);
-    const journal = computeJournalWhenSortKeys(dimensionalTags.when || [], tagMap);
+    const journal = computeJournalWhenSortKeys(
+      dimensionalTags.when || [],
+      tagMap,
+      card.data?.temporal
+    );
 
     transaction.update(card.ref, {
       filterTags,

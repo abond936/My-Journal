@@ -15,6 +15,7 @@ describe('mutation rate limiting (8a)', () => {
     expect(resolveMutationRateLimitBucket('/api/auth/signin', 'POST')).toBeNull();
     expect(resolveMutationRateLimitBucket('/api/cards', 'POST')).toBe('standard');
     expect(resolveMutationRateLimitBucket('/api/cards/bulk-update-tags', 'POST')).toBe('bulk');
+    expect(resolveMutationRateLimitBucket('/api/cards/bulk-tag-assignment', 'POST')).toBe('bulk');
     expect(resolveMutationRateLimitBucket('/api/import/folder', 'POST')).toBe('import');
     expect(resolveMutationRateLimitBucket('/api/admin/maintenance/reconcile', 'POST')).toBe(
       'maintenance'

@@ -58,7 +58,19 @@ export function getTagPathIds(tag: Tag): string[] {
 /** Path display: "Parent / ... / Leaf" using tag names from `path` + self. */
 export function getTagPathDisplay(tag: Tag, tagById: Map<string, Tag>): string {
   if (!tag.docId) return tag.name;
-  const names = getTagPathIds(tag)
+  let pathIds = getTagPathIds(tag);
+  if (pathIds.length <= 1 && tag.parentId) {
+    const lineage: string[] = [];
+    const visited = new Set<string>();
+    let current: Tag | undefined = tag;
+    while (current?.docId && !visited.has(current.docId)) {
+      visited.add(current.docId);
+      lineage.unshift(current.docId);
+      current = current.parentId ? tagById.get(current.parentId) : undefined;
+    }
+    pathIds = lineage;
+  }
+  const names = pathIds
     .map((id) => tagById.get(id)?.name)
     .filter((name): name is string => Boolean(name));
   return names.length ? names.join(' / ') : tag.name;

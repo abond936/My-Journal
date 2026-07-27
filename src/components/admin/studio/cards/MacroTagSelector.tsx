@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Calendar, MapPin, Square, User } from 'lucide-react';
 import { useTag } from '@/components/providers/TagProvider';
 import { Tag, TagWithChildren } from '@/lib/types/tag';
 import styles from './MacroTagSelector.module.css';
 import bulkStyles from './BulkEditTagsModal.module.css';
+import TemporalValueControl from '@/components/admin/common/TemporalValueControl';
+import type { TemporalValue } from '@/lib/types/temporal';
 import {
   buildSparseTagTree,
   createUITreeFromDimensions,
@@ -17,6 +19,14 @@ import clsx from 'clsx';
 import TagPickerDimensionColumn from '@/components/admin/studio/cards/TagPickerDimensionColumn';
 import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
 import type { GalleryTagRollupStatuses } from '@/lib/utils/galleryTagInheritance';
+import TagSearchSelect from '@/components/admin/common/TagSearchSelect';
+import type {
+  DimensionResolution,
+  DimensionReviewMap,
+} from '@/lib/types/dimensionReview';
+import { formatDimensionResolution } from '@/lib/utils/dimensionReview';
+import { formatTemporalValue } from '@/lib/utils/temporalValue';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 
 export type MacroTagCollapsedSummary = 'sparseTrees' | 'none';
 
@@ -117,16 +127,26 @@ interface MacroTagSelectorProps {
   includeAllTags?: boolean;
   dimensionDisabled?: (dimension: TagDimension) => boolean;
   dimensionHeaderIcon?: (dimension: TagDimension) => React.ReactNode;
+  dimensionBodyOverride?: (dimension: TagDimension) => React.ReactNode | undefined;
+  tagSearchDimensions?: TagDimension[];
+  /** Keep tree scrollbars inside the containing modal instead of creating nested outer scrolling. */
+  constrainTreeScroll?: boolean;
   /** Use the same assignment layout as the Media Tags modal. */
   unifiedAssignmentLayout?: boolean;
   galleryTagIdsByDimension?: Record<TagDimension, string[]>;
+  galleryResolutionByDimension?: Record<TagDimension, DimensionResolution | null>;
+  galleryTemporalValue?: TemporalValue | null;
   inheritanceByDimension?: GalleryTagInheritanceToggles;
   inheritanceAvailableByDimension?: GalleryTagInheritanceToggles;
   galleryRollupStatuses?: Partial<GalleryTagRollupStatuses>;
+  temporalValue?: TemporalValue | null;
+  dimensionReview?: DimensionReviewMap;
   onSaveAssignmentWithInheritance?: (
     nextTagIds: string[],
     nextSubjectTagIds: string[],
-    inheritance: GalleryTagInheritanceToggles
+    inheritance: GalleryTagInheritanceToggles,
+    temporal?: TemporalValue | null,
+    dimensionReview?: DimensionReviewMap
   ) => void | boolean | Promise<void | boolean>;
 }
 
@@ -156,16 +176,23 @@ export default function MacroTagSelector({
   hideActions = false,
   pickerToolbar,
   dimensionHeaderControl,
-  showManagementControls = true,
+  showManagementControls = false,
   initialExpandLevels,
   includeAllTags = false,
   dimensionDisabled,
   dimensionHeaderIcon,
+  dimensionBodyOverride,
+  tagSearchDimensions,
+  constrainTreeScroll = false,
   unifiedAssignmentLayout = false,
   galleryTagIdsByDimension,
+  galleryResolutionByDimension,
+  galleryTemporalValue,
   inheritanceByDimension,
   inheritanceAvailableByDimension,
   galleryRollupStatuses,
+  temporalValue,
+  dimensionReview,
   onSaveAssignmentWithInheritance,
 }: MacroTagSelectorProps) {
   const isControlled =
@@ -249,7 +276,7 @@ export default function MacroTagSelector({
       <ExpandedView
         initialSelection={selectedTagIds}
         initialSelectionKey={selectedTagIdsKey}
-        initialSubjectTagIds={subjectTagIds?.length ? subjectTagIds : subjectTagId ? [subjectTagId] : []}
+        initialSubjectTagIds={subjectTagIds != null ? subjectTagIds : subjectTagId ? [subjectTagId] : []}
         allTags={effectiveAllTags}
         onSave={handleSave}
         onSaveSubjectTagId={onSubjectTagIdChange}
@@ -270,11 +297,18 @@ export default function MacroTagSelector({
         initialExpandLevels={initialExpandLevels}
         dimensionDisabled={dimensionDisabled}
         dimensionHeaderIcon={dimensionHeaderIcon}
+        dimensionBodyOverride={dimensionBodyOverride}
+        tagSearchDimensions={tagSearchDimensions}
+        constrainTreeScroll={constrainTreeScroll}
         unifiedAssignmentLayout={unifiedAssignmentLayout}
         galleryTagIdsByDimension={galleryTagIdsByDimension}
+        galleryResolutionByDimension={galleryResolutionByDimension}
+        galleryTemporalValue={galleryTemporalValue}
         inheritanceByDimension={inheritanceByDimension}
         inheritanceAvailableByDimension={inheritanceAvailableByDimension}
         galleryRollupStatuses={galleryRollupStatuses}
+        temporalValue={temporalValue}
+        dimensionReview={dimensionReview}
         onSaveAssignmentWithInheritance={onSaveAssignmentWithInheritance}
       />
     );
@@ -366,11 +400,18 @@ interface ExpandedViewProps {
   initialExpandLevels?: number;
   dimensionDisabled?: (dimension: TagDimension) => boolean;
   dimensionHeaderIcon?: (dimension: TagDimension) => React.ReactNode;
+  dimensionBodyOverride?: (dimension: TagDimension) => React.ReactNode | undefined;
+  tagSearchDimensions?: TagDimension[];
+  constrainTreeScroll: boolean;
   unifiedAssignmentLayout: boolean;
   galleryTagIdsByDimension?: Record<TagDimension, string[]>;
+  galleryResolutionByDimension?: Record<TagDimension, DimensionResolution | null>;
+  galleryTemporalValue?: TemporalValue | null;
   inheritanceByDimension?: GalleryTagInheritanceToggles;
   inheritanceAvailableByDimension?: GalleryTagInheritanceToggles;
   galleryRollupStatuses?: Partial<GalleryTagRollupStatuses>;
+  temporalValue?: TemporalValue | null;
+  dimensionReview?: DimensionReviewMap;
   onSaveAssignmentWithInheritance?: MacroTagSelectorProps['onSaveAssignmentWithInheritance'];
 }
 
@@ -399,11 +440,18 @@ function ExpandedView({
   initialExpandLevels,
   dimensionDisabled,
   dimensionHeaderIcon,
+  dimensionBodyOverride,
+  tagSearchDimensions,
+  constrainTreeScroll,
   unifiedAssignmentLayout,
   galleryTagIdsByDimension,
+  galleryResolutionByDimension,
+  galleryTemporalValue,
   inheritanceByDimension,
   inheritanceAvailableByDimension,
   galleryRollupStatuses,
+  temporalValue,
+  dimensionReview,
   onSaveAssignmentWithInheritance,
 }: ExpandedViewProps) {
   const { tags } = useTag();
@@ -421,20 +469,22 @@ function ExpandedView({
     }
     return Array.from(map.values());
   }, [tags, allTags]);
+  const [temporalDraft, setTemporalDraft] = useState<TemporalValue | null | undefined>(temporalValue);
+  const [dimensionReviewDraft, setDimensionReviewDraft] = useState<DimensionReviewMap>(
+    dimensionReview
+  );
+  useEffect(() => {
+    setTemporalDraft(temporalValue);
+  }, [temporalValue]);
+  useEffect(() => {
+    setDimensionReviewDraft(dimensionReview);
+  }, [dimensionReview]);
   const tagById = useMemo(
     () => new Map(tagSource.filter((tag) => tag.docId).map((tag) => [tag.docId, tag])),
     [tagSource]
   );
   const dimensionByTagId = useMemo(
-    () =>
-      new Map(
-        tagSource
-          .filter((tag) => tag.docId)
-          .map((tag) => [
-            tag.docId,
-            normalizeTagDimensionKey(tag.dimension as string | undefined),
-          ])
-      ),
+    () => buildResolvedTagDimensionMap(tagSource),
     [tagSource]
   );
 
@@ -447,6 +497,10 @@ function ExpandedView({
   const [draftInheritance, setDraftInheritance] = useState<GalleryTagInheritanceToggles>(
     inheritanceByDimension ?? { who: false, what: false, when: false, where: false }
   );
+  const structuredDateAssignment =
+    Boolean(onSaveAssignmentWithInheritance) ||
+    temporalValue !== undefined ||
+    dimensionReview !== undefined;
 
   React.useEffect(() => {
     setCurrentSelection((prev) => {
@@ -507,6 +561,16 @@ function ExpandedView({
     const newSelection = new Set(currentSelection);
     if (isSelected) {
       newSelection.add(tagId);
+      const dimension = dimensionByTagId.get(tagId);
+      if (dimension) {
+        setDimensionReviewDraft((current) => ({
+          ...(current ?? {}),
+          [dimension]: {
+            ...(current?.[dimension] ?? { reviewed: false }),
+            resolution: null,
+          },
+        }));
+      }
     } else {
       newSelection.delete(tagId);
     }
@@ -529,15 +593,33 @@ function ExpandedView({
       return;
     }
     const resolvedTagIds = Array.from(currentSelection);
-    const resolvedSubjectTagIds = Array.from(currentSubjectTagIds).filter((tagId) =>
-      currentSelection.has(tagId)
+    const resolvedSubjectTagIds = Array.from(currentSubjectTagIds).filter(
+      (tagId) =>
+        currentSelection.has(tagId) &&
+        !(temporalDraft?.status === 'known' && dimensionByTagId.get(tagId) === 'when')
     );
     if (onSaveAssignmentWithInheritance) {
-      const saved = await onSaveAssignmentWithInheritance(
-        resolvedTagIds,
-        resolvedSubjectTagIds,
-        draftInheritance
-      );
+      const saved = temporalDraft === undefined && dimensionReviewDraft === undefined
+        ? await onSaveAssignmentWithInheritance(
+            resolvedTagIds,
+            resolvedSubjectTagIds,
+            draftInheritance
+          )
+        : temporalDraft === undefined
+          ? await onSaveAssignmentWithInheritance(
+              resolvedTagIds,
+              resolvedSubjectTagIds,
+              draftInheritance,
+              undefined,
+              dimensionReviewDraft
+            )
+        : await onSaveAssignmentWithInheritance(
+            resolvedTagIds,
+            resolvedSubjectTagIds,
+            draftInheritance,
+            temporalDraft,
+            dimensionReviewDraft
+          );
       if (saved !== false) onCancel();
       return;
     }
@@ -564,15 +646,16 @@ function ExpandedView({
     }
     const visible = new Set(visibleDimensions);
     return Array.from(map.values()).filter((tag) => {
-      const dimension = normalizeTagDimensionKey(tag.dimension as string | undefined);
-      return dimension ? visible.has(dimension) : false;
+      const dimension = tag.docId ? dimensionByTagId.get(tag.docId) : undefined;
+      if (!dimension || !visible.has(dimension)) return false;
+      return !(dimension === 'when' && temporalDraft?.status === 'known');
     }).sort((a, b) => {
       const dimensionRankA = SUBJECT_DIMENSION_ORDER[a.dimension ?? ''] ?? 99;
       const dimensionRankB = SUBJECT_DIMENSION_ORDER[b.dimension ?? ''] ?? 99;
       if (dimensionRankA !== dimensionRankB) return dimensionRankA - dimensionRankB;
       return a.name.localeCompare(b.name);
     });
-  }, [currentSelection, tagSource, visibleDimensions]);
+  }, [currentSelection, dimensionByTagId, tagSource, temporalDraft, visibleDimensions]);
 
   const toggleSubjectTag = (tagId: string) => {
     setCurrentSubjectTagIds((current) => {
@@ -611,6 +694,42 @@ function ExpandedView({
     });
   };
 
+  const setDimensionResolution = (
+    dimension: TagDimension,
+    resolution: DimensionResolution
+  ) => {
+    setDimensionReviewDraft((current) => ({
+      ...(current ?? {}),
+      [dimension]: {
+        reviewed: true,
+        resolution:
+          current?.[dimension]?.resolution === resolution ? null : resolution,
+      },
+    }));
+    setCurrentSelection((current) => new Set(
+      Array.from(current).filter((tagId) => dimensionByTagId.get(tagId) !== dimension)
+    ));
+    setCurrentSubjectTagIds((current) => new Set(
+      Array.from(current).filter((tagId) => dimensionByTagId.get(tagId) !== dimension)
+    ));
+    if (dimension === 'when') setTemporalDraft(null);
+  };
+
+  const clearDimension = (dimension: TagDimension) => {
+    setCurrentSelection((current) => new Set(
+      Array.from(current).filter((tagId) => dimensionByTagId.get(tagId) !== dimension)
+    ));
+    setCurrentSubjectTagIds((current) => new Set(
+      Array.from(current).filter((tagId) => dimensionByTagId.get(tagId) !== dimension)
+    ));
+    setDimensionReviewDraft((current) => {
+      const next = { ...(current ?? {}) };
+      delete next[dimension];
+      return next;
+    });
+    if (dimension === 'when') setTemporalDraft(null);
+  };
+
   React.useEffect(() => {
     if (suppressOverlay) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -624,6 +743,7 @@ function ExpandedView({
     <div
       className={clsx(
         suppressOverlay ? styles.embeddedModalContainer : styles.modalContainer,
+        constrainTreeScroll && styles.constrainedTreeLayout,
         className
       )}
       onClick={(e) => e.stopPropagation()}
@@ -632,15 +752,19 @@ function ExpandedView({
       {hidePickerHeading ? null : <h2 className={styles.modalHeader}>{pickerTitle}</h2>}
 
       <div className={styles.searchBar}>
-        <input
-          type="text"
-          placeholder={searchPlaceholder}
+        <TagSearchSelect
+          allTags={allTags}
+          selectedTagIds={currentSelection}
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
+          onValueChange={setSearchTerm}
+          onSelect={(tagId) => handleTagChange(tagId, true)}
+          allowedDimensions={tagSearchDimensions ?? visibleDimensions}
+          placeholder={searchPlaceholder}
+          inputClassName={styles.searchInput}
+          clearClassName={styles.searchClear}
           autoFocus
         />
-        {searchTerm && (
+        {false && (
           <button
             type="button"
             onClick={() => setSearchTerm('')}
@@ -687,7 +811,10 @@ function ExpandedView({
           visibleDimensions.length === 1 && styles.interactiveColumnsSingle
         )}
       >
-        {filteredDimensionalTree.map(dimension => (
+        {filteredDimensionalTree.map(dimension => {
+          const dimensionKey =
+            normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who';
+          return (
           <TagPickerDimensionColumn
             key={dimension.docId}
             dimension={dimension}
@@ -698,17 +825,19 @@ function ExpandedView({
             forceExpandAll={!!searchTerm.trim()}
             showManagementControls={showManagementControls}
             headerControl={dimensionHeaderControl?.(
-              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+              dimensionKey
             )}
             initialExpandLevels={initialExpandLevels}
             disabled={dimensionDisabled?.(
-              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+              dimensionKey
             )}
             headerIcon={dimensionHeaderIcon?.(
-              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
+              dimensionKey
             )}
+            bodyOverride={dimensionBodyOverride?.(dimensionKey)}
           />
-        ))}
+          );
+        })}
       </div>
       {hideActions ? null : <div className={styles.actions}>
         <button onClick={onCancel} className={styles.cancelButton} disabled={saving}>Cancel</button>
@@ -748,6 +877,14 @@ function ExpandedView({
                 {visibleDimensions.map((dimension) => {
                   const tagIds = galleryTagIdsByDimension[dimension] ?? [];
                   const status = galleryRollupStatuses?.[dimension] ?? 'empty';
+                  const resolutionLabel = formatDimensionResolution(
+                    galleryResolutionByDimension?.[dimension]
+                      ? {
+                          reviewed: true,
+                          resolution: galleryResolutionByDimension[dimension],
+                        }
+                      : undefined
+                  );
                   return (
                     <div
                       key={dimension}
@@ -759,6 +896,12 @@ function ExpandedView({
                     >
                       {status === 'unreviewed' ? (
                         <span className={bulkStyles.galleryTagState}>Unreviewed</span>
+                      ) : dimension === 'when' && galleryTemporalValue ? (
+                        <span className={bulkStyles.galleryTagState}>
+                          {formatTemporalValue(galleryTemporalValue)}
+                        </span>
+                      ) : resolutionLabel ? (
+                        <span className={bulkStyles.galleryTagState}>{resolutionLabel}</span>
                       ) : tagIds.length > 0 ? (
                         tagIds.map((tagId) => (
                           <span key={tagId} className={bulkStyles.galleryTagChip}>
@@ -807,15 +950,27 @@ function ExpandedView({
         ) : null}
 
         <div className={bulkStyles.searchBar}>
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
+          <TagSearchSelect
+            allTags={allTags}
+            selectedTagIds={currentSelection}
             value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className={bulkStyles.searchInput}
+            onValueChange={setSearchTerm}
+            onSelect={(tagId) => {
+              const dimension = dimensionByTagId.get(tagId);
+              if (dimension && draftInheritance[dimension]) {
+                setDimensionInheritance(dimension, false);
+              }
+              handleTagChange(tagId, true);
+            }}
+            allowedDimensions={visibleDimensions.filter(
+              (dimension) => dimension !== 'when' || !structuredDateAssignment
+            )}
+            placeholder={searchPlaceholder}
+            inputClassName={bulkStyles.searchInput}
+            clearClassName={bulkStyles.searchClear}
             autoFocus
           />
-          {searchTerm ? (
+          {false ? (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
@@ -868,22 +1023,106 @@ function ExpandedView({
         ) : null}
 
         <div className={`${bulkStyles.interactiveColumns} ${bulkStyles.mediaInteractiveColumns}`}>
-          {filteredDimensionalTree.map((dimension) => (
-            <TagPickerDimensionColumn
-              key={dimension.docId}
-              dimension={dimension}
-              selection={currentSelection}
-              onSelectionChange={handleTagChange}
-              expandedNodeIds={expandedNodeIds}
-              checkboxIdPrefix="card-tag"
-              forceExpandAll
-              showManagementControls={showManagementControls}
-              hideHeader
-              disabled={Boolean(galleryTagIdsByDimension && draftInheritance[
-                normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who'
-              ])}
-            />
-          ))}
+          {filteredDimensionalTree.map((dimension) => {
+            const dimensionKey =
+              normalizeTagDimensionKey(dimension.dimension as string | undefined) ?? 'who';
+            const inherited = Boolean(
+              galleryTagIdsByDimension && draftInheritance[dimensionKey]
+            );
+            const review = dimensionReviewDraft?.[dimensionKey];
+            return (
+              <div
+                key={dimension.docId}
+                className={bulkStyles.reviewableDimensionColumn}
+              >
+                {structuredDateAssignment ? (
+                <div className={bulkStyles.dimensionReviewControls}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      aria-label={`${dimensionKey} reviewed`}
+                      checked={review?.reviewed === true}
+                      disabled={inherited}
+                      onChange={(event) =>
+                        setDimensionReviewDraft((current) => ({
+                          ...(current ?? {}),
+                          [dimensionKey]: {
+                            ...(current?.[dimensionKey] ?? {}),
+                            reviewed: event.target.checked,
+                          },
+                        }))
+                      }
+                    />
+                    <span>Reviewed</span>
+                  </label>
+                  <button
+                    type="button"
+                    aria-label={`Clear ${dimensionKey}`}
+                    disabled={inherited}
+                    onClick={() => clearDimension(dimensionKey)}
+                  >
+                    Clear
+                  </button>
+                  <label>
+                    <input
+                      type="checkbox"
+                      aria-label={`${dimensionKey} unknown`}
+                      checked={review?.resolution === 'unknown'}
+                      disabled={inherited}
+                      onChange={() => setDimensionResolution(dimensionKey, 'unknown')}
+                    />
+                    <span>Unknown</span>
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      aria-label={`${dimensionKey} not applicable`}
+                      checked={review?.resolution === 'not_applicable'}
+                      disabled={inherited}
+                      onChange={() => setDimensionResolution(dimensionKey, 'not_applicable')}
+                    />
+                    <span>Not applicable</span>
+                  </label>
+                </div>
+                ) : null}
+                {dimensionKey === 'when' && structuredDateAssignment ? (
+                  <div className={bulkStyles.temporalColumnControl}>
+                    <TemporalValueControl
+                      idPrefix="compose-card"
+                      value={temporalDraft}
+                      disabled={inherited || Boolean(review?.resolution)}
+                      directEntryOnly
+                      showResolvedStates={false}
+                      onChange={(next) => {
+                        setTemporalDraft(next);
+                        if (next?.status === 'known') {
+                          setDimensionReviewDraft((current) => ({
+                            ...(current ?? {}),
+                            when: {
+                              ...(current?.when ?? { reviewed: false }),
+                              resolution: null,
+                            },
+                          }));
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <TagPickerDimensionColumn
+                    dimension={dimension}
+                    selection={currentSelection}
+                    onSelectionChange={handleTagChange}
+                    expandedNodeIds={expandedNodeIds}
+                    checkboxIdPrefix="card-tag"
+                    forceExpandAll
+                    showManagementControls={false}
+                    hideHeader
+                    disabled={inherited || Boolean(review?.resolution)}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

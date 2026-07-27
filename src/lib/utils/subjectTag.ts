@@ -1,5 +1,18 @@
 import { getTagAncestors } from '@/lib/firebase/tagService';
 import type { Tag } from '@/lib/types/tag';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import {
+  normalizeSubjectTagId,
+  normalizeSubjectTagIds,
+  resolveStoredSubjectTagIds,
+} from '@/lib/utils/storedSubjectTags';
+
+export {
+  normalizeSubjectTagId,
+  normalizeSubjectTagIds,
+  resolveStoredSubjectTagIds,
+} from '@/lib/utils/storedSubjectTags';
 
 type ResolveSubjectTagStateInput = {
   assignedTagIds?: string[] | null;
@@ -9,17 +22,19 @@ type ResolveSubjectTagStateInput = {
   requestedSubjectTagIds?: string[] | null;
   subjectTagIdProvided: boolean;
   subjectTagIdsProvided?: boolean;
+  temporal?: TemporalValue | null;
   allTags?: Tag[];
 };
 
-export function normalizeSubjectTagId(value: string | null | undefined): string | null {
-  if (typeof value !== 'string') return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-export function normalizeSubjectTagIds(values: string[] | null | undefined): string[] {
-  return Array.from(new Set((values ?? []).map(normalizeSubjectTagId).filter((id): id is string => Boolean(id))));
+export function filterSubjectTagIdsForTemporal(
+  subjectTagIds: string[],
+  temporal: TemporalValue | null | undefined,
+  allTags?: Tag[]
+): string[] {
+  const normalized = normalizeSubjectTagIds(subjectTagIds);
+  if (temporal?.status !== 'known' || !allTags) return normalized;
+  const dimensions = buildResolvedTagDimensionMap(allTags);
+  return normalized.filter((tagId) => dimensions.get(tagId) !== 'when');
 }
 
 export async function buildSubjectFilterTags(
@@ -49,6 +64,7 @@ export async function resolveSubjectTagState({
   requestedSubjectTagIds,
   subjectTagIdProvided,
   subjectTagIdsProvided = false,
+  temporal,
   allTags,
 }: ResolveSubjectTagStateInput): Promise<{
   subjectTagId: string | null;
@@ -71,11 +87,19 @@ export async function resolveSubjectTagState({
     const requested = normalizeSubjectTagId(requestedSubjectTagId);
     resolvedSubjectTagIds = requested ? [requested] : [];
   } else {
-    const existing = normalizeSubjectTagIds(existingSubjectTagIds);
-    const legacy = normalizeSubjectTagId(existingSubjectTagId);
-    resolvedSubjectTagIds = (existing.length > 0 ? existing : legacy ? [legacy] : [])
+    // Once the canonical array exists, including as an explicit empty array, it owns truth.
+    // The legacy singular field is fallback only for records that predate the array field.
+    resolvedSubjectTagIds = resolveStoredSubjectTagIds(existingSubjectTagIds, existingSubjectTagId)
       .filter((tagId) => assignedSet.has(tagId));
   }
+
+  // A structured known date is the authored When subject. Legacy When tags remain assigned
+  // for migration safety, but must not remain effective subjects or subject-filter truth.
+  resolvedSubjectTagIds = filterSubjectTagIdsForTemporal(
+    resolvedSubjectTagIds,
+    temporal,
+    allTags
+  );
   for (const tagId of resolvedSubjectTagIds) {
     if (!assignedSet.has(tagId)) {
       throw new Error(

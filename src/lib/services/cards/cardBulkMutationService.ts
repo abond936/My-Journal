@@ -5,7 +5,12 @@ import { computeDimensionSortKeys } from '@/lib/services/cards/cardTagRules';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
-import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import {
+  buildSubjectFilterTags,
+  filterSubjectTagIdsForTemporal,
+  resolveSubjectTagState,
+} from '@/lib/utils/subjectTag';
+import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -113,14 +118,38 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
       for (const cardDoc of cardDocs) {
         if (!cardDoc.exists) continue;
         const cardId = cardDoc.id;
+        const cardData = cardDoc.data() as Card;
+        const journalWhenSort = computeJournalWhenSortKeys(
+          derived.when,
+          tagLookup,
+          cardData.temporal
+        );
 
         const cardRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
         const subjectState = await resolveSubjectTagState({
           assignedTagIds: tags,
-          existingSubjectTagId: (cardDoc.data() as Card).subjectTagId,
-          existingSubjectTagIds: (cardDoc.data() as Card).subjectTagIds,
+          existingSubjectTagId: cardData.subjectTagId,
+          existingSubjectTagIds: cardData.subjectTagIds,
           requestedSubjectTagId: undefined,
           subjectTagIdProvided: false,
+          temporal: cardData.temporal ?? null,
+          allTags,
+        });
+        const implicitSubjectTagIds = filterSubjectTagIdsForTemporal(
+          (cardData.galleryImplicitSubjectTagIds ?? []).filter((tagId) => tags.includes(tagId)),
+          cardData.temporal,
+          allTags
+        );
+        const subjectFilterTags = implicitSubjectTagIds.length > 0
+          ? await buildSubjectFilterTags(
+              [...subjectState.subjectTagIds, ...implicitSubjectTagIds],
+              allTags
+            )
+          : subjectState.subjectFilterTags;
+        const dimensionReview = reconcileDimensionReviewMap({
+          dimensionReview: cardData.dimensionReview,
+          assignedTagIds: tags,
+          temporal: cardData.temporal,
           allTags,
         });
         const updatePayload = {
@@ -128,7 +157,9 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           filterTags: derived.filterTags,
           subjectTagId: subjectState.subjectTagId,
           subjectTagIds: subjectState.subjectTagIds,
-          subjectFilterTags: subjectState.subjectFilterTags,
+          subjectFilterTags,
+          galleryImplicitSubjectTagIds: implicitSubjectTagIds,
+          dimensionReview,
           who: derived.who,
           what: derived.what,
           when: derived.when,
@@ -136,8 +167,8 @@ export async function bulkUpdateTags(cardIds: string[], tags: string[]): Promise
           whoSortKey: derived.whoSortKey,
           whatSortKey: derived.whatSortKey,
           whereSortKey: derived.whereSortKey,
-          journalWhenSortAsc: derived.journalWhenSortAsc,
-          journalWhenSortDesc: derived.journalWhenSortDesc,
+          journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+          journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
           updatedAt: Date.now(),
         };
         transaction.update(cardRef, updatePayload);
@@ -221,8 +252,31 @@ export async function bulkApplyTagDelta(
           existingSubjectTagIds: cardData.subjectTagIds,
           requestedSubjectTagId: undefined,
           subjectTagIdProvided: false,
+          temporal: cardData.temporal ?? null,
           allTags,
         });
+        const implicitSubjectTagIds = filterSubjectTagIdsForTemporal(
+          (cardData.galleryImplicitSubjectTagIds ?? []).filter((tagId) => nextTags.includes(tagId)),
+          cardData.temporal,
+          allTags
+        );
+        const subjectFilterTags = implicitSubjectTagIds.length > 0
+          ? await buildSubjectFilterTags(
+              [...subjectState.subjectTagIds, ...implicitSubjectTagIds],
+              allTags
+            )
+          : subjectState.subjectFilterTags;
+        const dimensionReview = reconcileDimensionReviewMap({
+          dimensionReview: cardData.dimensionReview,
+          assignedTagIds: nextTags,
+          temporal: cardData.temporal,
+          allTags,
+        });
+        const journalWhenSort = computeJournalWhenSortKeys(
+          derived.when,
+          tagLookup,
+          cardData.temporal
+        );
 
         await updateTagCountsForCard(
           cardData,
@@ -236,7 +290,9 @@ export async function bulkApplyTagDelta(
           filterTags: derived.filterTags,
           subjectTagId: subjectState.subjectTagId,
           subjectTagIds: subjectState.subjectTagIds,
-          subjectFilterTags: subjectState.subjectFilterTags,
+          subjectFilterTags,
+          galleryImplicitSubjectTagIds: implicitSubjectTagIds,
+          dimensionReview,
           who: derived.who,
           what: derived.what,
           when: derived.when,
@@ -244,8 +300,8 @@ export async function bulkApplyTagDelta(
           whoSortKey: derived.whoSortKey,
           whatSortKey: derived.whatSortKey,
           whereSortKey: derived.whereSortKey,
-          journalWhenSortAsc: derived.journalWhenSortAsc,
-          journalWhenSortDesc: derived.journalWhenSortDesc,
+          journalWhenSortAsc: journalWhenSort.journalWhenSortAsc,
+          journalWhenSortDesc: journalWhenSort.journalWhenSortDesc,
           updatedAt: Date.now(),
         };
         transaction.update(cardDoc.ref, updatePayload);
@@ -268,4 +324,3 @@ export async function bulkApplyTagDelta(
  * Copies content, tags, media references, and gallery but not children.
  * The new card goes through full createCard() to get proper tag counts, Typesense sync, etc.
  */
-

@@ -14,14 +14,17 @@ jest.mock('@/components/admin/studio/cards/TagPickerDimensionColumn', () => ({
     dimension,
     headerControl,
     headerIcon,
+    bodyOverride,
   }: {
     dimension: { docId: string; dimension: 'who' | 'what' | 'when' | 'where' };
     headerControl?: React.ReactNode;
     headerIcon?: React.ReactNode;
+    bodyOverride?: React.ReactNode;
   }) => (
     <div data-testid={`dimension-${dimension.docId}`}>
       {headerIcon}
       {headerControl}
+      {bodyOverride}
     </div>
   ),
 }));
@@ -49,6 +52,10 @@ describe('AdminDimensionalTagFilter', () => {
     expect(screen.getByTestId('dimension-dim-who')).toBeInTheDocument();
     expect(screen.getByTestId('dimension-dim-what')).toBeInTheDocument();
     expect(screen.getByTestId('dimension-dim-who').querySelector('.lucide-user')).toBeTruthy();
+    expect(
+      within(screen.getByTestId('dimension-dim-when')).getByRole('radio', { name: 'Any' })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Structured date')).not.toBeInTheDocument();
   });
 
   it('shows the applied presence rule and selected tags while closed', () => {
@@ -114,6 +121,34 @@ describe('AdminDimensionalTagFilter', () => {
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
       dimensionFilters: expect.objectContaining({
         who: { mode: 'isEmpty', tagId: '', subjectOnly: true },
+      }),
+    }));
+  });
+
+  it('stages review-state filters and exposes an inclusive year range', () => {
+    const onApply = jest.fn();
+    render(
+      <AdminDimensionalTagFilter
+        selectedTagIds={[]}
+        allTags={tags}
+        onSelectedTagIdsChange={jest.fn()}
+        dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
+        onDimensionFilterChange={jest.fn()}
+        surfaceLabel="Media"
+        onApply={onApply}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open all media tag filters' }));
+    fireEvent.change(screen.getByLabelText('Who review state'), {
+      target: { value: 'unreviewed' },
+    });
+    expect(screen.getByLabelText('Year range')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
+      dimensionFilters: expect.objectContaining({
+        who: expect.objectContaining({ reviewState: 'unreviewed' }),
       }),
     }));
   });

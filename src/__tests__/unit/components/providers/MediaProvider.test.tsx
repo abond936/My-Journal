@@ -97,12 +97,32 @@ function MediaHarness() {
       </button>
       <button
         type="button"
+        onClick={() =>
+          void fetchMedia(1, {
+            dimensionReviewStates: { who: 'unreviewed', where: 'not_applicable' },
+            temporalFilter: { status: 'year_range', fromYear: 1960, toYear: 1965 },
+          })
+        }
+      >
+        Load Review Range
+      </button>
+      <button
+        type="button"
         onClick={() => {
           setDimensionalQueryOverlay(siblingsOverlay);
           void fetchMedia(1, { tagScope: 'subject' });
         }}
       >
         Load Subject Scope
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setDimensionalQueryOverlay({ who: [], what: [], when: ['z-when'], where: [] });
+          void fetchMedia(1);
+        }}
+      >
+        Load When Tag
       </button>
       <button type="button" onClick={() => void updateMedia('media-1', { caption: 'Now captioned' })}>
         Add Caption
@@ -126,6 +146,17 @@ function MediaHarness() {
         }
       >
         Bulk Subject
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          void bulkApplyTags(['media-1'], {
+            dimensionReviewUpdates: { when: true },
+            dimensionResolutionUpdates: { when: 'not_applicable' },
+          })
+        }
+      >
+        Bulk When Not Applicable
       </button>
       <button type="button" onClick={() => void deleteMultipleMedia(['media-1', 'media-2'])}>
         Delete Multiple
@@ -260,6 +291,41 @@ describe('MediaProvider', () => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining(
           'codification=incomplete&unresolvedDimension=what&importBatchId=batch-1&importFolder=Charleston&metadataOutcome=found'
+        ),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
+    });
+  });
+
+  it('sends review-state and inclusive year-range filters to the server', async () => {
+    usePathnameMock.mockReturnValue('/admin/studio');
+    fetchMock.mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/media?')) {
+        return okJson({
+          media: [],
+          pagination: {
+            page: 1,
+            limit: 100,
+            total: null,
+            totalPages: null,
+            hasNext: false,
+            hasPrev: false,
+            nextCursor: null,
+            prevCursor: null,
+          },
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(<MediaProvider><MediaHarness /></MediaProvider>);
+    fireEvent.click(screen.getByText('Load Review Range'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /(?=.*whoReview=unreviewed)(?=.*whereReview=not_applicable)(?=.*temporalStatus=year_range)(?=.*temporalFromYear=1960)(?=.*temporalToYear=1965)/
         ),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );
@@ -728,6 +794,83 @@ describe('MediaProvider', () => {
 
     fireEvent.click(screen.getByText('Clear Subject'));
     await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe(''));
+  });
+
+  it('does not let an older filtered request restore media after a bulk resolution removes its tag', async () => {
+    let resolveStaleRequest: ((response: Response) => void) | undefined;
+    let listRequestCount = 0;
+    fetchMock.mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.startsWith('/api/media?')) {
+        listRequestCount += 1;
+        if (listRequestCount === 1) {
+          return okJson({
+            media: [baseMedia({ tags: ['z-when'], when: ['z-when'] })],
+            pagination: {
+              page: 1,
+              limit: 50,
+              total: 1,
+              totalPages: 1,
+              hasNext: false,
+              hasPrev: false,
+              nextCursor: null,
+              prevCursor: null,
+            },
+          });
+        }
+        return new Promise<Response>((resolve) => {
+          resolveStaleRequest = resolve;
+        });
+      }
+      if (url === '/api/admin/media/tags' && init?.method === 'POST') {
+        return okJson({
+          media: [
+            baseMedia({
+              tags: [],
+              when: [],
+              dimensionReview: {
+                when: { reviewed: true, resolution: 'not_applicable' },
+              },
+            }),
+          ],
+          reconciliationOperationId: null,
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    render(
+      <MediaProvider>
+        <MediaHarness />
+      </MediaProvider>
+    );
+
+    fireEvent.click(screen.getByText('Load Default'));
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe('media-1'));
+
+    fireEvent.click(screen.getByText('Load When Tag'));
+    await waitFor(() => expect(listRequestCount).toBe(2));
+    fireEvent.click(screen.getByText('Bulk When Not Applicable'));
+    await waitFor(() => expect(screen.getByTestId('media-ids').textContent).toBe(''));
+
+    resolveStaleRequest?.(
+      await okJson({
+        media: [baseMedia({ tags: ['z-when'], when: ['z-when'] })],
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+          nextCursor: null,
+          prevCursor: null,
+        },
+      })
+    );
+
+    await Promise.resolve();
+    expect(screen.getByTestId('media-ids').textContent).toBe('');
   });
 
 });

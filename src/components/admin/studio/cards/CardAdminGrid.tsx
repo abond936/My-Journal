@@ -32,6 +32,7 @@ import {
 } from '@/lib/utils/cardDeleteWarnings';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 import {
   buildCollectionsCardDragData,
   isCollectionsCardDragData,
@@ -140,9 +141,7 @@ function buildCardThumbnailTooltip(card: Card, allTags: Tag[]): string {
   const core = getCoreTagsByDimensionFromTagIds(card.tags ?? [], resolvedDimension);
   const tagById = buildTagByIdMap(allTags);
   const tagLines = formatCoreTagsTooltipLines(core, (id) => tagById.get(id)?.name ?? id);
-  const explicitSubjects = card.subjectTagIds?.length
-    ? card.subjectTagIds
-    : card.subjectTagId ? [card.subjectTagId] : [];
+  const explicitSubjects = resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId);
   const subjectLines = DIMENSION_ORDER
     .filter((dimension) => core[dimension].length > 0)
     .map((dimension) => {

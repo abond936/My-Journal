@@ -1,5 +1,6 @@
 import type { Card } from '@/lib/types/card';
 import { matchesSelectedTags, type TagSelectionMode } from './tagSelectionMode';
+import { resolveStoredSubjectTagIds } from './storedSubjectTags';
 
 export function cardMatchesExactTagScope(
   card: Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds'>,
@@ -9,7 +10,7 @@ export function cardMatchesExactTagScope(
 ): boolean {
   if (!required || required.length === 0) return true;
   if (tagScope === 'subject') {
-    const explicit = card.subjectTagIds?.length ? card.subjectTagIds : card.subjectTagId ? [card.subjectTagId] : [];
+    const explicit = resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId);
     const subjects = [...explicit, ...(card.galleryImplicitSubjectTagIds ?? [])];
     return matchesSelectedTags(subjects, required, tagSelectionMode);
   }

@@ -1,7 +1,13 @@
 import 'dotenv/config';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getAllTags } from '@/lib/firebase/tagService';
-import { buildSubjectFilterTags, normalizeSubjectTagId, normalizeSubjectTagIds } from '@/lib/utils/subjectTag';
+import {
+  buildSubjectFilterTags,
+  filterSubjectTagIdsForTemporal,
+  normalizeSubjectTagId,
+  normalizeSubjectTagIds,
+} from '@/lib/utils/subjectTag';
+import type { TemporalValue } from '@/lib/types/temporal';
 
 type CollectionName = 'cards' | 'media' | 'questions';
 type Finding = { collection: CollectionName; id: string; issue: string };
@@ -29,7 +35,7 @@ async function main() {
   for (const collection of ['cards', 'media', 'questions'] as const) {
     const snap = await firestore.collection(collection).select(
       'tags', 'tagIds', 'subjectTagId', 'subjectTagIds', 'subjectFilterTags',
-      'galleryImplicitSubjectTagIds'
+      'galleryImplicitSubjectTagIds', 'temporal'
     ).get();
     summary[collection].documents = snap.size;
 
@@ -44,7 +50,11 @@ async function main() {
       const implicit = collection === 'cards'
         ? normalizeSubjectTagIds(data.galleryImplicitSubjectTagIds as string[] | undefined)
         : [];
-      const effective = normalizeSubjectTagIds([...explicit, ...implicit]);
+      const effective = filterSubjectTagIdsForTemporal(
+        normalizeSubjectTagIds([...explicit, ...implicit]),
+        data.temporal as TemporalValue | null | undefined,
+        allTags
+      );
 
       const record = (issue: string) => {
         findings.push({ collection, id: doc.id, issue });
@@ -53,7 +63,9 @@ async function main() {
 
       if (singular && storedArray === undefined) record('legacy-singular-only');
       if (storedArray && storedArray.length !== explicit.length) record('duplicate-or-blank-subject-array');
-      if (explicit.length > 0 && singular !== explicit[0]) record('singular-array-mismatch');
+      if (storedArray !== undefined && singular !== (explicit[0] ?? null)) {
+        record('singular-array-mismatch');
+      }
       if (explicit.some((id) => !assigned.includes(id))) record('explicit-subject-not-assigned');
       if (implicit.some((id) => !assigned.includes(id))) record('implicit-subject-not-assigned');
 

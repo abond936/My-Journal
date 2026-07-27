@@ -12,6 +12,11 @@ import type { TagWithChildren } from '@/components/providers/TagProvider';
 import { buildResolvedTagDimensionMap, buildTagByIdMap, getTagPathDisplay } from '@/lib/utils/tagDimensionResolve';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import styles from '@/components/admin/studio/cards/BulkEditTagsModal.module.css';
+import TemporalValueControl from '@/components/admin/common/TemporalValueControl';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { formatTemporalValue, temporalValuesEqual } from '@/lib/utils/temporalValue';
+import type { DimensionResolution } from '@/lib/types/dimensionReview';
+import TagSearchSelect from '@/components/admin/common/TagSearchSelect';
 
 interface BulkEditMediaTagsModalProps {
   mediaIds: string[];
@@ -105,6 +110,15 @@ export default function BulkEditMediaTagsModal({
   const [tagDecisions, setTagDecisions] = useState<Map<string, boolean>>(new Map());
   const [subjectDecisions, setSubjectDecisions] = useState<Map<string, boolean>>(new Map());
   const [searchTerm, setSearchTerm] = useState('');
+  const [temporalDraft, setTemporalDraft] = useState<TemporalValue | null | undefined>(undefined);
+  const [temporalTouched, setTemporalTouched] = useState(false);
+  const [temporalMixed, setTemporalMixed] = useState(false);
+  const [temporalSubjectDraft, setTemporalSubjectDraft] = useState(false);
+  const [temporalSubjectTouched, setTemporalSubjectTouched] = useState(false);
+  const [temporalSubjectMixed, setTemporalSubjectMixed] = useState(false);
+  const [reviewDecisions, setReviewDecisions] = useState<Map<TagDimension, boolean>>(new Map());
+  const [resolutionDecisions, setResolutionDecisions] =
+    useState<Map<TagDimension, DimensionResolution | null>>(new Map());
 
   const mediaIdsKey = useMemo(() => [...new Set(mediaIds)].sort().join('\u001e'), [mediaIds]);
 
@@ -115,6 +129,14 @@ export default function BulkEditMediaTagsModal({
       setTagDecisions(new Map());
       setSubjectDecisions(new Map());
       setSearchTerm('');
+      setTemporalDraft(undefined);
+      setTemporalTouched(false);
+      setTemporalMixed(false);
+      setTemporalSubjectDraft(false);
+      setTemporalSubjectTouched(false);
+      setTemporalSubjectMixed(false);
+      setReviewDecisions(new Map());
+      setResolutionDecisions(new Map());
       return;
     }
 
@@ -146,9 +168,26 @@ export default function BulkEditMediaTagsModal({
         );
 
         if (cancelled) return;
-        setSelectedMedia(fetched.filter((item): item is Media => Boolean(item?.docId)));
+        const resolved = fetched.filter((item): item is Media => Boolean(item?.docId));
+        setSelectedMedia(resolved);
+        const firstTemporal = resolved[0]?.temporal ?? null;
+        const mixedTemporal = resolved.some(
+          (item) => !temporalValuesEqual(item.temporal ?? null, firstTemporal)
+        );
+        setTemporalDraft(mixedTemporal ? undefined : firstTemporal);
+        setTemporalMixed(mixedTemporal);
+        setTemporalTouched(false);
+        const firstTemporalSubject = resolved[0]?.temporalSubject === true;
+        const mixedTemporalSubject = resolved.some(
+          (item) => (item.temporalSubject === true) !== firstTemporalSubject
+        );
+        setTemporalSubjectDraft(firstTemporalSubject);
+        setTemporalSubjectMixed(mixedTemporalSubject);
+        setTemporalSubjectTouched(false);
         setTagDecisions(new Map());
         setSubjectDecisions(new Map());
+        setReviewDecisions(new Map());
+        setResolutionDecisions(new Map());
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -191,7 +230,7 @@ export default function BulkEditMediaTagsModal({
   const subjectPresenceCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const item of selectedMedia) {
-      const subjects = item.subjectTagIds?.length
+      const subjects = item.subjectTagIds != null
         ? item.subjectTagIds
         : item.subjectTagId
           ? [item.subjectTagId]
@@ -245,6 +284,7 @@ export default function BulkEditMediaTagsModal({
         if (!tag) return null;
         const dimension = resolvedDimension.get(tagId);
         if (!dimension) return null;
+        if (dimension === 'when' && temporalDraft?.status === 'known') return null;
         return {
           tagId,
           dimension,
@@ -267,7 +307,96 @@ export default function BulkEditMediaTagsModal({
       return a.label.localeCompare(b.label);
     });
     return rows;
-  }, [checkedSelection, resolvedDimension, tagById]);
+  }, [checkedSelection, resolvedDimension, tagById, temporalDraft]);
+
+  const getReviewState = React.useCallback((dimension: TagDimension): SelectionState => {
+    const explicit = reviewDecisions.get(dimension);
+    if (explicit !== undefined) return explicit ? 'checked' : 'unchecked';
+    const reviewedCount = selectedMedia.filter(
+      (item) => item.dimensionReview?.[dimension]?.reviewed
+    ).length;
+    if (reviewedCount === 0) return 'unchecked';
+    if (reviewedCount === selectedMedia.length) return 'checked';
+    return 'mixed';
+  }, [reviewDecisions, selectedMedia]);
+
+  const getResolution = React.useCallback(
+    (dimension: TagDimension): DimensionResolution | 'mixed' | null => {
+      if (resolutionDecisions.has(dimension)) return resolutionDecisions.get(dimension) ?? null;
+      const values = new Set(
+        selectedMedia.map((item) => item.dimensionReview?.[dimension]?.resolution ?? null)
+      );
+      return values.size === 1 ? [...values][0] : 'mixed';
+    },
+    [resolutionDecisions, selectedMedia]
+  );
+
+  const assignedTagIds = useMemo(
+    () =>
+      new Set(
+        selectedMedia.flatMap((item) => [
+          ...(item.tags ?? []),
+          ...(item.who ?? []),
+          ...(item.what ?? []),
+          ...(item.when ?? []),
+          ...(item.where ?? []),
+        ])
+      ),
+    [selectedMedia]
+  );
+  const assignedSubjectTagIds = useMemo(
+    () =>
+      new Set(
+        selectedMedia.flatMap((item) => [
+          ...(item.subjectTagIds != null
+            ? item.subjectTagIds
+            : item.subjectTagId
+              ? [item.subjectTagId]
+              : []),
+        ])
+      ),
+    [selectedMedia]
+  );
+
+  const clearDimension = React.useCallback((dimension: TagDimension) => {
+    setTagDecisions((current) => {
+      const next = new Map(current);
+      for (const tagId of assignedTagIds) {
+        if (resolvedDimension.get(tagId) === dimension) next.set(tagId, false);
+      }
+      return next;
+    });
+    setSubjectDecisions((current) => {
+      const next = new Map(current);
+      for (const tagId of assignedSubjectTagIds) {
+        if (resolvedDimension.get(tagId) === dimension) next.set(tagId, false);
+      }
+      return next;
+    });
+    if (dimension === 'when') {
+      setTemporalDraft(null);
+      setTemporalTouched(true);
+      setTemporalMixed(false);
+      setTemporalSubjectDraft(false);
+      setTemporalSubjectTouched(true);
+      setTemporalSubjectMixed(false);
+    }
+    setReviewDecisions((current) => new Map(current).set(dimension, false));
+    setResolutionDecisions((current) => new Map(current).set(dimension, null));
+  }, [assignedSubjectTagIds, assignedTagIds, resolvedDimension]);
+
+  const setDimensionResolution = React.useCallback((
+    dimension: TagDimension,
+    resolution: DimensionResolution
+  ) => {
+    if (getResolution(dimension) === resolution) {
+      setResolutionDecisions((current) => new Map(current).set(dimension, null));
+      return;
+    }
+    clearDimension(dimension);
+    setResolutionDecisions((current) => new Map(current).set(dimension, resolution));
+    setReviewDecisions((current) => new Map(current).set(dimension, true));
+  }, [clearDimension, getResolution]);
 
   useEffect(() => {
     setSubjectDecisions((current) => {
@@ -311,26 +440,38 @@ export default function BulkEditMediaTagsModal({
         .filter(([, value]) => value)
         .map(([tagId]) => tagId);
       const removeTagIds = Array.from(tagDecisions.entries())
-        .filter(([, value]) => !value)
+        .filter(([tagId, value]) => !value && assignedTagIds.has(tagId))
         .map(([tagId]) => tagId);
       const addSubjectTagIds = Array.from(subjectDecisions.entries())
         .filter(([, value]) => value)
         .map(([tagId]) => tagId);
       const removeSubjectTagIds = Array.from(subjectDecisions.entries())
-        .filter(([, value]) => !value)
+        .filter(([tagId, value]) => !value && assignedSubjectTagIds.has(tagId))
         .map(([tagId]) => tagId);
 
       if (
         addTagIds.length > 0 ||
         removeTagIds.length > 0 ||
         addSubjectTagIds.length > 0 ||
-        removeSubjectTagIds.length > 0
+        removeSubjectTagIds.length > 0 ||
+        temporalTouched
+        || temporalSubjectTouched
+        || reviewDecisions.size > 0
+        || resolutionDecisions.size > 0
       ) {
         await bulkApplyTags(mediaIds, {
           addTagIds,
           removeTagIds,
           addSubjectTagIds,
           removeSubjectTagIds,
+          ...(temporalTouched ? { temporal: temporalDraft ?? null } : {}),
+          ...(temporalSubjectTouched ? { temporalSubject: temporalSubjectDraft } : {}),
+          ...(reviewDecisions.size > 0
+            ? { dimensionReviewUpdates: Object.fromEntries(reviewDecisions) }
+            : {}),
+          ...(resolutionDecisions.size > 0
+            ? { dimensionResolutionUpdates: Object.fromEntries(resolutionDecisions) }
+            : {}),
         });
       }
 
@@ -344,6 +485,10 @@ export default function BulkEditMediaTagsModal({
   };
 
   const handleTagChange = (tagId: string, isSelected: boolean) => {
+    const dimension = resolvedDimension.get(tagId);
+    if (isSelected && dimension && getResolution(dimension) !== null) {
+      setResolutionDecisions((current) => new Map(current).set(dimension, null));
+    }
     setTagDecisions((prev) => {
       const next = new Map(prev);
       next.set(tagId, isSelected);
@@ -352,6 +497,14 @@ export default function BulkEditMediaTagsModal({
   };
 
   const handleToggleTag = (tagId: string, currentState: 'checked' | 'unchecked' | 'mixed') => {
+    const dimension = resolvedDimension.get(tagId);
+    if (
+      currentState !== 'checked' &&
+      dimension &&
+      getResolution(dimension) !== null
+    ) {
+      setResolutionDecisions((current) => new Map(current).set(dimension, null));
+    }
     setTagDecisions((prev) => {
       const next = new Map(prev);
       if (currentState === 'checked') {
@@ -371,23 +524,16 @@ export default function BulkEditMediaTagsModal({
         <h2 className={styles.modalHeader}>Media Tags</h2>
 
         <div className={styles.searchBar}>
-          <input
-            type="text"
-            placeholder="Search tags..."
+          <TagSearchSelect
+            allTags={allTags}
+            selectedTagIds={checkedSelection}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
+            onValueChange={setSearchTerm}
+            onSelect={(tagId) => handleTagChange(tagId, true)}
+            allowedDimensions={['who', 'what', 'where']}
+            inputClassName={styles.searchInput}
+            clearClassName={styles.searchClear}
           />
-          {searchTerm ? (
-            <button
-              type="button"
-              onClick={() => setSearchTerm('')}
-              className={styles.searchClear}
-              aria-label="Clear search"
-            >
-              x
-            </button>
-          ) : null}
         </div>
 
         {isLoading || tagsLoading ? (
@@ -410,19 +556,46 @@ export default function BulkEditMediaTagsModal({
 
             <div className={styles.subjectBand}>
               <div className={styles.dimensionSubjectLabel}>
-                Subjects <span>(Choose one or more assigned tags as subjects.)</span>
+                Subjects <span>(Choose assigned tags or a Known date as subjects.)</span>
               </div>
               <div className={styles.subjectColumns}>
                 {DIMENSION_ORDER.map((dimension) => {
                   const options = subjectOptions.filter(
                     (option) => option.dimension === dimension
                   );
+                  const temporalSubjectLabel =
+                    dimension === 'when' && temporalDraft?.status === 'known'
+                      ? formatTemporalValue(temporalDraft)
+                      : null;
                   return (
                     <div
                       key={dimension}
                       className={styles.dimensionSubjectOptions}
                       data-subject-dimension={dimension}
                     >
+                      {temporalSubjectLabel ? (
+                        <label className={styles.subjectOption}>
+                          <input
+                            type="checkbox"
+                            aria-label={temporalSubjectLabel}
+                            checked={temporalSubjectDraft}
+                            ref={(node) => {
+                              if (node) {
+                                node.indeterminate =
+                                  temporalSubjectMixed && !temporalSubjectTouched;
+                              }
+                            }}
+                            onChange={(event) => {
+                              setTemporalSubjectDraft(event.target.checked);
+                              setTemporalSubjectTouched(true);
+                              setTemporalSubjectMixed(false);
+                            }}
+                          />
+                          <span className={styles.subjectOptionCopy}>
+                            {temporalSubjectLabel}
+                          </span>
+                        </label>
+                      ) : null}
                       {options.map((option) => {
                         const state = getSubjectState(option.tagId);
                         return (
@@ -449,21 +622,117 @@ export default function BulkEditMediaTagsModal({
             </div>
 
             <div className={`${styles.interactiveColumns} ${styles.mediaInteractiveColumns}`}>
-              {filteredDimensionalTree.map((dimension) => (
-                <TagPickerDimensionColumn
-                  key={dimension.docId}
-                  dimension={dimension}
-                  selection={checkedSelection}
-                  onSelectionChange={handleTagChange}
-                  getSelectionState={getSelectionState}
-                  onToggleTag={handleToggleTag}
-                  expandedNodeIds={expandedNodeIds}
-                  checkboxIdPrefix="bulk-media-tag"
-                  forceExpandAll
-                  showManagementControls
-                  hideHeader
-                />
-              ))}
+              {filteredDimensionalTree.map((dimension, index) => {
+                const dimensionName = DIMENSION_ORDER[index];
+                const reviewState = getReviewState(dimensionName);
+                const resolution = getResolution(dimensionName);
+                return (
+                  <div
+                    key={dimension.docId}
+                    className={styles.reviewableDimensionColumn}
+                    data-review-dimension={dimensionName}
+                  >
+                    <div className={styles.dimensionReviewControls}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionName} reviewed`}
+                          checked={reviewState === 'checked'}
+                          ref={(node) => {
+                            if (node) node.indeterminate = reviewState === 'mixed';
+                          }}
+                          onChange={() =>
+                            setReviewDecisions((current) =>
+                              new Map(current).set(dimensionName, reviewState !== 'checked')
+                            )
+                          }
+                        />
+                        <span>Reviewed</span>
+                      </label>
+                      <button
+                        type="button"
+                        aria-label={`Clear ${dimensionName}`}
+                        onClick={() => clearDimension(dimensionName)}
+                      >
+                        Clear
+                      </button>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionName} unknown`}
+                          checked={resolution === 'unknown'}
+                          onChange={() => setDimensionResolution(dimensionName, 'unknown')}
+                        />
+                        <span>Unknown</span>
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label={`${dimensionName} not applicable`}
+                          checked={resolution === 'not_applicable'}
+                          onChange={() => setDimensionResolution(dimensionName, 'not_applicable')}
+                        />
+                        <span>Not applicable</span>
+                      </label>
+                    </div>
+                    {dimensionName === 'when' ? (
+                      <div className={styles.temporalColumnControl}>
+                        <TemporalValueControl
+                          idPrefix="media"
+                          value={temporalDraft}
+                          mixed={temporalMixed && !temporalTouched}
+                          showResolvedStates={false}
+                          directEntryOnly
+                          disabled={Boolean(resolution)}
+                          onChange={(next) => {
+                            setTemporalDraft(next);
+                            setTemporalTouched(true);
+                            setTemporalMixed(false);
+                            if (next?.status === 'known') {
+                              setSubjectDecisions((current) => {
+                                const updated = new Map(current);
+                                for (const tagId of assignedSubjectTagIds) {
+                                  if (resolvedDimension.get(tagId) === 'when') {
+                                    updated.set(tagId, false);
+                                  }
+                                }
+                                return updated;
+                              });
+                              setResolutionDecisions((current) =>
+                                new Map(current).set('when', null)
+                              );
+                            } else {
+                              setTemporalSubjectDraft(false);
+                              setTemporalSubjectTouched(true);
+                              setTemporalSubjectMixed(false);
+                            }
+                          }}
+                        />
+                        <small>
+                          {temporalMixed && !temporalTouched
+                            ? 'Mixed dates'
+                            : formatTemporalValue(temporalDraft)}
+                        </small>
+                      </div>
+                    ) : null}
+                    {dimensionName === 'when' ? null : (
+                      <TagPickerDimensionColumn
+                        dimension={dimension}
+                        selection={checkedSelection}
+                        onSelectionChange={handleTagChange}
+                        getSelectionState={getSelectionState}
+                        onToggleTag={handleToggleTag}
+                        expandedNodeIds={expandedNodeIds}
+                        checkboxIdPrefix="bulk-media-tag"
+                        forceExpandAll
+                        showManagementControls={false}
+                        hideHeader
+                        disabled={Boolean(resolution)}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

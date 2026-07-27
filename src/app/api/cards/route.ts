@@ -28,12 +28,18 @@ import {
   cardMatchesCodificationFilter,
   type CardCodificationFilter,
 } from '@/lib/utils/cardCodification';
+import {
+  matchesTemporalValueFilter,
+  parseTemporalFilterParams,
+} from '@/lib/utils/temporalValue';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
+import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
   dimension: 'who' | 'what' | 'when' | 'where'
 ): boolean {
-  const explicit = card.subjectTagIds?.length ? card.subjectTagIds : card.subjectTagId ? [card.subjectTagId] : [];
+  const explicit = resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId);
   const subjects = [...explicit, ...(card.galleryImplicitSubjectTagIds ?? [])];
   return subjects.some((tagId) => (card[dimension] ?? []).includes(tagId));
 }
@@ -153,6 +159,8 @@ export async function GET(request: Request) {
     const scopeForDimension = (dimension: 'who' | 'what' | 'when' | 'where') =>
       subjectDimensions.has(dimension) ? 'subject' as const : tagScope;
     const tagSelectionMode = readTagSelectionMode(searchParams.get('tagOperator'));
+    const temporalFilter = parseTemporalFilterParams(searchParams);
+    const hasTemporalFilter = temporalFilter !== undefined;
 
     // Parse dimensional tags from query parameters
     const dimensionalTags: {
@@ -375,6 +383,7 @@ export async function GET(request: Request) {
         Object.keys(dimensionalTags).length === 0 &&
         !hasDimensionMissingFilters &&
         !hasDimensionPresentFilters &&
+        !hasTemporalFilter &&
         !listSortBy
       ) {
         const items = await getParentCardsByChildId(childrenIds_contains, {
@@ -388,7 +397,6 @@ export async function GET(request: Request) {
         } as PaginatedResult<Card>);
       }
 
-      const cardDimEmpty = (arr: string[] | undefined) => !arr || arr.length === 0;
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
           if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
@@ -407,14 +415,15 @@ export async function GET(request: Request) {
           if (!cardMatchesExactTagScope(card, exactDimensionalTags.what, scopeForDimension('what'), tagSelectionMode)) return false;
           if (!cardMatchesExactTagScope(card, exactDimensionalTags.when, scopeForDimension('when'), tagSelectionMode)) return false;
           if (!cardMatchesExactTagScope(card, exactDimensionalTags.where, scopeForDimension('where'), tagSelectionMode)) return false;
-          if (dimensionMissing.who && (scopeForDimension('who') === 'subject' ? cardHasSubjectInDimension(card, 'who') : !cardDimEmpty(card.who))) return false;
-          if (dimensionMissing.what && (scopeForDimension('what') === 'subject' ? cardHasSubjectInDimension(card, 'what') : !cardDimEmpty(card.what))) return false;
-          if (dimensionMissing.when && (scopeForDimension('when') === 'subject' ? cardHasSubjectInDimension(card, 'when') : !cardDimEmpty(card.when))) return false;
-          if (dimensionMissing.where && (scopeForDimension('where') === 'subject' ? cardHasSubjectInDimension(card, 'where') : !cardDimEmpty(card.where))) return false;
-          if (dimensionPresent.who && (scopeForDimension('who') === 'subject' ? !cardHasSubjectInDimension(card, 'who') : cardDimEmpty(card.who))) return false;
-          if (dimensionPresent.what && (scopeForDimension('what') === 'subject' ? !cardHasSubjectInDimension(card, 'what') : cardDimEmpty(card.what))) return false;
-          if (dimensionPresent.when && (scopeForDimension('when') === 'subject' ? !cardHasSubjectInDimension(card, 'when') : cardDimEmpty(card.when))) return false;
-          if (dimensionPresent.where && (scopeForDimension('where') === 'subject' ? !cardHasSubjectInDimension(card, 'where') : cardDimEmpty(card.where))) return false;
+          if (dimensionMissing.who && (scopeForDimension('who') === 'subject' ? cardHasSubjectInDimension(card, 'who') : hasDimensionAssignment(card, 'who'))) return false;
+          if (dimensionMissing.what && (scopeForDimension('what') === 'subject' ? cardHasSubjectInDimension(card, 'what') : hasDimensionAssignment(card, 'what'))) return false;
+          if (dimensionMissing.when && (scopeForDimension('when') === 'subject' ? cardHasSubjectInDimension(card, 'when') : hasDimensionAssignment(card, 'when'))) return false;
+          if (dimensionMissing.where && (scopeForDimension('where') === 'subject' ? cardHasSubjectInDimension(card, 'where') : hasDimensionAssignment(card, 'where'))) return false;
+          if (dimensionPresent.who && (scopeForDimension('who') === 'subject' ? !cardHasSubjectInDimension(card, 'who') : !hasDimensionAssignment(card, 'who'))) return false;
+          if (dimensionPresent.what && (scopeForDimension('what') === 'subject' ? !cardHasSubjectInDimension(card, 'what') : !hasDimensionAssignment(card, 'what'))) return false;
+          if (dimensionPresent.when && (scopeForDimension('when') === 'subject' ? !cardHasSubjectInDimension(card, 'when') : !hasDimensionAssignment(card, 'when'))) return false;
+          if (dimensionPresent.where && (scopeForDimension('where') === 'subject' ? !cardHasSubjectInDimension(card, 'where') : !hasDimensionAssignment(card, 'where'))) return false;
+          if (!matchesTemporalValueFilter(card.temporal, temporalFilter)) return false;
           return true;
         });
       };
@@ -427,6 +436,7 @@ export async function GET(request: Request) {
             hasDimensionMissingFilters ||
             hasDimensionPresentFilters)) ||
         hasDimensionPresentFilters ||
+        hasTemporalFilter ||
         codification !== 'all' ||
         (tagSelectionMode === 'all' && (Object.keys(dimensionalTags).length > 0 || hasExactDimensionalFilters));
 
@@ -439,6 +449,7 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !hasTemporalFilter &&
         !hasDimensionPresentFilters &&
         !((tagScope === 'subject' || subjectDimensions.size > 0) &&
           (Object.keys(dimensionalTags).length > 0 ||

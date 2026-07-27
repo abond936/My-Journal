@@ -1,7 +1,9 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import MediaAdminContent from '@/components/admin/studio/media/MediaAdminContent';
+import MediaAdminContent, {
+  filterSelectedCardMedia,
+} from '@/components/admin/studio/media/MediaAdminContent';
 import { DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES } from '@/lib/preferences/adminFilters';
 
 const useMediaMock = jest.fn();
@@ -207,6 +209,25 @@ describe('MediaAdminContent', () => {
     });
   });
 
+  it('fetches the restored Library filter even when the shared provider already has pagination', async () => {
+    const fetchMedia = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      media: [],
+      fetchMedia,
+    });
+    useStudioShellOptionalMock.mockReturnValue({
+      selectedPreview: { docId: 'card-1', title: 'Card One', type: 'story', status: 'draft' },
+      selectedDetail: null,
+    });
+
+    render(<MediaAdminContent embedded />);
+
+    await waitFor(() => {
+      expect(fetchMedia).toHaveBeenCalledWith(1);
+    });
+  });
+
   it('keeps the embedded Studio pane free of the normal paging copy during smooth scrolling', () => {
     render(<MediaAdminContent embedded />);
 
@@ -326,6 +347,196 @@ describe('MediaAdminContent', () => {
     rerender(<MediaAdminContent embedded />);
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('starts a newly selected Card unfiltered and restores the prior Library filters', async () => {
+    const setFilter = jest.fn();
+    const fetchMedia = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      filters: {
+        ...baseMediaContext.filters,
+        source: 'local',
+        search: 'family',
+        codification: 'incomplete',
+      },
+      setFilter,
+      fetchMedia,
+      resolveMediaById: jest.fn(() => ({
+        docId: 'media-1',
+        filename: 'one.jpg',
+        source: 'local',
+        width: 100,
+        height: 100,
+      })),
+    });
+    useStudioShellOptionalMock.mockReturnValue({
+      selectedPreview: {
+        docId: 'card-1',
+        title: 'Card One',
+        type: 'story',
+        status: 'draft',
+        coverImageId: 'media-1',
+      },
+      selectedDetail: null,
+    });
+
+    render(<MediaAdminContent embedded />);
+    await userEvent.click(screen.getByRole('button', { name: 'Selected Card' }));
+
+    expect(setFilter).toHaveBeenCalledWith('source', 'all');
+    expect(setFilter).toHaveBeenCalledWith('search', '');
+    expect(setFilter).toHaveBeenCalledWith('codification', 'all');
+
+    setFilter.mockClear();
+    fetchMedia.mockClear();
+    await userEvent.click(screen.getByRole('button', { name: 'Library' }));
+
+    expect(setFilter).toHaveBeenCalledWith('source', 'local');
+    expect(setFilter).toHaveBeenCalledWith('search', 'family');
+    expect(setFilter).toHaveBeenCalledWith('codification', 'incomplete');
+    expect(fetchMedia).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ source: 'local', search: 'family', codification: 'incomplete' }),
+      {}
+    );
+  });
+
+  it('filters only the selected Card population without relying on the Library result set', () => {
+    const items = [
+      {
+        docId: 'one',
+        filename: 'family.jpg',
+        caption: 'Family',
+        source: 'local',
+        sourcePath: '/family/family.jpg',
+        width: 1200,
+        height: 800,
+        what: ['party'],
+        createdAt: 1,
+        updatedAt: 1,
+        storageUrl: 'https://example.com/one',
+        storagePath: 'one',
+      },
+      {
+        docId: 'two',
+        filename: 'work.jpg',
+        source: 'local',
+        sourcePath: '/work/work.jpg',
+        width: 800,
+        height: 1200,
+        createdAt: 1,
+        updatedAt: 1,
+        storageUrl: 'https://example.com/two',
+        storagePath: 'two',
+      },
+    ];
+
+    const result = filterSelectedCardMedia(
+      items,
+      {
+        ...baseMediaContext.filters,
+        dimensions: 'landscape',
+        search: 'family',
+      },
+      { what: ['party'] },
+      new Map([['party', 'Party']])
+    );
+
+    expect(result.map((item) => item.docId)).toEqual(['one']);
+  });
+
+  it('uses structured When values when filtering the selected Card population for Empty', () => {
+    const common = {
+      source: 'local' as const,
+      width: 100,
+      height: 100,
+      createdAt: 1,
+      updatedAt: 1,
+      storageUrl: 'https://example.com/media',
+      storagePath: 'media',
+      when: [],
+    };
+    const items = [
+      {
+        ...common,
+        docId: 'known-date',
+        filename: 'known.jpg',
+        temporal: {
+          status: 'known' as const,
+          year: 2008,
+          precision: 'year' as const,
+          approximate: false,
+          source: 'manual' as const,
+        },
+      },
+      {
+        ...common,
+        docId: 'resolved',
+        filename: 'resolved.jpg',
+        dimensionReview: {
+          when: { reviewed: true, resolution: 'not_applicable' as const },
+        },
+      },
+      {
+        ...common,
+        docId: 'empty',
+        filename: 'empty.jpg',
+      },
+    ];
+
+    const result = filterSelectedCardMedia(
+      items,
+      {
+        ...baseMediaContext.filters,
+        dimensionPresence: { when: 'isEmpty' },
+      },
+      {},
+      new Map()
+    );
+
+    expect(result.map((item) => item.docId)).toEqual(['empty']);
+  });
+
+  it('applies review-state filters within the selected Card population', () => {
+    const items = [
+      {
+        docId: 'unreviewed',
+        filename: 'unreviewed.jpg',
+        source: 'local' as const,
+        width: 100,
+        height: 100,
+        createdAt: 2,
+        updatedAt: 2,
+        storageUrl: 'https://example.com/unreviewed',
+        storagePath: 'unreviewed',
+        dimensionReview: { who: { reviewed: false } },
+      },
+      {
+        docId: 'reviewed',
+        filename: 'reviewed.jpg',
+        source: 'local' as const,
+        width: 100,
+        height: 100,
+        createdAt: 1,
+        updatedAt: 1,
+        storageUrl: 'https://example.com/reviewed',
+        storagePath: 'reviewed',
+        dimensionReview: { who: { reviewed: true } },
+      },
+    ];
+
+    const result = filterSelectedCardMedia(
+      items,
+      {
+        ...baseMediaContext.filters,
+        dimensionReviewStates: { who: 'unreviewed' },
+      },
+      {},
+      new Map()
+    );
+
+    expect(result.map((item) => item.docId)).toEqual(['unreviewed']);
   });
 
   it('retires pile controls and automatic pile presentation from incomplete Media', () => {

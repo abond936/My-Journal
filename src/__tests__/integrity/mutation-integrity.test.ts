@@ -1,4 +1,6 @@
 const incrementMock = jest.fn((value: number) => ({ __op: 'increment', value }));
+const arrayUnionMock = jest.fn((value: string) => ({ __op: 'arrayUnion', value }));
+const arrayRemoveMock = jest.fn((value: string) => ({ __op: 'arrayRemove', value }));
 
 type TagDocRef = { id: string; path: string };
 type TagSnap = { id: string; exists: true; data: () => Record<string, never> };
@@ -6,6 +8,8 @@ type TagSnap = { id: string; exists: true; data: () => Record<string, never> };
 jest.mock('firebase-admin/firestore', () => ({
   FieldValue: {
     increment: (value: number) => incrementMock(value),
+    arrayUnion: (value: string) => arrayUnionMock(value),
+    arrayRemove: (value: string) => arrayRemoveMock(value),
   },
 }));
 
@@ -65,7 +69,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     jest.clearAllMocks();
   });
 
-  it('increments tag and ancestor counts on draft -> published create flow', async () => {
+  it('increments tag and ancestor counts for a newly created card regardless of status', async () => {
     const txn = makeTxn();
     const lookup = makeLookup([
       { docId: 'tag-a', path: ['root-a'] },
@@ -123,7 +127,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
     );
   });
 
-  it('decrements published tag counts on published -> draft transition', async () => {
+  it('does not change Studio assignment counts when publication status changes', async () => {
     const txn = makeTxn();
     const lookup = makeLookup([
       { docId: 'tag-a', path: ['root-a'] },
@@ -137,14 +141,7 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
       lookup
     );
 
-    expect(txn.update).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'tag-a' }),
-      { cardCount: { __op: 'increment', value: -1 } }
-    );
-    expect(txn.update).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'root-a' }),
-      { cardCount: { __op: 'increment', value: -1 } }
-    );
+    expect(txn.update).not.toHaveBeenCalled();
   });
 
   it('makes no count updates when card stays draft', async () => {
@@ -160,5 +157,40 @@ describe('Mutation integrity: updateTagCountsForCard', () => {
 
     expect(txn.update).not.toHaveBeenCalled();
     expect(txn.getAll).not.toHaveBeenCalled();
+  });
+
+  it('counts a card only once on a shared ancestor and maintains unique membership', async () => {
+    const txn = makeTxn();
+    const lookup = makeLookup([
+      { docId: 'tag-a', path: ['root'] },
+      { docId: 'tag-b', path: ['root'] },
+      { docId: 'root', path: [] },
+    ]);
+
+    await updateTagCountsForCard(
+      { docId: 'card-1', status: 'draft', tags: ['tag-a'] },
+      { docId: 'card-1', status: 'draft', tags: ['tag-b'] },
+      txn as unknown as FirebaseFirestore.Transaction,
+      lookup
+    );
+
+    expect(txn.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'root' }),
+      expect.anything()
+    );
+    expect(txn.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'tag-a' }),
+      {
+        cardCount: { __op: 'increment', value: -1 },
+        uniqueCardIds: { __op: 'arrayRemove', value: 'card-1' },
+      }
+    );
+    expect(txn.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'tag-b' }),
+      {
+        cardCount: { __op: 'increment', value: 1 },
+        uniqueCardIds: { __op: 'arrayUnion', value: 'card-1' },
+      }
+    );
   });
 });

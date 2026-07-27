@@ -3,6 +3,7 @@ import type { Tag } from '@/lib/types/tag';
 import { DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap, buildTagByIdMap } from '@/lib/utils/tagDimensionResolve';
 import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 
 export interface ReaderCardContextChip {
   dimension: TagDimension;
@@ -238,10 +239,10 @@ export function buildFeedTileDimensionSlots(
     .map((id) => tagById.get(id))
     .filter((tag): tag is Tag => Boolean(tag?.docId))
     .filter((tag) => !isOperationalSentinelTagName(tag.name));
-  const explicitSubjectTagIds = Array.from(new Set([
-    ...(card.subjectTagIds ?? []),
-    ...(card.subjectTagId ? [card.subjectTagId] : []),
-  ]));
+  const explicitSubjectTagIds = resolveStoredSubjectTagIds(
+    card.subjectTagIds,
+    card.subjectTagId
+  );
 
   return DIMENSION_ORDER.map((dimension) => {
     const dimensionalDirectTags = directTags.filter(

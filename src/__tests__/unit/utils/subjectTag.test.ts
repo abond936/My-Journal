@@ -7,7 +7,13 @@ jest.mock('@/lib/firebase/tagService', () => ({
 }));
 
 import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
-import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { resolveStoredSubjectTagIds, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+
+const tags = [
+  { docId: 'when-root', name: 'When', dimension: 'when' as const },
+  { docId: 'legacy-when', name: 'z-when', parentId: 'when-root' },
+  { docId: 'alan', name: 'Alan', dimension: 'who' as const },
+];
 
 describe('subjectTag contract', () => {
   it('distinguishes implicit, Multiple, and Subjects+ presentation', () => {
@@ -51,6 +57,39 @@ describe('subjectTag contract', () => {
 
     expect(result.subjectTagId).toBeNull();
     expect(result.subjectFilterTags).toEqual({});
+  });
+
+  it('treats an existing empty canonical array as an explicit clear', async () => {
+    const result = await resolveSubjectTagState({
+      assignedTagIds: ['alan'],
+      existingSubjectTagId: 'alan',
+      existingSubjectTagIds: [],
+      subjectTagIdProvided: false,
+      allTags: tags,
+    });
+
+    expect(result.subjectTagId).toBeNull();
+    expect(result.subjectTagIds).toEqual([]);
+    expect(resolveStoredSubjectTagIds([], 'alan')).toEqual([]);
+  });
+
+  it('excludes retained legacy When tags from subjects when a structured date is known', async () => {
+    const result = await resolveSubjectTagState({
+      assignedTagIds: ['legacy-when', 'alan'],
+      existingSubjectTagIds: ['legacy-when', 'alan'],
+      subjectTagIdProvided: false,
+      temporal: {
+        status: 'known',
+        year: 2008,
+        precision: 'year',
+        approximate: false,
+        source: 'manual',
+      },
+      allTags: tags,
+    });
+
+    expect(result.subjectTagId).toBe('alan');
+    expect(result.subjectTagIds).toEqual(['alan']);
   });
 
   it('rejects an explicit subject tag that is not assigned', async () => {

@@ -23,6 +23,7 @@ interface TagPickerDimensionColumnProps {
   disabled?: boolean;
   headerIcon?: React.ReactNode;
   hideHeader?: boolean;
+  bodyOverride?: React.ReactNode;
 }
 
 export default function TagPickerDimensionColumn({
@@ -40,6 +41,7 @@ export default function TagPickerDimensionColumn({
   disabled = false,
   headerIcon,
   hideHeader = false,
+  bodyOverride,
 }: TagPickerDimensionColumnProps) {
   const { createTag } = useTag();
   const dimensionKey = dimension.dimension as TagDimension;
@@ -113,6 +115,8 @@ export default function TagPickerDimensionColumn({
       )}
 
       <fieldset className={styles.dimensionTreeFieldset} disabled={disabled}>
+      {bodyOverride !== undefined ? bodyOverride : (
+      <>
       {showManagementControls ? (
         <div className={styles.addTagBlock}>
           <div className={styles.addTagRow}>
@@ -204,6 +208,8 @@ export default function TagPickerDimensionColumn({
           />
         ))}
       </div>
+      </>
+      )}
       </fieldset>
     </div>
   );

@@ -48,10 +48,10 @@ async function dryRunTagCounts() {
     tag.children = childrenByParent.get(tag.docId!) ?? [];
   }
 
-  // 2. Fetch all published cards and build tag-to-card map
-  const publishedCardsSnapshot = await cardsCollection.where('status', '==', 'published').get();
+  // 2. Fetch all cards; Studio administration counts include draft and published assignments.
+  const allCardsSnapshot = await cardsCollection.get();
   const tagToDirectCardIds = new Map<string, Set<string>>();
-  publishedCardsSnapshot.forEach(cardDoc => {
+  allCardsSnapshot.forEach(cardDoc => {
     const card = cardDoc.data() as Card;
     if (card.tags && card.tags.length > 0) {
       const uniqueTags = new Set(card.tags);
@@ -207,4 +207,4 @@ if (isDryRun) {
   console.log('  --dry-run    Preview changes without making them');
   console.log('  --apply      Actually apply the changes');
   process.exit(1);
-} 
+}

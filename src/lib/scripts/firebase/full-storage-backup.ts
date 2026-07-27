@@ -227,16 +227,32 @@ export async function runStorageBackup(options: StorageBackupOptions): Promise<S
           sourceRunId: runId,
         });
       } else if (canCopyPrior) {
-        fs.copyFileSync(prior.localPath, localPath);
-        copied += 1;
-        manifest.push({
-          storagePath,
-          size,
-          md5,
-          contentType,
-          action: 'copied',
-          sourceRunId: prior.runId,
-        });
+        try {
+          fs.copyFileSync(prior.localPath, localPath);
+          copied += 1;
+          manifest.push({
+            storagePath,
+            size,
+            md5,
+            contentType,
+            action: 'copied',
+            sourceRunId: prior.runId,
+          });
+        } catch (error) {
+          log(
+            `  prior copy unavailable for ${storagePath}; downloading from Firebase Storage instead (${error instanceof Error ? error.message : String(error)})`
+          );
+          fs.rmSync(localPath, { force: true });
+          await file.download({ destination: localPath });
+          downloaded += 1;
+          manifest.push({
+            storagePath,
+            size,
+            md5,
+            contentType,
+            action: 'downloaded',
+          });
+        }
       } else {
         await file.download({ destination: localPath });
         downloaded += 1;

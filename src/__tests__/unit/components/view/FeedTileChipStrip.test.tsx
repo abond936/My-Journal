@@ -72,4 +72,41 @@ describe('FeedTileChipStrip', () => {
       'Subjects: Sandra\nAll: Alan, Sandra'
     );
   });
+
+  it('uses the structured date as the primary compact When presentation', () => {
+    render(
+      <FeedTileChipStrip
+        card={baseCard({
+          temporal: {
+            status: 'known',
+            year: 1968,
+            month: 4,
+            day: 4,
+            precision: 'day',
+            approximate: true,
+            source: 'manual',
+          },
+        })}
+      />
+    );
+
+    expect(screen.getByLabelText('When: circa April 4, 1968')).toHaveTextContent('~1968-04-04');
+  });
+
+  it('shows reviewed Card resolutions instead of empty placeholders', () => {
+    render(
+      <FeedTileChipStrip
+        card={baseCard({
+          tags: [],
+          dimensionReview: {
+            who: { reviewed: true, resolution: 'not_applicable' },
+            where: { reviewed: true, resolution: 'unknown' },
+          },
+        })}
+      />
+    );
+
+    expect(screen.getByLabelText('Who: N/A')).toHaveTextContent('N/A');
+    expect(screen.getByLabelText('Where: Unknown')).toHaveTextContent('Unknown');
+  });
 });

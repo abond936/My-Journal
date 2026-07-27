@@ -117,4 +117,52 @@ describe('DimensionalTagVerticalChips', () => {
     );
     expect(screen.getByRole('button', { name: 'Alan' })).toHaveAttribute('title', expect.stringContaining('Selected subjects: Alan'));
   });
+
+  it('shows a structured date instead of the legacy When tag preview', () => {
+    render(
+      <DimensionalTagVerticalChips
+        tagIds={[]}
+        allTags={tags}
+        variant="inline"
+        temporalValue={{
+          status: 'known',
+          year: 1968,
+          month: 7,
+          precision: 'month',
+          approximate: false,
+          source: 'manual',
+        }}
+        onUpdateTags={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: '1968-07' })).toHaveAttribute(
+      'title',
+      'When: July 1968'
+    );
+  });
+
+  it('shows reviewed resolutions instead of empty dashes', () => {
+    render(
+      <DimensionalTagVerticalChips
+        tagIds={[]}
+        allTags={tags}
+        variant="inline"
+        dimensionReview={{
+          who: { reviewed: true, resolution: 'not_applicable' },
+          where: { reviewed: true, resolution: 'unknown' },
+        }}
+        onUpdateTags={jest.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'N/A' })).toHaveAttribute(
+      'title',
+      'Who: N/A'
+    );
+    expect(screen.getByRole('button', { name: 'Unknown' })).toHaveAttribute(
+      'title',
+      'Where: Unknown'
+    );
+  });
 });

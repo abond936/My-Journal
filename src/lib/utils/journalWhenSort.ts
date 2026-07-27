@@ -1,4 +1,5 @@
 import type { Tag } from '@/lib/types/tag';
+import type { TemporalValue } from '@/lib/types/temporal';
 
 export function buildTagMap(allTags: Tag[]): Map<string, Tag> {
   return new Map(allTags.filter((t) => t.docId).map((t) => [t.docId!, t]));
@@ -77,8 +78,19 @@ function bestPackedForWhenTagId(whenTagId: string, tagMap: Map<string, Tag>): nu
  */
 export function computeJournalWhenSortKeys(
   whenTagIds: string[] | undefined,
-  tagMap: Map<string, Tag>
+  tagMap: Map<string, Tag>,
+  temporal?: TemporalValue | null
 ): { journalWhenSortAsc: number; journalWhenSortDesc: number } {
+  if (temporal?.status === 'known') {
+    const packed =
+      temporal.year * 10_000 +
+      (temporal.month ?? 0) * 100 +
+      (temporal.day ?? 0);
+    return {
+      journalWhenSortAsc: packed,
+      journalWhenSortDesc: packed,
+    };
+  }
   const ids = whenTagIds?.filter(Boolean) ?? [];
   if (ids.length === 0) {
     return {

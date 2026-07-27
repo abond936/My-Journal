@@ -2,6 +2,8 @@ import {
   computeGalleryDimensionTagUnion,
   computeGalleryDimensionRollup,
   computeGalleryInheritanceResult,
+  computeGalleryTemporalRollup,
+  galleryMediaMembershipChanged,
   mergeGalleryInheritedCardTags,
   effectiveGalleryInheritanceToggles,
   newCardInheritanceOverrides,
@@ -78,27 +80,39 @@ describe('galleryTagInheritance', () => {
 
   it('makes any blank child unreviewed and discards a misleading partial union', () => {
     const resolved = new Map([['who-a', 'who' as const]]);
-    expect(computeGalleryDimensionRollup([{ tags: ['who-a'] }, { tags: [] }], 'who', resolved)).toEqual({
-      status: 'unreviewed', tagIds: [], implicitSubjectTagIds: [],
+    expect(computeGalleryDimensionRollup([
+      { tags: ['who-a'], dimensionReview: { who: { reviewed: true } } },
+      { tags: [] },
+    ], 'who', resolved)).toEqual({
+      status: 'unreviewed', tagIds: [], implicitSubjectTagIds: [], resolution: null,
     });
   });
 
   it('does not invent an unreviewed rollup when a card has no Gallery children', () => {
     expect(computeGalleryDimensionRollup([], 'who', new Map())).toEqual({
-      status: 'empty', tagIds: [], implicitSubjectTagIds: [],
+      status: 'empty', tagIds: [], implicitSubjectTagIds: [], resolution: null,
     });
   });
 
-  it('rolls intentional N/A or Unknown tags like any other tag', () => {
-    const resolved = new Map([
-      ['who-na', 'who' as const],
-      ['who-unknown', 'who' as const],
-    ]);
-    expect(computeGalleryDimensionRollup([{ tags: ['who-na'] }, { tags: ['who-na'] }], 'who', resolved)).toEqual({
-      status: 'reviewed', tagIds: ['who-na'], implicitSubjectTagIds: ['who-na'],
+  it('rolls reviewed N/A and rejects conflicting reviewed resolutions', () => {
+    const resolved = new Map();
+    expect(computeGalleryDimensionRollup([
+      { dimensionReview: { who: { reviewed: true, resolution: 'not_applicable' } } },
+      { dimensionReview: { who: { reviewed: true, resolution: 'not_applicable' } } },
+    ], 'who', resolved)).toEqual({
+      status: 'reviewed',
+      tagIds: [],
+      implicitSubjectTagIds: [],
+      resolution: 'not_applicable',
     });
-    expect(computeGalleryDimensionRollup([{ tags: ['who-na'] }, { tags: ['who-unknown'] }], 'who', resolved)).toEqual({
-      status: 'reviewed', tagIds: ['who-na', 'who-unknown'], implicitSubjectTagIds: [],
+    expect(computeGalleryDimensionRollup([
+      { dimensionReview: { who: { reviewed: true, resolution: 'not_applicable' } } },
+      { dimensionReview: { who: { reviewed: true, resolution: 'unknown' } } },
+    ], 'who', resolved)).toEqual({
+      status: 'unreviewed',
+      tagIds: [],
+      implicitSubjectTagIds: [],
+      resolution: null,
     });
   });
 
@@ -117,6 +131,7 @@ describe('galleryTagInheritance', () => {
       tags: ['what-old'],
       statuses: { who: 'unreviewed', what: 'reviewed', when: 'empty', where: 'empty' },
       implicitSubjectTagIds: [],
+      dimensionReview: { who: { reviewed: false, resolution: null } },
     });
   });
 
@@ -124,13 +139,14 @@ describe('galleryTagInheritance', () => {
     const tags = [{ docId: 'who-na', dimension: 'who' }] as never[];
     expect(computeGalleryInheritanceResult(
       [],
-      [{ tags: ['who-na'] }],
+      [{ tags: ['who-na'], dimensionReview: { who: { reviewed: true } } }],
       { who: true, what: false, when: false, where: false },
       tags
     )).toEqual({
       tags: ['who-na'],
       statuses: { who: 'reviewed', what: 'empty', when: 'empty', where: 'empty' },
       implicitSubjectTagIds: ['who-na'],
+      dimensionReview: { who: { reviewed: true, resolution: null } },
     });
     expect(computeGalleryInheritanceResult(
       ['who-na'],
@@ -141,7 +157,87 @@ describe('galleryTagInheritance', () => {
       tags: [],
       statuses: { who: 'empty', what: 'empty', when: 'empty', where: 'empty' },
       implicitSubjectTagIds: [],
+      dimensionReview: { who: { reviewed: false, resolution: null } },
     });
+  });
+
+  it('marks When unreviewed when any participating gallery item is blank', () => {
+    const temporal = {
+      status: 'known' as const,
+      year: 1968,
+      precision: 'year' as const,
+      approximate: false,
+      source: 'manual' as const,
+    };
+
+    expect(computeGalleryTemporalRollup([
+      { temporal, dimensionReview: { when: { reviewed: true } } },
+      {},
+      { temporal: { ...temporal }, dimensionReview: { when: { reviewed: true } } },
+    ])).toEqual({ status: 'unreviewed', temporal: null });
+  });
+
+  it('inherits one agreed structured date when every participating gallery item agrees', () => {
+    const temporal = {
+      status: 'known' as const,
+      year: 1968,
+      precision: 'year' as const,
+      approximate: false,
+      source: 'manual' as const,
+    };
+
+    expect(computeGalleryTemporalRollup([
+      { temporal, dimensionReview: { when: { reviewed: true } } },
+      { temporal: { ...temporal }, dimensionReview: { when: { reviewed: true } } },
+    ])).toEqual({ status: 'reviewed', temporal });
+  });
+
+  it('requires an explicit card date when dated gallery items conflict', () => {
+    expect(computeGalleryTemporalRollup([
+      {
+        temporal: {
+          status: 'known',
+          year: 1968,
+          precision: 'year',
+          approximate: false,
+          source: 'manual',
+        },
+        dimensionReview: { when: { reviewed: true } },
+      },
+      {
+        temporal: {
+          status: 'known',
+          year: 1969,
+          precision: 'year',
+          approximate: false,
+          source: 'manual',
+        },
+        dimensionReview: { when: { reviewed: true } },
+      },
+    ])).toEqual({
+      status: 'unreviewed',
+      temporal: null,
+    });
+  });
+
+  it('marks an inherited card date unreviewed when gallery items are blank', () => {
+    expect(computeGalleryTemporalRollup([{}, { temporal: null }])).toEqual({
+      status: 'unreviewed',
+      temporal: null,
+    });
+  });
+
+  it('keeps an inherited card date empty when there is no gallery', () => {
+    expect(computeGalleryTemporalRollup([])).toEqual({
+      status: 'empty',
+      temporal: null,
+    });
+  });
+
+  it('detects Gallery membership changes independently from other Card media roles', () => {
+    expect(galleryMediaMembershipChanged(['media-a'], ['media-a', 'media-b'])).toBe(true);
+    expect(galleryMediaMembershipChanged(['media-a'], [])).toBe(true);
+    expect(galleryMediaMembershipChanged(['media-a', 'media-b'], ['media-b', 'media-a'])).toBe(false);
   });
 
   it('protects legacy cards and enables only explicitly selected dimensions for new cards', () => {

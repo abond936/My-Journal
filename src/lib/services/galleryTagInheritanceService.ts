@@ -7,13 +7,14 @@ import { getAllTags } from '@/lib/firebase/tagService';
 import {
   cardTagsEqual,
   computeGalleryInheritanceResult,
+  computeGalleryTemporalRollup,
   effectiveGalleryInheritanceToggles,
   galleryInheritanceTogglesActive,
 } from '@/lib/utils/galleryTagInheritance';
 import {
   buildSubjectFilterTags,
-  normalizeSubjectTagId,
-  normalizeSubjectTagIds,
+  filterSubjectTagIdsForTemporal,
+  resolveStoredSubjectTagIds,
 } from '@/lib/utils/subjectTag';
 import type { CardTagAssignmentUpdates } from '@/lib/services/cards/cardMutationClassifiers';
 
@@ -74,43 +75,76 @@ export async function syncGalleryTagInheritanceForCard(cardId: string): Promise<
     galleryMedia,
     effectiveToggles,
     allTags,
-    card.galleryTagRollupStatuses
+    card.galleryTagRollupStatuses,
+    card.dimensionReview
   );
+  const temporalRollup = effectiveToggles.when
+    ? computeGalleryTemporalRollup(galleryMedia, allTags)
+    : null;
+  if (temporalRollup && temporalRollup.status !== 'empty') {
+    result.statuses.when = temporalRollup.status;
+    result.dimensionReview = {
+      ...(result.dimensionReview ?? {}),
+      when: {
+        reviewed: temporalRollup.status === 'reviewed',
+        resolution:
+          temporalRollup.temporal?.status === 'unknown' ||
+          temporalRollup.temporal?.status === 'not_applicable'
+            ? temporalRollup.temporal.status
+            : null,
+      },
+    };
+  }
 
   const statusesEqual = JSON.stringify(card.galleryTagRollupStatuses ?? {}) === JSON.stringify(result.statuses);
+  const dimensionReviewEqual =
+    JSON.stringify(card.dimensionReview ?? {}) === JSON.stringify(result.dimensionReview);
   const implicitSubjectsEqual = cardTagsEqual(
     card.galleryImplicitSubjectTagIds ?? [],
     result.implicitSubjectTagIds
   );
-  const explicitSubjectTagIds = normalizeSubjectTagIds(card.subjectTagIds);
-  const legacySubjectTagId = normalizeSubjectTagId(card.subjectTagId);
-  const effectiveSubjectTagIds = [
-    ...(explicitSubjectTagIds.length > 0
-      ? explicitSubjectTagIds
-      : legacySubjectTagId ? [legacySubjectTagId] : []),
+  const effectiveTemporal = temporalRollup ? temporalRollup.temporal : card.temporal;
+  const effectiveSubjectTagIds = filterSubjectTagIdsForTemporal([
+    ...resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId),
     ...result.implicitSubjectTagIds,
-  ];
+  ], effectiveTemporal, allTags);
   const expectedSubjectFilterTags = await buildSubjectFilterTags(effectiveSubjectTagIds, allTags);
   const storedSubjectFilterTagIds = Object.entries(card.subjectFilterTags ?? {})
     .filter(([, enabled]) => enabled === true)
     .map(([tagId]) => tagId);
   const expectedSubjectFilterTagIds = Object.keys(expectedSubjectFilterTags);
   const subjectFiltersEqual = cardTagsEqual(storedSubjectFilterTagIds, expectedSubjectFilterTagIds);
+  const temporalEqual =
+    !temporalRollup ||
+    JSON.stringify(card.temporal ?? null) === JSON.stringify(temporalRollup.temporal);
+  const temporalStatusEqual =
+    !temporalRollup ||
+    card.galleryTemporalRollupStatus === temporalRollup.status;
   if (
     cardTagsEqual(currentTags, result.tags) &&
     statusesEqual &&
+    dimensionReviewEqual &&
     implicitSubjectsEqual &&
-    subjectFiltersEqual
+    subjectFiltersEqual &&
+    temporalEqual &&
+    temporalStatusEqual
   ) {
     return;
   }
 
   await updateCardTags(
     cardId,
-    { tags: result.tags },
+    {
+      tags: result.tags,
+      ...(temporalRollup ? { temporal: temporalRollup.temporal } : {}),
+    },
     {
       galleryTagRollupStatuses: result.statuses,
+      ...(temporalRollup
+        ? { galleryTemporalRollupStatus: temporalRollup.status }
+        : {}),
       implicitSubjectTagIds: result.implicitSubjectTagIds,
+      dimensionReview: result.dimensionReview,
     }
   );
 }
@@ -137,18 +171,41 @@ export async function updateCardTagAssignmentWithInheritance(
     galleryMedia,
     effectiveToggles,
     allTags,
-    card.galleryTagRollupStatuses
+    card.galleryTagRollupStatuses,
+    updates.dimensionReview ?? card.dimensionReview
   );
+  const temporalRollup = effectiveToggles.when
+    ? computeGalleryTemporalRollup(galleryMedia, allTags)
+    : null;
+  if (temporalRollup && temporalRollup.status !== 'empty') {
+    result.statuses.when = temporalRollup.status;
+    result.dimensionReview = {
+      ...(result.dimensionReview ?? {}),
+      when: {
+        reviewed: temporalRollup.status === 'reviewed',
+        resolution:
+          temporalRollup.temporal?.status === 'unknown' ||
+          temporalRollup.temporal?.status === 'not_applicable'
+            ? temporalRollup.temporal.status
+            : null,
+      },
+    };
+  }
 
   return updateCardTags(
     cardId,
     {
       ...updates,
       tags: result.tags,
+      ...(temporalRollup ? { temporal: temporalRollup.temporal } : {}),
     },
     {
       galleryTagRollupStatuses: result.statuses,
+      ...(temporalRollup
+        ? { galleryTemporalRollupStatus: temporalRollup.status }
+        : {}),
       implicitSubjectTagIds: result.implicitSubjectTagIds,
+      dimensionReview: result.dimensionReview,
       galleryTagInheritanceOverrides: overrides,
       allTags,
     }
@@ -158,14 +215,14 @@ export async function updateCardTagAssignmentWithInheritance(
 /**
  * After gallery-media tag changes, sync inheritance on cards that reference the media in gallery only.
  */
-export async function syncGalleryTagInheritanceForMediaId(mediaId: string): Promise<void> {
-  await syncGalleryTagInheritanceForMediaIds([mediaId]);
+export async function syncGalleryTagInheritanceForMediaId(mediaId: string): Promise<string[]> {
+  return syncGalleryTagInheritanceForMediaIds([mediaId]);
 }
 
-export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): Promise<void> {
+export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): Promise<string[]> {
   const settings = await getAuthorSettings();
   if (!galleryInheritanceTogglesActive(settings.galleryTagInheritance)) {
-    return;
+    return [];
   }
 
   const firestore = getAdminApp().firestore();
@@ -179,7 +236,7 @@ export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): 
     if (!snap.exists) return;
     ((snap.data() as Media).referencedByCardIds ?? []).forEach((id) => candidateCardIds.add(id));
   });
-  if (candidateCardIds.size === 0) return;
+  if (candidateCardIds.size === 0) return [];
 
   const cardSnaps = await Promise.all(
     Array.from(candidateCardIds).map((id) => firestore.collection(CARDS_COLLECTION).doc(id).get())
@@ -205,6 +262,7 @@ export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): 
     if (snap.exists) mediaById.set(snap.id, snap.data() as Media);
   });
 
+  const updatedCardIds: string[] = [];
   for (const { id: cardId, card } of candidateCards) {
     const effectiveToggles = effectiveGalleryInheritanceToggles(
       settings.galleryTagInheritance,
@@ -220,44 +278,79 @@ export async function syncGalleryTagInheritanceForMediaIds(mediaIds: string[]): 
       galleryMedia,
       effectiveToggles,
       allTags,
-      card.galleryTagRollupStatuses
+      card.galleryTagRollupStatuses,
+      card.dimensionReview
     );
+    const temporalRollup = effectiveToggles.when
+      ? computeGalleryTemporalRollup(galleryMedia, allTags)
+      : null;
+    if (temporalRollup && temporalRollup.status !== 'empty') {
+      result.statuses.when = temporalRollup.status;
+      result.dimensionReview = {
+        ...(result.dimensionReview ?? {}),
+        when: {
+          reviewed: temporalRollup.status === 'reviewed',
+          resolution:
+            temporalRollup.temporal?.status === 'unknown' ||
+            temporalRollup.temporal?.status === 'not_applicable'
+              ? temporalRollup.temporal.status
+              : null,
+        },
+      };
+    }
     const statusesEqual =
       JSON.stringify(card.galleryTagRollupStatuses ?? {}) === JSON.stringify(result.statuses);
+    const dimensionReviewEqual =
+      JSON.stringify(card.dimensionReview ?? {}) === JSON.stringify(result.dimensionReview);
     const implicitSubjectsEqual = cardTagsEqual(
       card.galleryImplicitSubjectTagIds ?? [],
       result.implicitSubjectTagIds
     );
-    const explicitSubjectTagIds = normalizeSubjectTagIds(card.subjectTagIds);
-    const legacySubjectTagId = normalizeSubjectTagId(card.subjectTagId);
-    const effectiveSubjectTagIds = [
-      ...(explicitSubjectTagIds.length > 0
-        ? explicitSubjectTagIds
-        : legacySubjectTagId ? [legacySubjectTagId] : []),
+    const effectiveTemporal = temporalRollup ? temporalRollup.temporal : card.temporal;
+    const effectiveSubjectTagIds = filterSubjectTagIdsForTemporal([
+      ...resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId),
       ...result.implicitSubjectTagIds,
-    ];
+    ], effectiveTemporal, allTags);
     const expectedSubjectFilterTags = await buildSubjectFilterTags(effectiveSubjectTagIds, allTags);
     const storedSubjectFilterTagIds = Object.entries(card.subjectFilterTags ?? {})
       .filter(([, enabled]) => enabled === true)
       .map(([tagId]) => tagId);
+    const temporalEqual =
+      !temporalRollup ||
+      JSON.stringify(card.temporal ?? null) === JSON.stringify(temporalRollup.temporal);
+    const temporalStatusEqual =
+      !temporalRollup ||
+      card.galleryTemporalRollupStatus === temporalRollup.status;
     if (
       cardTagsEqual(currentTags, result.tags) &&
       statusesEqual &&
+      dimensionReviewEqual &&
       implicitSubjectsEqual &&
-      cardTagsEqual(storedSubjectFilterTagIds, Object.keys(expectedSubjectFilterTags))
+      cardTagsEqual(storedSubjectFilterTagIds, Object.keys(expectedSubjectFilterTags)) &&
+      temporalEqual &&
+      temporalStatusEqual
     ) {
       continue;
     }
     await updateCardTags(
       cardId,
-      { tags: result.tags },
+      {
+        tags: result.tags,
+        ...(temporalRollup ? { temporal: temporalRollup.temporal } : {}),
+      },
       {
         galleryTagRollupStatuses: result.statuses,
+        ...(temporalRollup
+          ? { galleryTemporalRollupStatus: temporalRollup.status }
+          : {}),
         implicitSubjectTagIds: result.implicitSubjectTagIds,
+        dimensionReview: result.dimensionReview,
         allTags,
       }
     );
+    updatedCardIds.push(cardId);
   }
+  return updatedCardIds;
 }
 
 export async function reconcileGalleryInheritanceForNewlyEnabledDimensions(

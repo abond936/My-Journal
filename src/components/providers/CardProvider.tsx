@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
+import { useSWRConfig } from 'swr';
 import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Card } from '@/lib/types/card';
@@ -263,10 +264,22 @@ interface CardProviderProps {
 }
 
 export const CardProvider = ({ children }: CardProviderProps) => {
+  const { mutate: mutateCardCaches } = useSWRConfig();
   const { data: session, status: sessionStatus } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const handleMediaTagReconciliation = () => {
+      void mutateCardCaches(
+        (key) => typeof key === 'string' && key.startsWith('/api/cards')
+      );
+    };
+    window.addEventListener('media-tag-reconciliation-complete', handleMediaTagReconciliation);
+    return () =>
+      window.removeEventListener('media-tag-reconciliation-complete', handleMediaTagReconciliation);
+  }, [mutateCardCaches]);
 
   // --- Global Filter State ---
   const { selectedFilterTagIds, setFilterTags, tags: allTags } = useTag();
@@ -741,7 +754,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
           items: page.items.map((item) => (item.docId === savedCard.docId ? savedCard : item)),
         }));
       },
-      { revalidate: false }
+      // A saved card can enter or leave the active tag, subject, missing-value,
+      // type, or search filter. Patch immediately, then revalidate membership.
+      { revalidate: true }
     );
   }, [mutate]);
 

@@ -29,10 +29,10 @@ export async function createMediaTagReconciliationOperation(mediaIds: string[]):
 export async function reconcileMediaTagDependents(
   mediaIds: string[]
 ): Promise<{ affectedCardIds: string[] }> {
-  await syncGalleryTagInheritanceForMediaIds(mediaIds);
-  const affectedCardIds = await recomputeCardsMediaSignalsForMediaIds(mediaIds);
+  const inheritedCardIds = await syncGalleryTagInheritanceForMediaIds(mediaIds);
+  const signalCardIds = await recomputeCardsMediaSignalsForMediaIds(mediaIds);
   await Promise.all(mediaIds.map((mediaId) => syncMediaToTypesenseById(mediaId)));
-  return { affectedCardIds };
+  return { affectedCardIds: Array.from(new Set([...inheritedCardIds, ...signalCardIds])) };
 }
 
 export async function processMediaTagReconciliationOperation(
@@ -63,15 +63,22 @@ export async function processMediaTagReconciliationOperation(
     return Array.from(new Set(operation.mediaIds ?? []));
   });
 
-  if (!claimed) return { operationId, affectedCardIds: [], skipped: true };
+  if (!claimed) {
+    const current = await ref.get();
+    const affectedCardIds = current.exists
+      ? Array.from(new Set((current.data()?.affectedCardIds as string[] | undefined) ?? []))
+      : [];
+    return { operationId, affectedCardIds, skipped: true };
+  }
 
   try {
-    await syncGalleryTagInheritanceForMediaIds(claimed);
+    const inheritedCardIds = await syncGalleryTagInheritanceForMediaIds(claimed);
     await ref.update({
       stage: 'card-media-signals',
       updatedAt: FieldValue.serverTimestamp(),
     });
-    const affectedCardIds = await recomputeCardsMediaSignalsForMediaIds(claimed);
+    const signalCardIds = await recomputeCardsMediaSignalsForMediaIds(claimed);
+    const affectedCardIds = Array.from(new Set([...inheritedCardIds, ...signalCardIds]));
     await ref.update({
       stage: 'media-search-index',
       updatedAt: FieldValue.serverTimestamp(),

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { bulkApplyMediaTags } from '@/lib/services/images/imageImportService';
 import {
   createMediaTagReconciliationOperation,
+  processMediaTagReconciliationOperation,
   reconcileMediaTagDependents,
 } from '@/lib/services/mediaTagReconciliationService';
 import { API_INPUT_CAPS, isInputCapFailure, validateStringIdArray } from '@/lib/api/inputCaps';
@@ -11,6 +12,13 @@ import {
   apiRouteSuccess,
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
+import { temporalValueSchema } from '@/lib/types/temporal';
+import {
+  dimensionResolutionSchema,
+  type DimensionResolution,
+} from '@/lib/types/dimensionReview';
+
+const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
 /**
  * POST — bulk-edit tags on many media docs.
@@ -37,6 +45,10 @@ export async function POST(request: NextRequest) {
         subjectTagIds?: unknown;
         addSubjectTagIds?: unknown;
         removeSubjectTagIds?: unknown;
+        temporal?: unknown;
+        temporalSubject?: unknown;
+        dimensionReviewUpdates?: unknown;
+        dimensionResolutionUpdates?: unknown;
       };
       const mediaIds = body.mediaIds;
       const tagsProvided = Object.prototype.hasOwnProperty.call(body, 'tags');
@@ -48,6 +60,10 @@ export async function POST(request: NextRequest) {
       const subjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'subjectTagIds');
       const addSubjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'addSubjectTagIds');
       const removeSubjectTagIdsProvided = Object.prototype.hasOwnProperty.call(body, 'removeSubjectTagIds');
+      const temporalProvided = Object.prototype.hasOwnProperty.call(body, 'temporal');
+      const temporalSubjectProvided = Object.prototype.hasOwnProperty.call(body, 'temporalSubject');
+      const reviewUpdatesProvided = Object.prototype.hasOwnProperty.call(body, 'dimensionReviewUpdates');
+      const resolutionUpdatesProvided = Object.prototype.hasOwnProperty.call(body, 'dimensionResolutionUpdates');
 
       const mediaIdsResult = validateStringIdArray(mediaIds, {
         field: 'mediaIds',
@@ -71,11 +87,15 @@ export async function POST(request: NextRequest) {
         !subjectTagIdProvided &&
         !subjectTagIdsProvided &&
         !addSubjectTagIdsProvided &&
-        !removeSubjectTagIdsProvided
+        !removeSubjectTagIdsProvided &&
+        !temporalProvided &&
+        !temporalSubjectProvided &&
+        !reviewUpdatesProvided &&
+        !resolutionUpdatesProvided
       ) {
         return apiRouteError({
           code: 'MEDIA_TAGS_UPDATES_REQUIRED',
-          message: 'Provide tags, subjectTagId, and/or subjectTagIds.',
+          message: 'Provide tags, subjects, and/or a date.',
           status: 400,
           retryable: false,
         });
@@ -174,6 +194,60 @@ export async function POST(request: NextRequest) {
         }
         validatedSubjectTagIds = result.ids;
       }
+      const validatedTemporal =
+        temporalProvided && body.temporal !== null
+          ? temporalValueSchema.safeParse(body.temporal)
+          : null;
+      if (temporalProvided && body.temporal !== null && !validatedTemporal?.success) {
+        return apiRouteError({
+          code: 'MEDIA_TEMPORAL_INVALID',
+          message: 'The supplied date is not valid.',
+          status: 400,
+          retryable: false,
+        });
+      }
+      if (temporalSubjectProvided && typeof body.temporalSubject !== 'boolean') {
+        return apiRouteError({
+          code: 'MEDIA_TAGS_TEMPORAL_SUBJECT_INVALID',
+          message: 'The structured-date subject selection must be true or false.',
+          status: 400,
+          retryable: false,
+        });
+      }
+      const reviewUpdates: Partial<Record<(typeof DIMENSIONS)[number], boolean>> = {};
+      if (reviewUpdatesProvided) {
+        if (!body.dimensionReviewUpdates || typeof body.dimensionReviewUpdates !== 'object') {
+          return apiRouteError({ code: 'MEDIA_REVIEW_INVALID', message: 'Review updates are invalid.', status: 400, retryable: false });
+        }
+        for (const dimension of DIMENSIONS) {
+          const candidate = (body.dimensionReviewUpdates as Record<string, unknown>)[dimension];
+          if (candidate !== undefined) {
+            if (typeof candidate !== 'boolean') {
+              return apiRouteError({ code: 'MEDIA_REVIEW_INVALID', message: 'Review updates must be boolean.', status: 400, retryable: false });
+            }
+            reviewUpdates[dimension] = candidate;
+          }
+        }
+      }
+      const resolutionUpdates: Partial<Record<(typeof DIMENSIONS)[number], DimensionResolution | null>> = {};
+      if (resolutionUpdatesProvided) {
+        if (!body.dimensionResolutionUpdates || typeof body.dimensionResolutionUpdates !== 'object') {
+          return apiRouteError({ code: 'MEDIA_RESOLUTION_INVALID', message: 'Resolution updates are invalid.', status: 400, retryable: false });
+        }
+        for (const dimension of DIMENSIONS) {
+          const candidate = (body.dimensionResolutionUpdates as Record<string, unknown>)[dimension];
+          if (candidate !== undefined) {
+            if (candidate === null) resolutionUpdates[dimension] = null;
+            else {
+              const parsed = dimensionResolutionSchema.safeParse(candidate);
+              if (!parsed.success) {
+                return apiRouteError({ code: 'MEDIA_RESOLUTION_INVALID', message: 'Resolution is invalid.', status: 400, retryable: false });
+              }
+              resolutionUpdates[dimension] = parsed.data;
+            }
+          }
+        }
+      }
 
       const ids = mediaIdsResult.ids;
       const effectiveMode = mode === 'replace' || mode === 'remove' || mode === 'add' ? mode : 'add';
@@ -205,14 +279,50 @@ export async function POST(request: NextRequest) {
         ...(removeSubjectTagIdsProvided
           ? { removeSubjectTagIds: removeSubjectTagIdsResult.ids ?? [] }
           : {}),
+        ...(temporalProvided
+          ? {
+              temporal:
+                body.temporal === null
+                  ? null
+                  : validatedTemporal?.success
+                    ? validatedTemporal.data
+                    : null,
+              temporalProvided: true,
+            }
+          : {}),
+        ...(temporalSubjectProvided
+          ? { temporalSubject: body.temporalSubject === true, temporalSubjectProvided: true }
+          : {}),
+        ...(reviewUpdatesProvided ? { dimensionReviewUpdates: reviewUpdates } : {}),
+        ...(resolutionUpdatesProvided ? { dimensionResolutionUpdates: resolutionUpdates } : {}),
       }, { reconcile: false });
       let reconciliationOperationId: string | null = null;
-      if (updatedIds.length) {
+      const tagDependentsChanged =
+        tagsProvided ||
+        addTagIdsProvided ||
+        removeTagIdsProvided ||
+        subjectTagIdProvided ||
+        subjectTagIdsProvided ||
+        addSubjectTagIdsProvided ||
+        removeSubjectTagIdsProvided ||
+        temporalProvided ||
+        temporalSubjectProvided ||
+        reviewUpdatesProvided ||
+        resolutionUpdatesProvided;
+      if (updatedIds.length && tagDependentsChanged) {
         try {
           reconciliationOperationId = await createMediaTagReconciliationOperation(updatedIds);
+          await processMediaTagReconciliationOperation(reconciliationOperationId);
         } catch (operationError) {
-          console.error('[media tags] Could not persist reconciliation operation; reconciling inline.', operationError);
-          await reconcileMediaTagDependents(updatedIds);
+          if (!reconciliationOperationId) {
+            console.error('[media tags] Could not persist reconciliation operation; reconciling inline.', operationError);
+            await reconcileMediaTagDependents(updatedIds);
+          } else {
+            console.error('[media tags] Reconciliation remains durably retryable.', {
+              operationId: reconciliationOperationId,
+              error: operationError,
+            });
+          }
         }
       }
 

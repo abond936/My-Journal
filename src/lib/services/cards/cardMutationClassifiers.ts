@@ -28,10 +28,18 @@ export function isGalleryOnlyPayload(updates: Partial<Pick<Card, 'galleryMedia'>
   return keys.length === 1 && keys[0] === 'galleryMedia' && Array.isArray(updates.galleryMedia);
 }
 
-export type CardTagAssignmentUpdates = Partial<Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds'>>;
+export type CardTagAssignmentUpdates = Partial<
+  Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'temporal' | 'dimensionReview'>
+>;
 export function isTagsOnlyPayload(updates: CardTagAssignmentUpdates): updates is CardTagAssignmentUpdates {
   const keys = Object.keys(updates);
-  if (!keys.length || !keys.every((key) => key === 'tags' || key === 'subjectTagId' || key === 'subjectTagIds')) return false;
+  if (!keys.length || !keys.every((key) =>
+    key === 'tags' ||
+    key === 'subjectTagId' ||
+    key === 'subjectTagIds' ||
+    key === 'temporal' ||
+    key === 'dimensionReview'
+  )) return false;
   if ('tags' in updates && updates.tags !== undefined && !Array.isArray(updates.tags)) return false;
   if ('subjectTagId' in updates && updates.subjectTagId !== undefined && updates.subjectTagId !== null && typeof updates.subjectTagId !== 'string') return false;
   return !('subjectTagIds' in updates && updates.subjectTagIds !== undefined && !Array.isArray(updates.subjectTagIds));
@@ -52,6 +60,8 @@ export function isTagsAndInheritancePayload(
         key === 'tags' ||
         key === 'subjectTagId' ||
         key === 'subjectTagIds' ||
+        key === 'temporal' ||
+        key === 'dimensionReview' ||
         key === 'galleryTagInheritanceOverrides'
     )
   );

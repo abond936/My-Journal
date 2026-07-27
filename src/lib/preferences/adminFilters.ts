@@ -10,6 +10,7 @@ import { DIMENSION_KEYS, type DimensionalTagIdMap } from '@/lib/utils/tagUtils';
 
 export type AdminDimensionKey = 'who' | 'what' | 'when' | 'where';
 export type AdminDimensionFilterMode = 'any' | 'hasAny' | 'isEmpty' | 'matches';
+export type AdminDimensionReviewFilter = 'unreviewed' | 'unknown' | 'not_applicable';
 export type AdminTagFilterScope = 'all' | 'subject';
 export type AdminDimensionFilterState = Record<
   AdminDimensionKey,
@@ -17,6 +18,7 @@ export type AdminDimensionFilterState = Record<
     mode: AdminDimensionFilterMode;
     tagId: string;
     subjectOnly?: boolean;
+    reviewState?: AdminDimensionReviewFilter;
   }
 >;
 
@@ -55,6 +57,7 @@ export type MediaAdminStoredFilters = {
   tagScope: AdminTagFilterScope;
   subjectDimensions?: AdminDimensionKey[];
   dimensionPresence?: Partial<Record<AdminDimensionKey, 'hasAny' | 'isEmpty'>>;
+  dimensionReviewStates?: Partial<Record<AdminDimensionKey, AdminDimensionReviewFilter>>;
 };
 
 export type MediaAdminStoredFilterPreferences = {
@@ -148,6 +151,7 @@ export const DEFAULT_MEDIA_ADMIN_STORED_FILTERS: MediaAdminStoredFilters = {
   tagScope: 'all',
   subjectDimensions: [],
   dimensionPresence: {},
+  dimensionReviewStates: {},
 };
 
 export const DEFAULT_MEDIA_ADMIN_STORED_FILTER_PREFERENCES: MediaAdminStoredFilterPreferences = {
@@ -204,11 +208,17 @@ function normalizeAdminDimensionFilterEntry(
   fallback: AdminDimensionFilterState[AdminDimensionKey]
 ): AdminDimensionFilterState[AdminDimensionKey] {
   if (!value || typeof value !== 'object') return fallback;
-  const candidate = value as Partial<Record<'mode' | 'tagId' | 'subjectOnly', unknown>>;
+  const candidate = value as Partial<Record<'mode' | 'tagId' | 'subjectOnly' | 'reviewState', unknown>>;
   return {
     mode: normalizeEnumValue(candidate.mode, ADMIN_DIMENSION_FILTER_MODE_VALUES, fallback.mode),
     tagId: normalizeString(candidate.tagId),
     subjectOnly: candidate.subjectOnly === true,
+    reviewState:
+      candidate.reviewState === 'unreviewed' ||
+      candidate.reviewState === 'unknown' ||
+      candidate.reviewState === 'not_applicable'
+        ? candidate.reviewState
+        : undefined,
   };
 }
 
@@ -299,6 +309,20 @@ function parseMediaAdminStoredFilterPreferences(value: unknown): MediaAdminStore
                   mode === 'isEmpty'
               )
             ) as Partial<Record<AdminDimensionKey, 'isEmpty'>>
+          : {},
+      dimensionReviewStates:
+        rawFilters.dimensionReviewStates && typeof rawFilters.dimensionReviewStates === 'object'
+          ? Object.fromEntries(
+              Object.entries(rawFilters.dimensionReviewStates as Record<string, unknown>).filter(
+                ([dimension, state]) =>
+                  (dimension === 'who' ||
+                    dimension === 'what' ||
+                    dimension === 'where') &&
+                  (state === 'unreviewed' ||
+                    state === 'unknown' ||
+                    state === 'not_applicable')
+              )
+            ) as Partial<Record<AdminDimensionKey, AdminDimensionReviewFilter>>
           : {},
     },
     dimensionalQueryOverlay: normalizeDimensionalTagIdMap(candidate.dimensionalQueryOverlay),

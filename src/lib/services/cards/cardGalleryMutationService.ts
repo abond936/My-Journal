@@ -11,7 +11,10 @@ import { syncCardProjection } from '@/lib/services/cards/cardMutationSupport';
 import { getCardById } from '@/lib/services/cards/cardReadService';
 import { syncMediaToTypesenseById } from '@/lib/services/typesenseMediaService';
 import { Card, cardSchema } from '@/lib/types/card';
-import { protectExistingCardInheritance } from '@/lib/utils/galleryTagInheritance';
+import {
+  galleryMediaMembershipChanged,
+  protectExistingCardInheritance,
+} from '@/lib/utils/galleryTagInheritance';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const firestore = getAdminApp().firestore();
@@ -74,6 +77,10 @@ export async function updateCardGallery(
   const newGalleryIds = new Set(dehydrated.map((item) => item.mediaId).filter(Boolean));
   const removed = [...oldGalleryIds].filter((id) => !newGalleryIds.has(id));
   const added = [...newGalleryIds].filter((id) => !oldGalleryIds.has(id));
+  const galleryMembershipChanged = galleryMediaMembershipChanged(
+    oldGalleryIds,
+    newGalleryIds
+  );
   const oldAll = getMediaIdsFromCard(existingData);
   const newAll = getMediaIdsFromCard({ ...existingData, galleryMedia: dehydrated });
   const mediaSetChanged = oldAll.size !== newAll.size || [...oldAll].some((id) => !newAll.has(id));
@@ -102,7 +109,7 @@ export async function updateCardGallery(
   if (!updated) throw new Error(`Failed to fetch updated card with ID ${cardId}`);
   void syncCardProjection(updated);
   new Set([...removed, ...added]).forEach((id) => void syncMediaToTypesenseById(id));
-  if (mediaSetChanged) {
+  if (galleryMembershipChanged) {
     const { syncGalleryTagInheritanceForCard } = await import('@/lib/services/galleryTagInheritanceService');
     await syncGalleryTagInheritanceForCard(cardId);
     return (await getCardById(cardId)) ?? updated;

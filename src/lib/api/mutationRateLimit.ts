@@ -62,6 +62,7 @@ export function resolveMutationRateLimitBucket(
   }
   if (
     pathname.includes('/bulk-update-tags') ||
+    pathname.includes('/bulk-tag-assignment') ||
     pathname.startsWith('/api/admin/media/tags')
   ) {
     return 'bulk';

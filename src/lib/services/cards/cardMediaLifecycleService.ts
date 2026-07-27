@@ -117,7 +117,7 @@ export async function recomputeCardsMediaSignalsForMediaIds(mediaIds: string[]):
         ...mediaSignals,
         updatedAt: Date.now(),
       });
-      void syncCardToTypesense({ ...card, ...mediaSignals });
+      await syncCardToTypesense({ ...card, ...mediaSignals });
     })
   );
   return cards.map((card) => card.docId!).filter(Boolean);

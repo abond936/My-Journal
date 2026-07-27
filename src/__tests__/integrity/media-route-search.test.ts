@@ -310,6 +310,120 @@ describe('GET /api/media fallback text search', () => {
     ]);
   });
 
+  it('does not treat structured When values or reviewed resolutions as Empty', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('known-date', {
+            filename: 'known.jpg',
+            source: 'local',
+            when: [],
+            temporal: {
+              status: 'known',
+              year: 2008,
+              precision: 'year',
+              approximate: false,
+              source: 'manual',
+            },
+            createdAt: 4,
+          }),
+          makeMediaDoc('not-applicable', {
+            filename: 'na.jpg',
+            source: 'local',
+            when: [],
+            dimensionReview: {
+              when: { reviewed: true, resolution: 'not_applicable' },
+            },
+            createdAt: 3,
+          }),
+          makeMediaDoc('legacy-tag', {
+            filename: 'tagged.jpg',
+            source: 'local',
+            when: ['when-2008'],
+            createdAt: 2,
+          }),
+          makeMediaDoc('truly-empty', {
+            filename: 'empty.jpg',
+            source: 'local',
+            when: [],
+            createdAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest('https://example.test/api/media?limit=40&whenPresence=isEmpty')
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual([
+      'truly-empty',
+    ]);
+  });
+
+  it('filters Who review state across the complete media population', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('unreviewed', {
+            who: ['alan'],
+            dimensionReview: { who: { reviewed: false } },
+            createdAt: 3,
+          }),
+          makeMediaDoc('unknown', {
+            who: [],
+            dimensionReview: { who: { reviewed: true, resolution: 'unknown' } },
+            createdAt: 2,
+          }),
+          makeMediaDoc('reviewed', {
+            who: ['alan'],
+            dimensionReview: { who: { reviewed: true } },
+            createdAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest('https://example.test/api/media?limit=40&whoReview=unreviewed')
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['unreviewed']);
+  });
+
   it('applies codification, unresolved, batch, folder, and metadata filters on the server', async () => {
     const mediaQuery = {
       orderBy: jest.fn().mockReturnThis(),
@@ -406,5 +520,118 @@ describe('GET /api/media fallback text search', () => {
     expect(res.status).toBe(200);
     expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['match-a', 'match-b']);
     expect(mediaQuery.select).toHaveBeenCalledWith('contentIdentity');
+  });
+
+  it('filters the complete media population by a partial pilot date', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('july-1965', {
+            filename: 'july.jpg',
+            source: 'local',
+            temporal: {
+              status: 'known',
+              year: 1965,
+              month: 7,
+              day: 4,
+              precision: 'day',
+              approximate: false,
+              source: 'manual',
+            },
+            createdAt: 2,
+            updatedAt: 2,
+          }),
+          makeMediaDoc('august-1965', {
+            filename: 'august.jpg',
+            source: 'local',
+            temporal: {
+              status: 'known',
+              year: 1965,
+              month: 8,
+              precision: 'month',
+              approximate: false,
+              source: 'manual',
+            },
+            createdAt: 1,
+            updatedAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest(
+        'https://example.test/api/media?limit=40&temporalStatus=known&temporalYear=1965&temporalMonth=7&temporalPrecision=month'
+      )
+    );
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['july-1965']);
+  });
+
+  it('filters the complete media population by an inclusive year range', async () => {
+    const mediaQuery = {
+      orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      get: jest.fn().mockResolvedValue({
+        empty: false,
+        docs: [
+          makeMediaDoc('inside', {
+            temporal: {
+              status: 'known',
+              year: 1965,
+              precision: 'year',
+              approximate: false,
+              source: 'manual',
+            },
+            createdAt: 2,
+          }),
+          makeMediaDoc('outside', {
+            temporal: {
+              status: 'known',
+              year: 1966,
+              precision: 'year',
+              approximate: false,
+              source: 'manual',
+            },
+            createdAt: 1,
+          }),
+        ],
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => {
+        if (name === 'media') return mediaQuery;
+        throw new Error(`Unexpected collection ${name}`);
+      }),
+    };
+    mockedGetAdminApp.mockReturnValue({
+      firestore: () => firestore,
+      storage: () => ({ bucket: () => ({ name: 'test-bucket' }) }),
+    } as never);
+
+    const res = await GET(
+      makeRequest(
+        'https://example.test/api/media?limit=40&temporalStatus=year_range&temporalFromYear=1960&temporalToYear=1965'
+      )
+    );
+    const payload = await res.json();
+    expect(payload.media.map((item: { docId: string }) => item.docId)).toEqual(['inside']);
   });
 });

@@ -29,6 +29,7 @@ import { eventTargetToElement } from '@/lib/utils/domEventTarget';
 import { useRouter } from 'next/navigation';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
+import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 
 export interface MediaAdminGridCellProps {
   media: Media;
@@ -467,7 +468,9 @@ function MediaAdminGridCell({
               className={styles.tagChipsInline}
               tagIds={media.tags ?? []}
               subjectTagId={media.subjectTagId ?? null}
-              subjectTagIds={media.subjectTagIds ?? []}
+              subjectTagIds={media.subjectTagIds}
+              temporalValue={media.temporal}
+              dimensionReview={media.dimensionReview}
               allTags={allTags}
               variant="inline"
               onUpdateTags={() => undefined}
@@ -622,9 +625,9 @@ export default function MediaAdminGrid({
       return (['who', 'what', 'when', 'where'] as DimensionKey[]).every((dimension) => {
         const state = dimensionFilters[dimension];
         const ids = Array.isArray(item[dimension]) ? (item[dimension] as string[]) : [];
-        const hasSubjectInDimension = Boolean(
-          item.subjectTagId && ids.includes(item.subjectTagId)
-        );
+        const hasSubjectInDimension =
+          (dimension === 'when' && item.temporalSubject === true) ||
+          ids.some((tagId) => Boolean(item.subjectFilterTags?.[tagId]));
         if (state.mode === 'any') return true;
         if (state.subjectOnly) {
           if (state.mode === 'hasAny') return hasSubjectInDimension;
@@ -634,8 +637,8 @@ export default function MediaAdminGrid({
           }
           return true;
         }
-        if (state.mode === 'hasAny') return ids.length > 0;
-        if (state.mode === 'isEmpty') return ids.length === 0;
+        if (state.mode === 'hasAny') return hasDimensionAssignment(item, dimension);
+        if (state.mode === 'isEmpty') return !hasDimensionAssignment(item, dimension);
         if (state.mode === 'matches') return state.tagId ? ids.includes(state.tagId) : true;
         return true;
       });

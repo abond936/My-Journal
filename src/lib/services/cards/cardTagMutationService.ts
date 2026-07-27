@@ -6,8 +6,13 @@ import { syncCardProjection, withCardMutationRetry } from '@/lib/services/cards/
 import { computeDimensionSortKeys } from '@/lib/services/cards/cardTagRules';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
-import { buildSubjectFilterTags, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import {
+  buildSubjectFilterTags,
+  filterSubjectTagIdsForTemporal,
+  resolveSubjectTagState,
+} from '@/lib/utils/subjectTag';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
+import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -17,6 +22,10 @@ export async function updateCardTags(
   updates: CardTagAssignmentUpdates,
   internal?: {
     galleryTagRollupStatuses?: Card['galleryTagRollupStatuses'];
+    galleryTemporalRollupStatus?: Card['galleryTemporalRollupStatus'];
+    dimensionReview?: Card['dimensionReview'];
+    temporal?: Card['temporal'];
+    temporalProvided?: boolean;
     implicitSubjectTagIds?: string[];
     allTags?: Tag[];
     galleryTagInheritanceOverrides?: Card['galleryTagInheritanceOverrides'];
@@ -39,6 +48,14 @@ export async function updateCardTags(
         undefined,
         allTags
       );
+      const temporalProvided =
+        Object.prototype.hasOwnProperty.call(updates, 'temporal') ||
+        internal?.temporalProvided === true;
+      const effectiveTemporal = Object.prototype.hasOwnProperty.call(updates, 'temporal')
+        ? updates.temporal ?? null
+        : internal?.temporalProvided
+          ? internal.temporal ?? null
+          : existingData.temporal ?? null;
       const subjectState = await resolveSubjectTagState({
         assignedTagIds: cleanedTags,
         existingSubjectTagId: existingData.subjectTagId,
@@ -47,14 +64,37 @@ export async function updateCardTags(
         requestedSubjectTagIds: updates.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagId'),
         subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(updates, 'subjectTagIds'),
+        temporal: effectiveTemporal,
         allTags,
       });
-      const journalWhenSort = computeJournalWhenSortKeys(dimensionalTags.when || [], tagPathLookup);
+      const dimensionReviewProvided = Object.prototype.hasOwnProperty.call(
+        updates,
+        'dimensionReview'
+      );
+      const effectiveDimensionReview = dimensionReviewProvided
+        ? updates.dimensionReview
+        : internal?.dimensionReview ?? existingData.dimensionReview;
+      const reconciledDimensionReview = reconcileDimensionReviewMap({
+        dimensionReview: effectiveDimensionReview,
+        assignedTagIds: cleanedTags,
+        temporal: effectiveTemporal,
+        allTags,
+      });
+      const dimensionReviewMustReconcile =
+        dimensionReviewProvided ||
+        Boolean(internal?.dimensionReview) ||
+        temporalProvided ||
+        Object.prototype.hasOwnProperty.call(updates, 'tags');
+      const journalWhenSort = computeJournalWhenSortKeys(
+        dimensionalTags.when || [],
+        tagPathLookup,
+        effectiveTemporal
+      );
       const dimensionSortKeys = computeDimensionSortKeys(cleanedTags, allTags);
-      const implicitSubjectTagIds = (
+      const implicitSubjectTagIds = filterSubjectTagIdsForTemporal((
         internal?.implicitSubjectTagIds ?? existingData.galleryImplicitSubjectTagIds
-      )?.filter((tagId) => cleanedTags.includes(tagId));
-      const subjectFilterTags = implicitSubjectTagIds
+      )?.filter((tagId) => cleanedTags.includes(tagId)) ?? [], effectiveTemporal, allTags);
+      const subjectFilterTags = implicitSubjectTagIds.length > 0
         ? await buildSubjectFilterTags(
             [...subjectState.subjectTagIds, ...implicitSubjectTagIds],
             allTags
@@ -76,8 +116,15 @@ export async function updateCardTags(
         ...(internal?.galleryTagRollupStatuses
           ? { galleryTagRollupStatuses: internal.galleryTagRollupStatuses }
           : {}),
+        ...(internal?.galleryTemporalRollupStatus
+          ? { galleryTemporalRollupStatus: internal.galleryTemporalRollupStatus }
+          : {}),
+        ...(dimensionReviewMustReconcile
+          ? { dimensionReview: reconciledDimensionReview }
+          : {}),
+        ...(temporalProvided ? { temporal: effectiveTemporal } : {}),
         ...(internal?.implicitSubjectTagIds
-          ? { galleryImplicitSubjectTagIds: internal.implicitSubjectTagIds }
+          ? { galleryImplicitSubjectTagIds: implicitSubjectTagIds }
           : {}),
         ...(internal?.galleryTagInheritanceOverrides
           ? { galleryTagInheritanceOverrides: internal.galleryTagInheritanceOverrides }
@@ -95,7 +142,7 @@ export async function updateCardTags(
 
     const updatedCard = await getCardById(cardId);
     if (!updatedCard) throw new Error(`Failed to fetch updated card with ID ${cardId}`);
-    void syncCardProjection(updatedCard);
+    await syncCardProjection(updatedCard);
     return updatedCard;
   });
 }

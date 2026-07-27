@@ -1,0 +1,75 @@
+.root {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--admin-text, var(--color-text));
+}
+
+.root legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stateChoices {
+  display: grid;
+  gap: var(--spacing-xs);
+  align-items: start;
+}
+
+.stateChoice,
+.compactChoice {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 1.75rem;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stateChoice input,
+.compactChoice input {
+  margin: 0;
+}
+
+.knownEditor {
+  display: grid;
+  gap: var(--spacing-xs);
+  max-width: 14rem;
+  margin: 0.15rem 0 var(--spacing-xs);
+  padding-left: 1.25rem;
+}
+
+.directField {
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  gap: var(--spacing-xs);
+  align-items: center;
+  min-width: 0;
+  font-size: var(--font-size-xs);
+}
+
+.root select,
+.root input[type='text'],
+.root input[type='number'],
+.root input[type='time'] {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.3rem 0.45rem;
+  color: inherit;
+  background: var(--admin-input-background, var(--color-background));
+  border: 1px solid var(--admin-border, var(--color-border));
+  border-radius: var(--border-radius-sm);
+}
+
+.compactChoice {
+  justify-self: start;
+}

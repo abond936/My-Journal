@@ -23,14 +23,17 @@ import {
 } from '@/lib/utils/tagUtils';
 import {
   DEFAULT_ADMIN_DIMENSION_FILTERS,
+  DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
   DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES,
   readStoredMediaAdminLocalFilterPreferences,
   writeStoredMediaAdminLocalFilterPreferences,
   type AdminDimensionFilterMode,
+  type AdminDimensionReviewFilter,
   type AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
 import type { Card } from '@/lib/types/card';
+import type { TemporalFilter } from '@/lib/types/temporal';
 import {
   collectImportBatchIdsFromMedia,
   formatImportBatchLabel,
@@ -42,6 +45,10 @@ import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useStudioShellOptional } from '@/components/admin/studio/StudioShellContext';
 import { useMediaBulkActions } from './useMediaBulkActions';
 import { useMediaStackActions } from './useMediaStackActions';
+import { mediaMatchesDimensions, mediaMatchesSearch } from '@/lib/utils/mediaAssignmentSeek';
+import { matchesTemporalValueFilter } from '@/lib/utils/temporalValue';
+import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
+import { matchesDimensionReviewFilter } from '@/lib/utils/dimensionReview';
 
 export type MediaAdminContentProps = {
   /** When true (e.g. Admin Studio column), use compact scroll layout. */
@@ -52,6 +59,12 @@ export type MediaAdminContentProps = {
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
 type MediaPopulation = 'bank' | 'this_card';
+type MediaFilterContextSnapshot = {
+  filters: MediaFilters;
+  dimensionFilters: AdminDimensionFilterState;
+  dimensionalQueryOverlay: ReturnType<typeof groupSelectedTagIdsByDimension>;
+  clientSort: 'none' | 'filenameAsc' | 'filenameDesc';
+};
 type ApiErrorResponse = {
   message?: string;
   code?: string;
@@ -78,6 +91,97 @@ function collectAssignedMediaIdsForCard(
     if (mediaId) ids.add(mediaId);
   });
   return Array.from(ids);
+}
+
+export function filterSelectedCardMedia(
+  items: Media[],
+  filters: MediaFilters,
+  dimensionalQueryOverlay: ReturnType<typeof groupSelectedTagIdsByDimension>,
+  tagNameLookup: Map<string, string>
+): Media[] {
+  const digestCounts = new Map<string, number>();
+  items.forEach((item) => {
+    const digest = item.contentIdentity?.digest;
+    if (digest) digestCounts.set(digest, (digestCounts.get(digest) ?? 0) + 1);
+  });
+  const selectedDimensions = ['who', 'what', 'when', 'where'] as const;
+  return items.filter((item) => {
+    if (filters.source !== 'all' && item.source !== filters.source) return false;
+    if (!mediaMatchesDimensions(item, filters.dimensions)) return false;
+    const hasCaption = Boolean(item.caption?.trim());
+    if (filters.hasCaption === 'with' && !hasCaption) return false;
+    if (filters.hasCaption === 'without' && hasCaption) return false;
+    if (!mediaMatchesSearch(item, filters.search, tagNameLookup)) return false;
+    if (filters.matchStatus !== 'all') {
+      const isMatch = Boolean(
+        item.contentIdentity?.digest &&
+        (digestCounts.get(item.contentIdentity.digest) ?? 0) > 1
+      );
+      if (filters.matchStatus === 'matches' && !isMatch) return false;
+      if (filters.matchStatus === 'no_matches' && isMatch) return false;
+    }
+    const complete = Boolean(item.hasWho && item.hasWhat && item.hasWhen && item.hasWhere);
+    if (filters.codification === 'complete' && !complete) return false;
+    if (filters.codification === 'incomplete' && complete) return false;
+    if (
+      filters.unresolvedDimension !== 'all' &&
+      item[
+        {
+          who: 'hasWho',
+          what: 'hasWhat',
+          when: 'hasWhen',
+          where: 'hasWhere',
+        }[filters.unresolvedDimension] as 'hasWho' | 'hasWhat' | 'hasWhen' | 'hasWhere'
+      ]
+    ) {
+      return false;
+    }
+    if (filters.importBatchId && item.importBatchId !== filters.importBatchId) return false;
+    if (
+      filters.importFolder !== 'all' &&
+      importFolderLabelFromMedia(item) !== filters.importFolder
+    ) {
+      return false;
+    }
+    if (
+      filters.metadataOutcome !== 'all' &&
+      (item.metadataImport?.outcome ?? 'unknown') !== filters.metadataOutcome
+    ) {
+      return false;
+    }
+    if (!matchesTemporalValueFilter(item.temporal, filters.temporalFilter)) return false;
+    const subjectDimensions = new Set(filters.subjectDimensions ?? []);
+    for (const dimension of selectedDimensions) {
+      if (
+        !matchesDimensionReviewFilter(
+          item.dimensionReview,
+          dimension,
+          filters.dimensionReviewStates?.[dimension]
+        )
+      ) {
+        return false;
+      }
+      const presence = filters.dimensionPresence?.[dimension];
+      if (presence) {
+        const hasValue = filters.tagScope === 'subject' || subjectDimensions.has(dimension)
+          ? (dimension === 'when' && item.temporalSubject === true) ||
+            Boolean((item[dimension] ?? []).some((tagId) => item.subjectFilterTags?.[tagId]))
+          : hasDimensionAssignment(item, dimension);
+        if (presence === 'hasAny' && !hasValue) return false;
+        if (presence === 'isEmpty' && hasValue) return false;
+      }
+      const selectedTagIds = dimensionalQueryOverlay[dimension] ?? [];
+      if (selectedTagIds.length === 0) continue;
+      const assignedIds = item[dimension] ?? [];
+      const matches = selectedTagIds.some((tagId) =>
+        filters.tagScope === 'subject' || subjectDimensions.has(dimension)
+          ? Boolean(item.subjectFilterTags?.[tagId])
+          : assignedIds.includes(tagId) || Boolean(item.filterTags?.[tagId])
+      );
+      if (!matches) return false;
+    }
+    return true;
+  });
 }
 
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
@@ -135,6 +239,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [clientSort, setClientSort] = useState<'none' | 'filenameAsc' | 'filenameDesc'>('none');
   const [highlightAssigned, setHighlightAssigned] = useState(true);
   const [mediaPopulation, setMediaPopulation] = useState<MediaPopulation>('bank');
+  const libraryFilterContextRef = useRef<MediaFilterContextSnapshot | null>(null);
+  const selectedCardFilterCardIdRef = useRef<string | null>(null);
   const showOnlyAssigned = mediaPopulation === 'this_card';
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
@@ -156,6 +262,41 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     folders: string[];
   }>({ batchIds: [], folders: [] });
   const { stackById, createStack, dissolveStack } = useMediaStacks(true);
+
+  const applyFilterContext = useCallback(
+    (snapshot: MediaFilterContextSnapshot, shouldFetch: boolean) => {
+      Object.entries(snapshot.filters).forEach(([key, value]) => {
+        setFilter(key as keyof MediaFilters, value as MediaFilters[keyof MediaFilters]);
+      });
+      setDimensionFilters(snapshot.dimensionFilters);
+      setDimensionalQueryOverlay(snapshot.dimensionalQueryOverlay);
+      setClientSort(snapshot.clientSort);
+      if (shouldFetch) {
+        void fetchMedia(1, snapshot.filters, snapshot.dimensionalQueryOverlay);
+      }
+    },
+    [fetchMedia, setDimensionalQueryOverlay, setFilter]
+  );
+
+  const resetSelectedCardFilterContext = useCallback(
+    (cardId: string | null) => {
+      selectedCardFilterCardIdRef.current = cardId;
+      applyFilterContext(
+        {
+          filters: {
+            ...DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+            subjectDimensions: [],
+            dimensionPresence: {},
+          },
+          dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+          dimensionalQueryOverlay: {},
+          clientSort: 'none',
+        },
+        false
+      );
+    },
+    [applyFilterContext]
+  );
 
   useEffect(() => {
     writeStoredMediaAdminLocalFilterPreferences({
@@ -276,20 +417,24 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       Object.entries(clearedIncompleteFilters).forEach(([filterKey, filterValue]) => {
         setFilter(filterKey as keyof MediaFilters, filterValue);
       });
-      void fetchMedia(1, clearedIncompleteFilters);
+      if (!showOnlyAssigned) void fetchMedia(1, clearedIncompleteFilters);
       return;
     }
     setFilter(key, value);
-    void fetchMedia(1, { [key]: value });
+    if (!showOnlyAssigned) void fetchMedia(1, { [key]: value });
   };
 
   const handleSearchCommit = (nextSearch: string) => {
     if (nextSearch === filters.search) return;
     setFilter('search', nextSearch);
-    void fetchMedia(1, { search: nextSearch });
+    if (!showOnlyAssigned) void fetchMedia(1, { search: nextSearch });
   };
 
   const handleClearFilters = () => {
+    if (showOnlyAssigned) {
+      resetSelectedCardFilterContext(activeStudioCardId);
+      return;
+    }
     clearFilters();
     setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
     setClientSort('none');
@@ -353,9 +498,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         }
         return changed ? updated : prev;
       });
-      void fetchMedia(1);
+      if (!showOnlyAssigned) void fetchMedia(1);
     },
-    [allTags, fetchMedia, setDimensionalQueryOverlay]
+    [allTags, fetchMedia, setDimensionalQueryOverlay, showOnlyAssigned]
   );
 
   const studioSelectedFilterTagIds = useMemo(
@@ -367,9 +512,11 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     ({
       selectedTagIds,
       dimensionFilters: nextDimensionFilters,
+      temporalFilter,
     }: {
       selectedTagIds: string[];
       dimensionFilters: AdminDimensionFilterState;
+      temporalFilter?: TemporalFilter | null;
     }) => {
       const nextDimensionalMap = groupSelectedTagIdsByDimension(selectedTagIds, allTags);
       const normalizedMap = Object.keys(nextDimensionalMap).length === 0 ? {} : nextDimensionalMap;
@@ -384,19 +531,46 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       const subjectDimensions = (['who', 'what', 'when', 'where'] as const).filter(
         (dimension) => nextDimensionFilters[dimension].subjectOnly
       );
+      const dimensionReviewStates = Object.fromEntries(
+        (['who', 'what', 'where'] as const)
+          .filter((dimension) => nextDimensionFilters[dimension].reviewState)
+          .map((dimension) => [
+            dimension,
+            nextDimensionFilters[dimension].reviewState as AdminDimensionReviewFilter,
+          ])
+      );
 
       setDimensionalQueryOverlay(normalizedMap);
       setDimensionFilters(nextDimensionFilters);
-      void fetchMedia(
-        1,
-        { tagScope: 'all', subjectDimensions, dimensionPresence },
-        normalizedMap
-      );
+      Object.entries({
+        tagScope: 'all' as const,
+        subjectDimensions,
+        dimensionPresence,
+        dimensionReviewStates,
+        temporalFilter,
+      }).forEach(([key, value]) => {
+        setFilter(key as keyof MediaFilters, value as MediaFilters[keyof MediaFilters]);
+      });
+      if (!showOnlyAssigned) {
+        void fetchMedia(
+          1,
+          {
+            tagScope: 'all',
+            subjectDimensions,
+            dimensionPresence,
+            dimensionReviewStates,
+            temporalFilter,
+          },
+          normalizedMap
+        );
+      }
     },
     [
       allTags,
       fetchMedia,
       setDimensionalQueryOverlay,
+      setFilter,
+      showOnlyAssigned,
     ]
   );
 
@@ -499,6 +673,48 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const cardCompleteDefaultRef = useRef<string | null>(null);
   const cardOrientedLibrary = embedded && mediaPopulation === 'bank' && Boolean(activeStudioCardId);
 
+  const showLibraryPopulation = useCallback(() => {
+    setMediaPopulation('bank');
+    selectedCardFilterCardIdRef.current = null;
+    cardCompleteDefaultRef.current = activeStudioCardId;
+    const libraryContext = libraryFilterContextRef.current;
+    if (libraryContext) {
+      applyFilterContext(libraryContext, true);
+      libraryFilterContextRef.current = null;
+    }
+  }, [activeStudioCardId, applyFilterContext]);
+
+  const showSelectedCardPopulation = useCallback(() => {
+    if (!activeStudioCardId) return;
+    libraryFilterContextRef.current = {
+      filters: {
+        ...filters,
+        subjectDimensions: [...(filters.subjectDimensions ?? [])],
+        dimensionPresence: { ...(filters.dimensionPresence ?? {}) },
+        dimensionReviewStates: { ...(filters.dimensionReviewStates ?? {}) },
+      },
+      dimensionFilters: {
+        who: { ...dimensionFilters.who },
+        what: { ...dimensionFilters.what },
+        when: { ...dimensionFilters.when },
+        where: { ...dimensionFilters.where },
+      },
+      dimensionalQueryOverlay: Object.fromEntries(
+        Object.entries(dimensionalQueryOverlay).map(([key, ids]) => [key, [...(ids ?? [])]])
+      ),
+      clientSort,
+    };
+    resetSelectedCardFilterContext(activeStudioCardId);
+    setMediaPopulation('this_card');
+  }, [
+    activeStudioCardId,
+    clientSort,
+    dimensionFilters,
+    dimensionalQueryOverlay,
+    filters,
+    resetSelectedCardFilterContext,
+  ]);
+
   useEffect(() => {
     if (!cardOrientedLibrary || !activeStudioCardId) {
       cardCompleteDefaultRef.current = null;
@@ -531,6 +747,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     filters.importBatchId !== '' ||
     filters.importFolder !== 'all' ||
     filters.metadataOutcome !== 'all' ||
+    filters.temporalFilter !== undefined ||
+    Object.keys(filters.dimensionReviewStates ?? {}).length > 0 ||
     mediaPopulation === 'this_card';
   const activeStudioCardAssignedMediaIds = useMemo(
     () => collectAssignedMediaIdsForCard(activeStudioCard),
@@ -553,6 +771,21 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       .map((mediaId) => resolveMediaById(mediaId) ?? fallbackById.get(mediaId) ?? null)
       .filter((item): item is (typeof media)[number] => Boolean(item?.docId));
   })();
+  const selectedCardTagNameLookup = useMemo(
+    () =>
+      new Map(
+        allTags
+          .filter((tag): tag is typeof tag & { docId: string } => Boolean(tag.docId))
+          .map((tag) => [tag.docId, tag.name])
+      ),
+    [allTags]
+  );
+  const selectedCardFilteredMedia = filterSelectedCardMedia(
+    assignedOnlyResolvedMedia,
+    filters,
+    dimensionalQueryOverlay,
+    selectedCardTagNameLookup
+  );
   const hiddenAssignedCount = Math.max(
     0,
     activeStudioCardAssignedMediaIds.length - visibleAssignedCount
@@ -568,21 +801,23 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   useEffect(() => {
     if (!canViewThisCardPopulation && mediaPopulation === 'this_card') {
-      setMediaPopulation('bank');
+      showLibraryPopulation();
     }
-  }, [canViewThisCardPopulation, mediaPopulation]);
+  }, [canViewThisCardPopulation, mediaPopulation, showLibraryPopulation]);
+
+  useEffect(() => {
+    if (mediaPopulation !== 'this_card' || !activeStudioCardId) return;
+    if (selectedCardFilterCardIdRef.current === activeStudioCardId) return;
+    resetSelectedCardFilterContext(activeStudioCardId);
+  }, [activeStudioCardId, mediaPopulation, resetSelectedCardFilterContext]);
 
   useEffect(() => {
     if (initialFetchRequestedRef.current) return;
     if (loading || error || showOnlyAssigned) return;
-    if (media.length > 0 || pagination) {
-      initialFetchRequestedRef.current = true;
-      return;
-    }
     if (embedded && !activeStudioCardId) return;
     initialFetchRequestedRef.current = true;
     void fetchMedia(1);
-  }, [activeStudioCardId, embedded, error, fetchMedia, loading, media.length, pagination, showOnlyAssigned]);
+  }, [activeStudioCardId, embedded, error, fetchMedia, loading, showOnlyAssigned]);
 
   useEffect(() => {
     if (!showOnlyAssigned) return;
@@ -653,7 +888,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const updateDimensionFilter = (
     dimension: DimensionKey,
-    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string; subjectOnly: boolean }>
+    patch: Partial<{
+      mode: AdminDimensionFilterMode;
+      tagId: string;
+      subjectOnly: boolean;
+      reviewState: AdminDimensionReviewFilter | undefined;
+    }>
   ) => {
     setDimensionFilters((prev) => {
       const next = {
@@ -671,7 +911,23 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       const subjectDimensions = (['who', 'what', 'when', 'where'] as const).filter(
         (key) => next[key].subjectOnly
       );
-      void fetchMedia(1, { tagScope: 'all', subjectDimensions, dimensionPresence });
+      const dimensionReviewStates = Object.fromEntries(
+        (['who', 'what', 'where'] as const)
+          .filter((key) => next[key].reviewState)
+          .map((key) => [key, next[key].reviewState as AdminDimensionReviewFilter])
+      );
+      setFilter('tagScope', 'all');
+      setFilter('subjectDimensions', subjectDimensions);
+      setFilter('dimensionPresence', dimensionPresence);
+      setFilter('dimensionReviewStates', dimensionReviewStates);
+      if (!showOnlyAssigned) {
+        void fetchMedia(1, {
+          tagScope: 'all',
+          subjectDimensions,
+          dimensionPresence,
+          dimensionReviewStates,
+        });
+      }
       return next;
     });
   };
@@ -795,10 +1051,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       )}
       {showOnlyAssigned && !assignedOnlyLoading ? (
         <MediaAdminGrid
-          mediaOverride={assignedOnlyResolvedMedia}
-          emptyMessage="No media are assigned to the current card."
+          mediaOverride={selectedCardFilteredMedia}
+          emptyMessage={
+            assignedOnlyCount > 0
+              ? 'No media on the selected card match its current filters.'
+              : 'No media are assigned to the current card.'
+          }
           sourcePathFirst={false}
-          dimensionFilters={DEFAULT_ADMIN_DIMENSION_FILTERS}
+          dimensionFilters={dimensionFilters}
           tagFilterScope="all"
           studioSourceDraggable={embedded && studioSourceDraggable}
           inlineCaptionEditing={embedded}
@@ -888,7 +1148,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                   className={`${styles.mediaModeToggleButton} ${
                     mediaPopulation === 'bank' ? styles.mediaModeToggleButtonActive : ''
                   }`}
-                  onClick={() => setMediaPopulation('bank')}
+                  onClick={showLibraryPopulation}
                   aria-pressed={mediaPopulation === 'bank'}
                 >
                   Library
@@ -898,7 +1158,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                   className={`${styles.mediaModeToggleButton} ${
                     mediaPopulation === 'this_card' ? styles.mediaModeToggleButtonActive : ''
                   }`}
-                  onClick={() => setMediaPopulation('this_card')}
+                  onClick={showSelectedCardPopulation}
                   aria-pressed={mediaPopulation === 'this_card'}
                   disabled={!canViewThisCardPopulation}
                   title={
@@ -927,7 +1187,9 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               ) : null}
               {mediaPopulation === 'this_card' ? (
                 <span className={styles.studioPopulationNotice}>
-                  {assignedOnlyCount} photo{assignedOnlyCount === 1 ? '' : 's'} on selected card
+                  {selectedCardFilteredMedia.length === assignedOnlyCount
+                    ? `${assignedOnlyCount} photo${assignedOnlyCount === 1 ? '' : 's'} on selected card`
+                    : `${selectedCardFilteredMedia.length} of ${assignedOnlyCount} photos shown`}
                 </span>
               ) : null}
             </div>
@@ -1079,6 +1341,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               onDimensionFilterChange={updateDimensionFilter}
               surfaceLabel="Media"
               onApply={applyUnifiedTagFilters}
+              temporalFilter={filters.temporalFilter}
             />
           </div>
           <div className={styles.studioMediaBrowseRow}>

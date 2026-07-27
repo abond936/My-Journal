@@ -39,6 +39,7 @@ const tags: Tag[] = [
   { docId: 'alan', name: 'Alan', dimension: 'who' } as Tag,
   { docId: 'party', name: 'Birthday Party', dimension: 'what' } as Tag,
 ];
+const whenTag = { docId: 'when-1957', name: '1957', dimension: 'when' } as Tag;
 
 describe('MacroTagSelector', () => {
   it('shows selected tags as subject candidates in expanded view and saves the chosen subject', async () => {
@@ -178,7 +179,7 @@ describe('MacroTagSelector', () => {
     expect(screen.getByPlaceholderText('Search tags...')).toBeInTheDocument();
     expect(screen.getByText('(Choose one or more assigned tags as subjects.)')).toBeInTheDocument();
     expect(document.querySelectorAll('[data-subject-dimension]')).toHaveLength(4);
-    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-management', 'shown');
+    expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-management', 'hidden');
     expect(screen.getByTestId('mock-dimension-dim-who')).toHaveAttribute('data-header', 'hidden');
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Birthday Party' }));
@@ -228,5 +229,30 @@ describe('MacroTagSelector', () => {
         { who: false, what: false, when: true, where: true }
       );
     });
+  });
+
+  it('does not present a retained When tag as a subject when a structured date is known', () => {
+    render(
+      <MacroTagSelector
+        startExpanded
+        selectedTags={[...tags, whenTag]}
+        allTags={[...tags, whenTag]}
+        onChange={jest.fn()}
+        subjectTagIds={['when-1957']}
+        onSaveAssignment={jest.fn(async () => undefined)}
+        temporalValue={{
+          status: 'known',
+          year: 2008,
+          precision: 'year',
+          approximate: false,
+          source: 'manual',
+        }}
+        visibleDimensions={['who', 'what', 'when', 'where']}
+        unifiedAssignmentLayout
+        collapsedSummary="none"
+      />
+    );
+
+    expect(screen.queryByRole('checkbox', { name: '1957' })).not.toBeInTheDocument();
   });
 });

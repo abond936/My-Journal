@@ -1,6 +1,8 @@
 // src/lib/types/photo.ts
 
 import { z } from 'zod';
+import { temporalValueSchema } from './temporal';
+import { dimensionReviewMapSchema } from './dimensionReview';
 
 const mediaRenditionSchema = z.object({
   storagePath: z.string(),
@@ -35,6 +37,7 @@ const mediaSourceIdentitySchema = z.object({
   importedAt: z.number(),
   observedFilename: z.string().optional(),
   caption: z.string().optional(),
+
   tagIds: z.array(z.string()).optional(),
   importBatchId: z.string().optional(),
 });
@@ -96,6 +99,12 @@ export const mediaSchema = z.object({
   // The default caption for the image, potentially from file metadata.
   // This serves as the base caption that can be overridden in specific contexts.
   caption: z.string().optional(),
+
+  /** Additive pilot date assertion. Existing When tags remain authoritative and unchanged. */
+  temporal: temporalValueSchema.nullable().optional(),
+  /** Author-selected structured date subject; valid only while `temporal.status` is `known`. */
+  temporalSubject: z.boolean().optional(),
+  dimensionReview: dimensionReviewMapSchema,
 
   /** @deprecated Legacy field; no longer written. Omitted on new docs. */
   status: z.enum(['temporary', 'active']).optional(),

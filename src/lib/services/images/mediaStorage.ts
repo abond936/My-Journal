@@ -78,7 +78,7 @@ export async function deleteMediaAsset(
         if (identitySnap.data()?.mediaId === mediaId) transaction.delete(identityRef);
       }
       if (tags.length > 0) {
-        await updateTagCountsForMedia(tags, [], transaction);
+        await updateTagCountsForMedia(tags, [], transaction, undefined, mediaId);
       }
     }
     transaction.delete(mediaRef);
@@ -106,7 +106,7 @@ export async function deleteMediaAsset(
           if (identitySnap.data()?.mediaId === mediaId) tx.delete(identityRef);
         }
         if (tags.length > 0) {
-          await updateTagCountsForMedia(tags, [], tx);
+          await updateTagCountsForMedia(tags, [], tx, undefined, mediaId);
         }
         tx.delete(mediaRef);
       });

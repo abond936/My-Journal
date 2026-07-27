@@ -38,6 +38,7 @@ import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedT
 import { validateQuestionRevealContent } from '@/lib/utils/questionReveal';
 import {
   computeGalleryDimensionRollup,
+  computeGalleryTemporalRollup,
   inheritedDimensionsChangedByTagEdit,
   newCardInheritanceOverrides,
   protectExistingCardInheritance,
@@ -330,7 +331,9 @@ const CardForm: React.FC = () => {
   const handleTagAssignmentWithInheritance = useCallback(async (
     nextTagIds: string[],
     nextSubjectTagIds: string[],
-    inheritance: GalleryTagInheritanceToggles
+    inheritance: GalleryTagInheritanceToggles,
+    temporal: Card['temporal'],
+    dimensionReview?: Card['dimensionReview']
   ) => {
     const currentOverrides =
       cardData.galleryTagInheritanceOverrides ?? protectExistingCardInheritance();
@@ -352,7 +355,9 @@ const CardForm: React.FC = () => {
           : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
       const confirmed = await feedback.confirm({
         title: `Resume inheriting ${dimensionText}?`,
-        message: `${dimensionText} tags on this card will be replaced by the current Gallery tags.`,
+        message: resumedDimensions.includes('when')
+          ? `${dimensionText} assignments on this card will be replaced by the current Gallery tags and agreed Gallery date. Conflicting Gallery dates leave the Card date Unreviewed.`
+          : `${dimensionText} tags on this card will be replaced by the current Gallery tags.`,
         confirmLabel: 'Replace and inherit',
         cancelLabel: 'Keep override',
         tone: 'default',
@@ -363,16 +368,20 @@ const CardForm: React.FC = () => {
     const patch: Pick<
       Card,
       'tags' | 'subjectTagIds' | 'galleryTagInheritanceOverrides'
-    > = {
+    > & Partial<Pick<Card, 'temporal' | 'dimensionReview'>> = {
       tags: nextTagIds,
       subjectTagIds: nextSubjectTagIds,
       galleryTagInheritanceOverrides: nextOverrides,
+      ...(temporal !== undefined ? { temporal } : {}),
+      ...(dimensionReview !== undefined ? { dimensionReview } : {}),
     };
 
     setField('tags', nextTagIds);
     setField('subjectTagIds', nextSubjectTagIds);
     setField('subjectTagId', nextSubjectTagIds[0] ?? null);
     setField('galleryTagInheritanceOverrides', nextOverrides);
+    if (temporal !== undefined) setField('temporal', temporal);
+    if (dimensionReview !== undefined) setField('dimensionReview', dimensionReview);
     await persistFieldPatch(patch);
     return true;
   }, [cardData.galleryTagInheritanceOverrides, feedback, persistFieldPatch, setField]);
@@ -656,21 +665,26 @@ const CardForm: React.FC = () => {
     return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
 
+  const galleryMediaForTagRollup = useMemo(
+    () =>
+      ((cardData.galleryMedia ?? []) as HydratedGalleryMediaItem[])
+        .map((item) => item.media)
+        .filter((media): media is Media => Boolean(media)),
+    [cardData.galleryMedia]
+  );
+
   const galleryTagRollups = useMemo(() => {
     const resolved = buildResolvedTagDimensionMap(allTags);
-    const galleryMedia = ((cardData.galleryMedia ?? []) as HydratedGalleryMediaItem[])
-      .map((item) => item.media)
-      .filter((media): media is Media => Boolean(media));
     return Object.fromEntries(
       DIMENSION_ORDER.map((dimension) => [
         dimension,
-        computeGalleryDimensionRollup(galleryMedia, dimension, resolved),
+        computeGalleryDimensionRollup(galleryMediaForTagRollup, dimension, resolved),
       ])
     ) as Record<
       TagDimension,
       ReturnType<typeof computeGalleryDimensionRollup>
     >;
-  }, [allTags, cardData.galleryMedia]);
+  }, [allTags, galleryMediaForTagRollup]);
 
   const galleryTagIdsByDimension = useMemo(
     () =>
@@ -695,6 +709,25 @@ const CardForm: React.FC = () => {
         ReturnType<typeof computeGalleryDimensionRollup>['status']
       >,
     [galleryTagRollups]
+  );
+
+  const galleryResolutionByDimension = useMemo(
+    () =>
+      Object.fromEntries(
+        DIMENSION_ORDER.map((dimension) => [
+          dimension,
+          galleryTagRollups[dimension].resolution,
+        ])
+      ) as Record<
+        TagDimension,
+        ReturnType<typeof computeGalleryDimensionRollup>['resolution']
+      >,
+    [galleryTagRollups]
+  );
+
+  const galleryTemporalRollup = useMemo(
+    () => computeGalleryTemporalRollup(galleryMediaForTagRollup, allTags),
+    [allTags, galleryMediaForTagRollup]
   );
 
   const inheritanceAvailableByDimension = useMemo(
@@ -1084,6 +1117,7 @@ const CardForm: React.FC = () => {
                   showDimensionIcons
                   underlineTags
                   hideSearch
+                  temporalValue={cardData.temporal}
                   trailingSlot={
                     <button
                       type="button"
@@ -1105,9 +1139,16 @@ const CardForm: React.FC = () => {
                   onSubjectTagIdsChange={handleSubjectTagIdsChange}
                   onSaveAssignmentWithInheritance={handleTagAssignmentWithInheritance}
                   galleryTagIdsByDimension={galleryTagIdsByDimension}
+                  galleryResolutionByDimension={galleryResolutionByDimension}
+                  galleryTemporalValue={galleryTemporalRollup.temporal}
                   inheritanceByDimension={inheritanceByDimension}
                   inheritanceAvailableByDimension={inheritanceAvailableByDimension}
-                  galleryRollupStatuses={galleryRollupStatuses}
+                  galleryRollupStatuses={{
+                    ...galleryRollupStatuses,
+                    when: galleryTemporalRollup.status,
+                  }}
+                  temporalValue={cardData.temporal}
+                  dimensionReview={cardData.dimensionReview}
                   expanded={tagMacroExpanded}
                   onExpandedChange={setTagMacroExpanded}
                   visibleDimensions={[...DIMENSION_ORDER]}
@@ -1345,6 +1386,7 @@ const CardForm: React.FC = () => {
               showDimensionIcons
               underlineTags
               hideSearch
+              temporalValue={cardData.temporal}
               trailingSlot={
                 <button
                   type="button"
@@ -1366,9 +1408,16 @@ const CardForm: React.FC = () => {
               onSubjectTagIdsChange={handleSubjectTagIdsChange}
               onSaveAssignmentWithInheritance={handleTagAssignmentWithInheritance}
               galleryTagIdsByDimension={galleryTagIdsByDimension}
+              galleryResolutionByDimension={galleryResolutionByDimension}
+              galleryTemporalValue={galleryTemporalRollup.temporal}
               inheritanceByDimension={inheritanceByDimension}
               inheritanceAvailableByDimension={inheritanceAvailableByDimension}
-              galleryRollupStatuses={galleryRollupStatuses}
+              galleryRollupStatuses={{
+                ...galleryRollupStatuses,
+                when: galleryTemporalRollup.status,
+              }}
+              temporalValue={cardData.temporal}
+              dimensionReview={cardData.dimensionReview}
               expanded={tagMacroExpanded}
               onExpandedChange={setTagMacroExpanded}
               visibleDimensions={[...DIMENSION_ORDER]}

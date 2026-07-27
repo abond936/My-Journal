@@ -76,6 +76,7 @@ describe('adminFilters preferences', () => {
           hasCaption: 'with',
           search: 'portraits',
           assignment: 'assigned',
+          dimensionReviewStates: { who: 'unreviewed', where: 'not_applicable' },
         },
         dimensionalQueryOverlay: {
           who: ['tag-1'],
@@ -100,6 +101,7 @@ describe('adminFilters preferences', () => {
         tagScope: 'all',
         subjectDimensions: [],
         dimensionPresence: {},
+        dimensionReviewStates: { who: 'unreviewed', where: 'not_applicable' },
       },
       dimensionalQueryOverlay: {
         who: ['tag-1'],

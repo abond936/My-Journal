@@ -2,19 +2,82 @@ import type { Tag } from '@/lib/types/tag';
 import type { GalleryTagInheritanceToggles } from '@/lib/types/authorSettings';
 import { DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { temporalValuesEqual } from '@/lib/utils/temporalValue';
+import type {
+  DimensionResolution,
+  DimensionReviewMap,
+} from '@/lib/types/dimensionReview';
 
 export type GalleryMediaTagSource = {
   tags?: string[];
+  temporal?: TemporalValue | null;
+  dimensionReview?: DimensionReviewMap;
+};
+
+export type GalleryTemporalRollup = {
+  status: 'empty' | 'reviewed' | 'unreviewed';
+  temporal: TemporalValue | null;
 };
 
 export type GalleryDimensionRollup = {
   status: 'empty' | 'reviewed' | 'unreviewed';
   tagIds: string[];
   implicitSubjectTagIds: string[];
+  resolution: DimensionResolution | null;
 };
 
 export type GalleryTagRollupStatus = GalleryDimensionRollup['status'];
 export type GalleryTagRollupStatuses = Record<TagDimension, GalleryTagRollupStatus>;
+
+export function computeGalleryTemporalRollup(
+  galleryMedia: GalleryMediaTagSource[],
+  allTags?: Tag[]
+): GalleryTemporalRollup {
+  if (galleryMedia.length === 0) return { status: 'empty', temporal: null };
+  const resolved = allTags ? buildResolvedTagDimensionMap(allTags) : null;
+  const dated: TemporalValue[] = [];
+  const resolutions: DimensionResolution[] = [];
+  let legacyOnlyCount = 0;
+  for (const media of galleryMedia) {
+    const review = media.dimensionReview?.when;
+    if (review?.reviewed !== true) {
+      return { status: 'unreviewed', temporal: null };
+    }
+    if (media.temporal) dated.push(media.temporal);
+    else if (review.resolution) resolutions.push(review.resolution);
+    else if (
+      resolved &&
+      (media.tags ?? []).some((tagId) => resolved.get(tagId) === 'when')
+    ) {
+      legacyOnlyCount += 1;
+    } else {
+      return { status: 'unreviewed', temporal: null };
+    }
+  }
+  if ((dated.length > 0 && (resolutions.length > 0 || legacyOnlyCount > 0)) ||
+      (resolutions.length > 0 && legacyOnlyCount > 0)) {
+    return { status: 'unreviewed', temporal: null };
+  }
+  if (dated.length === 0) {
+    const uniqueResolutions = Array.from(new Set(resolutions));
+    if (uniqueResolutions.length === 0) {
+      return legacyOnlyCount > 0
+        ? { status: 'empty', temporal: null }
+        : { status: 'unreviewed', temporal: null };
+    }
+    if (uniqueResolutions.length > 1) return { status: 'unreviewed', temporal: null };
+    return {
+      status: 'reviewed',
+      temporal: { status: uniqueResolutions[0], source: 'manual' },
+    };
+  }
+  const first = dated[0]!;
+  if (dated.some((value) => !temporalValuesEqual(value, first))) {
+    return { status: 'unreviewed', temporal: null };
+  }
+  return { status: 'reviewed', temporal: first };
+}
 
 export function protectExistingCardInheritance(): GalleryTagInheritanceToggles {
   return { who: true, what: true, when: true, where: true };
@@ -124,16 +187,48 @@ export function computeGalleryDimensionRollup(
   resolved: Map<string, TagDimension | undefined>
 ): GalleryDimensionRollup {
   if (galleryMedia.length === 0) {
-    return { status: 'empty', tagIds: [], implicitSubjectTagIds: [] };
+    return { status: 'empty', tagIds: [], implicitSubjectTagIds: [], resolution: null };
   }
-  if (galleryMedia.some((media) => tagsForDimension(media.tags ?? [], dimension, resolved).length === 0)) {
-    return { status: 'unreviewed', tagIds: [], implicitSubjectTagIds: [] };
+  const entries = galleryMedia.map((media) => ({
+    tagIds: tagsForDimension(media.tags ?? [], dimension, resolved),
+    review: media.dimensionReview?.[dimension],
+    temporalKnown: dimension === 'when' && media.temporal?.status === 'known',
+  }));
+  if (entries.some(({ tagIds, review, temporalKnown }) =>
+    review?.reviewed !== true ||
+    (tagIds.length === 0 && !temporalKnown && !review.resolution)
+  )) {
+    return {
+      status: 'unreviewed',
+      tagIds: [],
+      implicitSubjectTagIds: [],
+      resolution: null,
+    };
   }
   const tagIds = computeGalleryDimensionTagUnion(galleryMedia, dimension, resolved);
+  const hasKnownValue = entries.some(
+    (entry) => entry.tagIds.length > 0 || entry.temporalKnown
+  );
+  const resolutions = Array.from(new Set(
+    entries
+      .filter((entry) => entry.tagIds.length === 0)
+      .map((entry) => entry.review?.resolution)
+      .filter((resolution): resolution is DimensionResolution => Boolean(resolution))
+  ));
+  const resolution = !hasKnownValue && resolutions.length === 1 ? resolutions[0] : null;
+  if (!hasKnownValue && resolutions.length !== 1) {
+    return {
+      status: 'unreviewed',
+      tagIds: [],
+      implicitSubjectTagIds: [],
+      resolution: null,
+    };
+  }
   return {
     status: 'reviewed',
     tagIds,
     implicitSubjectTagIds: tagIds.length === 1 ? tagIds : [],
+    resolution,
   };
 }
 
@@ -172,8 +267,14 @@ export function computeGalleryInheritanceResult(
   galleryMedia: GalleryMediaTagSource[],
   toggles: GalleryTagInheritanceToggles,
   allTags: Tag[],
-  currentStatuses?: Partial<GalleryTagRollupStatuses>
-): { tags: string[]; statuses: GalleryTagRollupStatuses; implicitSubjectTagIds: string[] } {
+  currentStatuses?: Partial<GalleryTagRollupStatuses>,
+  currentDimensionReview?: DimensionReviewMap
+): {
+  tags: string[];
+  statuses: GalleryTagRollupStatuses;
+  implicitSubjectTagIds: string[];
+  dimensionReview: DimensionReviewMap;
+} {
   const resolved = buildResolvedTagDimensionMap(allTags);
   const next = new Set(currentTags);
   const statuses: GalleryTagRollupStatuses = {
@@ -183,12 +284,19 @@ export function computeGalleryInheritanceResult(
     where: currentStatuses?.where ?? 'empty',
   };
   const implicitSubjectTagIds: string[] = [];
+  const dimensionReview: NonNullable<DimensionReviewMap> = {
+    ...(currentDimensionReview ?? {}),
+  };
 
   for (const dimension of DIMENSION_ORDER) {
     if (!toggles[dimension]) continue;
     const rollup = computeGalleryDimensionRollup(galleryMedia, dimension, resolved);
     statuses[dimension] = rollup.status;
     implicitSubjectTagIds.push(...rollup.implicitSubjectTagIds);
+    dimensionReview[dimension] = {
+      reviewed: rollup.status === 'reviewed',
+      resolution: rollup.resolution,
+    };
 
     for (const id of currentTags) {
       if (resolved.get(id) === dimension) next.delete(id);
@@ -200,6 +308,7 @@ export function computeGalleryInheritanceResult(
     tags: Array.from(next).sort((a, b) => a.localeCompare(b)),
     statuses,
     implicitSubjectTagIds,
+    dimensionReview,
   };
 }
 
@@ -212,4 +321,13 @@ export function cardTagsEqual(a: string[], b: string[]): boolean {
   const sortedA = [...a].sort((x, y) => x.localeCompare(y));
   const sortedB = [...b].sort((x, y) => x.localeCompare(y));
   return sortedA.every((id, index) => id === sortedB[index]);
+}
+
+export function galleryMediaMembershipChanged(
+  previousMediaIds: Iterable<string>,
+  nextMediaIds: Iterable<string>
+): boolean {
+  const previous = new Set(previousMediaIds);
+  const next = new Set(nextMediaIds);
+  return previous.size !== next.size || [...previous].some((id) => !next.has(id));
 }

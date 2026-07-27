@@ -138,4 +138,47 @@ describe('CardDimensionalTagCommandBar', () => {
     expect(screen.queryByPlaceholderText('Edit tags...')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alan, subject' }).closest('[class*="wrapUnderlineTags"]')).not.toBeNull();
   });
+
+  it('uses a structured date as the primary Compose When chip', () => {
+    render(
+      <CardDimensionalTagCommandBar
+        card={card}
+        allTags={tags}
+        onUpdateTags={jest.fn()}
+        temporalValue={{
+          status: 'known',
+          year: 1968,
+          precision: 'year',
+          approximate: true,
+          source: 'manual',
+        }}
+      />
+    );
+
+    expect(screen.getByLabelText('When: circa 1968')).toHaveTextContent('~1968');
+  });
+
+  it('shows inherited reviewed resolutions instead of Unreviewed or empty', () => {
+    render(
+      <CardDimensionalTagCommandBar
+        card={{
+          tags: [],
+          dimensionReview: {
+            who: { reviewed: true, resolution: 'not_applicable' },
+          },
+          galleryTagRollupStatuses: {
+            who: 'reviewed',
+            what: 'empty',
+            when: 'empty',
+            where: 'empty',
+          },
+        }}
+        allTags={tags}
+        onUpdateTags={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('N/A').closest('[title]')).toHaveAttribute('title', 'Who: N/A');
+    expect(screen.queryByText('Unreviewed')).not.toBeInTheDocument();
+  });
 });

@@ -13,6 +13,9 @@ import React, {
 } from 'react';
 import { usePathname } from 'next/navigation';
 import { Media } from '@/lib/types/photo';
+import type { TemporalFilter, TemporalValue } from '@/lib/types/temporal';
+import type { DimensionResolution } from '@/lib/types/dimensionReview';
+import { appendTemporalFilterParams, matchesTemporalValueFilter } from '@/lib/utils/temporalValue';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { useTag } from '@/components/providers/TagProvider';
 import {
@@ -28,6 +31,9 @@ import {
   readStoredMediaAdminStoredFilterPreferences,
   writeStoredMediaAdminStoredFilterPreferences,
 } from '@/lib/preferences/adminFilters';
+import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
+import { matchesDimensionReviewFilter } from '@/lib/utils/dimensionReview';
+import type { AdminDimensionReviewFilter } from '@/lib/preferences/adminFilters';
 
 interface MediaListResponse {
   media: Media[];
@@ -77,6 +83,12 @@ export type MediaBulkTagUpdateRequest = {
   subjectTagIdsProvided?: boolean;
   addSubjectTagIds?: string[];
   removeSubjectTagIds?: string[];
+  temporal?: TemporalValue | null;
+  temporalSubject?: boolean;
+  dimensionReviewUpdates?: Partial<Record<'who' | 'what' | 'when' | 'where', boolean>>;
+  dimensionResolutionUpdates?: Partial<
+    Record<'who' | 'what' | 'when' | 'where', DimensionResolution | null>
+  >;
 };
 
 function toUserFacingError(prefix: string, payload: ApiErrorResponse, fallback: string): MediaUiError {
@@ -162,6 +174,24 @@ function mediaMatchesDimensionalTags(
   return true;
 }
 
+function mediaMatchesDimensionPresence(
+  item: Media,
+  dimensionPresence: MediaFilters['dimensionPresence'],
+  tagScope: MediaFilters['tagScope'],
+  subjectDimensions: MediaFilters['subjectDimensions'] = []
+): boolean {
+  const subjectDimensionSet = new Set(subjectDimensions);
+  return (['who', 'what', 'when', 'where'] as const).every((dimension) => {
+    const presence = dimensionPresence?.[dimension];
+    if (!presence) return true;
+    const hasValue = tagScope === 'subject' || subjectDimensionSet.has(dimension)
+      ? (dimension === 'when' && item.temporalSubject === true) ||
+        Boolean((item[dimension] ?? []).some((tagId) => item.subjectFilterTags?.[tagId]))
+      : hasDimensionAssignment(item, dimension);
+    return presence === 'hasAny' ? hasValue : !hasValue;
+  });
+}
+
 export function getMediaErrorSeverity(error: Error | null): MediaErrorSeverity {
   if (!error) return 'error';
   const maybeMediaError = error as MediaUiError;
@@ -183,7 +213,11 @@ export interface MediaFilters {
   metadataOutcome: 'all' | 'found' | 'none' | 'error' | 'not_requested' | 'unknown';
   tagScope: 'all' | 'subject';
   dimensionPresence?: Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
+  dimensionReviewStates?: Partial<
+    Record<'who' | 'what' | 'when' | 'where', AdminDimensionReviewFilter>
+  >;
   subjectDimensions?: Array<'who' | 'what' | 'when' | 'where'>;
+  temporalFilter?: TemporalFilter | null;
 }
 
 type CachedMediaQueryResult = {
@@ -234,7 +268,7 @@ interface MediaContextType {
   ) => void;
   
   // Filter actions
-  setFilter: (key: keyof MediaFilters, value: string) => void;
+  setFilter: (key: keyof MediaFilters, value: MediaFilters[keyof MediaFilters]) => void;
   clearFilters: () => void;
   /** Admin Studio: who/what/when/where tag ids for GET /api/media (single MacroTagSelector in embedded Studio). */
   dimensionalQueryOverlay: DimensionalTagIdMap;
@@ -510,8 +544,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     for (const dimension of ['who', 'what', 'when', 'where'] as const) {
       const presence = mediaFilters.dimensionPresence?.[dimension];
       if (presence) params.set(`${dimension}Presence`, presence);
+      const reviewState = mediaFilters.dimensionReviewStates?.[dimension];
+      if (reviewState) params.set(`${dimension}Review`, reviewState);
     }
     appendDimensionalTagQueryParams(dimMap, params);
+    appendTemporalFilterParams(params, mediaFilters.temporalFilter);
 
     return params.toString();
   }, []);
@@ -774,7 +811,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           currentDimensional,
           currentFilters.tagScope,
           currentFilters.subjectDimensions
-        )
+        ) &&
+        mediaMatchesDimensionPresence(
+          item,
+          currentFilters.dimensionPresence,
+          currentFilters.tagScope,
+          currentFilters.subjectDimensions
+        ) &&
+        (['who', 'what', 'when', 'where'] as const).every((dimension) =>
+          matchesDimensionReviewFilter(
+            item.dimensionReview,
+            dimension,
+            currentFilters.dimensionReviewStates?.[dimension]
+          )
+        ) &&
+        matchesTemporalValueFilter(item.temporal, currentFilters.temporalFilter)
       );
     },
     [resolveDimensionalTagsForFetch]
@@ -965,6 +1016,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           subjectTagIds?: string[];
           addSubjectTagIds?: string[];
           removeSubjectTagIds?: string[];
+          temporal?: TemporalValue | null;
+          temporalSubject?: boolean;
+          dimensionReviewUpdates?: MediaBulkTagUpdateRequest['dimensionReviewUpdates'];
+          dimensionResolutionUpdates?: MediaBulkTagUpdateRequest['dimensionResolutionUpdates'];
         } = { mediaIds };
 
         if (Object.prototype.hasOwnProperty.call(updates, 'tagIds')) {
@@ -981,6 +1036,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         if (updates.removeTagIds?.length) payload.removeTagIds = updates.removeTagIds;
         if (updates.addSubjectTagIds?.length) payload.addSubjectTagIds = updates.addSubjectTagIds;
         if (updates.removeSubjectTagIds?.length) payload.removeSubjectTagIds = updates.removeSubjectTagIds;
+        if (Object.prototype.hasOwnProperty.call(updates, 'temporal')) {
+          payload.temporal = updates.temporal ?? null;
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, 'temporalSubject')) {
+          payload.temporalSubject = updates.temporalSubject === true;
+        }
+        if (updates.dimensionReviewUpdates) {
+          payload.dimensionReviewUpdates = updates.dimensionReviewUpdates;
+        }
+        if (updates.dimensionResolutionUpdates) {
+          payload.dimensionResolutionUpdates = updates.dimensionResolutionUpdates;
+        }
 
         const response = await fetch('/api/admin/media/tags', {
           method: 'POST',
@@ -998,22 +1065,33 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         const updatedItems = Array.isArray(body.media)
           ? body.media.filter((item): item is Media => Boolean(item?.docId))
           : [];
+        // A slower list request started before this mutation must not restore its stale result
+        // after the authoritative response has already reconciled the visible Media set.
+        activeMediaRequestControllerRef.current?.abort();
+        activeMediaRequestControllerRef.current = null;
+        mediaRequestSeqRef.current += 1;
         clearMediaQueryCache();
         if (updatedItems.length > 0) {
           updatedItems.forEach((item) => cacheMediaRecord(item));
           const updatedById = new Map(updatedItems.map((item) => [item.docId, item] as const));
+          const updatedMatchById = new Map(
+            updatedItems.map((item) => [item.docId, mediaMatchesCurrentView(item)] as const)
+          );
           setMedia((prev) => {
             const next = prev
               .map((item) => {
                 if (!item.docId) return item;
                 const updated = updatedById.get(item.docId);
                 if (!updated) return item;
-                return mediaMatchesCurrentView(updated) ? updated : null;
+                return updatedMatchById.get(item.docId) ? updated : null;
               })
               .filter((item): item is Media => Boolean(item?.docId));
             mediaRef.current = next;
             return next;
           });
+          setSelectedMediaIds((prev) =>
+            prev.filter((id) => updatedMatchById.get(id) !== false)
+          );
         } else {
           await refreshMedia();
         }
@@ -1027,7 +1105,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           });
         }
         if (body.reconciliationOperationId) {
-          void runMediaTagReconciliation(body.reconciliationOperationId);
+          await runMediaTagReconciliation(body.reconciliationOperationId);
         }
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -1131,13 +1209,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     [clearMediaQueryCache]
   );
 
-  const setFilter = useCallback((key: keyof MediaFilters, value: string) => {
+  const setFilter = useCallback(
+    (key: keyof MediaFilters, value: MediaFilters[keyof MediaFilters]) => {
     setFilters((prev) => {
       const next = { ...prev, [key]: value };
       filtersRef.current = next;
       return next;
     });
-  }, [mediaPageLimit]);
+    },
+    []
+  );
 
   const clearFilters = useCallback(() => {
     lastMediaEngineRef.current = null;

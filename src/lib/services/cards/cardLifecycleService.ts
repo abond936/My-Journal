@@ -18,6 +18,7 @@ import { nextCollectionRootOrderForAppend } from '@/lib/utils/curatedCollectionT
 import { resolveNewCardInheritanceOverrides } from '@/lib/utils/galleryTagInheritance';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 import { getMediaIdsFromCard, computeCardMediaSignalsFromMediaIds, stripHydratedGalleryItem } from '@/lib/services/cards/cardMediaHydrationService';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -89,11 +90,19 @@ export async function createCard(
     requestedSubjectTagIds: validatedData.subjectTagIds,
     subjectTagIdProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagId'),
     subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagIds'),
+    temporal: validatedData.temporal ?? null,
+    allTags: allTagsForJournal,
+  });
+  validatedData.dimensionReview = reconcileDimensionReviewMap({
+    dimensionReview: validatedData.dimensionReview,
+    assignedTagIds: selectedTags,
+    temporal: validatedData.temporal,
     allTags: allTagsForJournal,
   });
   const journalWhenSort = computeJournalWhenSortKeys(
     dimensionalTags.when || [],
-    tagPathLookup
+    tagPathLookup,
+    validatedData.temporal
   );
   const dimensionSortKeys = computeDimensionSortKeys(selectedTags, allTagsForJournal);
   const mediaIdsForSignals = new Set<string>();
@@ -376,7 +385,11 @@ export async function duplicateCard(sourceCardId: string): Promise<Card> {
     galleryMedia: source.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) ?? [],
     contentMedia: source.contentMedia,
     tags: source.tags ?? [],
-    ...(source.subjectTagId ? { subjectTagId: source.subjectTagId } : {}),
+    subjectTagId: source.subjectTagId ?? null,
+    subjectTagIds: source.subjectTagIds ?? (source.subjectTagId ? [source.subjectTagId] : []),
+    temporal: source.temporal ?? null,
+    dimensionReview: source.dimensionReview,
+    galleryTagInheritanceOverrides: source.galleryTagInheritanceOverrides,
   };
 
   return createCard(newCardData);

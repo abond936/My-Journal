@@ -7,6 +7,7 @@ import type {
 import { getTypesenseClient, isTypesenseConfigured } from '@/lib/config/typesense';
 import { Card } from '@/lib/types/card';
 import { withTypesenseRetry } from '@/lib/services/typesenseSync';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/subjectTag';
 
 const CARDS_COLLECTION = 'cards';
 
@@ -506,8 +507,10 @@ export function buildTypesenseCardDocumentFromData(
   const when = (data.when as string[] | undefined) ?? [];
   const where = (data.where as string[] | undefined) ?? [];
   const filterTags = (data.filterTags as Record<string, boolean> | undefined) ?? {};
-  const subjectTagId = (data.subjectTagId as string | null | undefined) ?? undefined;
-  const subjectTagIds = ((data.subjectTagIds as string[] | undefined) ?? (subjectTagId ? [subjectTagId] : []));
+  const subjectTagIds = resolveStoredSubjectTagIds(
+    data.subjectTagIds as string[] | undefined,
+    data.subjectTagId as string | null | undefined
+  );
   const subjectFilterTags = (data.subjectFilterTags as Record<string, boolean> | undefined) ?? {};
   const filterTagIds = Object.keys(filterTags).filter((k) => filterTags[k]);
   const subjectFilterTagIds = Object.keys(subjectFilterTags).filter((k) => subjectFilterTags[k]);
@@ -535,7 +538,7 @@ export function buildTypesenseCardDocumentFromData(
     when_names: lookupNames(when, tagMap),
     where_names: lookupNames(where, tagMap),
     filter_tag_ids: filterTagIds.length > 0 ? filterTagIds : undefined,
-    subject_tag_id: subjectTagId || undefined,
+    subject_tag_id: subjectTagIds[0],
     subject_tag_ids: subjectTagIds.length > 0 ? subjectTagIds : undefined,
     subject_filter_tag_ids: subjectFilterTagIds.length > 0 ? subjectFilterTagIds : undefined,
     tag_ids: tags.length > 0 ? tags : undefined,

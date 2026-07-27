@@ -7,7 +7,10 @@ import {
   recomputeCardsMediaSignalsForMediaIds,
 } from '@/lib/services/cards/cardMediaLifecycleService';
 import { patchMediaDocument } from '@/lib/services/images/imageImportService';
-import { createMediaTagReconciliationOperation } from '@/lib/services/mediaTagReconciliationService';
+import {
+  createMediaTagReconciliationOperation,
+  processMediaTagReconciliationOperation,
+} from '@/lib/services/mediaTagReconciliationService';
 
 jest.mock('next/server', () => {
   const NextResponse = function NextResponse(_body?: unknown, init?: { status?: number }) {
@@ -60,6 +63,7 @@ jest.mock('@/lib/services/cards/cardMediaLifecycleService', () => ({
 
 jest.mock('@/lib/services/mediaTagReconciliationService', () => ({
   createMediaTagReconciliationOperation: jest.fn(),
+  processMediaTagReconciliationOperation: jest.fn(),
   reconcileMediaTagDependents: jest.fn(),
 }));
 
@@ -77,6 +81,8 @@ const mockedDeleteMediaWithCardCleanup =
   deleteMediaWithCardCleanup as jest.MockedFunction<typeof deleteMediaWithCardCleanup>;
 const mockedCreateMediaTagReconciliationOperation =
   createMediaTagReconciliationOperation as jest.MockedFunction<typeof createMediaTagReconciliationOperation>;
+const mockedProcessMediaTagReconciliationOperation =
+  processMediaTagReconciliationOperation as jest.MockedFunction<typeof processMediaTagReconciliationOperation>;
 const adminSession = { user: { role: 'admin' } } as Awaited<ReturnType<typeof getServerSession>>;
 
 describe('POST /api/admin/media/tags', () => {
@@ -84,6 +90,10 @@ describe('POST /api/admin/media/tags', () => {
     jest.clearAllMocks();
     mockedBulkApplyMediaTags.mockResolvedValue({ updatedIds: [] });
     mockedCreateMediaTagReconciliationOperation.mockResolvedValue('reconcile-1');
+    mockedProcessMediaTagReconciliationOperation.mockResolvedValue({
+      operationId: 'reconcile-1',
+      affectedCardIds: [],
+    });
   });
 
   it('returns 403 when user is not admin', async () => {
@@ -146,6 +156,26 @@ describe('POST /api/admin/media/tags', () => {
     expect(payload).toMatchObject({ ok: true, updated: 1 });
   });
 
+  it('persists a structured date subject independently of tag subjects', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1'] });
+    const req = {
+      json: async () => ({ mediaIds: ['m1'], temporalSubject: true }),
+    } as NextRequest;
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1'],
+      {
+        temporalSubject: true,
+        temporalSubjectProvided: true,
+      },
+      { reconcile: false }
+    );
+  });
+
   it('accepts one combined add, remove, and Subject decision', async () => {
     mockedGetServerSession.mockResolvedValueOnce(adminSession);
     mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1', 'm2'], updatedMedia: [] });
@@ -191,6 +221,32 @@ describe('POST /api/admin/media/tags', () => {
       },
       { reconcile: false }
     );
+    expect(mockedCreateMediaTagReconciliationOperation).toHaveBeenCalledWith(['m1']);
+  });
+
+  it('accepts per-dimension review and resolution updates', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedBulkApplyMediaTags.mockResolvedValueOnce({ updatedIds: ['m1'] });
+    const req = {
+      json: async () => ({
+        mediaIds: ['m1'],
+        dimensionReviewUpdates: { who: true, where: false },
+        dimensionResolutionUpdates: { who: 'unknown', where: null },
+      }),
+    } as NextRequest;
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    expect(mockedBulkApplyMediaTags).toHaveBeenCalledWith(
+      ['m1'],
+      {
+        dimensionReviewUpdates: { who: true, where: false },
+        dimensionResolutionUpdates: { who: 'unknown', where: null },
+      },
+      { reconcile: false }
+    );
+    expect(mockedCreateMediaTagReconciliationOperation).toHaveBeenCalledWith(['m1']);
   });
 });
 

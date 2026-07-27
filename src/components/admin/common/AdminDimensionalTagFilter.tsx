@@ -7,15 +7,20 @@ import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import type {
   AdminDimensionFilterMode,
+  AdminDimensionReviewFilter,
   AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import styles from './AdminDimensionalTagFilter.module.css';
+import TemporalValueControl from '@/components/admin/common/TemporalValueControl';
+import type { TemporalFilter } from '@/lib/types/temporal';
+import { formatTemporalValue, temporalValuesEqual } from '@/lib/utils/temporalValue';
 
 type AppliedTagFilterState = {
   selectedTagIds: string[];
   dimensionFilters: AdminDimensionFilterState;
+  temporalFilter?: TemporalFilter | null;
 };
 
 const DIMENSION_ICON = {
@@ -32,11 +37,18 @@ type AdminDimensionalTagFilterProps = {
   dimensionFilters: AdminDimensionFilterState;
   onDimensionFilterChange: (
     dimension: TagDimension,
-    patch: Partial<{ mode: AdminDimensionFilterMode; tagId: string; subjectOnly: boolean }>
+    patch: Partial<{
+      mode: AdminDimensionFilterMode;
+      tagId: string;
+      subjectOnly: boolean;
+      reviewState: AdminDimensionReviewFilter | undefined;
+    }>
   ) => void;
   className?: string;
   surfaceLabel: string;
   onApply?: (value: AppliedTagFilterState) => void;
+  temporalFilter?: TemporalFilter | null;
+  onTemporalFilterChange?: (value: TemporalFilter | null | undefined) => void;
 };
 
 export default function AdminDimensionalTagFilter({
@@ -48,19 +60,25 @@ export default function AdminDimensionalTagFilter({
   className,
   surfaceLabel,
   onApply,
+  temporalFilter,
+  onTemporalFilterChange,
 }: AdminDimensionalTagFilterProps) {
   const [open, setOpen] = useState(false);
   const [draftTagIds, setDraftTagIds] = useState(selectedTagIds);
   const [draftDimensionFilters, setDraftDimensionFilters] = useState(dimensionFilters);
+  const [draftTemporalFilter, setDraftTemporalFilter] = useState<TemporalFilter | null | undefined>(
+    temporalFilter
+  );
 
   const activeRuleCount = DIMENSION_ORDER.reduce(
     (count, dimension) =>
       count +
       (dimensionFilters[dimension].mode === 'isEmpty' ? 1 : 0) +
-      (dimensionFilters[dimension].subjectOnly ? 1 : 0),
+      (dimensionFilters[dimension].subjectOnly ? 1 : 0) +
+      (dimensionFilters[dimension].reviewState ? 1 : 0),
     0
   );
-  const activeCount = selectedTagIds.length + activeRuleCount;
+  const activeCount = selectedTagIds.length + activeRuleCount + (temporalFilter !== undefined ? 1 : 0);
   const selectedTagsByDimension = useMemo(() => {
     const resolvedDimensionById = buildResolvedTagDimensionMap(allTags);
     const tagById = new Map(
@@ -86,7 +104,8 @@ export default function AdminDimensionalTagFilter({
     if (!open) return;
     setDraftTagIds(selectedTagIds);
     setDraftDimensionFilters(dimensionFilters);
-  }, [dimensionFilters, open, selectedTagIds]);
+    setDraftTemporalFilter(temporalFilter);
+  }, [dimensionFilters, open, selectedTagIds, temporalFilter]);
 
   const applyDraft = () => {
     const resolvedDimensionById = buildResolvedTagDimensionMap(allTags);
@@ -98,6 +117,7 @@ export default function AdminDimensionalTagFilter({
       onApply({
         selectedTagIds: appliedTagIds,
         dimensionFilters: draftDimensionFilters,
+        temporalFilter: draftTemporalFilter,
       });
     } else {
       onSelectedTagIdsChange(appliedTagIds);
@@ -107,10 +127,17 @@ export default function AdminDimensionalTagFilter({
         if (
           previous.mode !== next.mode ||
           previous.tagId !== next.tagId ||
-          Boolean(previous.subjectOnly) !== Boolean(next.subjectOnly)
+          Boolean(previous.subjectOnly) !== Boolean(next.subjectOnly) ||
+          previous.reviewState !== next.reviewState
         ) {
           onDimensionFilterChange(dimension, next);
         }
+      }
+      if (
+        onTemporalFilterChange &&
+        !temporalValuesEqual(temporalFilter, draftTemporalFilter)
+      ) {
+        onTemporalFilterChange(draftTemporalFilter);
       }
     }
     setOpen(false);
@@ -138,7 +165,13 @@ export default function AdminDimensionalTagFilter({
                     <span>{DIMENSION_LABEL[dimension]}</span>
                   </div>
                   <div className={styles.summaryPresence}>
-                    {dimensionFilters[dimension].mode === 'isEmpty'
+                    {dimensionFilters[dimension].reviewState
+                      ? dimensionFilters[dimension].reviewState === 'not_applicable'
+                        ? 'Not applicable'
+                        : dimensionFilters[dimension].reviewState === 'unknown'
+                          ? 'Unknown'
+                          : 'Unreviewed'
+                      : dimensionFilters[dimension].mode === 'isEmpty'
                       ? dimensionFilters[dimension].subjectOnly
                         ? 'Subjects empty'
                         : 'Empty'
@@ -147,15 +180,20 @@ export default function AdminDimensionalTagFilter({
                         : 'Any assigned'}
                   </div>
                   <div className={styles.summaryTags}>
+                    {dimension === 'when' && temporalFilter !== undefined ? (
+                      <span className={styles.summaryTag}>
+                        Date: {formatTemporalValue(temporalFilter)}
+                      </span>
+                    ) : null}
                     {selectedTags.length > 0 ? (
                       selectedTags.map((tag) => (
                         <span key={tag.docId} className={styles.summaryTag}>
                           {tag.name}
                         </span>
                       ))
-                    ) : (
+                    ) : dimension !== 'when' || temporalFilter === undefined ? (
                       <span className={styles.summaryEmpty}>—</span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );
@@ -180,7 +218,8 @@ export default function AdminDimensionalTagFilter({
         isOpen={open}
         onClose={() => setOpen(false)}
         title={`${surfaceLabel} tag filters`}
-        size="wide"
+        size="wideTall"
+        bodyClassName={styles.modalBody}
         footer={(
           <div className={styles.modalActions}>
             <button type="button" className={styles.cancelButton} onClick={() => setOpen(false)}>
@@ -208,16 +247,32 @@ export default function AdminDimensionalTagFilter({
           searchPlaceholder="Enter tags…"
           hidePickerHeading
           hideActions
+          constrainTreeScroll
           showManagementControls={false}
           initialExpandLevels={1}
           includeAllTags
           dimensionDisabled={(dimension) =>
-            draftDimensionFilters[dimension].mode === 'isEmpty'
+            draftDimensionFilters[dimension].mode === 'isEmpty' ||
+            draftDimensionFilters[dimension].reviewState === 'unknown' ||
+            draftDimensionFilters[dimension].reviewState === 'not_applicable'
           }
           dimensionHeaderIcon={(dimension) => {
             const Icon = DIMENSION_ICON[dimension];
             return <Icon size={16} aria-hidden={true} />;
           }}
+          tagSearchDimensions={['who', 'what', 'where']}
+          dimensionBodyOverride={(dimension) =>
+            dimension === 'when' ? (
+              <TemporalValueControl
+                idPrefix={`${surfaceLabel.toLowerCase()}-filter`}
+                value={draftTemporalFilter}
+                allowAny
+                allowYearRange
+                showApproximate={false}
+                onChange={setDraftTemporalFilter}
+              />
+            ) : undefined
+          }
           dimensionHeaderControl={(dimension) => {
             const state = draftDimensionFilters[dimension];
             return (
@@ -262,6 +317,41 @@ export default function AdminDimensionalTagFilter({
                   />
                   <span>Empty</span>
                 </label>
+                {dimension !== 'when' ? (
+                  <label className={styles.reviewStateOption}>
+                    <span>Review</span>
+                    <select
+                      aria-label={`${DIMENSION_LABEL[dimension]} review state`}
+                      value={state.reviewState ?? ''}
+                      onChange={(event) => {
+                        const reviewState = (event.target.value || undefined) as
+                          | AdminDimensionReviewFilter
+                          | undefined;
+                        setDraftDimensionFilters((current) => ({
+                          ...current,
+                          [dimension]: {
+                            ...current[dimension],
+                            reviewState,
+                            ...(reviewState === 'unknown' || reviewState === 'not_applicable'
+                              ? { mode: 'any' as const, tagId: '', subjectOnly: false }
+                              : {}),
+                          },
+                        }));
+                        if (reviewState === 'unknown' || reviewState === 'not_applicable') {
+                          const resolved = buildResolvedTagDimensionMap(allTags);
+                          setDraftTagIds((current) =>
+                            current.filter((tagId) => resolved.get(tagId) !== dimension)
+                          );
+                        }
+                      }}
+                    >
+                      <option value="">Any review state</option>
+                      <option value="unreviewed">Unreviewed</option>
+                      <option value="unknown">Unknown</option>
+                      <option value="not_applicable">Not applicable</option>
+                    </select>
+                  </label>
+                ) : null}
               </div>
             );
           }}

@@ -253,10 +253,12 @@ export async function PATCH(
         tags,
         subjectTagId,
         subjectTagIds,
+        temporal,
+        dimensionReview,
         galleryTagInheritanceOverrides,
       } = validatedData as Pick<
         Card,
-        'tags' | 'subjectTagId' | 'subjectTagIds' | 'galleryTagInheritanceOverrides'
+        'tags' | 'subjectTagId' | 'subjectTagIds' | 'temporal' | 'dimensionReview' | 'galleryTagInheritanceOverrides'
       >;
       updatedCard = await updateCardTagAssignmentWithInheritance(
         id,
@@ -264,6 +266,12 @@ export async function PATCH(
           tags,
           subjectTagId,
           subjectTagIds,
+          ...(Object.prototype.hasOwnProperty.call(validatedData, 'temporal')
+            ? { temporal }
+            : {}),
+          ...(Object.prototype.hasOwnProperty.call(validatedData, 'dimensionReview')
+            ? { dimensionReview }
+            : {}),
         },
         galleryTagInheritanceOverrides
       );
@@ -274,11 +282,13 @@ export async function PATCH(
         galleryTagInheritanceOverrides
       );
     } else if (isTagsOnlyPayload(validatedData)) {
-      const { tags, subjectTagId, subjectTagIds } = validatedData as Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds'>;
+      const { tags, subjectTagId, subjectTagIds, temporal, dimensionReview } = validatedData as Pick<Card, 'tags' | 'subjectTagId' | 'subjectTagIds' | 'temporal' | 'dimensionReview'>;
       updatedCard = await updateCardTags(id, {
         tags,
         subjectTagId,
         ...(Object.prototype.hasOwnProperty.call(validatedData, 'subjectTagIds') ? { subjectTagIds } : {}),
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'temporal') ? { temporal } : {}),
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'dimensionReview') ? { dimensionReview } : {}),
       });
     } else if (isStatusOnlyPayload(validatedData)) {
       const { status } = validatedData as Pick<Card, 'status'>;

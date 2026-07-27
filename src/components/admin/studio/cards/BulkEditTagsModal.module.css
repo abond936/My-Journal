@@ -196,12 +196,88 @@
   padding-inline: var(--spacing-md);
 }
 
+.temporalPilotBand {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--spacing-md);
+  row-gap: var(--spacing-xs);
+  align-items: start;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px solid var(--admin-border, var(--color-border));
+  border-bottom: 1px solid var(--admin-border, var(--color-border));
+}
+
+.temporalPilotBand > .assignmentBandLabel,
+.temporalPilotContent {
+  grid-column: 3 / 4;
+}
+
+.temporalPilotContent {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.temporalPilotContent small {
+  color: var(--admin-text-muted, var(--color-text-muted));
+}
+
 .dimensionHeadings,
 .subjectColumns,
 .mediaInteractiveColumns {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-lg);
+}
+
+.reviewableDimensionColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  min-height: 0;
+}
+
+.dimensionReviewControls {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--spacing-xs);
+  border-bottom: 1px solid var(--admin-border, var(--color-border));
+  font-size: var(--font-size-xs);
+}
+
+.dimensionReviewControls label {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 1.35rem;
+}
+
+.dimensionReviewControls input {
+  margin: 0;
+}
+
+.dimensionReviewControls button {
+  justify-self: start;
+  padding: 0;
+  color: var(--admin-link-color, var(--color-primary));
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.temporalColumnControl {
+  display: grid;
+  gap: 0.25rem;
+  padding: var(--spacing-xs);
+  border-bottom: 1px solid var(--admin-border, var(--color-border));
+  min-width: 0;
+}
+
+.temporalColumnControl small {
+  color: var(--admin-text-muted, var(--color-text-muted));
+  font-size: var(--font-size-xs);
 }
 
 .dimensionHeadings {

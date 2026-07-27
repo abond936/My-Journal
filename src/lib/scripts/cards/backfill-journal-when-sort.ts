@@ -35,7 +35,7 @@ async function main() {
     for (const doc of slice) {
       const data = doc.data() as Card;
       const when = data.when ?? [];
-      const j = computeJournalWhenSortKeys(when, tagMap);
+      const j = computeJournalWhenSortKeys(when, tagMap, data.temporal);
       if (!apply) {
         if (logged < 5) {
           console.log(`  ${doc.id}: when=${when.length} tags -> asc=${j.journalWhenSortAsc} desc=${j.journalWhenSortDesc}`);

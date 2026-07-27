@@ -16,6 +16,10 @@ import {
 } from '@/lib/utils/tagDimensionResolve';
 import styles from './DimensionalTagVerticalChips.module.css';
 import { getDimensionSubjectPresentation } from '@/lib/utils/subjectPresentation';
+import type { TemporalValue } from '@/lib/types/temporal';
+import { formatTemporalValue, formatTemporalValueLong } from '@/lib/utils/temporalValue';
+import type { DimensionReviewMap } from '@/lib/types/dimensionReview';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 
 const LONG_PRESS_MS = 450;
 const PANEL_WIDTH = 220;
@@ -55,6 +59,8 @@ export interface DimensionalTagVerticalChipsProps {
   disabled?: boolean;
   className?: string;
   variant?: 'rail' | 'inline';
+  temporalValue?: TemporalValue | null;
+  dimensionReview?: DimensionReviewMap;
 }
 
 /**
@@ -74,6 +80,8 @@ export default function DimensionalTagVerticalChips({
   disabled = false,
   className,
   variant = 'rail',
+  temporalValue,
+  dimensionReview,
 }: DimensionalTagVerticalChipsProps) {
   const [saving, setSaving] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveDimensionMenu | null>(null);
@@ -81,7 +89,7 @@ export default function DimensionalTagVerticalChips({
   const resolvedDimension = useMemo(() => buildResolvedTagDimensionMap(allTags), [allTags]);
   const currentTags = tagIds;
   const currentSubjectTagIds = useMemo(
-    () => subjectTagIds?.length ? subjectTagIds : subjectTagId ? [subjectTagId] : [],
+    () => resolveStoredSubjectTagIds(subjectTagIds, subjectTagId),
     [subjectTagId, subjectTagIds]
   );
   const inline = variant === 'inline';
@@ -219,7 +227,16 @@ export default function DimensionalTagVerticalChips({
       {dimensionsToRender.map((dim, dimIndex) => {
         const ids = core[dim];
         const label = DIMENSION_LABEL[dim];
-        if (ids.length === 0) {
+        const resolution = dimensionReview?.[dim]?.resolution ?? null;
+        const resolutionLabel = resolution === 'not_applicable'
+          ? 'N/A'
+          : resolution === 'unknown'
+            ? 'Unknown'
+            : null;
+        const structuredDate = dim === 'when' && temporalValue
+          ? formatTemporalValue(temporalValue)
+          : null;
+        if (ids.length === 0 && !structuredDate && !resolutionLabel) {
           if (inline) {
             return (
               <div key={dim} className={clsx(styles.dimBlock, styles.dimBlockInline)}>
@@ -248,22 +265,35 @@ export default function DimensionalTagVerticalChips({
           );
         }
 
-        const firstId = currentSubjectTagIds.find((id) => ids.includes(id)) ?? ids[0];
+        const firstId = currentSubjectTagIds.find((id) => ids.includes(id)) ?? ids[0] ?? '';
         const firstName = tagById.get(firstId)?.name ?? firstId;
         const allNames = ids.map((id) => tagById.get(id)?.name ?? id).join(', ');
         const presentation = getDimensionSubjectPresentation(ids, currentSubjectTagIds);
         const selectedSubjectNames = currentSubjectTagIds
           .filter((id) => ids.includes(id))
           .map((id) => tagById.get(id)?.name ?? id);
-        const displayName = presentation === 'multiple'
-          ? 'Multiple'
-          : presentation === 'subject'
-            ? selectedSubjectNames[0] ?? firstName
-          : presentation === 'subjects'
-            ? 'Subjects+'
-            : firstName;
-        const isSubject = presentation === 'implicit' || presentation === 'subject' || presentation === 'subjects';
-        const rowTitle = `${label}: ${displayName}\nTags: ${allNames}${selectedSubjectNames.length ? `\nSelected subjects: ${selectedSubjectNames.join(', ')}` : ''}`;
+        const displayName = resolutionLabel ?? structuredDate ?? (
+          presentation === 'multiple'
+            ? 'Multiple'
+            : presentation === 'subject'
+              ? selectedSubjectNames[0] ?? firstName
+            : presentation === 'subjects'
+              ? 'Subjects+'
+              : firstName
+        );
+        const isSubject = !structuredDate && !resolutionLabel &&
+          (presentation === 'implicit' || presentation === 'subject' || presentation === 'subjects');
+        const rowTitle = resolutionLabel
+          ? `${label}: ${resolutionLabel}`
+          : structuredDate
+          ? `${label}: ${formatTemporalValueLong(temporalValue)}${
+              allNames ? `\nLegacy tags: ${allNames}` : ''
+            }`
+          : `${label}: ${displayName}\nTags: ${allNames}${
+              selectedSubjectNames.length
+                ? `\nSelected subjects: ${selectedSubjectNames.join(', ')}`
+                : ''
+            }`;
 
         return (
           <div

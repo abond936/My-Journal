@@ -19,7 +19,12 @@ import { AppError, ErrorCode } from '@/lib/types/error';
 import { extractMediaFromContent, generateExcerpt, stripContentImageSrc } from '@/lib/utils/cardUtils';
 import { normalizeDisplayModeForType } from '@/lib/utils/cardDisplayMode';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
-import { buildSubjectFilterTags, resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
+import {
+  buildSubjectFilterTags,
+  filterSubjectTagIdsForTemporal,
+  resolveSubjectTagState,
+} from '@/lib/utils/subjectTag';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const firestore = getAdminApp().firestore();
@@ -204,6 +209,15 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         undefined,
         allTagsForJournal
       );
+      const effectiveTemporal = Object.prototype.hasOwnProperty.call(cleanedUpdate, 'temporal')
+        ? cleanedUpdate.temporal ?? null
+        : existingData.temporal ?? null;
+      const effectiveDimensionReview = Object.prototype.hasOwnProperty.call(
+        cleanedUpdate,
+        'dimensionReview'
+      )
+        ? cleanedUpdate.dimensionReview
+        : existingData.dimensionReview;
       const subjectState = await resolveSubjectTagState({
         assignedTagIds: finalTags || [],
         existingSubjectTagId: existingData.subjectTagId,
@@ -212,20 +226,31 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         requestedSubjectTagIds: cleanedUpdate.subjectTagIds,
         subjectTagIdProvided: Object.prototype.hasOwnProperty.call(cleanedUpdate, 'subjectTagId'),
         subjectTagIdsProvided: Object.prototype.hasOwnProperty.call(cleanedUpdate, 'subjectTagIds'),
+        temporal: effectiveTemporal,
         allTags: allTagsForJournal,
       });
 
       cleanedUpdate.filterTags = filterTags;
       cleanedUpdate.subjectTagId = subjectState.subjectTagId;
       cleanedUpdate.subjectTagIds = subjectState.subjectTagIds;
-      const retainedImplicitSubjectTagIds = (existingData.galleryImplicitSubjectTagIds ?? [])
-        .filter((tagId) => (finalTags ?? []).includes(tagId));
+      const retainedImplicitSubjectTagIds = filterSubjectTagIdsForTemporal(
+        (existingData.galleryImplicitSubjectTagIds ?? [])
+          .filter((tagId) => (finalTags ?? []).includes(tagId)),
+        effectiveTemporal,
+        allTagsForJournal
+      );
       cleanedUpdate.subjectFilterTags = retainedImplicitSubjectTagIds.length > 0
         ? await buildSubjectFilterTags(
             [...subjectState.subjectTagIds, ...retainedImplicitSubjectTagIds],
             allTagsForJournal
           )
         : subjectState.subjectFilterTags;
+      cleanedUpdate.dimensionReview = reconcileDimensionReviewMap({
+        dimensionReview: effectiveDimensionReview,
+        assignedTagIds: finalTags ?? [],
+        temporal: effectiveTemporal,
+        allTags: allTagsForJournal,
+      });
       cleanedUpdate.who = dimensionalTags.who || [];
       cleanedUpdate.what = dimensionalTags.what || [];
       cleanedUpdate.when = dimensionalTags.when || [];
@@ -233,7 +258,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
       const journalWhenSort = computeJournalWhenSortKeys(
         cleanedUpdate.when || [],
-        tagPathLookup
+        tagPathLookup,
+        effectiveTemporal
       );
       const dimensionSortKeys = computeDimensionSortKeys(finalTags || [], allTagsForJournal);
       const mediaSignals = precomputedMediaSignals;

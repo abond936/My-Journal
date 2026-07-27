@@ -7,7 +7,12 @@ import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
 import type { Question } from '@/lib/types/question';
 import type { Tag } from '@/lib/types/tag';
-import { buildSubjectFilterTags, normalizeSubjectTagId, normalizeSubjectTagIds } from '@/lib/utils/subjectTag';
+import {
+  buildSubjectFilterTags,
+  filterSubjectTagIdsForTemporal,
+  normalizeSubjectTagId,
+  resolveStoredSubjectTagIds,
+} from '@/lib/utils/subjectTag';
 import { buildCanonicalTagPaths } from '@/lib/utils/tagHierarchy';
 import { buildMutatedTagCatalog, type TagHierarchyMutation } from '@/lib/utils/tagHierarchyMutation';
 import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhenSort';
@@ -71,14 +76,16 @@ function materializeProjectionForIndex<T extends Record<string, unknown>>(curren
 async function expectedCardProjection(card: Card, tags: Tag[]): Promise<Projection> {
   const directTags = normalizedIds(card.tags);
   const { filterTags, dimensionalTags } = await calculateDerivedTagData(directTags, tags);
-  const explicitSubjects = normalizeSubjectTagIds(card.subjectTagIds);
-  const legacySubject = normalizeSubjectTagId(card.subjectTagId);
-  const subjectIds = [
-    ...(explicitSubjects.length > 0 ? explicitSubjects : legacySubject ? [legacySubject] : []),
+  const subjectIds = filterSubjectTagIdsForTemporal([
+    ...resolveStoredSubjectTagIds(card.subjectTagIds, card.subjectTagId),
     ...normalizedIds(card.galleryImplicitSubjectTagIds),
-  ];
+  ], card.temporal, tags);
   const tagMap = buildTagMap(tags);
-  const journal = computeJournalWhenSortKeys(dimensionalTags.when ?? [], tagMap);
+  const journal = computeJournalWhenSortKeys(
+    dimensionalTags.when ?? [],
+    tagMap,
+    card.temporal
+  );
   return {
     filterTags,
     who: dimensionalTags.who ?? [],
@@ -106,7 +113,11 @@ function transformIds(values: unknown, mutation: TagHierarchyMutation): string[]
 
 function directAssignmentProjection(record: Record<string, unknown>, mutation: TagHierarchyMutation): Projection {
   if (mutation.kind !== 'remove' && mutation.kind !== 'merge' && mutation.kind !== 'cleanup') return {};
-  const subjectTagIds = transformIds(record.subjectTagIds, mutation);
+  const storedSubjects = resolveStoredSubjectTagIds(
+    Array.isArray(record.subjectTagIds) ? record.subjectTagIds as string[] : undefined,
+    typeof record.subjectTagId === 'string' ? record.subjectTagId : undefined
+  );
+  const subjectTagIds = transformIds(storedSubjects, mutation);
   const legacySubject = normalizeSubjectTagId(
     typeof record.subjectTagId === 'string' ? record.subjectTagId : undefined
   );
@@ -129,9 +140,11 @@ function directAssignmentProjection(record: Record<string, unknown>, mutation: T
 async function expectedMediaProjection(media: Media, tags: Tag[]): Promise<Projection> {
   const directTags = normalizedIds(media.tags);
   const { filterTags, dimensionalTags } = await calculateDerivedTagData(directTags, tags);
-  const explicitSubjects = normalizeSubjectTagIds(media.subjectTagIds);
-  const legacySubject = normalizeSubjectTagId(media.subjectTagId);
-  const subjectIds = explicitSubjects.length > 0 ? explicitSubjects : legacySubject ? [legacySubject] : [];
+  const subjectIds = filterSubjectTagIdsForTemporal(
+    resolveStoredSubjectTagIds(media.subjectTagIds, media.subjectTagId),
+    media.temporal,
+    tags
+  );
   return {
     filterTags,
     who: dimensionalTags.who ?? [],
@@ -148,9 +161,7 @@ async function expectedMediaProjection(media: Media, tags: Tag[]): Promise<Proje
 }
 
 async function expectedQuestionProjection(question: Question, tags: Tag[]): Promise<Projection> {
-  const explicitSubjects = normalizeSubjectTagIds(question.subjectTagIds);
-  const legacySubject = normalizeSubjectTagId(question.subjectTagId);
-  const subjectIds = explicitSubjects.length > 0 ? explicitSubjects : legacySubject ? [legacySubject] : [];
+  const subjectIds = resolveStoredSubjectTagIds(question.subjectTagIds, question.subjectTagId);
   return { subjectFilterTags: await buildSubjectFilterTags(subjectIds, tags) };
 }
 
@@ -265,12 +276,11 @@ export async function mutateTagHierarchy(mutation: TagHierarchyMutation): Promis
       }
     }
 
-    const publishedCards = cardSnap.docs
-      .filter((doc) => doc.data().status === 'published')
+    const allCards = cardSnap.docs
       .map((doc) => ({ objectId: doc.id, tagIds: transformIds(doc.data().tags, mutation) }));
     const mediaAssignments = mediaSnap.docs
       .map((doc) => ({ objectId: doc.id, tagIds: transformIds(doc.data().tags, mutation) }));
-    const cardCounts = computeHierarchicalUniqueIds(nextTags, publishedCards);
+    const cardCounts = computeHierarchicalUniqueIds(nextTags, allCards);
     const mediaCounts = computeHierarchicalUniqueIds(nextTags, mediaAssignments);
     const countWrites: PendingWrite[] = [];
     for (const tag of nextTags) {

@@ -5,6 +5,7 @@ import { Media } from '@/lib/types/photo';
 import type { DimensionalTagIdMap } from '@/lib/utils/tagUtils';
 import { dimensionalTagMapHasFilters } from '@/lib/utils/tagUtils';
 import { withTypesenseRetry } from '@/lib/services/typesenseSync';
+import { resolveStoredSubjectTagIds } from '@/lib/utils/subjectTag';
 
 const MEDIA_COLLECTION = 'media';
 
@@ -103,6 +104,7 @@ export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, stri
   const namesForSearch = lookupNames(allIds, nameMap);
   const subjectFilterTags = media.subjectFilterTags ?? {};
   const subjectFilterTagIds = Object.keys(subjectFilterTags).filter((tagId) => subjectFilterTags[tagId]);
+  const subjectTagIds = resolveStoredSubjectTagIds(media.subjectTagIds, media.subjectTagId);
   const parts = [
     media.filename || '',
     media.caption || '',
@@ -118,8 +120,8 @@ export function mediaToTypesenseDocument(media: Media, nameMap: Map<string, stri
     shape: mediaShapeFromDimensions(media.width, media.height),
     has_caption: Boolean(media.caption && media.caption.trim()),
     assigned: isAssigned(media),
-    subject_tag_id: media.subjectTagId || undefined,
-    subject_tag_ids: media.subjectTagIds?.length ? [...media.subjectTagIds] : media.subjectTagId ? [media.subjectTagId] : undefined,
+    subject_tag_id: subjectTagIds[0],
+    subject_tag_ids: subjectTagIds.length ? subjectTagIds : undefined,
     subject_filter_tag_ids: subjectFilterTagIds.length ? subjectFilterTagIds : undefined,
     who_ids: media.who?.length ? [...media.who] : undefined,
     what_ids: media.what?.length ? [...media.what] : undefined,
