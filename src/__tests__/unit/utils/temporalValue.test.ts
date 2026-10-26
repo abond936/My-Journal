@@ -30,6 +30,13 @@ describe('temporal value pilot', () => {
   it('matches broader partial filters against more precise values', () => {
     expect(matchesTemporalValueFilter(julyFourth, {
       ...julyFourth,
+      year: 1960,
+      month: undefined,
+      day: undefined,
+      precision: 'decade',
+    })).toBe(true);
+    expect(matchesTemporalValueFilter(julyFourth, {
+      ...julyFourth,
       month: undefined,
       day: undefined,
       precision: 'year',

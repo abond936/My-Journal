@@ -182,7 +182,7 @@ export default function AdminDimensionalTagFilter({
                   <div className={styles.summaryTags}>
                     {dimension === 'when' && temporalFilter !== undefined ? (
                       <span className={styles.summaryTag}>
-                        Date: {formatTemporalValue(temporalFilter)}
+                        Date: {temporalFilter === null ? 'Blank' : formatTemporalValue(temporalFilter)}
                       </span>
                     ) : null}
                     {selectedTags.length > 0 ? (
@@ -269,7 +269,23 @@ export default function AdminDimensionalTagFilter({
                 allowAny
                 allowYearRange
                 showApproximate={false}
-                onChange={setDraftTemporalFilter}
+                unreviewedLabel="Blank"
+                onChange={(next) => {
+                  setDraftTemporalFilter(next);
+                  if (next?.status === 'known' || next?.status === 'year_range') {
+                    setDraftDimensionFilters((current) => ({
+                      ...current,
+                      when: {
+                        ...current.when,
+                        reviewState:
+                          current.when.reviewState === 'unknown' ||
+                          current.when.reviewState === 'not_applicable'
+                            ? undefined
+                            : current.when.reviewState,
+                      },
+                    }));
+                  }
+                }}
               />
             ) : undefined
           }
@@ -317,8 +333,7 @@ export default function AdminDimensionalTagFilter({
                   />
                   <span>Empty</span>
                 </label>
-                {dimension !== 'when' ? (
-                  <label className={styles.reviewStateOption}>
+                <label className={styles.reviewStateOption}>
                     <span>Review</span>
                     <select
                       aria-label={`${DIMENSION_LABEL[dimension]} review state`}
@@ -338,6 +353,7 @@ export default function AdminDimensionalTagFilter({
                           },
                         }));
                         if (reviewState === 'unknown' || reviewState === 'not_applicable') {
+                          if (dimension === 'when') setDraftTemporalFilter(undefined);
                           const resolved = buildResolvedTagDimensionMap(allTags);
                           setDraftTagIds((current) =>
                             current.filter((tagId) => resolved.get(tagId) !== dimension)
@@ -351,7 +367,6 @@ export default function AdminDimensionalTagFilter({
                       <option value="not_applicable">Not applicable</option>
                     </select>
                   </label>
-                ) : null}
               </div>
             );
           }}

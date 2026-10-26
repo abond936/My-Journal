@@ -12,6 +12,7 @@ type CommonProps = {
   showApproximate?: boolean;
   showResolvedStates?: boolean;
   directEntryOnly?: boolean;
+  unreviewedLabel?: string;
 };
 
 type Props = CommonProps & (
@@ -124,6 +125,7 @@ export default function TemporalValueControl({
   showResolvedStates = true,
   directEntryOnly = false,
   allowYearRange = false,
+  unreviewedLabel = 'Unreviewed',
 }: Props) {
   const [pendingKnown, setPendingKnown] = React.useState(false);
   const [pendingRange, setPendingRange] = React.useState(false);
@@ -264,7 +266,7 @@ export default function TemporalValueControl({
               idPrefix={idPrefix}
               state={state}
               value="unreviewed"
-              label="Unreviewed"
+              label={unreviewedLabel}
               onSelect={setState}
             />
             <StateChoice

@@ -378,7 +378,7 @@ describe('GET /api/media fallback text search', () => {
     ]);
   });
 
-  it('filters Who review state across the complete media population', async () => {
+  it('filters When review state independently from a structured date', async () => {
     const mediaQuery = {
       orderBy: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
@@ -387,18 +387,29 @@ describe('GET /api/media fallback text search', () => {
         empty: false,
         docs: [
           makeMediaDoc('unreviewed', {
-            who: ['alan'],
-            dimensionReview: { who: { reviewed: false } },
+            temporal: {
+              status: 'known',
+              year: 1965,
+              precision: 'year',
+              approximate: false,
+              source: 'migrated',
+            },
+            dimensionReview: { when: { reviewed: false } },
             createdAt: 3,
           }),
           makeMediaDoc('unknown', {
-            who: [],
-            dimensionReview: { who: { reviewed: true, resolution: 'unknown' } },
+            dimensionReview: { when: { reviewed: true, resolution: 'unknown' } },
             createdAt: 2,
           }),
           makeMediaDoc('reviewed', {
-            who: ['alan'],
-            dimensionReview: { who: { reviewed: true } },
+            temporal: {
+              status: 'known',
+              year: 1965,
+              precision: 'year',
+              approximate: false,
+              source: 'manual',
+            },
+            dimensionReview: { when: { reviewed: true } },
             createdAt: 1,
           }),
         ],
@@ -416,7 +427,7 @@ describe('GET /api/media fallback text search', () => {
     } as never);
 
     const res = await GET(
-      makeRequest('https://example.test/api/media?limit=40&whoReview=unreviewed')
+      makeRequest('https://example.test/api/media?limit=40&whenReview=unreviewed')
     );
     const payload = await res.json();
 

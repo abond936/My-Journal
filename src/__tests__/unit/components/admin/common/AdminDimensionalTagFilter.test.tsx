@@ -140,15 +140,18 @@ describe('AdminDimensionalTagFilter', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Open all media tag filters' }));
-    fireEvent.change(screen.getByLabelText('Who review state'), {
+    fireEvent.change(screen.getByLabelText('When review state'), {
       target: { value: 'unreviewed' },
     });
+    expect(
+      within(screen.getByTestId('dimension-dim-when')).getByRole('radio', { name: 'Blank' })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Year range')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({
       dimensionFilters: expect.objectContaining({
-        who: expect.objectContaining({ reviewState: 'unreviewed' }),
+        when: expect.objectContaining({ reviewState: 'unreviewed' }),
       }),
     }));
   });

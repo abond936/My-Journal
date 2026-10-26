@@ -99,7 +99,11 @@ function MediaHarness() {
         type="button"
         onClick={() =>
           void fetchMedia(1, {
-            dimensionReviewStates: { who: 'unreviewed', where: 'not_applicable' },
+            dimensionReviewStates: {
+              who: 'unreviewed',
+              when: 'unreviewed',
+              where: 'not_applicable',
+            },
             temporalFilter: { status: 'year_range', fromYear: 1960, toYear: 1965 },
           })
         }
@@ -325,7 +329,7 @@ describe('MediaProvider', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringMatching(
-          /(?=.*whoReview=unreviewed)(?=.*whereReview=not_applicable)(?=.*temporalStatus=year_range)(?=.*temporalFromYear=1960)(?=.*temporalToYear=1965)/
+          /(?=.*whoReview=unreviewed)(?=.*whenReview=unreviewed)(?=.*whereReview=not_applicable)(?=.*temporalStatus=year_range)(?=.*temporalFromYear=1960)(?=.*temporalToYear=1965)/
         ),
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       );

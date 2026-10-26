@@ -532,7 +532,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         (dimension) => nextDimensionFilters[dimension].subjectOnly
       );
       const dimensionReviewStates = Object.fromEntries(
-        (['who', 'what', 'where'] as const)
+        (['who', 'what', 'when', 'where'] as const)
           .filter((dimension) => nextDimensionFilters[dimension].reviewState)
           .map((dimension) => [
             dimension,
@@ -912,7 +912,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         (key) => next[key].subjectOnly
       );
       const dimensionReviewStates = Object.fromEntries(
-        (['who', 'what', 'where'] as const)
+        (['who', 'what', 'when', 'where'] as const)
           .filter((key) => next[key].reviewState)
           .map((key) => [key, next[key].reviewState as AdminDimensionReviewFilter])
       );

@@ -100,10 +100,10 @@ export function matchesTemporalValueFilter(
   }
   if (!candidate || candidate.status !== filter.status) return false;
   if (filter.status !== 'known' || candidate.status !== 'known') return true;
-  if (candidate.year !== filter.year) return false;
   if (filter.precision === 'decade') {
     return Math.floor(candidate.year / 10) === Math.floor(filter.year / 10);
   }
+  if (candidate.year !== filter.year) return false;
   if (filter.month !== undefined && candidate.month !== filter.month) return false;
   if (filter.day !== undefined && candidate.day !== filter.day) return false;
   if (filter.hour !== undefined && candidate.hour !== filter.hour) return false;

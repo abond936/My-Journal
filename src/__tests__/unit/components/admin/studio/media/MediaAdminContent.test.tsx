@@ -510,7 +510,14 @@ describe('MediaAdminContent', () => {
         updatedAt: 2,
         storageUrl: 'https://example.com/unreviewed',
         storagePath: 'unreviewed',
-        dimensionReview: { who: { reviewed: false } },
+        temporal: {
+          status: 'known' as const,
+          year: 1965,
+          precision: 'year' as const,
+          approximate: false,
+          source: 'migrated' as const,
+        },
+        dimensionReview: { when: { reviewed: false } },
       },
       {
         docId: 'reviewed',
@@ -522,7 +529,14 @@ describe('MediaAdminContent', () => {
         updatedAt: 1,
         storageUrl: 'https://example.com/reviewed',
         storagePath: 'reviewed',
-        dimensionReview: { who: { reviewed: true } },
+        temporal: {
+          status: 'known' as const,
+          year: 1965,
+          precision: 'year' as const,
+          approximate: false,
+          source: 'manual' as const,
+        },
+        dimensionReview: { when: { reviewed: true } },
       },
     ];
 
@@ -530,7 +544,7 @@ describe('MediaAdminContent', () => {
       items,
       {
         ...baseMediaContext.filters,
-        dimensionReviewStates: { who: 'unreviewed' },
+        dimensionReviewStates: { when: 'unreviewed' },
       },
       {},
       new Map()

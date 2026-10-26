@@ -300,7 +300,7 @@ export async function GET(request: NextRequest) {
     ) as Partial<Record<'who' | 'what' | 'when' | 'where', 'hasAny' | 'isEmpty'>>;
     const hasDimensionPresenceSeek = Object.keys(dimensionPresence).length > 0;
     const dimensionReviewStates = Object.fromEntries(
-      (['who', 'what', 'where'] as const)
+      (['who', 'what', 'when', 'where'] as const)
         .map((dimension) => [dimension, searchParams.get(`${dimension}Review`)])
         .filter(
           (entry): entry is [string, AdminDimensionReviewFilter] =>
@@ -308,7 +308,7 @@ export async function GET(request: NextRequest) {
             entry[1] === 'unknown' ||
             entry[1] === 'not_applicable'
         )
-    ) as Partial<Record<'who' | 'what' | 'where', AdminDimensionReviewFilter>>;
+    ) as Partial<Record<'who' | 'what' | 'when' | 'where', AdminDimensionReviewFilter>>;
     const hasDimensionReviewSeek = Object.keys(dimensionReviewStates).length > 0;
     const includeTotal = searchParams.get('includeTotal') !== 'false';
     const includeReconciliationStatus =
@@ -423,7 +423,7 @@ export async function GET(request: NextRequest) {
         if (!mediaMatchesDimensions(row, dimensions)) return false;
         if (!mediaMatchesSearch(row, searchTrimmed, tagNameLookup)) return false;
         if (!matchesTemporalValueFilter(row.temporal, temporalFilter)) return false;
-        for (const dimension of ['who', 'what', 'where'] as const) {
+        for (const dimension of ['who', 'what', 'when', 'where'] as const) {
           if (
             !matchesDimensionReviewFilter(
               row.dimensionReview,

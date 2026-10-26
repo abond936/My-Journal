@@ -949,7 +949,9 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     displayModeFilter !== 'all' ||
     filterTagIds.length > 0 ||
     temporalFilter !== undefined ||
-    Object.values(dimensionFilters).some(state => state.mode !== 'any');
+    Object.values(dimensionFilters).some(
+      state => state.mode !== 'any' || state.reviewState !== undefined
+    );
   const handleStudioFocusCard = useCallback(
     (card: Card) => {
       if (!card.docId) return;
