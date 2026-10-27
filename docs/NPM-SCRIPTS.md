@@ -108,7 +108,7 @@ This is the current **commercial-readiness restore contract**. **Firestore + Sto
 - Confirm the hosted environment has the required auth, Firebase, and Typesense env values.
 - Confirm hosted Sentry env when error monitoring is desired: `NEXT_PUBLIC_SENTRY_DSN` on Production (and optional `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` for source maps). After deploy, send a test event from the Sentry project **Issues** UI or wait for the first real error.
 - Confirm `npm run build`, `npm run lint`, and `npm test -- --ci --runInBand` pass on the intended release revision.
-- Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes lint, build, unit/integrity tests, and hosted Playwright smoke on the intended release revision.
+- Confirm GitHub PR CI (`.github/workflows/integrity-gate.yml`) passes lint, build, unit/integrity tests, hosted Playwright smoke, and the stable aggregate `integrity-gate` check on the intended release revision.
 - Confirm there is at least one working admin account and one working viewer account.
 
 ## Account recovery (v1 operator)
@@ -148,7 +148,7 @@ This is the current **commercial-readiness restore contract**. **Firestore + Sto
 
 ### Playwright CI (GitHub Actions)
 
-**PR gate:** `.github/workflows/integrity-gate.yml` — on pull requests to `main` (and manual dispatch), runs lint, build, unit/integrity tests, and **hosted** `npm run test:e2e` in parallel (`e2e-smoke` job). Fork PRs skip the E2E job when repository secrets are unavailable.
+**PR gate:** `.github/workflows/integrity-gate.yml` — on pull requests to `main` (and manual dispatch), runs lint, build, unit/integrity tests, and **hosted** `npm run test:e2e` in parallel (`e2e-smoke` job). A final `integrity-gate` job reports the stable branch-protection check and fails unless `pr-gate` succeeds and required E2E succeeds. Fork PRs may skip E2E when repository secrets are unavailable; the aggregate accepts that documented skip but still requires `pr-gate`.
 
 **Scheduled / manual:** `.github/workflows/e2e-smoke.yml` — **nightly** (03:00 UTC) and **manual** (`workflow_dispatch`). Same hosted target and secrets as the PR gate E2E job. Does **not** boot the Next.js app in CI (avoids production Firebase Admin secrets in GitHub).
 
