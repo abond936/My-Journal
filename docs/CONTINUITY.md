@@ -47,9 +47,86 @@ This file is a concise operational handoff for the next project session. It is n
 ## Next required sequence
 
 1. Use accepted revision `b06b07f5` as the single source and deployment baseline; do not reopen the resolved Preview-versus-Production branch divergence.
-2. Before activating another implementation slice, conduct the requested product and workflow reassessment. It must examine mobile-first use, native-library access versus application-owned import, tagging and story-building friction, the boundary between archive management and the story experience, and an evolutionary path to multi-tenancy without assuming that any one concern already requires a redesign.
+2. Continue the product and workflow reassessment from the 2026-10-26 checkpoint below. Before activating another implementation slice, define the product-level experience architecture that presents the whole family-history destination and its distinct entry journeys, validate that architecture against representative recent, historical, spoken/object-led, and Reader scenarios, resolve the remaining design contracts, and reconcile only the author-approved conclusions into `01`, `02`, and `03`.
 3. Distinguish observed usability defects and near-term validation from architectural options. No product split, native-app commitment, external-library adapter, tagging replacement, or multi-tenant expansion is authorized until the relevant problem, target journey, constraints, migration path, and verification gate are reconciled into `01`, `02`, and `03`.
 4. Keep identity merge/split, face assistance, Quote, Video, external photo libraries, Bursts, likely-match review, discretionary Theme tuning, major platform upgrades, and CSP deferred unless the reassessment explicitly reactivates and sequences one of them.
+
+## Product and interface reassessment checkpoint - 2026-10-26 through 2026-10-27
+
+**Status:** Continuation record only. The following points are the current tentative discussion outcome, not product canon and not implementation authorization. Reconcile accepted conclusions into `01`, `02`, and `03` only after the broader interface and product discussion closes.
+
+### Product shape retained
+
+- My Stories remains one application and remains a private, structured family-history and storytelling product rather than merely a private social feed.
+- Reader, Story Creation, and Archive Management are distinct experiences over the same canonical Cards, Media, tags, identities, and services. A separate archive product is not currently intended.
+- Mobile should be primary for remembering, creating, reviewing, reading, and sharing. Desktop remains important and should be optimized for scanned archives, dense comparison, bulk classification, taxonomy correction, detailed editing, backup, and recovery.
+- Application-owned canonical Media remains required for durability, backup, stable references, and sharing. Mobile or provider selection should make ingestion feel immediate rather than turning ordinary Story creation into a separate archive project. Native or share-sheet integration remains a future option, not a current commitment.
+
+### Story, Media, Chapter, and search model
+
+- A Story remains a Card. Parent-child Cards remain the provisional Chapter or Topic mechanism unless behavioral inspection proves that they cannot support independent Story identity, safe removal, ordering, or any required multiple placement.
+- A Story may use one hero, inline Media, a featured Gallery, and an archival or secondary Gallery. The featured subset is the normal Reader presentation; related outtakes, duplicates, or lower-quality Media may remain attached and searchable without all being shown. No separate Media Set entity is currently required.
+- The controlled Who, What, When, and Where layer remains authoritative user-confirmed archive truth. Free-form hashtags do not replace it.
+- AI and metadata may recommend existing tags, identities, dates, and places. Machine-detected concepts such as beach, boat, dog, cake, OCR, coordinates, visual similarity, or semantic matches remain a separate background search-evidence layer unless deliberately promoted and confirmed.
+- Draft construction may temporarily contain incomplete Story or Media classification, but publication requires both the Story and all in-scope associated Media to pass the agreed classification/review gate. Exact minimum requirements, archival-Gallery scope, and Unknown/Not-applicable behavior remain to be specified.
+- Media owns its confirmed factual tags. Story/Card tags express narrative meaning and may be a subset of, broader than, or different from the tags on its Media.
+- Story tags do not automatically roll down to Media. Efficient batch tagging, shared-context recommendations, and explicit exception handling should persist confirmed assignments directly on each Media record.
+- Media rollup is computed evidence, not automatic authored Card truth. It can recommend Story tags and enrich Card discovery without silently changing the Story.
+- Card search must distinguish direct Story meaning from derived Media facts. It should be possible to find Stories about Charlie, Stories whose visible or attached Media contains Charlie, or either. Reader search must not expose matches based only on private archival Media.
+- The present Gallery-to-Card inheritance and override machinery is therefore a redesign candidate. The current discussion favors explicit Story classification, computed Media rollup, and confirmed bulk Media assignment rather than continuing bidirectional or live inheritance.
+
+### Guided structure and creation
+
+- Guided storytelling should be organized around a strong default life-story structure rather than a random prompt stream. Most users may follow the supplied structure; power users may rename, reorder, add, remove, or otherwise customize Chapters.
+- Recent mobile events and historical scanned archives may begin differently but converge on the same Story, Media, classification, Chapter, and Reader system.
+- Voice is a first-class possible Story input alongside photographs and typing. Preserve the untouched original recording; optionally create a nondestructively cleaned authentic version with filler, false starts, and excessive pauses removed; use verified synthetic narration only when approved edited prose contains words that were not actually recorded.
+- Any custom storyteller voice requires explicit consent, verification, deletion controls, synthetic-audio disclosure, and clear provenance among original recording, cleaned original, edited transcript, and generated narration.
+
+### Strategic position and competitive learning
+
+- The mission language currently favored is **share stories across generations**. Capturing and preserving are necessary capabilities, but sharing is the purpose. Working product language includes **shape your memories into stories to share** and **preserve and share your stories**; final positioning and naming remain open.
+- The primary product is the living digital record and private family reading experience. Printed books and other physical outputs may be valuable products and revenue sources, but they are secondary expressions rather than the organizing product model.
+- The strategic problem is the firehose of photographs, recordings, documents, objects, and recollections. The product must make a wide collection feel manageable, give it meaningful shape, and convert it into stories with substantially less effort than ordinary photo organization and book-making.
+- Competitive review included FamilyAlbum, Storied, Fablr, Storyworth, My Stories by MyHeritage, Remento, and Tinybeans. Their useful patterns include effortless family sharing, simple prompts, conversational or AI-assisted capture, object-led stories, recurring invitations, and focused life-stage products. Their common limitation for this vision is that they address only part of the path from large raw archive to structured, discoverable, durable family story collection.
+- The application should not attempt to launch as every niche at once. A shared archive-and-story engine may eventually support life history, recent family events, baby journeys, inherited photographs, and meaningful objects, while onboarding, prompts, visual treatment, and marketing can provide focused entry journeys. The initial entry journey and public audience are still undecided.
+- A strong default life-story structure remains important because an unstructured stream of isolated prompts or recent events can produce fragments rather than an intelligible whole. Small, approachable starting tasks should visibly contribute to a larger story, Chapter, or family-history structure rather than redefining the product as only ad hoc Story creation.
+
+### Assisted classification at archive scale
+
+- The author explicitly rejected a conversational batch question such as `These 142 photos appear to be Myrtle Beach; is that correct?` as the primary classification interaction. A negative answer creates an inefficient chain of follow-up questions and does not expose which items are exceptions.
+- The governing interaction should be **AI proposes the collection; the user edits the collection**. Every batch proposal must show its members, the evidence behind the grouping, uncertainty, and a direct exception path. Assistance must be visual and selection-based, not principally a chatbot interrogation.
+- Proposed groups should use confidence lanes such as strong matches, possible matches, and uncertain items, with representative thumbnails and useful evidence from time, coordinates, people, source, OCR, and visual similarity. The author can accept a strong group, tap exceptions out, select a subset, assign an alternative, split or merge groups, defer uncertain items, and undo the operation.
+- Event context, precise location, people, and machine concepts can all be true at once. For example, `Myrtle Beach trip 2018`, `Crescent Beach`, `Charlie`, and machine evidence `beach` should not compete for one field. Event or trip grouping must not be confused with the controlled Where taxonomy or the background concept layer.
+- Mobile should favor filter chips, tap-to-toggle exceptions, select-all-in-filter, and rapid swipe review only for the small ambiguous remainder. Drag-and-drop may help with small sets but is not the primary high-volume mobile mechanism. Desktop should add contact-sheet density, range selection, maps, comparison, and powerful bulk correction.
+- Digital-camera and phone media can benefit from capture time, coordinates, device metadata, burst or similarity evidence, and often face evidence. Scanned media lacks much of that context and will require stronger user-assisted clustering, shared-context assignment, batch correction, and AI inference from the image, OCR, neighboring scans, albums, and clues supplied by the author. Both intake paths must converge on the same confirmed classification model.
+- Classification states should distinguish **Confirmed**, **Needs review**, and **Reviewed unknown**. Reviewed unknown is completed review, not lingering debt, and prevents users from inventing false certainty. Exact publication requirements still need definition, including which attached or archival Media must be reviewed.
+- Existing products validate parts of this interaction: Google Photos and Apple Photos support machine grouping with correction of exceptions; Lightroom and Mylio use stacks, confidence, and batch identity review; PhotoPrism exposes mixed-state bulk metadata editing. None of the reviewed examples settles the complete combination of archive-scale organization, author-controlled family context, Story construction, and private intergenerational delivery.
+
+### Interface correction and resume point
+
+- The current Studio is too desktop-workbench-oriented and exposes internal entities and panes rather than guiding the user's intention. The desired direction is task-oriented: tell a Story, continue a life-history Chapter, add recent photos, organize old photos, find a memory, review unfinished truth, or read family Stories.
+- The first interface mockups represented isolated working pages and moved too quickly into the middle of tasks. They did not provide enough preamble, orientation, information architecture, Chapter context, navigation, or explanation of what comes before and after each task.
+- Resume by designing the contextual product journey one level above those work screens: Home and orientation, role-aware navigation, life-story/Chapter progress, recent family activity, unfinished-work context, transitions into Story creation or Archive review, and the destination after completion.
+- Do not treat modernity as mobile-only. Explore a coherent adaptive product in which mobile feels like a guide/interviewer and desktop feels like a calm archive steward, without reproducing the six-pane Studio on smaller screens.
+- The author inspected FamilyAlbum, Storied, Fablr, Storyworth, MyHeritage MyStories, Remento, Tinybeans, and related patterns during this discussion. The useful lesson is not to copy one narrow journey or niche, but to support several focused entrances into one coherent family-story and archive system.
+- The next useful interface artifact is a product-level experience architecture, not another isolated Story editor and not one end-to-end task presented as the product. It should show the larger destination the user is building; role-aware Home and navigation; life-story, family-history, child-journey, and archive-scale orientations; Chapter or Topic progress; recent family activity; unfinished-work context; Stories, Archive, People/Search, and Reader destinations; and the transitions by which a manageable contribution strengthens the larger living digital record.
+- Representative journeys are validation probes for that architecture rather than its organizing frame. At minimum, test a recent phone-photo event, a large or scanned historical collection, a spoken memory or meaningful object, and a family member discovering the resulting history. The mixed-confidence 142-photo Myrtle Beach example remains useful specifically for testing automatic grouping, evidence, exception handling, confirmed versus reviewed-unknown resolution, featured versus archival Media, publication review, and the mobile/desktop division of labor.
+- Preserve the governing product principle from the discussion: **present the whole; make the next step manageable**. A recent birthday, coffee cup, photograph, or other single memory may be an approachable contribution, but it must not replace the visible larger ambition of a life story, family history, child journey, or extensive archive.
+
+### Questions to resolve before canon or implementation
+
+- Final concise strategic position, product name, and public-facing promise.
+- Initial customer and entry journey without constraining the shared product engine to one life stage or senior-only use case.
+- The default Chapter structure, customization rules, and whether a Story may appear in more than one Chapter or Topic.
+- The exact publication classification gate, including treatment of secondary or archival Gallery Media and Reviewed unknown.
+- The durable event or contextual-group model, if any, and whether existing Cards, Collections, or another derived grouping can represent it without adding unnecessary entity complexity.
+- The boundary between automatically searchable machine evidence and author-confirmed Who, What, When, and Where truth, including retention, provenance, correction, and learning from accepted or rejected proposals.
+- The adaptive Home, navigation, orientation, and unfinished-work model that makes mobile a guide or interviewer and desktop a calm archive steward.
+
+### Saved design reference
+
+- `docs/design-references/2026-10-26-daughter-logo-color-study.jpg` preserves the supplied concept image unchanged.
+- `docs/design-references/2026-10-26-brand-reference.md` records that the author likes the warm forest-green, terracotta, tan/gold, cream, sage, and blue-gray direction. `TOLD` is unavailable and is not adopted; no logo, typography, slogan, or exact palette is approved.
 
 ## Active vocabulary engineering gate
 
