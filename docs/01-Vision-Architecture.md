@@ -8,7 +8,7 @@
 - **02 — Application** owns user capabilities, their status, and only the consequential contracts that could reasonably be implemented differently.
 - **03 — Implementation** owns active sequence, Definition Gates, implementation slices, and Completion Gates.
 - Support documents provide detail but do not change product truth unless reconciled into `01`–`03`.
-- Agent behavior belongs in `AGENTS.md` and `.cursor/rules/`, not in product canon.
+- Agent behavior belongs in root `AGENTS.md`, not in product canon. Tool-specific rule files may point to that shared authority but must not duplicate or redefine it.
 
 ### Nomenclature
 
