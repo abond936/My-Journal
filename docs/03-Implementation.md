@@ -886,7 +886,7 @@ The active objective is to stabilize the product as implemented, establish one r
 
 ### 1. Release Candidate
 
-**Definition:** Agent-owned engineering gate complete; author acceptance pending
+**Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
 
 **Outcome** — Convert the accumulated verified work into one known, recoverable, deployed revision and establish the trustworthy v1 baseline from which later product work proceeds.
 
@@ -896,7 +896,7 @@ The active objective is to stabilize the product as implemented, establish one r
 
 **Responsibility** — The agent owns repository review, verification, defect correction within the stabilization boundary, backup, revision control, deployment checks, rollback evidence, and release recording. The author is required only for final subjective acceptance, representative desktop/mobile use, and any consequential product decision exposed by verification.
 
-**Release evidence** — Full lint and production typecheck pass. All 165 active Jest suites and 891 tests pass. The three emulator suites and 23 emulator tests pass in the exact-revision Firebase emulator gate. A clean no-secret production build passes compilation, type validation, all 52 static pages, optimization, and route tracing. Complete paired backup `run-2026-07-22T13-56-38-736Z` verified 8,932 Firestore documents and 10,639 Storage objects; retention is capped at three complete runs and completed runs request OneDrive online-only storage. Revision `21145a19` is committed, pushed to `main`, and successfully deployed by Vercel. GitHub run `29942610867` passes both the full code gate and all nine hosted administrator/viewer browser smokes; run `29942608642` passes the Firebase emulator gate. The remaining Release Candidate work is representative author desktop/mobile acceptance and confirmation that the candidate is accepted for sustained content authoring.
+**Release evidence** — The earlier v1 candidate at `21145a19` passed full lint, production typecheck, 165 active Jest suites and 891 tests, the declared emulator gate, a clean no-secret production build, paired backup, GitHub integrity checks, and hosted administrator/viewer browser smokes. The accepted baseline is now revision `b06b07f5`, which incorporates the later authoring-workflow and dimensional-filter corrections. Its complete runnable Jest gate passes 171 suites and 971 tests, with three suites and 24 tests skipped by their declared environment gate; production typecheck, touched-code lint, and the optimized production build pass. `main`, Vercel Preview, and Vercel Production resolve to that revision, and the public landing and sign-in routes return successfully. The author accepted `b06b07f5` on 2026-10-26 as the current revision from which further work proceeds. This revision acceptance settles source and deployment divergence; it does not pre-approve the current tagging, story-building, media-intake, mobile, tenancy, or product-boundary approach as the final direction.
 
 ### 2. Media Intake and Tagging
 

@@ -6,7 +6,7 @@ This file is a concise operational handoff for the next project session. It is n
 
 - `01` remains the owner of vision, architecture, technical principles, and stable invariants. Structural boundaries and operating closeout are now verified architecture rather than Planned constraints.
 - `02` records current product truth, including completed Reader navigation and presentation, authoring alignment, account-backed Light/Dark choice, governed Theme standardization, administration feedback, service/component boundaries, and operational recovery.
-- `03` records verified implementation state and remaining work. Parts 1–3 and the agent-owned Release Candidate engineering gate passed. Revision `21145a19` is the deployed v1 authoring candidate; representative author desktop/mobile acceptance remains. Broader first-user usability, identity merge/split, face assistance, and import-source expansion remain deferred.
+- `03` records verified implementation state and remaining work. Parts 1–3 and the agent-owned Release Candidate engineering gate passed. Revision `b06b07f5` is the accepted current baseline on local `main`, `origin/main`, Vercel Preview, and Vercel Production. This settles the former revision divergence but does not treat the present tagging, story-building, media-intake, mobile, tenancy, or product-boundary approach as final. Broader first-user usability, identity merge/split, face assistance, and import-source expansion remain deferred unless the forthcoming product reassessment changes canon and sequencing explicitly.
 
 ## Delivered and verified
 
@@ -46,9 +46,10 @@ This file is a concise operational handoff for the next project session. It is n
 
 ## Next required sequence
 
-1. Author-validate deployed revision `21145a19` on representative administrator and reader accounts across desktop and mobile, including authentication, Studio authoring, Reader navigation/editing, Theme persistence, and media presentation.
-2. If that representative use exposes a release-blocking defect, repair only the bounded defect and repeat the exact-revision deployment gates. Otherwise record author acceptance and use this revision as the sustained content-authoring baseline.
-3. Keep first-user onboarding, identity merge/split, face assistance, Quote, Video, external photo libraries, Bursts, likely-match review, discretionary Theme tuning, major platform upgrades, and CSP deferred until explicitly reactivated.
+1. Use accepted revision `b06b07f5` as the single source and deployment baseline; do not reopen the resolved Preview-versus-Production branch divergence.
+2. Before activating another implementation slice, conduct the requested product and workflow reassessment. It must examine mobile-first use, native-library access versus application-owned import, tagging and story-building friction, the boundary between archive management and the story experience, and an evolutionary path to multi-tenancy without assuming that any one concern already requires a redesign.
+3. Distinguish observed usability defects and near-term validation from architectural options. No product split, native-app commitment, external-library adapter, tagging replacement, or multi-tenant expansion is authorized until the relevant problem, target journey, constraints, migration path, and verification gate are reconciled into `01`, `02`, and `03`.
+4. Keep identity merge/split, face assistance, Quote, Video, external photo libraries, Bursts, likely-match review, discretionary Theme tuning, major platform upgrades, and CSP deferred unless the reassessment explicitly reactivates and sequences one of them.
 
 ## Active vocabulary engineering gate
 
