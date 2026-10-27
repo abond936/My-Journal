@@ -72,3 +72,35 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+
+  integrity-gate:
+    name: integrity-gate
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - pr-gate
+      - e2e-smoke
+
+    steps:
+      - name: Verify required jobs
+        env:
+          PR_GATE_RESULT: ${{ needs.pr-gate.result }}
+          E2E_SMOKE_RESULT: ${{ needs.e2e-smoke.result }}
+          E2E_REQUIRED: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          if [ "$PR_GATE_RESULT" != "success" ]; then
+            echo "pr-gate result: $PR_GATE_RESULT"
+            exit 1
+          fi
+
+          if [ "$E2E_REQUIRED" = "true" ] && [ "$E2E_SMOKE_RESULT" != "success" ]; then
+            echo "e2e-smoke result: $E2E_SMOKE_RESULT"
+            exit 1
+          fi
+
+          if [ "$E2E_REQUIRED" != "true" ] && [ "$E2E_SMOKE_RESULT" != "success" ] && [ "$E2E_SMOKE_RESULT" != "skipped" ]; then
+            echo "e2e-smoke result: $E2E_SMOKE_RESULT"
+            exit 1
+          fi
+
+          echo "Required integrity jobs passed."
