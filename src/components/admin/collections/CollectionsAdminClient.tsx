@@ -346,6 +346,7 @@ export type EmbeddedStudioSlotContext = {
 };
 
 export default function CollectionsAdminClient({
+  initialCollectionId,
   onSelectCard,
   selectedCardIdExternal,
   embeddedExternalDragEnd,
@@ -358,6 +359,7 @@ export default function CollectionsAdminClient({
   embeddedCollectionsCollapsed = false,
   embeddedCardsCollapsed = false,
 }: {
+  initialCollectionId?: string | null;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
   selectedCardIdExternal?: string | null;
   embeddedExternalDragEnd?: (event: DragEndEvent, resolvedOverId?: string | null) => Promise<boolean> | boolean;
@@ -1491,6 +1493,7 @@ export default function CollectionsAdminClient({
               <section className={styles.panel}>
                 <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>Collections</h2>
                 <DurableCollectionStudioPane
+                  initialCollectionId={initialCollectionId}
                   onAvailabilityChange={setDurableCollectionAvailability}
                   onSelectCard={onSelectCard}
                 />

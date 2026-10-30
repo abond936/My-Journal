@@ -52,6 +52,10 @@ describe('AuthorDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument();
     expect(screen.getByText(/Draft work can continue/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'My Life' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'My Life' })).toHaveAttribute(
+      'href',
+      '/admin/studio?collection=my-life'
+    );
     expect(screen.getByText('87')).toBeInTheDocument();
     expect(screen.getByText('17')).toBeInTheDocument();
     expect(screen.getByText('278')).toBeInTheDocument();

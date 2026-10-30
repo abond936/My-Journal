@@ -1082,6 +1082,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The Author Home now begins with a responsive Needs Attention section for active durable Collections and explicitly states that draft work may continue. The shared evaluator deduplicates introduction and placement Card references, deduplicates cover/Gallery/body Media references, treats intentional Unknown and Not applicable resolutions as reviewed, and keeps unavailable audience selection distinct from author-fixable content work. Focused service, dashboard-service, and component suites pass 11 tests; touched-code lint and non-incremental production typecheck pass. A live read-only `my-life` evaluation reports 196 required Cards, zero missing Card records, 87 drafts, 196 Cards with dimensional review remaining, 196 without reviewed What meaning, 295 referenced Media IDs, 17 missing Media records, 201 loaded Media records with dimensional review remaining, and 278 loaded Media records with unassessed readiness. The Collection remains active/draft, and no Collection, Card, Media, audience, publication, sharing, or distribution record changed.
 
+### Ninth implementation slice — Truthful Collection attention handoff
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author move from a Collection-level Needs Attention summary to the exact durable Collection in Studio without inventing Collection-scoped Card or Media filters that the current owning surfaces cannot reproduce.
+
+**Includes** — A durable Collection ID query contract on Studio; automatic opening of the Collections pane for that explicit handoff; exact active-Collection selection after the authoritative list loads; safe fallback for missing or inactive IDs; a per-Collection Author Home link; focused component verification.
+
+**Excludes** — Collection-scoped Card or Media filtering; mutation of saved Card/Media filters; automatic pane changes during ordinary Studio entry; publication enforcement; content or lifecycle mutation; and links for attention populations whose current filter semantics do not match the shared evaluator.
+
+**Contracts** — The active Collection list remains authoritative. Studio never fetches a requested Collection structure until that ID is confirmed active. Ordinary Studio entry continues to honor the saved pane layout. An explicit Collection handoff may open and persist the Collections pane because that is the named destination. Card and new-Card query contracts continue independently. Unknown IDs degrade to the normal first-active selection.
+
+**Completion evidence** — Five focused suites pass 19 tests across the durable Collection pane, embedded Collections workspace, selection synchronization, Author Home, and saved Studio pane layout. Touched-code lint, non-incremental production typecheck, and the full production build pass. The build's unauthenticated static-theme reads use the existing checked-in fallback as designed. No Collection, Card, Media, filter, lifecycle, audience, sharing, or distribution record changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

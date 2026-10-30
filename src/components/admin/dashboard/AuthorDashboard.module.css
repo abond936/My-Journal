@@ -217,6 +217,15 @@
   font-size: var(--font-size-lg);
 }
 
+.collectionLink {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+.collectionLink:hover {
+  color: var(--admin-support-control-strong-text-color);
+}
+
 .lifecycle {
   border: var(--border-width-thin) solid var(--admin-support-control-border-color);
   border-radius: var(--border-radius-full);

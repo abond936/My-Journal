@@ -52,6 +52,11 @@ export default function StudioWorkspace() {
     const trimmed = raw?.trim();
     return trimmed ? trimmed : null;
   }, [searchParams]);
+  const requestedCollectionId = useMemo(() => {
+    const raw = searchParams.get('collection');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
   const newCardRequested = useMemo(() => {
     const raw = searchParams.get('new');
     if (!raw) return false;
@@ -64,6 +69,7 @@ export default function StudioWorkspace() {
   const {
     wideLayout,
     paneVisibility,
+    setPaneVisibility,
     studioRightColumnRef,
     cardEditColumnRef,
     questionsColumnRef,
@@ -71,6 +77,14 @@ export default function StudioWorkspace() {
     togglePane,
     embeddedRightSlotMinWidth,
   } = useStudioPaneLayout();
+  useEffect(() => {
+    if (!requestedCollectionId) return;
+    setPaneVisibility((current) => (
+      current.collectionsCollapsed
+        ? { ...current, collectionsCollapsed: false }
+        : current
+    ));
+  }, [requestedCollectionId, setPaneVisibility]);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
@@ -529,6 +543,7 @@ export default function StudioWorkspace() {
         <div className={wideLayout ? styles.grid : styles.gridStacked}>
           <div className={styles.collectionsHost}>
               <CollectionsAdminClient
+              initialCollectionId={requestedCollectionId}
               onSelectCard={requestSelectCard}
               onDeleteCard={async (card) => {
                 const confirmed = await feedback.confirm({
