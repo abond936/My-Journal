@@ -16,6 +16,7 @@ const DIMENSION_LABELS = {
 
 export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
   const mediaData = summary.media.status === 'ready' ? summary.media.data : null;
+  const collectionData = summary.collections.status === 'ready' ? summary.collections.data : null;
 
   return (
     <main className={styles.dashboard}>
@@ -33,6 +34,76 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
       </header>
 
       <div className={styles.sectionGrid}>
+        <section className={`${styles.section} ${styles.attentionSection}`} aria-labelledby="attention-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="attention-heading">Needs attention</h2>
+              <p>
+                Draft work can continue. These Collection checks become important when you choose to publish.
+              </p>
+            </div>
+            <Link className={styles.secondaryAction} href="/admin/studio">Open Collections in Studio</Link>
+          </div>
+          {collectionData ? (
+            collectionData.items.length > 0 ? (
+              <div className={styles.collectionAttentionList}>
+                {collectionData.items.map((item) => {
+                  const readinessAttention =
+                    item.mediaReadiness.pending +
+                    item.mediaReadiness.failed +
+                    item.mediaReadiness.unassessed;
+                  return (
+                    <article className={styles.collectionAttention} key={item.collectionId}>
+                      <div className={styles.collectionAttentionHeader}>
+                        <h3>{item.title}</h3>
+                        <span className={styles.lifecycle}>{item.lifecycle}</span>
+                      </div>
+                      <dl className={styles.reviewList}>
+                        <div>
+                          <dt>Draft cards</dt>
+                          <dd>{item.draftCards.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Cards with dimensional review remaining</dt>
+                          <dd>{item.cardsNeedingDimensionReview.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Cards without reviewed What meaning</dt>
+                          <dd>{item.cardsMissingMeaningfulWhat.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Missing card references</dt>
+                          <dd>{item.missingRequiredCards.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Missing media references</dt>
+                          <dd>{item.missingMedia.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Referenced media with review remaining</dt>
+                          <dd>{item.mediaNeedingDimensionReview.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Referenced media readiness attention</dt>
+                          <dd>{readinessAttention.toLocaleString()}</dd>
+                        </div>
+                        <div>
+                          <dt>Audience selection</dt>
+                          <dd className={styles.notAvailable}>Not yet available</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={styles.emptyState}>No active durable Collections yet.</p>
+            )
+          ) : (
+            <p className={styles.unavailable} role="status">Collection attention is temporarily unavailable.</p>
+          )}
+        </section>
+
         <section className={styles.section} aria-labelledby="cards-heading">
           <div className={styles.sectionHeader}>
             <div>

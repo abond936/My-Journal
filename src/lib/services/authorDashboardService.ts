@@ -1,5 +1,9 @@
 import { Filter, type Firestore, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import {
+  listActiveCollectionPublicationAttention,
+  type CollectionPublicationAttention,
+} from '@/lib/services/publicationReadinessService';
 import type { DimensionReviewEntry, DimensionReviewMap } from '@/lib/types/dimensionReview';
 
 export type DashboardSection<T> =
@@ -22,6 +26,10 @@ export type AuthorDashboardSummary = {
     attention: number;
     active: number;
     failed: number;
+  }>;
+  collections: DashboardSection<{
+    total: number;
+    items: CollectionPublicationAttention[];
   }>;
 };
 
@@ -234,11 +242,15 @@ async function readOperationSummary(firestore: Firestore) {
 export async function getAuthorDashboardSummary(
   firestore: Firestore = getAdminApp().firestore()
 ): Promise<AuthorDashboardSummary> {
-  const [cards, media, operations] = await Promise.all([
+  const [cards, media, operations, collections] = await Promise.all([
     section(() => readCardSummary(firestore)),
     section(() => readMediaSummary(firestore)),
     section(() => readOperationSummary(firestore)),
+    section(async () => {
+      const items = await listActiveCollectionPublicationAttention(firestore);
+      return { total: items.length, items };
+    }),
   ]);
 
-  return { generatedAt: Date.now(), cards, media, operations };
+  return { generatedAt: Date.now(), cards, media, operations, collections };
 }

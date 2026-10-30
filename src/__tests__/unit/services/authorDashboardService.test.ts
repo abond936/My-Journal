@@ -78,6 +78,13 @@ describe('authorDashboardService', () => {
     };
     const select = jest.fn();
     const collection = jest.fn((name: string) => {
+      if (name === 'collections') {
+        return {
+          where: jest.fn(() => ({
+            get: jest.fn().mockResolvedValue({ docs: [] }),
+          })),
+        };
+      }
       const query = (count: number) => ({
         count: () => ({
           get: jest.fn().mockResolvedValue({ data: () => ({ count }) }),
@@ -113,6 +120,10 @@ describe('authorDashboardService', () => {
       status: 'ready',
       data: { attention: 21, active: 9, failed: 12 },
     });
+    expect(summary.collections).toEqual({
+      status: 'ready',
+      data: { total: 0, items: [] },
+    });
     expect(select).not.toHaveBeenCalled();
   });
 
@@ -146,6 +157,10 @@ describe('authorDashboardService', () => {
     expect(summary.operations).toEqual({
       status: 'ready',
       data: { attention: 0, active: 0, failed: 0 },
+    });
+    expect(summary.collections).toEqual({
+      status: 'ready',
+      data: { total: 0, items: [] },
     });
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
