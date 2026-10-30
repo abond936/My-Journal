@@ -58,6 +58,42 @@ describe('DurableCollectionStudioPane', () => {
     expect(onSelectCard).toHaveBeenCalledWith('shared-card', expect.objectContaining({ docId: 'shared-card' }));
   });
 
+  it('selects a requested active Collection and falls back safely when it is unavailable', async () => {
+    const otherCollection = {
+      ...activeCollection,
+      docId: 'family-trip',
+      title: 'Family Trip',
+      order: 20,
+    };
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') {
+        return response({ ok: true, collections: [activeCollection, otherCollection] });
+      }
+      const requestedId = url.split('/').at(-2);
+      const collection = requestedId === otherCollection.docId ? otherCollection : activeCollection;
+      return response({ ok: true, collection, placements: [], cards: [] });
+    });
+    global.fetch = fetchMock as typeof fetch;
+
+    const { rerender } = render(
+      <DurableCollectionStudioPane
+        initialCollectionId="family-trip"
+        onAvailabilityChange={jest.fn()}
+      />
+    );
+    expect(await screen.findByRole('combobox', { name: 'Active Collection' })).toHaveValue('family-trip');
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/collections/family-trip/structure'));
+
+    rerender(
+      <DurableCollectionStudioPane
+        initialCollectionId="not-active"
+        onAvailabilityChange={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Active Collection' })).toHaveValue('my-life'));
+  });
+
   it('saves the complete graph with the expected revision when sibling order changes', async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

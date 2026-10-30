@@ -31,9 +31,11 @@ function structureInput(placement: CollectionPlacement): CollectionPlacementStru
 }
 
 export default function DurableCollectionStudioPane({
+  initialCollectionId,
   onAvailabilityChange,
   onSelectCard,
 }: {
+  initialCollectionId?: string | null;
   onAvailabilityChange: (availability: Availability) => void;
   onSelectCard?: (cardId: string, card?: Card | null) => void | Promise<boolean>;
 }) {
@@ -64,7 +66,10 @@ export default function DurableCollectionStudioPane({
           onAvailabilityChange('none');
           return;
         }
-        setSelectedCollectionId(items[0].docId);
+        const requestedCollection = initialCollectionId
+          ? items.find((item) => item.docId === initialCollectionId)
+          : null;
+        setSelectedCollectionId(requestedCollection?.docId ?? items[0].docId);
         onAvailabilityChange('active');
       } catch (loadError) {
         if (cancelled) return;
@@ -75,7 +80,7 @@ export default function DurableCollectionStudioPane({
     };
     void loadCollections();
     return () => { cancelled = true; };
-  }, [onAvailabilityChange]);
+  }, [initialCollectionId, onAvailabilityChange]);
 
   const loadStructure = useCallback(async (collectionId: string) => {
     if (!collectionId) return;

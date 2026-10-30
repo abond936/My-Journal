@@ -55,7 +55,14 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
                   return (
                     <article className={styles.collectionAttention} key={item.collectionId}>
                       <div className={styles.collectionAttentionHeader}>
-                        <h3>{item.title}</h3>
+                        <h3>
+                          <Link
+                            className={styles.collectionLink}
+                            href={`/admin/studio?collection=${encodeURIComponent(item.collectionId)}`}
+                          >
+                            {item.title}
+                          </Link>
+                        </h3>
                         <span className={styles.lifecycle}>{item.lifecycle}</span>
                       </div>
                       <dl className={styles.reviewList}>

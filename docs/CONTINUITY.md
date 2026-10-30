@@ -50,7 +50,7 @@ The ordinary Reader already requires a published Collection, every required Card
 Do not attempt to publish `My Life` by flipping existing Card statuses or the Collection lifecycle. The read-only Collection Needs Attention foundation is now implemented: unfinished work remains valid draft work while Author Home reports separate Card, Media, review, readiness, and audience-infrastructure areas. The remaining publication-integrity sequence is:
 
 1. Preserve the shared read-only readiness result as the owner for dashboard and diagnostic evidence; do not convert attention counts into automatic repair.
-2. Add truthful owning-surface handoffs only where Studio can reproduce the represented population.
+2. Preserve the delivered exact Collection-to-Studio handoff. Add other attention links only when their owning surface can reproduce the represented population; do not label broader global filters as Collection-scoped work.
 3. Define Card and Collection publication enforcement separately from draft authoring, including exact consequences and working-revision behavior.
 4. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
 5. Define audience/visibility separately from publication and distribution before any reader-facing activation.
