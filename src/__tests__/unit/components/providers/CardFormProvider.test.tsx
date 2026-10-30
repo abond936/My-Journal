@@ -6,13 +6,14 @@ import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
 const confirmMock = jest.fn();
+const showErrorMock = jest.fn();
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
     confirm: confirmMock,
     alert: jest.fn(async () => undefined),
     showSuccess: jest.fn(),
-    showError: jest.fn(),
+    showError: showErrorMock,
   }),
 }));
 
@@ -301,6 +302,27 @@ describe('CardFormProvider', () => {
 
     await userEvent.click(screen.getByTestId('patch-button'));
     await waitFor(() => expect(screen.getByTestId('save-status')).toHaveTextContent('error'));
+  });
+
+  it('shows the server publication reason when an instant status save fails', async () => {
+    mockOnSave.mockRejectedValue(
+      new Error('This Card cannot be published yet: confirm at least one meaningful What.')
+    );
+
+    render(
+      <CardFormProvider initialCard={mockCard} allTags={mockTags} onSave={mockOnSave}>
+        <TestComponent />
+      </CardFormProvider>
+    );
+
+    await userEvent.click(screen.getByTestId('patch-button'));
+
+    await waitFor(() => {
+      expect(showErrorMock).toHaveBeenCalledWith(
+        'This Card cannot be published yet: confirm at least one meaningful What.',
+        'Card not updated'
+      );
+    });
   });
 
   it('does not prompt on leave when nothing has marked the form dirty', async () => {

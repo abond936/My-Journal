@@ -1098,6 +1098,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Five focused suites pass 19 tests across the durable Collection pane, embedded Collections workspace, selection synchronization, Author Home, and saved Studio pane layout. Touched-code lint, non-incremental production typecheck, and the full production build pass. The build's unauthenticated static-theme reads use the existing checked-in fallback as designed. No Collection, Card, Media, filter, lifecycle, audience, sharing, or distribution record changed.
 
+### Tenth implementation slice — Card publication-integrity core
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Preserve unrestricted draft work while making draft-to-Published a real server-enforced integrity boundary for the Card and every Media item it references.
+
+**Includes** — One shared Card publication evaluator; completed Who/What/When/Where review with truthful Unknown and Not applicable resolution; at least one confirmed meaningful What; deduplicated cover, Gallery, and body Media references; rejection of missing Media; completed dimensional review and Ready processing state for every referenced Media item; enforcement in create-as-published, status-only, and broad Card mutation owners; structured HTTP 409 conflicts; exact author-facing failure feedback; optimistic status rollback; focused pure, service, provider, component, and emulator coverage.
+
+**Excludes** — Explicit Collection-or-Feed placement enforcement; audience, visibility, recipients, sharing, or distribution; Collection lifecycle publication; repair of historical Card or Media records; automatic confirmation; production data mutation; and protected working revisions for edits to already-published Cards.
+
+**Contracts** — Draft creation, autosave, and ordinary draft editing remain unrestricted. The gate runs only when a Card crosses from draft to Published or is created Published; returning to Draft and saving an already-published Card retain current behavior. All referenced Media are loaded inside the same Firestore transaction before publication-related writes, so missing, unreviewed, or unready Media fails the complete transition. The dashboard evaluator and mutation gate share the same dimensional-review completion rule. Meaningful What remains required even when What review was resolved Unknown or Not applicable. Placement and audience remain visibly incomplete specification areas rather than silently passing or being inferred.
+
+**Completion evidence** — The shared evaluator reports overlapping Card and Media failures with stable structured issue codes, deduplicates repeated Media references, and maps publication failure to HTTP 409. The status owner has focused tests proving invalid publication makes no Card write, valid publication succeeds, and unpublishing bypasses the publication gate. Card authoring displays the exact server reason and restores Draft after a rejected optimistic selection. Create-as-published emulator coverage uses publication-complete fixtures and proves an incomplete Card is rejected. Focused suites, touched-code lint, non-incremental production typecheck, the declared Firestore emulator gate, and the optimized production build pass. No Collection, Card, Media, lifecycle, audience, sharing, or distribution record changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

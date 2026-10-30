@@ -11,6 +11,12 @@ import {
 } from '@/lib/integrity/invariantChecks';
 
 const mockStorageFileSave = jest.fn(async () => undefined);
+const completeDimensionReview = {
+  who: { reviewed: true, resolution: 'unknown' as const },
+  what: { reviewed: true, resolution: 'unknown' as const },
+  when: { reviewed: true, resolution: 'unknown' as const },
+  where: { reviewed: true, resolution: 'unknown' as const },
+};
 
 jest.mock('sharp', () => {
   return () => ({
@@ -632,14 +638,15 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   it('createCard maintains published tag counts and derived fields', async () => {
     const db = getFirestore(app);
-    await seedWhoTags(db);
+    await seedWhoAndWhatTags(db);
     const { createCard } = await getCardService();
 
     const created = await createCard({
       title: 'Integrity create',
       type: 'story',
       status: 'published',
-      tags: ['who-child'],
+      tags: ['who-child', 'what-leaf'],
+      dimensionReview: completeDimensionReview,
       content: '',
     });
 
@@ -653,9 +660,22 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(tags.find((t) => t.docId === 'who-root')?.cardCount).toBe(1);
   });
 
+  it('createCard blocks an incomplete Card from being born Published', async () => {
+    const { createCard } = await getCardService();
+
+    await expect(createCard({
+      title: 'Incomplete publication',
+      type: 'story',
+      status: 'published',
+      content: '',
+    })).rejects.toMatchObject({
+      code: 'CARD_PUBLICATION_INTEGRITY',
+    });
+  });
+
   it('createCard reconciles enabled Gallery inheritance before returning', async () => {
     const db = getFirestore(app);
-    await seedWhoTags(db);
+    await seedWhoAndWhatTags(db);
     await db.collection('app_settings').doc('author').set({
       galleryTagInheritanceConfigured: true,
       galleryTagInheritance: { who: true, what: false, when: false, where: false },
@@ -664,6 +684,8 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
       docId: 'gallery-who',
       tags: ['who-child'],
       referencedByCardIds: [],
+      dimensionReview: completeDimensionReview,
+      readiness: { overall: 'ready' },
     });
     const { createCard } = await getCardService();
 
@@ -671,8 +693,9 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
       title: 'Inherited at creation',
       type: 'gallery',
       status: 'published',
-      tags: [],
+      tags: ['what-leaf'],
       galleryMedia: [{ mediaId: 'gallery-who', order: 0 }],
+      dimensionReview: completeDimensionReview,
       content: '',
     });
     const protectedCard = await createCard({
@@ -704,7 +727,8 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
       title: 'Tag swap',
       type: 'story',
       status: 'published',
-      tags: ['who-child'],
+      tags: ['who-child', 'what-leaf'],
+      dimensionReview: completeDimensionReview,
       content: '',
     });
 
@@ -725,14 +749,15 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
   it('deleteCard decrements published tag counts', async () => {
     const db = getFirestore(app);
-    await seedWhoTags(db);
+    await seedWhoAndWhatTags(db);
     const { createCard, deleteCard } = await getCardService();
 
     const created = await createCard({
       title: 'Delete me',
       type: 'story',
       status: 'published',
-      tags: ['who-child'],
+      tags: ['who-child', 'what-leaf'],
+      dimensionReview: completeDimensionReview,
       content: '',
     });
 
@@ -752,14 +777,25 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     const db = getFirestore(app);
     const { createCard, updateCardCover } = await getCardService();
 
-    await db.collection('media').doc('media-a').set({ referencedByCardIds: [] });
-    await db.collection('media').doc('media-b').set({ referencedByCardIds: [] });
+    await seedWhoAndWhatTags(db);
+    await db.collection('media').doc('media-a').set({
+      referencedByCardIds: [],
+      dimensionReview: completeDimensionReview,
+      readiness: { overall: 'ready' },
+    });
+    await db.collection('media').doc('media-b').set({
+      referencedByCardIds: [],
+      dimensionReview: completeDimensionReview,
+      readiness: { overall: 'ready' },
+    });
 
     const created = await createCard({
       title: 'Cover swap',
       type: 'story',
       status: 'published',
       coverImageId: 'media-a',
+      tags: ['what-leaf'],
+      dimensionReview: completeDimensionReview,
       content: '',
     });
 

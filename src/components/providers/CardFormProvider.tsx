@@ -668,11 +668,15 @@ export function CardFormProvider({ children, initialCard, allTags, onSave }: For
         return true;
       } catch (error) {
         console.error('[persistFieldPatch] Error during partial save:', error);
+        feedback.showError(
+          error instanceof Error ? error.message : 'This card could not be updated.',
+          'Card not updated'
+        );
         finishSaveFeedback(false);
         return false;
       }
     },
-    [onSave, cardContext, beginSaveFeedback, finishSaveFeedback]
+    [onSave, cardContext, beginSaveFeedback, feedback, finishSaveFeedback]
   );
 
   const resetForm = useCallback(() => {

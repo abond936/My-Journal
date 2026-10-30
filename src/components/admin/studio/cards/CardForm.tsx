@@ -216,10 +216,13 @@ const CardForm: React.FC = () => {
       ...(newAuto ? { excerpt: null } : {}),
     });
   }, [isExcerptAuto, lastSavedState.cardData, persistFieldPatch, setField]);
-  const persistStatusChange = useCallback((nextStatus: Card['status']) => {
+  const persistStatusChange = useCallback(async (nextStatus: Card['status']) => {
     setField('status', nextStatus);
     if (lastSavedState.cardData.status === nextStatus) return;
-    void persistFieldPatch({ status: nextStatus });
+    const saved = await persistFieldPatch({ status: nextStatus });
+    if (!saved) {
+      setField('status', lastSavedState.cardData.status ?? 'draft');
+    }
   }, [lastSavedState.cardData.status, persistFieldPatch, setField]);
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     persistStatusChange(e.target.value as Card['status']);
@@ -863,7 +866,7 @@ const CardForm: React.FC = () => {
             name="status-toggle"
             value="draft"
             checked={cardData.status === 'draft'}
-            onChange={() => persistStatusChange('draft')}
+            onChange={() => void persistStatusChange('draft')}
             className={styles.statusToggleInput}
           />
           <span className={styles.statusToggleLabel}>Draft</span>
@@ -879,7 +882,7 @@ const CardForm: React.FC = () => {
             name="status-toggle"
             value="published"
             checked={cardData.status === 'published'}
-            onChange={() => persistStatusChange('published')}
+            onChange={() => void persistStatusChange('published')}
             className={styles.statusToggleInput}
           />
           <span className={styles.statusToggleLabel}>Published</span>

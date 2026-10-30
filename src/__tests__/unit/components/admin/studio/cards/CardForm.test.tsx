@@ -7,6 +7,7 @@ import { Card } from '@/lib/types/card';
 import { Tag } from '@/lib/types/tag';
 
 const confirmMock = jest.fn();
+const showErrorMock = jest.fn();
 
 jest.mock('react-dnd', () => ({
   DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -118,7 +119,7 @@ jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
     alert: jest.fn(async () => undefined),
     confirm: confirmMock,
-    showError: jest.fn(),
+    showError: showErrorMock,
   }),
 }));
 
@@ -308,6 +309,23 @@ describe('CardForm', () => {
     await waitFor(() => {
       expect(mockOnSave).toHaveBeenCalledWith({ status: 'published' });
     });
+  });
+
+  it('returns to Draft and explains why a publication attempt was blocked', async () => {
+    mockOnSave.mockRejectedValue(
+      new Error('This Card cannot be published yet: review Card what, when, where.')
+    );
+
+    renderCardForm();
+
+    const statusSelect = screen.getByLabelText('Status');
+    await userEvent.selectOptions(statusSelect, 'published');
+
+    await waitFor(() => expect(statusSelect).toHaveValue('draft'));
+    expect(showErrorMock).toHaveBeenCalledWith(
+      'This Card cannot be published yet: review Card what, when, where.',
+      'Card not updated'
+    );
   });
 
   it('saves tags on command-bar update', async () => {
