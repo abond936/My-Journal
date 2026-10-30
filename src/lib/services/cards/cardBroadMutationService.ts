@@ -6,7 +6,11 @@ import {
   readChildPlacementReconciliation,
   wouldCreateCycle,
 } from '@/lib/services/cards/cardHierarchyMutationService';
-import { getExistingMediaDocIdsInTransaction } from '@/lib/services/cards/cardMediaMutationIntegrity';
+import {
+  getExistingMediaDocIdsInTransaction,
+  getMediaMapInTransaction,
+} from '@/lib/services/cards/cardMediaMutationIntegrity';
+import { assertCardPublicationIntegrity } from '@/lib/services/cards/cardPublicationIntegrityService';
 import { syncCardProjection as syncCardToTypesense, withCardMutationRetry as withRetry } from '@/lib/services/cards/cardMutationSupport';
 import { computeDimensionSortKeys } from '@/lib/services/cards/cardTagRules';
 import {
@@ -305,6 +309,25 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         transaction,
         checkedMediaIds
       );
+
+      if (cleanedUpdate.status === 'published' && existingData.status !== 'published') {
+        const publicationMediaById = await getMediaMapInTransaction(
+          firestore,
+          transaction,
+          newMediaIds
+        );
+        assertCardPublicationIntegrity(
+          {
+            ...existingData,
+            ...cleanedUpdate,
+            docId: cardId,
+            coverImageId: newCover,
+            galleryMedia: newGalleryMedia,
+            contentMedia: newContentMedia,
+          },
+          publicationMediaById
+        );
+      }
 
       // --- Update tag counts using centralized function ---
       await updateTagCountsForCard(

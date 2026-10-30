@@ -31,6 +31,7 @@ import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService
 import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
 import { updateCardTagAssignmentWithInheritance } from '@/lib/services/galleryTagInheritanceService';
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import { AppError, ErrorCode } from '@/lib/types/error';
 
 jest.mock('next/server', () => ({
   NextResponse: {
@@ -370,6 +371,30 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     expect(mockedUpdateCardTags).not.toHaveBeenCalled();
     expect(mockedUpdateCardStatus).not.toHaveBeenCalled();
     expect(payload.title).toBe('Renamed');
+  });
+
+  it('returns the publication-integrity conflict from the status owner', async () => {
+    mockedIsStatusOnlyPayload.mockReturnValue(true);
+    mockedUpdateCardStatus.mockRejectedValue(
+      new AppError(
+        ErrorCode.CARD_PUBLICATION_INTEGRITY,
+        'This Card cannot be published yet: confirm at least one meaningful What.',
+        { issues: [{ code: 'card-meaningful-what' }] }
+      )
+    );
+
+    const res = await PATCH(makeRequest({ status: 'published' }), {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+    const payload = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(payload).toMatchObject({
+      code: ErrorCode.CARD_PUBLICATION_INTEGRITY,
+      message: 'This Card cannot be published yet: confirm at least one meaningful What.',
+      details: { issues: [{ code: 'card-meaningful-what' }] },
+    });
+    expect(mockedUpdateCardStatus).toHaveBeenCalledWith('card-1', 'published');
   });
 
   it('routes subject-only payloads through the narrow tag-assignment path', async () => {

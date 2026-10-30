@@ -20,6 +20,8 @@ import { buildTagMap, computeJournalWhenSortKeys } from '@/lib/utils/journalWhen
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 import { getMediaIdsFromCard, computeCardMediaSignalsFromMediaIds, stripHydratedGalleryItem } from '@/lib/services/cards/cardMediaHydrationService';
+import { getMediaMapInTransaction } from '@/lib/services/cards/cardMediaMutationIntegrity';
+import { assertCardPublicationIntegrity } from '@/lib/services/cards/cardPublicationIntegrityService';
 import { FieldValue } from 'firebase-admin/firestore';
 import { assertCardHasNoCollectionPlacements } from '@/lib/services/collections/collectionCardReferenceService';
 
@@ -168,6 +170,14 @@ export async function createCard(
   // Use a transaction to ensure atomicity with retry logic
   await withRetry(async () => {
     return firestore.runTransaction(async (transaction) => {
+      if (newCard.status === 'published') {
+        const publicationMediaById = await getMediaMapInTransaction(
+          firestore,
+          transaction,
+          getMediaIdsFromCard(newCard)
+        );
+        assertCardPublicationIntegrity(newCard, publicationMediaById);
+      }
       // 1. Update tag counts before transaction writes begin.
       await updateTagCountsForCard(null, newCard, transaction, tagPathLookup);
 

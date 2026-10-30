@@ -7,8 +7,8 @@ import {
 } from '@/lib/services/collections/collectionProjectionReadService';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
-import type { DimensionReviewEntry } from '@/lib/types/dimensionReview';
 import type { Media } from '@/lib/types/photo';
+import { isDimensionReviewComplete } from '@/lib/services/cards/cardPublicationIntegrityService';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
@@ -32,14 +32,6 @@ export type CollectionPublicationAttention = {
   };
   audienceSelectionAvailable: false;
 };
-
-function isDimensionComplete(entry: DimensionReviewEntry | undefined): boolean {
-  return (
-    entry?.reviewed === true ||
-    entry?.resolution === 'unknown' ||
-    entry?.resolution === 'not_applicable'
-  );
-}
 
 function referencedMediaIds(cards: Card[]): string[] {
   const ids = new Set<string>();
@@ -78,15 +70,15 @@ export function evaluateCollectionPublicationAttention(args: {
     missingRequiredCards: requiredCardIds.size - requiredCards.length,
     draftCards: requiredCards.filter((card) => card.status !== 'published').length,
     cardsNeedingDimensionReview: requiredCards.filter((card) =>
-      DIMENSIONS.some((dimension) => !isDimensionComplete(card.dimensionReview?.[dimension]))
+      DIMENSIONS.some((dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension]))
     ).length,
     cardsMissingMeaningfulWhat: requiredCards.filter((card) =>
-      !isDimensionComplete(card.dimensionReview?.what) || (card.what?.length ?? 0) === 0
+      !isDimensionReviewComplete(card.dimensionReview?.what) || (card.what?.length ?? 0) === 0
     ).length,
     referencedMedia: mediaIds.length,
     missingMedia: mediaIds.length - referencedMedia.length,
     mediaNeedingDimensionReview: referencedMedia.filter((item) =>
-      DIMENSIONS.some((dimension) => !isDimensionComplete(item.dimensionReview?.[dimension]))
+      DIMENSIONS.some((dimension) => !isDimensionReviewComplete(item.dimensionReview?.[dimension]))
     ).length,
     mediaReadiness: {
       ready: referencedMedia.filter((item) => item.readiness?.overall === 'ready').length,

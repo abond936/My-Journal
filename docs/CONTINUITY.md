@@ -33,7 +33,7 @@ The new `audit:collection-publication` command is read-only. Its 2026-10-30 prod
 - All 278 loaded Media records have unassessed rendition readiness; 77 have all four dimensions reviewed.
 - No audience-, visibility-, access-, recipient-, or sharing-like Collection field.
 
-The ordinary Reader already requires a published Collection, every required Card published, and no missing required Card. However, Card publication does not yet enforce the canon integrity contract, and Collection publication, audience groups, guest recipients, and distribution notifications are not implemented. `My Life` is therefore not publication-ready and remains draft.
+The ordinary Reader already requires a published Collection, every required Card published, and no missing required Card. Draft-to-Published Card mutations now enforce the implemented Card-level integrity core: dimensional review, meaningful What, referenced-Media existence and review, and Media readiness. The complete canon publication contract is still unfinished because explicit Collection-or-Feed placement, protected working revisions, Collection publication, audience groups, guest recipients, and distribution notifications are not implemented. `My Life` is therefore not publication-ready and remains draft.
 
 ## Current product direction
 
@@ -51,7 +51,7 @@ Do not attempt to publish `My Life` by flipping existing Card statuses or the Co
 
 1. Preserve the shared read-only readiness result as the owner for dashboard and diagnostic evidence; do not convert attention counts into automatic repair.
 2. Preserve the delivered exact Collection-to-Studio handoff. Add other attention links only when their owning surface can reproduce the represented population; do not label broader global filters as Collection-scoped work.
-3. Define Card and Collection publication enforcement separately from draft authoring, including exact consequences and working-revision behavior.
+3. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Define the remaining explicit placement consequence, protected working-revision behavior, and Collection publication owner before expanding enforcement.
 4. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
 5. Define audience/visibility separately from publication and distribution before any reader-facing activation.
 6. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.

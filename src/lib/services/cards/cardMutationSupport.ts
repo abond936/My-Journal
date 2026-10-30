@@ -1,6 +1,7 @@
 import type { Card } from '@/lib/types/card';
 import { QuestionAnswerConflictError } from '@/lib/services/questionService';
 import { removeCardFromTypesense, syncCardToTypesense } from '@/lib/services/typesenseService';
+import { isAppError } from '@/lib/types/error';
 
 export async function withCardMutationRetry<T>(
   operation: () => Promise<T>,
@@ -17,6 +18,7 @@ export async function withCardMutationRetry<T>(
         lastError.message.includes('permission') ||
         lastError.message.includes('validation') ||
         lastError.message.includes('not found') ||
+        isAppError(error) ||
         error instanceof QuestionAnswerConflictError
       ) {
         throw error;

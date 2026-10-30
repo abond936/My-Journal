@@ -22,6 +22,8 @@ export enum ErrorCode {
   CURATED_COLLECTION_CHILD_NOT_FOUND = 'CURATED_COLLECTION_CHILD_NOT_FOUND',
   /** Card deletion is blocked while one or more durable Collection placements reference it. */
   COLLECTION_PLACEMENT_REFERENCE = 'COLLECTION_PLACEMENT_REFERENCE',
+  /** A draft Card failed the required integrity checks for publication. */
+  CARD_PUBLICATION_INTEGRITY = 'CARD_PUBLICATION_INTEGRITY',
 }
 
 // Standard API error response interface
@@ -91,6 +93,7 @@ export function getStatusCodeForError(code: ErrorCode): number {
     case ErrorCode.CONFLICT:
     case ErrorCode.CURATED_COLLECTION_CYCLE:
     case ErrorCode.COLLECTION_PLACEMENT_REFERENCE:
+    case ErrorCode.CARD_PUBLICATION_INTEGRITY:
       return 409;
     case ErrorCode.EXTERNAL_SERVICE_ERROR:
     case ErrorCode.MEDIA_PROCESSING_ERROR:
