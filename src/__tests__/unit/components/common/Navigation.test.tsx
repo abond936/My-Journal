@@ -35,6 +35,7 @@ describe('Navigation hierarchy', () => {
     expect(labels).toEqual([
       'Home', 'Reader', 'Studio', 'Users', 'Settings', 'Theme', 'Account',
     ]);
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('button', { name: 'Light' })).toBeInTheDocument();
     expect(screen.queryByText('Landing Page 1')).toBeNull();
   });
@@ -45,6 +46,7 @@ describe('Navigation hierarchy', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
 
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Reader' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Studio' })).toBeNull();

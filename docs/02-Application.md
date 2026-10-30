@@ -16,14 +16,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Private** — One author controls a private archive for named readers; future sharing begins from private work rather than a common raw-media pool.
 - **Integrated** — Media, stories, tags, questions, and collections form one product.
 - **Assisted** — The system suggests; the author confirms.
-- **Responsive** — Reader is mobile-first; Administration is desktop-primary.
+- **Responsive** — Reader is mobile-first; individual Story authorship is adaptive across phone and desktop; archive-scale Administration remains desktop-primary.
 
 ✅ **Complete**
 
-- **Reader** — Published stories and media in Freeform and Guided experiences.
+- **Reader** — Published stories and media through Collection and Feed entry paths over the delivered curated and freeform reading mechanisms.
 - **Administration** — Protected Studio, Users, Themes, Settings, and operations.
 - **Content** — Story, Gallery, Question, and Callout forms.
 - **State communication** — Loading, empty, success, warning, error, and unavailable states appear only when true. Normal asynchronous work does not masquerade as missing data, and recoverable failures provide a useful next action where one exists.
+- **Role-aware authenticated entry** — Safe internal callbacks remain authoritative. Without one, reader-only accounts enter Reader and the author-administrator enters Author Home; Reader remains available to the administrator through normal navigation.
+- **Reader Home** — Fresh ordinary Reader entry offers Continue Reading when meaningful, Collections, and Feed. It has no sidebar until the reader selects a path.
 
 ⭕2 **Future**
 
@@ -51,14 +53,17 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ✅ **Complete**
 
 - **Entry** — Public landing and credential sign-in.
+- **Authenticated entry resolution** — Safe direct destinations resolve first; otherwise reader-only accounts enter `/view` and the author-administrator enters `/admin`.
 - **Reader** — Top and left navigation for Reader destinations and filters.
 - **Administration** — Authorized routes to Studio and specialist surfaces.
+- **Reader paths** — Reader Home, Collections, and Feed are the principal Reader destinations. A returning active session may restore its exact reading context; a fresh entry exposes Continue without trapping the reader in the previous destination.
 
 📋 **Contracts**
 
-- `/` is public; `/login` is the single authentication entry; `/view` is the default authenticated Reader destination.
+- `/` is public; `/login` is the single authentication entry; `/view` is the default reader-only destination and `/admin` is the default administrator destination.
 - Navigation state must not corrupt browser history or unexpectedly return an authenticated user to the landing page.
 - Menu links open their owning surfaces rather than embedding their behavior.
+- A direct Collection or Card link preserves its encoded reading context when authorized. A standalone Card link does not choose an arbitrary Collection merely because the Card appears in one or more authored paths.
 
 ### Landing Page
 
@@ -86,7 +91,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ✅ **Complete**
 
 - **Credentials** — Username and password authentication.
-- **Routing** — Safe callback destination with `/view` fallback.
+- **Routing** — Safe callback destination with role-aware `/view` or `/admin` fallback.
 - **Errors** — Generic authentication failure without account disclosure.
 
 📋 **Contracts**
@@ -108,22 +113,35 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Return** — Reader detail preserves safe feed, search, query, card-focus, and scroll context with direct-entry fallback.
 - **Appearance** — The quick account-backed action offers Light with a sun when Dark is active and Dark with a moon when Light is active; Account retains the personal placeholder.
 
+⭕1 **Planned**
+
+- **Reader/Author switch** — Give the author-administrator a persistent, clear way to move between Reader and Author after role-aware entry; readers never receive the Author destination.
+
 ⭕2 **Future**
 
 - **Help** — Deliver product guidance beyond essential contextual copy through an in-app surface. The support User's Guide now establishes the initial author method for product purpose, starting small, and designing Tags; the remaining guide and its in-app delivery are not complete.
 
 ### Left Navigation
 
-*Intent* — Support Freeform discovery and Guided authored navigation without turning the Reader into an administrative workspace.
+*Intent* — Let a reader choose Collection or Feed context and navigate that context without turning the Reader into an administrative workspace.
 
 ✅ **Complete**
 
-- **Modes** — Freeform and Guided navigation.
+- **Modes** — Reader-facing Collections and Feed navigation over the compatible `guided` and `freeform` route modes.
 - **Filters** — Dimensional tag filtering and Subject-only scope.
 - **Collections** — Published authored tree in Guided mode.
 - **Author editing** — Administrator-only entry to edit the current card and its visible media without leaving Reader context.
 - **Hierarchy** — Mode, Type, Tags, collection, count, and administrative controls have distinct hierarchy in their applicable Reader modes.
 - **Mobile** — The drawer preserves practical open/close behavior without replacing browser-edge navigation gestures.
+- **No pre-path sidebar** — Bare Reader Home has no contextual sidebar, toggle, or mobile opening gesture. The contextual sidebar appears after the reader selects Collections or Feed and remains available for direct reading routes.
+- **Mode selection** — Collections and Feed are the reader-facing choices on Reader Home and at the top of the contextual sidebar.
+- **Collection contents** — The delivered root-Card and nested-Card hierarchy uses full-row selection, separate 44-pixel expand/collapse controls, restrained indentation, strong current-location treatment, retained expansion, and automatic mobile drawer closure after selection.
+- **Feed context** — A sticky main-page context band shows a stable Feed title, a separately labelled single-author archive scope, and horizontal Who/What/When/Where summaries with selected values listed vertically and `All` for unrestricted dimensions. Selecting a dimension opens the existing sidebar on that filter; on mobile the same action opens the drawer.
+- **Responsive context** — Desktop keeps the contextual sidebar available; mobile presents the same Collection contents or Feed filters in the drawer without changing the information architecture.
+
+⭕1 **Planned**
+
+- **Multi-author Feed selection** — When the product gains truthful multi-author Card attribution and shared archives, extend the separate `Stories from` area into author selection. Authorship remains distinct from Who/What/When/Where and is not inferred from Who tags.
 
 ⭕2 **Future**
 
@@ -131,7 +149,10 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 📋 **Contracts**
 
-- Freeform uses filters and discovery; Guided uses published collection structure and order.
+- Feed uses the delivered freeform filters and discovery; Collections uses the delivered guided published structure and order.
+- `guided` and `freeform` remain internal compatibility tokens until deeper Reader migration is justified; they are not competing reader-facing product modes.
+- Collection context uses the published nested hierarchy to select the Card feed. Choosing a Part, Chapter, or Section updates the feed directly rather than requiring intermediary overview pages or repeated drill-down before Cards are readable.
+- Feed context retains the reader's author and dimensional filters, Card position, and return state. Collection context retains the selected Collection placement, expanded contents, current Part, Chapter, or Section, Card position, and return state.
 - Viewing users are read-only; Reader mutations remain administrator-authorized server-side.
 - Authors may edit the current card and visible media as fully as practical while preserving their Reader position.
 - Studio remains the primary workspace for archive-wide, bulk, and taxonomy-structure operations; Reader retains contextual assignment and correction.
@@ -145,7 +166,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 *Principles*
 
 - **Visual** — Media and concise framing lead into stories.
-- **Flexible** — Freeform supports discovery; Guided supports authored sequence.
+- **Flexible** — Feed supports discovery; Collection supports authored sequence.
 - **Type-aware** — Content forms share a system but retain meaningful differences.
 - **Readable** — Long-form content favors sustained mobile reading.
 
@@ -155,12 +176,25 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Forms** — Story, Gallery, Question, and Callout presentation.
 - **Tags** — Who, What, When, and Where context on cards.
 - **Continuation** — Freeform discovery and Guided child continuation.
+- **Collection context** — A persistent context band shows the selected parent title, actual clicked hierarchy breadcrumb, and visible child count, including while the section loads or has no visible children. The selected structural parent is context rather than a duplicate feed tile.
+- **Feed reading-context band** — Feed mode has a stable title, separately labelled `Stories from` scope, and compact Who/What/When/Where summary without repeating the complete filter control surface.
+- **Feed title and author scope** — v1 truthfully labels `This archive` under `Stories from`; it does not imply unavailable author choice or treat authorship as a Who tag.
+- **Dimensional summary** — Who, What, When, and Where appear horizontally, each selected dimension lists its values vertically, unrestricted dimensions show a quiet `All`, and each summary opens the corresponding existing sidebar filter.
+- **Parent introduction** — When the selected parent Card has authored subtitle, cover, prose, embedded Media, or Gallery content, the Collection context expands into an introduction before the child Card feed. The parent is not repeated as a child tile; a title-only parent remains the compact context band.
+- **Introduction length** — Short introductions render completely. Rendered overflow, not character count, produces a bounded preview with in-place `Continue reading` and `Show less`; expansion persists while the selected parent remains active, resets when the parent changes, uses a smaller mobile allowance, and prints in full.
+
+⭕1 **Planned**
+
+- **Feed author selection** — Replace the truthful single-author archive label with horizontal author selection only after the data and access model can identify multiple authors correctly.
 
 📋 **Contracts**
 
+- Browse and explicit graphical Who/What/When/Where filtering are foundational Reader retrieval. A future natural-language request interprets into those controlled criteria rather than replacing them or creating a separate content destination.
 - Question is a distinct content form; its Reader presentation remains defined here.
 - Quote is not complete merely because schema or renderer scaffolding exists.
 - Published content only; draft structure remains hidden.
+- Content determines whether the selected parent renders as a title-only context or a richer introduction. Independent Feed inclusion remains an explicit author publication decision and never changes silently because introductory content was added or removed.
+- Introduction expansion is content- and viewport-dependent rather than another required author setting. Mobile may use a smaller initial allowance than desktop, but both preserve the same authored content and expose the expansion clearly. Reader preview shows the applicable bounded or full presentation.
 - Navigate, Inline, and Static govern presentation in the Content Grid; contextual destination rails may represent any published type as a compact link without changing its authored presentation.
 
 ### Content Page
@@ -211,6 +245,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕2 **Future**
 
+- **Transparent Ask** — Let a reader express an ordinary-language memory request and show the interpreted Who, What, When, Where, relationship, and time criteria as correctable graphical controls before presenting results in the same Reader system used by Browse and Filter. Direct Story meaning, derived visible-Media facts, private archival Media, authorization, and publication scope remain distinguishable.
 - **Quote (parked)** — Define quotation, attribution, media, context, and open behavior when Quote returns to the active sequence; current renderer scaffolding is not the final product.
 - **Utility typography (parked with Quote)** — Revisit cross-type Question, Quote, and Callout hierarchy when Quote is active rather than redesigning stable treatments around an unfinished type.
 - **Polish** — Additional Gallery indicators and feed-specific interactions.
@@ -279,6 +314,21 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Shell** — Coherent entry and primary navigation for Studio, Users, Settings, and Theme; specialist pages exclude Reader/Studio chrome.
 - **Feedback** — Success, error, warning, progress, confirmation, and blocking behavior use shared semantic states and bounded workflow ownership.
 - **Boundary** — Viewing users remain read-only; authors have practical in-context Reader editing; archive-wide and bulk organization remain in Studio.
+- **Desktop Author Home foundation** — Administrator-only `/admin` is a read-only Author Home with Continue in Studio, Card totals by status, Media totals and unresolved Who/What/When/Where review counts, failed Media processing, and active or failed durable-operation counts. Home navigation returns administrators to this overview; truthful Card-status actions set only the existing Studio Card filter, while Media and operations use honest owning-surface links where no equivalent filter handoff exists.
+- **Role-aware fresh entry** — Successful credential login and an already-authenticated `/login` visit preserve a safe explicit callback; without one, Authors enter the delivered Author Home and Readers enter Reader.
+
+⭕1 **Planned**
+
+- **Mobile Author entry** — Fresh Author entry opens the same Author Home in a touch-first presentation. Cards remains the default object-work destination, with Continue Draft, Create Card, Drafts, recent publication, and required-attention context rather than attempting to reproduce the multi-pane Studio.
+- **Author dashboard expansion** — Extend the delivered Card, Media-review, and durable-operation foundation with bounded import progress, publication integrity, Collection activity, recent accomplishment, and matching mobile-destination indicators only as their authoritative state and truthful destination handoffs are defined.
+
+📋 **Planned dashboard contracts**
+
+- Do not introduce a general Task entity merely to mirror existing object state. Draft Cards, publication blockers, incomplete imports, unresolved Media dimensions, unidentified people, failed processing, and Collection issues remain owned by their existing records and services.
+- Unknown and Not applicable count as completed dimensional review. Neutral available-work counts remain visually distinct from failures and integrity blockers.
+- Global life-story completion is never fabricated. Percentages and completed/remaining counts require a bounded population such as one import, review set, publication checklist, or explicitly chosen body of work.
+- Local indicators lead to the same truth summarized centrally; dashboard and pane counts cannot diverge into separate progress systems.
+- Author Home is reached through upper application Home/navigation rather than consuming a mobile bottom-navigation position. Returning to active object work preserves that destination; the dashboard does not repeatedly interrupt an in-progress session.
 
 ⭕2 **Future**
 
@@ -290,6 +340,35 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Pending suggestions remain until accepted or dismissed; reruns may update only unconfirmed suggestions.
 - Dismissed suggestions do not reappear from the same analysis unless the author explicitly rebuilds them.
 - Acceptance uses the same confirmed mutation path as manual work.
+
+### Adaptive Author Navigation
+
+*Intent* — Present the same primary authoring objects through a simultaneous desktop workspace and a sequential mobile workspace without creating separate product truth. Card is the shared content object; Story is one Card type alongside Gallery, Question, Callout, and any later approved type.
+
+*Principles*
+
+- **Desktop is spatial** — The configurable Studio keeps multiple object panes visible for comparison, selection, and drag-and-drop.
+- **Mobile is sequential** — One focused object destination occupies the phone screen at a time; explicit actions replace cross-pane drag-and-drop.
+- **Shared domain** — Cards, Media, prompt records, Collections, and Tags retain the same identity, permissions, validation, and mutations on both surfaces; the planned Prompt Library succeeds rather than duplicates the delivered Questions domain.
+- **Scope by interaction** — Mobile supports complete individual-Story work and useful contextual object work; dense, bulk, structural, and recovery operations remain desktop-primary.
+
+⭕1 **Planned**
+
+- **Mobile destinations** — Provide labelled bottom navigation for Cards, Media, Prompts, Collections, and Tags. Cards is the default object-work destination; Author Home remains in upper application navigation rather than becoming a sixth bottom item. Reader/Author switching, account, appearance, and settings remain in upper application navigation.
+- **Cards destination** — Create, resume, edit, preview, publish, correct, and find Cards across Story, Gallery, Question, Callout, and later approved types; surface drafts, recent publication, and required integrity attention without turning optional suggestions into failures. Create Story remains a type-specific action rather than the name of the destination.
+- **Media destination** — Capture or import from camera, device library, or Files; browse, search, filter, classify, and select Media; and explicitly create an applicable Card or add the selection to an existing Card.
+- **Prompts destination** — Browse, filter, and curate the structured Prompt Library. Authored responses do not begin here; the author opens or creates a Card and invokes prompts from that Card's authoring flow.
+- **Collections destination** — Browse the hierarchy, inspect Story membership, place a Story, perform simple ordering, and create lightweight Collection, Part, Chapter, or Section destinations. Broad restructuring remains desktop-primary.
+- **Tags destination** — Browse and search Who, What, When, and Where; inspect matching Stories and Media; make contextual assignments; add a missing identity or term through the governed path; and perform simple corrections. Hierarchy restructuring, merge or split, and collection-scale correction remain desktop-primary.
+- **Desktop visual operation** — Retain configurable panes while improving image-forward tiles, full-row hierarchy targets, pane controls, active-object and relationship states, drag previews, drop explanations, resizing, and contextual primary actions. Visual modernization does not replace the object-based Studio architecture.
+
+📋 **Contracts**
+
+- Mobile cross-object work uses explicit actions such as Create Story, Create Gallery, Add to existing Card, Add writing prompts, Add to Collection, Edit tags, and View matching Cards and Media.
+- Entering full-screen Story creation may temporarily replace global bottom navigation with the Story sections Words, Media, Details, Placement, and Preview plus a clear Back or Close action. Autosave and transition protection preserve work.
+- Each destination retains its own safe search, filters, selection, and position when the author moves between destinations. Cross-object actions carry only explicit context and do not create hidden global selection state.
+- Required-attention counts and optional AI suggestions appear as distinguishable badges or contextual actions inside their owning destinations. They do not become additional bottom-navigation items or a separate AI-centric workspace.
+- Desktop and mobile may differ in presentation and available scale of operation, but they do not define different Card, Media, Question, Collection, Tag, classification, or publication truth.
 
 ### Studio Cards
 
@@ -358,6 +437,41 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Drag targets have distinct meaning: Cover replaces, Gallery appends, body inserts, Children attaches.
 - Story Assist is editorial, voice-preserving, and suggestion-only; guides may shape tone but never invent facts.
 
+### Mobile Story Authorship
+
+*Intent* — Let an author complete one Story on a phone while preserving the same durable Card, Media, classification, placement, access, and publication truth used by Studio.
+
+*Principles*
+
+- **Complete individual Story** — Mobile supports the full individual-Story journey; it is not limited to a reduced editor that fails when rich or embedded Media is present.
+- **Adaptive, not compressed** — Present graphical, touch-first sections for words and voice, Media, details and tags, Collection placement, preview, and publication rather than reproducing the multi-pane Studio on a narrow screen.
+- **Draft freedom; publication integrity** — Creation and autosave remain friction-light. Publication is the deliberate integrity checkpoint.
+- **Shared model** — Mobile and desktop edit the same Card and Media relationships. Unsupported content is preserved rather than flattened, discarded, or hidden behind an unsafe editor choice.
+- **Bounded stewardship** — Desktop remains primary for archive-scale import, contact-sheet comparison, bulk classification, taxonomy restructuring, identity merge or split, relationship-graph inspection, Collection restructuring, backup, and recovery.
+
+⭕1 **Planned**
+
+- **Entry, editing, and recovery** — Start a Story, open or resume a draft, edit desktop-created Stories safely, use typing or device dictation, autosave with truthful state, recover interrupted work, preview, and leave without publishing.
+- **Voice capture** — Record speech as canonical audio Media, transcribe it into the open draft Card, preserve the untouched recording, and let the author deliberately include the original telling or a separate final narration in Reader and Book output.
+- **Media intake and composition** — Capture from the camera or select from the device library or Files; import into the canonical Media bank from the Story workflow; continue while processing runs; select existing Media; and use explicit touch actions to make a cover, add or reorder Gallery items, insert or move body Media, replace, or remove a Story reference without deleting the Media item.
+- **Contextual classification** — Review Who, What, When, and Where; accept, correct, or reject machine proposals; search existing truth before adding it; create a missing identity with only enough relationship or distinguishing context to make it safe; and use Known, approximate, Unknown, or Not applicable resolutions without inventing certainty.
+- **Placement** — Place one durable Story Card in one or more Collection, Part, Chapter, or Section contexts without copying it; choose order; remove a placement without deleting the Story; or deliberately publish to Feed without Collection placement. Lightweight destination creation may collect a title and optional description while structural reorganization remains desktop-primary.
+- **Preview and revision** — Preview the actual Reader result, review integrity and effective audience, publish deliberately, save unfinished changes to an already published Story as a working revision, and republish, unpublish, or restore without exposing partial edits.
+
+📋 **Contracts**
+
+- Draft saving is allowed at any point. Publication requires an intentional review of each applicable Who, What, When, and Where dimension; at least one confirmed meaningful What classification; valid readiness and review for every cover, Gallery, and body Media reference; explicit Collection or Feed placement; and confirmed audience and visibility. Unknown and Not applicable complete other dimensional review when truthful.
+- A likely match to an existing identity may be offered for confirmation. An unrecognized person instead asks who the person is, whether an existing identity applies or a new identity should be added, and what minimal relationship context distinguishes that person. Unknown remains available with appropriate privacy treatment.
+- New capture time and location are strong source evidence but do not silently become Story When or Where; a phone photograph may depict an older print or a different event. Scanned or imported Media uses its available metadata, OCR, faces, neighboring items, filenames, and visual clues as provisional evidence with visible provenance.
+- What assistance compares Story text and visible Media with existing What tags, offers the closest existing meaning first, searches related vocabulary next, and creates a new tag only after the author distinguishes a synonym, narrower child, or genuinely new concept.
+- AI assistance appears through contextual actions such as Help me write, Suggest tags, Identify people, Find related Media, and Suggest placement. Each capability may be Off, On demand, or Offer suggestions; suggestions remain restrained and require confirmation before changing canonical truth.
+- Integrity validation is always active regardless of AI preferences. It separates blocking reference, readiness, privacy, identity, classification, access, and publication defects from optional improvements.
+- Publication, access, and distribution are separate decisions. Publishing releases an approved version to a confirmed audience; access defines who may see it; sharing notifies, directs, or explicitly grants additional access. A convenient Publish and share flow may combine the decisions without collapsing their meaning.
+- Adding a Story to another Collection may expand its effective audience. Publication and placement confirmation disclose the combined audience in plain language, and shared links do not bypass authorization unless explicit link access is enabled.
+- Mobile navigation does not expose desktop-only administrative destinations as ordinary clickable choices that lead to an unavailable message; unavailable capabilities are absent or clearly disabled before selection.
+- Saving protects the author's work; publishing changes the reader's experience.
+- Editing a transcript never alters or relabels the original recording. A narration that follows materially edited prose is stored and presented separately from the original telling; synthetic narration is disclosed and custom-voice generation remains unavailable until its consent, verification, provenance, deletion, and abuse safeguards pass a separate gate.
+
 ### Studio Tags and Collections
 
 *Intent* — Keep taxonomy management and Reader-path organization distinct while allowing both to participate in the shared Studio workflow.
@@ -421,6 +535,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 📋 **Contracts**
 
+- Source facts, imported or machine evidence, confirmed dimensional assignments, contextual working organization, and Story meaning remain distinguishable even when one review surface presents them together.
+- Complete classification requires an intentional reviewed resolution for each applicable dimension, not necessarily a named tag. Known or approximate values, Unknown, and Not applicable may complete a dimension; Unreviewed remains incomplete.
 - Reflections live under What; operational import branches are not normal author or Reader vocabulary.
 - Parenthood and Childhood are stable What concepts when they describe story subject matter. Combine them with Who and When when person- or period-specific context is required; identity-relative time filters are not part of the current target model.
 - Who represents stable people and named animals used as subjects. Employers, schools, teams, and other named organizations are not Who identities merely because they appear in or matter to a story; use a reusable What concept and preserve occurrence-specific names in the title, caption, or narrative. What covers Life, Events, Activities, Topics, Objects, and Reflections; When uses sortable chronology; Where supports geographic and venue hierarchy.
@@ -440,9 +556,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Gallery inheritance has independent Who, What, When, and Where controls. Onboarding explains them and requires an explicit author selection; no dimension is implicitly enabled.
 - Delivered inheritance applies the deduplicated union of confirmed Gallery-media tags to enabled card dimensions.
 - Existing card assignments begin as per-dimension overrides and do not change when inheritance is configured. Releasing an override re-inherits current Gallery-media truth.
+- The target experience separates those meanings: direct Card tags state what the Card is about, while each Media item's tags state that item's visible contents and selected subject. The delivered inheritance controls remain current behavior until a separately approved migration replaces them; they do not define the target semantic model.
+- Reader discovery distinguishes Cards directly about a selected subject from Cards where that subject appears in confirmed visible cover, Gallery, or body Media. It may offer either or both scopes, but it explains the match and never uses unrelated or private Media-library evidence.
+- Confirmed visible-Media tags may prompt the author to add a direct Card tag. Declining that suggestion preserves the Media fact without changing Card meaning.
 - Cards do not inherit tags from parent or child cards.
 - Closed tiles show the exact tag for a single assignment, `Multiple` for several assignments without an explicit subject, the selected tag name for one explicit subject, `Subjects+` for multiple explicit subjects, or `-` when empty; tooltips disclose the assigned tags and selected subjects, and presentation labels are not tags.
-- Question tags classify prompts; answer-card tags copy at creation and then diverge.
+- Prompt classification supports Prompt Library browse and curation. A Card owns its tags and copied prompt text; later Prompt Library edits never rewrite the Card.
 - Future face processing prefers a quality cloud service for the initial private-family use case unless privacy or quality requires another model.
 
 ### Collections
@@ -459,6 +578,16 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Compose** — Manage children while authoring.
 - **Reader** — Project published structure into Guided navigation.
 
+⭕1 **Planned**
+
+- **Durable Collection work** — Replace the root-Card presentation model with a durable top-level Collection that owns its title, description, audience context, order, and local reading structure without becoming a Card type.
+- **Local Parts, Chapters, and Sections** — Organize one Collection through Collection-local Part, Chapter, and Section placement roles. Part is an optional bounded level for broad divisions; a parent Card may occupy any structural role and retain optional title, subtitle, cover, body, embedded Media, and Gallery content. Small Collections may place Cards directly without requiring empty structural layers.
+- **Explicit placement actions** — Use Add Part, Add Chapter, Add Section, and Add Card rather than an ambiguous generic Add child action. Collection level accepts Parts, Chapters, or Cards; a Part accepts Chapters or Cards; a Chapter accepts Sections or Cards; a Section accepts Cards.
+- **Reusable Card placements** — Place the same canonical Story, Gallery, Question, Callout, or later approved Card in more than one Collection, Part, Chapter, or Section without copying the Card document.
+- **Promote structure** — Create a new Collection from an existing Part, Chapter, or Section by copying that local arrangement and its Card placements while continuing to reference the same Cards. Later structural edits remain independent rather than propagating through live shared-parent hierarchy.
+- **Book edition** — Export or print a stable edition of the Collection's selected structure, Card versions, Media, order, and presentation without freezing continued work on the living Collection.
+- **Book playback** — Let the author choose original telling, final human narration, disclosed synthetic narration when separately available, or no playback for each included Card. Generate edition-owned QR destinations that remain stable after the living Card changes.
+
 📋 **Contracts**
 
 - Collections are ordered card relationships, not a content type.
@@ -466,10 +595,27 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - A multi-parent card appears once on each authored path but opens the same card document.
 - Draft cards and subtrees remain hidden from readers.
 - Collection relationships never imply tag assignments.
+- The delivered root-Card and nested-Card implementation remains current behavior until a separately approved migration introduces durable Collection ownership and local Part/Chapter/Section placement roles. Planned terminology does not claim that the new storage model is shipped.
+- Collection is the reader- and author-facing durable work. Part, Chapter, and Section are placement roles owned by one Collection rather than globally shared content objects. The Card occupying a role may remain title-only or carry full optional introductory content.
+- The author assigns Part, Chapter, Section, or Card role explicitly when creating or placing content. Role is local placement metadata and is not inferred from body content, Media, child count, or whether the Card also appears elsewhere. Migration may propose the shallowest legal role needed to preserve an existing path, but that proposal remains reviewable.
+- Card placements own local order and context; the Card owns its durable content. Copying or promoting structure duplicates placement arrangement, not Card content.
+- One Card may appear in multiple placements, but one Part, Chapter, or Section placement does not have multiple live Collection parents in the active architecture.
+- One placement represents one occurrence and has exactly one Collection and at most one parent placement. Reusing a Card creates another placement; it never adds another parent to the same placement or copies the Card.
+- Collection level accepts Part, Chapter, or Card placements. A Part accepts Chapter or Card placements. A Chapter accepts Section or Card placements. A Section accepts Card placements only, and an ordinary Card placement cannot have children. These are placement constraints, not deductions from the referenced Card's content or present child count.
+- A Collection may reference one optional introduction Card. A Part, Chapter, or Section placement's referenced Card supplies its title and optional introduction through the same title-only or rich-content behavior already used in Reader.
+- Empty and one-child Parts, Chapters, or Sections remain valid while drafting and when their authored introduction is meaningful. A title-only structural placement with one child may receive a flattening suggestion, but minimum-child counts do not block saving or publication by themselves.
+- A Book is an edition of a Collection, not the live authoring object and not a competing content type.
+- A Book QR code uses a durable application resolver rather than a direct Storage URL. The edition records the Card version and selected playback artifact represented at export time.
+- Each Book edition explicitly chooses authenticated-audience playback or possession-based book-holder access. Possession-based access is limited to that edition's selected playback material and is disclosed as usable by anyone who obtains the code.
+- The same parent Card title is not rendered both as the Collection context heading and as an immediate duplicate feed tile. Its optional content enriches the context introduction; its children remain the feed.
+- A newly created structural parent defaults to Collection-only distribution. Substantial content may prompt the author to include that Card independently in Feed, while a pre-existing Feed Card retains its Feed status when placed as a Part, Chapter, or Section.
+- An existing Card may be placed as a Part, Chapter, or Section without losing its content or changing its role in another Collection. Changing a placement role previews the effects on children, order, breadcrumbs, Reader presentation, and publication context before confirmation.
+- A Section cannot receive another structural level. Converting a Part, Chapter, or Section placement into an ordinary Card placement requires moving or removing its local children first; children never move or disappear implicitly.
+- Migration from the delivered hierarchy is author-reviewed and non-destructive. Existing Card content, IDs, publication state, Feed inclusion, tags, and Media references remain unchanged; no candidate Collection, placement role, audience, or publication decision becomes authoritative merely because a legacy path suggests it.
 
-### Studio Questions
+### Studio Questions and Prompt Library
 
-*Intent* — Maintain prompts that help the author begin meaningful Question stories.
+*Intent* — Preserve the delivered Question workflow while evolving it into structured, reusable writing guidance that operates inside Card authoring rather than owning authored answers.
 
 ✅ **Complete**
 
@@ -479,7 +625,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Unlink** — Preserve the answer as a draft Story.
 - **Integrity** — Reject conflicting links, protect linked prompts from deletion, and atomically unlink and convert answers.
 
-📋 **Contracts**
+📋 **Current contracts**
 
 - A Question is a prompt; its Reader content lives in one linked Question card.
 - A Question may have zero or one answer card; concurrent create requests resolve to that same card.
@@ -487,6 +633,25 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Prompt-text autosave and `Question Tags` Apply are independent mutations; creating and deleting a Question remain explicit actions.
 - A linked prompt cannot be deleted.
 - Unlinking removes the relationship and converts the answer to a draft Story.
+
+⭕1 **Planned**
+
+- **Structured Prompt Library** — Organize guidance as Category → Topic → Primary Question → optional Follow-up Questions. Follow-ups draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
+- **Card-first entry** — Create or open a draft Card before answering. The author may start blank or add writing prompts from inside that Card; the Prompts destination does not create a competing authorship entrance.
+- **Flexible scope** — Insert one primary question, its useful follow-ups, or the useful prompts from a whole Topic. Any number of prompts may contribute to one Card, and the author explicitly starts another Card when the material warrants it.
+- **Card-type presentation** — For a Question Card, the selected primary question proposes the title and follow-ups enter the body as guidance. For a Story Card, selected questions enter the body as editable writing prompts. The author may retain, rewrite, or remove copied question text.
+- **Prompt blocks** — Editing-only prompt blocks live inside the Card document rather than in a separate answer store. Before publication, each remaining block is converted to ordinary reader-visible heading or question text, or removed; authored text beneath it remains ordinary Card body content.
+- **Independent Cards** — Inserting a prompt copies its text and any selected classification into the Card's authoring context without a continuing content dependency. Later prompt edits or deletion do not alter existing Cards.
+- **Existing-content migration** — Preserve every existing Question Card, its authored content, Media, tags, and Collection placement. Existing Question records seed an author-reviewed prompt-curation queue; organization and deduplication may change the Prompt Library but never merge or rewrite Cards that answered those questions.
+- **Guidance instead of templates** — Organized Prompt Categories and Topics provide the guided path. Collection templates are not required by the active architecture; Collections, Chapters, Sections, and Cards remain flexibly authored.
+
+📋 **Planned contracts**
+
+- Every authored response is saved immediately in the open draft Card; no separate response or working-material entity is introduced.
+- Prompt hierarchy guides memory retrieval but does not create or determine Collection, Part, Chapter, Section, or Card boundaries.
+- A primary question and its follow-ups are optional guidance rather than required fields or publication completeness criteria.
+- Intentional reader-facing Question Cards remain a Card type. Guided prompts are private authoring aids unless the author deliberately retains their text in the Card.
+- Migration must validate preserved Card content and copied Prompt Library candidates before retiring any legacy Question link or record.
 
 ### Studio Media
 
@@ -523,8 +688,15 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Consistency** — Cards and Media share narrow search and empty-state recovery, consistent selection wording, and authoritative deletion-consequence disclosure where their bank operations overlap.
 - **Derivatives** — Canonical sources produce orientation-correct Studio and Reader renditions with truthful readiness, retry, and surface-specific delivery across Administration and Reader.
 
+⭕1 **Planned**
+
+- **Replacement contract verification** — Verify and, where necessary, complete the existing replace-in-place path so the author selects the edited replacement for an existing Media item, compares the current and proposed images, confirms that they represent the same underlying item, and receives clear disagreement or processing feedback without retagging or rebuilding Story relationships.
+- **Presentation adjustment** — Provide nondestructive crop or framing and rotation where a Story presents Media. These adjustments belong to that presentation and do not rewrite the canonical source file.
+
 ⭕2 **Future**
 
+- **Assisted collection review** — Audit the archive for unresolved dimensions, conflicts, likely duplicate identities or vocabulary, questionable assignments, and high-leverage review opportunities. Present graphical member sets, evidence, confidence lanes, affected counts, and direct exception controls; acceptance states explicitly whether information will be added, replaced, merged, retained, ignored, or deferred.
+- **Adaptive review** — Support bounded mobile acceptance, correction, and exception removal while reserving dense comparison, range selection, maps, taxonomy correction, and collection-scale bulk work for the desktop-primary stewardship surface. This does not authorize a mobile copy of the current multi-pane Studio.
 - **Import vocabulary mapping** — Preserve embedded source keywords and paths as provenance without automatically adding them to the curated taxonomy. After import, present a dense two-sided reconciliation workspace with the independently scrollable curated Who/What/When/Where tree beside one-row imported-keyword records. Each row shows source path, affected-Media count and preview, a reason-labelled recommendation, and compact accept/correct/create/ignore/defer actions. Dragging an imported keyword onto a curated tag corrects its destination; dropping onto a curated parent offers the explicit choice to map to that parent or create the imported name beneath it. Previously approved and exact-path mappings may be applied automatically, accepted mappings are reused on later imports, and resolved or ignored keywords leave the queue while their original evidence remains dormant. Applying accepted mappings uses the authoritative Media tag path, then ordinary curated-tag completeness—not unresolved or ignored source metadata—determines which Media enters Incomplete for bulk tagging.
 - **First-user workflow validation** — Observe a representative new archive owner using the implemented Import → Library → codify/caption → Card path without live instruction, then gate only the corrections supported by that evidence.
 - **Duplicate reconciliation** — Recover evidence where original source bytes are unavailable and reconcile confirmed same-asset records with recovery evidence. Likely-match discovery remains low priority unless archive pain proves otherwise.
@@ -532,15 +704,19 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Bursts (parked)** — Suggest likely burst stacks only after reliable original capture time and source-sequence evidence is persisted; import timestamps and filenames alone are insufficient.
 - **Video (parked)** — Import, browse, assign, preview, process, and play video only after the stable image-based authoring and reading baseline proves its value.
 - **External library adapters (parked)** — Add provider-specific export guidance, explicit-selection import, or native companion access only after the core experience is proven. Apple Photos, Google Photos, OneDrive, and similar services are ingestion sources, not synchronized backing libraries.
-- **External edit** — Managed export, external editing, and replacement round trip.
 - **Similarity** — Suggest non-burst visual stacks.
 - **Motion pairs** — Preserve related still and motion assets.
 - **Reader stacks** — Let readers explore intentionally exposed stack members.
 
 📋 **Contracts**
 
+- AI and imported evidence may propose organization, but proposals must disclose affected Media, supporting evidence, uncertainty, and the consequence of acceptance. The primary archive-scale interaction is visual and selection-based, with a direct exception path, rather than a sequence of opaque yes/no batch questions.
 - PhotoPicker selects existing assets; folder import belongs to Studio Media.
 - Assignment never removes media from the bank or alone controls Reader discovery.
+- Card assignment is visible and intentional: cover, Gallery, and body references are the Media used by that Card. Related but unused items remain in the Media library rather than joining an author-only or archival Gallery.
+- Story authoring may offer Media that matches the Card's confirmed Who, What, When, and Where plus relevant source or machine evidence. The author explicitly selects which results become Card references; the broader result set is not stored as hidden Story membership.
+- Replacement versions, Stacks, and occasion results have different meanings. Replacement concerns the same underlying Media item; a Stack groups near-duplicate or closely interchangeable captures; an occasion result is reconstructed from classification and evidence across distinct Media items.
+- No durable Event, saved Media context, or private Story-source relationship is part of the active architecture. Add one only if real archive use proves that confirmed classification, source evidence, search, and suggestions cannot reliably reconstruct an important set.
 - Media `Status` means Card relationship status: Assigned or Unassigned. Codification completeness is a separate Complete or Incomplete filter, and selecting Incomplete adds unresolved-dimension criteria without hiding ordinary dimensional tag filters.
 - Import adds Media to the Library; it does not create provisional story groups or Cards. The normal author journey is Import → Codify/caption → Select → Create or add to Card.
 - Card-oriented Media selection defaults the existing codification filter to Complete. The same All Codification / Complete / Incomplete selector remains visible; All Codification includes both Complete and Incomplete when Card context will help finish codification. Complete accepts intentional Unknown or N/A dimensional answers.
@@ -550,7 +726,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Media caption and tags are frame truth; card placement overrides are explicit and local.
 - Future first-time guidance must explain source evidence, provisional versus confirmed truth, and the relationship between Media tags, Card tags, subjects, identities, and Gallery inheritance at the moment each distinction becomes relevant.
 - A successful import is not the end of onboarding: the system must truthfully show what is ready, what requires review, and the most useful next action without forcing a novice through every advanced tool.
-- Delete checks every authoritative card surface; replace preserves identity and relationships.
+- Delete checks every authoritative card surface. Author-confirmed replacement preserves the canonical Media ID, confirmed tags, subjects, review state, captions, author notes, and Card relationships while updating source-byte identity, format, size, dimensions, extracted metadata, readiness, search evidence, and generated renditions.
+- Replacement metadata is new source evidence, not automatic confirmed truth. A material conflict with confirmed date, place, identity, or other classification produces a review message rather than silently rewriting the author-confirmed value.
+- Replacement remains recoverable until the selected source, required metadata, renditions, and projections are durable. The product may retain the prior bytes operationally for rollback without exposing a general version-management system.
+- Filename, modified date, dimensions, file size, and visual similarity may warn that the selected replacement appears unrelated, but they do not establish identity or authorize replacement. The author confirms that the selected file represents the same underlying Media item.
+- External editing and synchronization are outside the active product responsibility. My Stories does not choose an editor, manage a round-trip export package, watch external files, or propagate changes back to source libraries; the author returns an edited result by deliberately replacing the existing Media file.
+- Source cropping, sharpening, focus restoration, and AI enhancement are not active My Stories editing capabilities. Nondestructive Story presentation framing and rotation may be provided without altering the canonical source.
 - Exact source bytes or an exact provider asset identity may reuse one canonical asset. Filename, dates, dimensions, size, and visual similarity are review evidence only and never authorize automatic merging.
 - Duplicate review decisions are Same asset, Keep both, or Defer. Keep-both decisions persist; same-asset reconciliation requires an explicit canonical asset and field-by-field conflict resolution before references move.
 - A stack is author-confirmed, has one hero, can be dissolved without deleting members, and contributes one Gallery position during card creation unless explicitly expanded.
@@ -571,6 +752,13 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Revocation** — Revalidate JWT-backed account truth and end existing authorization on the next server request when an account is disabled or missing.
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
 
+⭕1 **Planned**
+
+- **Audience groups** — Create reusable named groups of Reader accounts and invited recipients, and select one or more groups or individuals when publishing a Card or Collection.
+- **Guest recipients** — Invite a non-account holder by email into a bounded access grant without requiring the current temporary-password administration flow. A recipient may later establish a fuller account without changing the authored audience decision.
+- **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
+- **Distribution** — Publish controls availability; Share chooses which authorized recipients receive a direct link or notification. Making content available to a large audience does not imply notifying everyone after every change.
+
 ⭕2 **Future**
 
 - **Recovery** — Secure invitation, password setup, and recovery.
@@ -582,6 +770,10 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Readers can access published Reader content but not Administration.
 - Passwords are hashed, never retrievable, and never returned by APIs.
 - v1 disables accounts rather than deleting them.
+- Who identity, relationship graph, access identity, audience membership, publication, and notification remain separate authorities.
+- Audience membership is explicit and reviewable. Editing a Who relationship or Card tag never grants or revokes Reader access.
+- Guest links are unguessable, revocable, bounded to their grant, and do not expose unrelated archive content.
+- Commercial plan limits may bound authors, recipients, storage, processing, notifications, or AI use later, but authorization semantics do not depend on a particular pricing package.
 
 ### Theme Management
 

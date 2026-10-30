@@ -17,3 +17,10 @@ export function safeInternalCallbackPath(
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
   return raw;
 }
+
+export function resolveAuthenticatedEntryPath(
+  callbackUrl: string | null | undefined,
+  role: string | null | undefined
+): string {
+  return safeInternalCallbackPath(callbackUrl, role === 'admin' ? '/admin' : '/view');
+}

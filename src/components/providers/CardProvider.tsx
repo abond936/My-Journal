@@ -8,6 +8,7 @@ import useSWRInfinite, { SWRInfiniteResponse } from 'swr/infinite';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Card } from '@/lib/types/card';
 import { resolveReaderRouteMode } from '@/lib/utils/readerMode';
+import { isReaderHomeRoute } from '@/lib/utils/readerEntry';
 
 /** Reader feed card-type chip order (Explore sidebar). */
 export const FEED_CARD_TYPES_ORDER: Card['type'][] = [
@@ -89,8 +90,10 @@ export interface ICardContext {
   browseTarget: BrowseTarget;
   activeDimension: ActiveDimension;
   collectionId: string | null;
+  collectionPathIds: string[];
   collectionCards: Card[]; // Flat list of collection parent cards
   collectionTreeCards: Card[]; // Full curated hierarchy payload for sidebar/tree views
+  activeCollectionIntroductionCard: Card | null;
   collectionsLoading: boolean;
   collectionsReady: boolean;
   collectionsError: unknown;
@@ -113,6 +116,7 @@ export interface ICardContext {
   setBrowseTarget: (target: BrowseTarget) => void;
   setActiveDimension: (dim: ActiveDimension) => void;
   setCollectionId: (id: string | null) => void;
+  setCollectionPathIds: (ids: string[]) => void;
   setFeedSort: (order: FeedSortOrder) => void;
   refreshRandomOrder: () => void;
   setCardDimensionMissing: (dimension: 'who' | 'what' | 'when' | 'where', value: boolean) => void;
@@ -143,6 +147,7 @@ export interface ICardContext {
 
 const DIMENSION_STORAGE_KEY = 'myjournal-active-dimension';
 const COLLECTION_STORAGE_KEY = 'myjournal-collection-id';
+const COLLECTION_PATH_STORAGE_KEY = 'myjournal-collection-path';
 const READER_MODE_KEY = 'myjournal-reader-mode';
 const FEED_SORT_KEY = 'myjournal-feed-sort';
 const LEGACY_FEED_GROUP_KEY = 'myjournal-feed-group';
@@ -179,6 +184,20 @@ function normalizeStoredActiveDimension(raw: string | null): ActiveDimension {
 function readStoredValue(key: string): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(key) ?? window.sessionStorage.getItem(key);
+}
+
+function readStoredCollectionPath(): string[] {
+  if (typeof window === 'undefined') return [];
+  const raw = readStoredValue(COLLECTION_PATH_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string' && value.length > 0)
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function readStoredFeedSort(): FeedSortOrder {
@@ -324,6 +343,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const [pageLimit, setPageLimit] = useState(20);
   const [activeDimension, setActiveDimensionState] = useState<ActiveDimension>('collections');
   const [collectionId, setCollectionIdState] = useState<string | null>(null);
+  const [collectionPathIds, setCollectionPathIdsState] = useState<string[]>([]);
   const [guidedTransitionCollectionId, setGuidedTransitionCollectionId] = useState<string | null>(null);
   const [feedSort, setFeedSortState] = useState<FeedSortOrder>('random');
   const [includeSubTagsInFeed, setIncludeSubTagsInFeedState] = useState<boolean>(false);
@@ -356,6 +376,9 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setActiveDimensionState(storedActiveDimension);
     setCollectionIdState(
       storedActiveDimension === 'collections' ? readStoredValue(COLLECTION_STORAGE_KEY) || null : null
+    );
+    setCollectionPathIdsState(
+      storedActiveDimension === 'collections' ? readStoredCollectionPath() : []
     );
     setFeedSortState(readStoredFeedSort());
     window.localStorage.removeItem(LEGACY_FEED_GROUP_KEY);
@@ -426,9 +449,24 @@ export const CardProvider = ({ children }: CardProviderProps) => {
     setCollectionIdState(id);
     if (typeof window !== 'undefined') {
       if (id) window.localStorage.setItem(COLLECTION_STORAGE_KEY, id);
-      else window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
+      else {
+        window.localStorage.removeItem(COLLECTION_STORAGE_KEY);
+        window.localStorage.removeItem(COLLECTION_PATH_STORAGE_KEY);
+        setCollectionPathIdsState([]);
+      }
     }
   }, [activeDimension, collectionId, readerMode]);
+
+  const setCollectionPathIds = useCallback((ids: string[]) => {
+    const normalized = Array.from(new Set(ids.filter(Boolean)));
+    setCollectionPathIdsState(normalized);
+    if (typeof window === 'undefined') return;
+    if (normalized.length > 0) {
+      window.localStorage.setItem(COLLECTION_PATH_STORAGE_KEY, JSON.stringify(normalized));
+    } else {
+      window.localStorage.removeItem(COLLECTION_PATH_STORAGE_KEY);
+    }
+  }, []);
 
   const setReaderMode = useCallback((mode: ReaderMode) => {
     setReaderModeState(mode);
@@ -473,8 +511,11 @@ export const CardProvider = ({ children }: CardProviderProps) => {
 
   // Define which paths should trigger card fetching
   const activePaths = ['/view', '/search'];
+  const isReaderHome = isReaderHomeRoute(pathname, searchParams?.get?.('mode'));
   const isFetchActive =
-    sessionStatus !== 'loading' && activePaths.some((path) => pathname?.startsWith(path));
+    sessionStatus !== 'loading' &&
+    !isReaderHome &&
+    activePaths.some((path) => pathname?.startsWith(path));
   const isReaderListRoute = activePaths.some((path) => pathname?.startsWith(path));
 
   // Organize selected tags by dimension
@@ -605,6 +646,19 @@ export const CardProvider = ({ children }: CardProviderProps) => {
   const collectionTreeCards = useMemo(
     () => collectionTreeData?.items ?? collectionCards,
     [collectionTreeData, collectionCards]
+  );
+  const collectionIntroductionUrl =
+    shouldFetchCollections && collectionId
+      ? `/api/cards/${encodeURIComponent(collectionId)}?children=skip`
+      : null;
+  const { data: activeCollectionIntroductionCard = null } = useSWR<Card>(
+    collectionIntroductionUrl,
+    async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Collection introduction request failed (${response.status}).`);
+      return response.json();
+    },
+    { revalidateOnFocus: false }
   );
 
   const {
@@ -894,8 +948,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       browseTarget,
       activeDimension,
       collectionId,
+      collectionPathIds,
       collectionCards,
       collectionTreeCards,
+      activeCollectionIntroductionCard,
       collectionsLoading,
       collectionsReady,
       collectionsError,
@@ -914,6 +970,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setBrowseTarget,
       setActiveDimension,
       setCollectionId,
+      setCollectionPathIds,
       setFeedSort,
       refreshRandomOrder,
       setCardDimensionMissing,
@@ -947,8 +1004,10 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       browseTarget,
       activeDimension,
       collectionId,
+      collectionPathIds,
       collectionCards,
       collectionTreeCards,
+      activeCollectionIntroductionCard,
       collectionsLoading,
       collectionsReady,
       collectionsError,
@@ -967,6 +1026,7 @@ export const CardProvider = ({ children }: CardProviderProps) => {
       setBrowseTarget,
       setActiveDimension,
       setCollectionId,
+      setCollectionPathIds,
       setFeedSort,
       refreshRandomOrder,
       setCardDimensionMissing,

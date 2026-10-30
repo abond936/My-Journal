@@ -47,6 +47,9 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'DELETE', path: '/api/cards/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/cards/[id]/duplicate', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
+  { method: 'GET', path: '/api/collections', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Active published Collections for viewers; active drafts also visible to administrators' },
+  { method: 'GET', path: '/api/collections/[id]', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Viewer read fails closed unless Collection and all referenced Cards are published' },
+
   { method: 'GET', path: '/api/view/media', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
 
   { method: 'GET', path: '/api/tags', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
@@ -100,6 +103,11 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'DELETE', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/questions/[id]/create-card', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+
+  { method: 'PUT', path: '/api/admin/collections/[id]/structure', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revisioned placement graph replacement; inactive shadows are rejected' },
+  { method: 'GET', path: '/api/admin/collections', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Lists active durable Collections only' },
+  { method: 'GET', path: '/api/admin/collections/[id]/structure', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Loads an active placement graph; inactive shadows are hidden' },
+  { method: 'POST', path: '/api/admin/collections/[id]/authority', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revisioned reversible authority selector; first activation requires current shadow parity' },
 
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/tags/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -194,6 +202,11 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-questions-id-post', method: 'POST', path: '/api/admin/questions/[id]', modulePath: '@/app/api/admin/questions/[id]/route', requestUrl: 'https://example.test/api/admin/questions/q-1', params: Promise.resolve({ id: 'q-1' }), body: {} },
   { id: 'admin-questions-id-delete', method: 'DELETE', path: '/api/admin/questions/[id]', modulePath: '@/app/api/admin/questions/[id]/route', requestUrl: 'https://example.test/api/admin/questions/q-1', params: Promise.resolve({ id: 'q-1' }) },
   { id: 'admin-questions-create-card', method: 'POST', path: '/api/admin/questions/[id]/create-card', modulePath: '@/app/api/admin/questions/[id]/create-card/route', requestUrl: 'https://example.test/api/admin/questions/q-1/create-card', params: Promise.resolve({ id: 'q-1' }), body: {} },
+
+  { id: 'admin-collections-structure-put', method: 'PUT', path: '/api/admin/collections/[id]/structure', modulePath: '@/app/api/admin/collections/[id]/structure/route', requestUrl: 'https://example.test/api/admin/collections/my-life/structure', params: Promise.resolve({ id: 'my-life' }), body: { expectedStructureRevision: 0, placements: [] } },
+  { id: 'admin-collections-get', method: 'GET', path: '/api/admin/collections', modulePath: '@/app/api/admin/collections/route', requestUrl: 'https://example.test/api/admin/collections' },
+  { id: 'admin-collections-structure-get', method: 'GET', path: '/api/admin/collections/[id]/structure', modulePath: '@/app/api/admin/collections/[id]/structure/route', requestUrl: 'https://example.test/api/admin/collections/my-life/structure', params: Promise.resolve({ id: 'my-life' }) },
+  { id: 'admin-collections-authority-post', method: 'POST', path: '/api/admin/collections/[id]/authority', modulePath: '@/app/api/admin/collections/[id]/authority/route', requestUrl: 'https://example.test/api/admin/collections/my-life/authority', params: Promise.resolve({ id: 'my-life' }), body: { desiredState: 'active', expectedStructureRevision: 0, expectedAuthorityRevision: 0, confirmCollectionId: 'my-life' } },
 
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
   { id: 'admin-media-tags-reconcile', method: 'POST', path: '/api/admin/media/tags/reconcile', modulePath: '@/app/api/admin/media/tags/reconcile/route', requestUrl: 'https://example.test/api/admin/media/tags/reconcile', body: {} },

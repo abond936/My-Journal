@@ -1,6 +1,7 @@
 import {
   buildLoginRedirectPath,
   isMarketingRoute,
+  resolveAuthenticatedEntryPath,
   safeInternalCallbackPath,
 } from '@/lib/utils/marketingRoutes';
 
@@ -32,5 +33,16 @@ describe('marketingRoutes', () => {
     expect(safeInternalCallbackPath('//evil.example/path')).toBe('/view');
     expect(safeInternalCallbackPath('view/card-1')).toBe('/view');
     expect(safeInternalCallbackPath(null)).toBe('/view');
+  });
+
+  it('chooses the fresh entry by role while preserving safe explicit callbacks', () => {
+    expect(resolveAuthenticatedEntryPath(null, 'admin')).toBe('/admin');
+    expect(resolveAuthenticatedEntryPath(null, 'viewer')).toBe('/view');
+    expect(resolveAuthenticatedEntryPath('/view/card-1?mode=guided', 'admin')).toBe(
+      '/view/card-1?mode=guided'
+    );
+    expect(resolveAuthenticatedEntryPath('/admin/settings', 'admin')).toBe('/admin/settings');
+    expect(resolveAuthenticatedEntryPath('https://evil.example', 'admin')).toBe('/admin');
+    expect(resolveAuthenticatedEntryPath('//evil.example/path', 'viewer')).toBe('/view');
   });
 });

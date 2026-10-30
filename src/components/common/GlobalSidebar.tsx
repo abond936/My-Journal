@@ -15,6 +15,9 @@ import { listCollectionRootCards, normalizeCuratedChildIds } from '@/lib/utils/c
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
 import { resolveReaderRouteMode } from '@/lib/utils/readerMode';
+import { buildReaderModePath } from '@/lib/utils/readerEntry';
+import { useDurableCollectionReader } from '@/components/view/useDurableCollectionReader';
+import type { CollectionPlacement } from '@/lib/types/collection';
 import {
   User,
   Square,
@@ -74,6 +77,7 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     setActiveDimension,
     collectionId,
     setCollectionId,
+    setCollectionPathIds,
     collectionCards,
     collectionTreeCards,
     collectionsLoading,
@@ -104,6 +108,9 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
   const isReaderFilterRoute = isViewRoute || isSearchRoute;
   const isViewDetailRoute = pathname?.startsWith('/view/') ?? false;
   const effectiveReaderMode = resolveReaderRouteMode(pathname, searchParams.get('mode'), readerMode);
+  const durableCollections = useDurableCollectionReader(
+    isReaderFilterRoute && effectiveReaderMode === 'guided'
+  );
   const returnToFeedIfViewingDetail = useCallback(() => {
     if (isViewDetailRoute) {
       const returnTo = typeof window === 'undefined'
@@ -203,6 +210,34 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     () => collectionRoots.filter((card) => card.status === 'published').length,
     [collectionRoots]
   );
+  const durableCardsById = useMemo(
+    () => new Map((durableCollections.structure?.cards ?? []).flatMap((card) => card.docId ? [[card.docId, card]] : [])),
+    [durableCollections.structure?.cards]
+  );
+  const durableChildrenByParent = useMemo(() => {
+    const groups = new Map<string | null, CollectionPlacement[]>();
+    (durableCollections.structure?.placements ?? []).forEach((placement) => {
+      const parentId = placement.parentPlacementId ?? null;
+      const children = groups.get(parentId) ?? [];
+      children.push(placement);
+      groups.set(parentId, children);
+    });
+    groups.forEach((children) => children.sort((a, b) => a.order - b.order || a.docId.localeCompare(b.docId)));
+    return groups;
+  }, [durableCollections.structure?.placements]);
+
+  useEffect(() => {
+    if (!durableCollections.structure) return;
+    const rootParentIds = (durableChildrenByParent.get(null) ?? [])
+      .filter((placement) => (durableChildrenByParent.get(placement.docId) ?? []).length > 0)
+      .map((placement) => placement.docId);
+    if (!rootParentIds.length) return;
+    setExpandedCollectionIds((current) => {
+      const next = new Set(current);
+      rootParentIds.forEach((placementId) => next.add(placementId));
+      return next.size === current.size ? current : next;
+    });
+  }, [durableChildrenByParent, durableCollections.structure]);
 
   useEffect(() => {
     if (collectionTreeCards.length === 0) return;
@@ -261,6 +296,7 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
   const handleSetBrowseMode = useCallback(
     (nextMode: 'freeform' | 'guided') => {
       setReaderMode(nextMode);
+      if (pathname === '/view') router.replace(buildReaderModePath(nextMode));
       if (nextMode === 'guided') {
         clearReaderReturnPosition();
         setActiveDimension('collections');
@@ -281,6 +317,8 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
       setActiveDimension,
       setCollectionId,
       setReaderMode,
+      pathname,
+      router,
     ]
   );
 
@@ -297,7 +335,7 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
   }, []);
 
   const handleSelectCollection = useCallback(
-    (nextCollectionId: string) => {
+    (nextCollectionId: string, pathIds: string[]) => {
       clearReaderReturnPosition();
       const nextCard = collectionCardById.get(nextCollectionId);
       const hasChildren = Boolean(nextCard && normalizeCuratedChildIds(nextCard.childrenIds).length > 0);
@@ -307,11 +345,21 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
         return;
       }
       setActiveDimension('collections');
+      setCollectionPathIds(pathIds);
       setCollectionId(nextCollectionId);
       returnToFeedIfViewingDetail();
+      onRequestClose?.();
     },
-    [clearReaderReturnPosition, collectionCardById, onRequestClose, returnToFeedIfViewingDetail, router, setActiveDimension, setCollectionId]
+    [clearReaderReturnPosition, collectionCardById, onRequestClose, returnToFeedIfViewingDetail, router, setActiveDimension, setCollectionId, setCollectionPathIds]
   );
+
+  const handleSelectDurablePlacement = useCallback((collectionId: string, placementId?: string) => {
+    clearReaderReturnPosition();
+    const params = new URLSearchParams({ mode: 'guided', collection: collectionId });
+    if (placementId) params.set('placement', placementId);
+    router.push(`/view?${params.toString()}`);
+    onRequestClose?.();
+  }, [clearReaderReturnPosition, onRequestClose, router]);
 
   const selectedTagsByDimension = useMemo(() => {
     const resolvedDimensionById = buildResolvedTagDimensionMap(tags);
@@ -332,7 +380,12 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     return groups;
   }, [selectedFilterTagIds, tags]);
 
-  const renderCollectionNode = (cardId: string, level: number, seen: Set<string>): React.ReactNode => {
+  const renderCollectionNode = (
+    cardId: string,
+    level: number,
+    seen: Set<string>,
+    ancestorIds: string[] = []
+  ): React.ReactNode => {
     const card = collectionCardById.get(cardId);
     if (!card?.docId || seen.has(card.docId)) return null;
 
@@ -346,10 +399,14 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
     const hasChildren = children.length > 0;
     const isExpanded = hasChildren && expandedCollectionIds.has(card.docId);
     const showDraftTitle = isAdmin && card.status === 'draft';
+    const pathIds = [...ancestorIds, card.docId];
 
     return (
       <li key={card.docId} className={styles.collectionTreeNode}>
-        <div className={styles.collectionRow} style={{ marginLeft: `${level * 0.65}rem` }}>
+        <div
+          className={`${styles.collectionRow} ${isSelected ? styles.collectionRowActive : ''}`}
+          style={{ marginLeft: `${level * 0.75}rem` }}
+        >
           <button
             type="button"
             className={styles.collectionExpandButton}
@@ -362,12 +419,17 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
             }
             disabled={!hasChildren}
           >
-            {hasChildren ? <span className={styles.collectionExpandIcon}>{isExpanded ? '▼' : '▶'}</span> : null}
+            {hasChildren ? <span className={`${styles.collectionExpandIcon} ${isExpanded ? styles.collectionExpandIconOpen : ''}`}>›</span> : null}
           </button>
           <button
             type="button"
             className={`${styles.collectionItem} ${isSelected ? styles.collectionItemActive : ''}`}
-            onClick={() => handleSelectCollection(card.docId!)}
+            onClick={() => handleSelectCollection(card.docId!, pathIds)}
+            data-collection-id={card.docId}
+            data-collection-title={card.title || card.subtitle || 'Untitled'}
+            data-collection-level={level}
+            data-collection-has-children={hasChildren ? 'true' : 'false'}
+            aria-current={isSelected ? 'page' : undefined}
           >
             <span className={styles.collectionItemContent}>
               <span className={styles.collectionItemMainRow}>
@@ -385,7 +447,54 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
         </div>
         {hasChildren && isExpanded ? (
           <ul className={styles.collectionTreeList}>
-            {children.map((child) => renderCollectionNode(child.docId!, level + 1, nextSeen))}
+            {children.map((child) => renderCollectionNode(child.docId!, level + 1, nextSeen, pathIds))}
+          </ul>
+        ) : null}
+      </li>
+    );
+  };
+
+  const renderDurableCollectionNode = (placement: CollectionPlacement, level: number): React.ReactNode => {
+    const card = durableCardsById.get(placement.cardId);
+    const children = durableChildrenByParent.get(placement.docId) ?? [];
+    const isSelected = durableCollections.selectedPlacementId === placement.docId;
+    const isExpanded = children.length > 0 && expandedCollectionIds.has(placement.docId);
+    const title = card?.title || card?.subtitle || 'Untitled';
+    return (
+      <li key={placement.docId} className={styles.collectionTreeNode}>
+        <div
+          className={`${styles.collectionRow} ${isSelected ? styles.collectionRowActive : ''}`}
+          style={{ marginLeft: `${level * 0.75}rem` }}
+        >
+          <button
+            type="button"
+            className={styles.collectionExpandButton}
+            onClick={() => children.length && toggleCollectionExpanded(placement.docId)}
+            aria-expanded={children.length ? isExpanded : undefined}
+            aria-label={children.length ? `${isExpanded ? 'Collapse' : 'Expand'} ${title}` : undefined}
+            disabled={!children.length}
+          >
+            {children.length ? <span className={`${styles.collectionExpandIcon} ${isExpanded ? styles.collectionExpandIconOpen : ''}`}>›</span> : null}
+          </button>
+          <button
+            type="button"
+            className={`${styles.collectionItem} ${isSelected ? styles.collectionItemActive : ''}`}
+            onClick={() => handleSelectDurablePlacement(placement.collectionId, placement.docId)}
+            aria-current={isSelected ? 'page' : undefined}
+            data-placement-id={placement.docId}
+            data-card-id={placement.cardId}
+          >
+            <span className={styles.collectionItemContent}>
+              <span className={styles.collectionItemMainRow}>
+                <span className={styles.collectionItemLabel}>{title}</span>
+                {children.length ? <span className={styles.collectionCount}>({children.length})</span> : null}
+              </span>
+            </span>
+          </button>
+        </div>
+        {children.length && isExpanded ? (
+          <ul className={styles.collectionTreeList}>
+            {children.map((child) => renderDurableCollectionNode(child, level + 1))}
           </ul>
         ) : null}
       </li>
@@ -413,7 +522,7 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
                 className={`${styles.modeTab} ${effectiveReaderMode === 'guided' ? styles.modeTabActive : ''}`}
                 onClick={() => handleSetBrowseMode('guided')}
               >
-                Guided
+                Collections
               </button>
               <button
                 type="button"
@@ -422,7 +531,7 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
                 className={`${styles.modeTab} ${effectiveReaderMode === 'freeform' ? styles.modeTabActive : ''}`}
                 onClick={() => handleSetBrowseMode('freeform')}
               >
-                Freeform
+                Feed
               </button>
               {isTagMode ? (
                 <button
@@ -717,6 +826,39 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
               <div className={styles.collectionGroups}>
                 {!isReaderFilterRoute ? (
                   <div className={styles.collectionEmpty}>Open Reader to browse collections.</div>
+                ) : durableCollections.loading ? (
+                  <div className={styles.loadingPlaceholder} aria-busy="true">
+                    Loading collections...
+                  </div>
+                ) : durableCollections.error ? (
+                  <div className={styles.collectionEmpty} role="alert">
+                    Collections could not be loaded. Reload Reader to try again.
+                  </div>
+                ) : durableCollections.hasDurableCollections && durableCollections.structure ? (
+                  <>
+                    {durableCollections.collections.length > 1 ? (
+                      <select
+                        aria-label="Collection"
+                        value={durableCollections.collectionId ?? ''}
+                        onChange={(event) => handleSelectDurablePlacement(event.target.value)}
+                      >
+                        {durableCollections.collections.map((collection) => (
+                          <option key={collection.docId} value={collection.docId}>{collection.title}</option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={`${styles.collectionItem} ${!durableCollections.selectedPlacementId ? styles.collectionItemActive : ''}`}
+                      onClick={() => handleSelectDurablePlacement(durableCollections.structure!.collection.docId)}
+                      aria-current={!durableCollections.selectedPlacementId ? 'page' : undefined}
+                    >
+                      <span className={styles.collectionItemLabel}>{durableCollections.structure.collection.title}</span>
+                    </button>
+                    <ul className={styles.collectionTreeList}>
+                      {(durableChildrenByParent.get(null) ?? []).map((placement) => renderDurableCollectionNode(placement, 0))}
+                    </ul>
+                  </>
                 ) : collectionsLoading || (!collectionsReady && !collectionsError) ? (
                   <div className={styles.loadingPlaceholder} aria-busy="true">
                     Loading collections...

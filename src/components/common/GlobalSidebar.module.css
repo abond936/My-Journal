@@ -229,7 +229,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 3px;
   }
 
   .collectionTreeNode {
@@ -241,7 +241,19 @@
   .collectionRow {
     display: flex;
     align-items: stretch;
-    gap: 0;
+    gap: 2px;
+    min-height: 44px;
+    border-radius: var(--border-radius-md);
+    transition: background-color var(--transition-short) ease;
+  }
+
+  .collectionRow:hover {
+    background-color: var(--reader-support-control-hover-background-color);
+  }
+
+  .collectionRowActive {
+    background-color: var(--reader-chrome-active-control-background-color);
+    box-shadow: inset 3px 0 0 var(--reader-chrome-active-control-text-color);
   }
 
   .collectionExpandButton {
@@ -249,37 +261,46 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 1.2rem;
-    min-width: 1.2rem;
-    min-height: 1.35rem;
+    flex: 0 0 44px;
+    min-width: 44px;
+    min-height: 44px;
     color: var(--reader-chrome-text-color);
     cursor: pointer;
-    opacity: 0.75;
+    opacity: 0.82;
     box-sizing: border-box;
   }
 
   .collectionExpandButton:hover:not(:disabled) {
     opacity: 1;
+    background-color: color-mix(in srgb, var(--reader-support-control-hover-background-color) 72%, transparent);
+    border-radius: var(--border-radius-md);
   }
 
   .collectionExpandButton:disabled {
     cursor: default;
-    opacity: 0.28;
+    opacity: 0;
   }
 
   .collectionExpandIcon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.78rem;
+    font-size: 1.5rem;
     line-height: 1;
+    transform: rotate(0deg);
+    transition: transform var(--transition-short) ease;
+  }
+
+  .collectionExpandIconOpen {
+    transform: rotate(90deg);
   }
 
   .collectionItem {
     display: block;
     flex: 1 1 auto;
     width: 100%;
-    padding: 1px var(--spacing-xs);
+    min-height: 44px;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) var(--spacing-sm);
     font-family: var(--reader-support-control-font-family);
     font-size: var(--reader-support-control-font-size);
     font-weight: var(--reader-support-control-font-weight);
@@ -308,12 +329,13 @@
   }
 
   .collectionItemActive {
-    background-color: var(--reader-chrome-active-control-background-color);
+    background-color: transparent;
     color: var(--reader-chrome-active-control-text-color);
+    font-weight: 700;
   }
 
   .collectionItem:hover {
-    background-color: var(--reader-support-control-hover-background-color);
+    background-color: transparent;
   }
 
   .collectionItemLabel {

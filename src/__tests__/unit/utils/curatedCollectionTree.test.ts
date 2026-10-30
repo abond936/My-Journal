@@ -7,10 +7,12 @@ import {
   CURATED_ROOT_DROP_PARENT_KEY,
   deriveCuratedMutationPlan,
   getParentIdsForCard,
+  findCuratedPathToCard,
   listCollectionRootCards,
   normalizeCuratedChildIds,
   nextCollectionRootOrderForAppend,
   resolveCuratedDropIntent,
+  resolveCuratedPathToCard,
   wouldAttachChildCreateCuratedCycle,
 } from '@/lib/utils/curatedCollectionTree';
 
@@ -209,5 +211,36 @@ describe('multi-parent helpers', () => {
     const parentIdsByChild = buildParentIdsByChild(cards);
     expect(parentIdsByChild.get('child-1')).toEqual(['root-1', 'alt-parent']);
     expect(getParentIdsForCard(cards, 'child-1')).toEqual(['root-1', 'alt-parent']);
+  });
+});
+
+describe('Reader collection paths', () => {
+  const cards: Card[] = [
+    { docId: 'root-a', title: 'My Life', isCollectionRoot: true, collectionRootOrder: 10, childrenIds: ['chapter-a'] } as Card,
+    { docId: 'root-b', title: 'Family', isCollectionRoot: true, collectionRootOrder: 20, childrenIds: ['chapter-a'] } as Card,
+    { docId: 'chapter-a', title: 'Childhood', childrenIds: ['section-a'] } as Card,
+    { docId: 'section-a', title: 'School', childrenIds: [] } as Card,
+  ];
+
+  it('finds a deterministic root-to-card fallback path', () => {
+    expect(findCuratedPathToCard(cards, 'section-a').map((card) => card.docId)).toEqual([
+      'root-a',
+      'chapter-a',
+      'section-a',
+    ]);
+  });
+
+  it('preserves the actually selected branch when the hierarchy reuses a card', () => {
+    expect(
+      resolveCuratedPathToCard(cards, 'section-a', ['root-b', 'chapter-a', 'section-a'])
+        .map((card) => card.docId)
+    ).toEqual(['root-b', 'chapter-a', 'section-a']);
+  });
+
+  it('rejects a stale or invalid preferred path and falls back safely', () => {
+    expect(
+      resolveCuratedPathToCard(cards, 'section-a', ['root-b', 'section-a'])
+        .map((card) => card.docId)
+    ).toEqual(['root-a', 'chapter-a', 'section-a']);
   });
 });

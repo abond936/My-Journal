@@ -1,16 +1,33 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card } from '@/lib/types/card';
 import { useCardContext } from '@/components/providers/CardProvider';
 import styles from './CardFeedV2.module.css';
 import V2ContentCard from './V2ContentCard';
+import { resolveCuratedPathToCard } from '@/lib/utils/curatedCollectionTree';
+import { useTag } from '@/components/providers/TagProvider';
+import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
+import { useReaderSidebar } from '@/components/common/ReaderSidebarContext';
+import CollectionIntroduction, {
+  hasCollectionIntroduction,
+} from '@/components/view/CollectionIntroduction';
+
+type FeedDimension = 'who' | 'what' | 'when' | 'where';
+
+const FEED_DIMENSIONS: Array<{ id: FeedDimension; label: string }> = [
+  { id: 'who', label: 'Who' },
+  { id: 'what', label: 'What' },
+  { id: 'when', label: 'When' },
+  { id: 'where', label: 'Where' },
+];
 
 interface CardFeedProps {
   cards: Card[];
   loading: boolean;
   refreshing?: boolean;
+  showFeedContext?: boolean;
   loadMoreRef: (node?: Element | null | undefined) => void;
   onSaveScrollPosition: (cardId?: string) => void;
 }
@@ -19,10 +36,13 @@ export default function CardFeedV2({
   cards,
   loading,
   refreshing = false,
+  showFeedContext,
   loadMoreRef,
   onSaveScrollPosition,
 }: CardFeedProps) {
   const { data: session } = useSession();
+  const { tags } = useTag();
+  const { openFeedDimension } = useReaderSidebar();
   const isAdmin = session?.user?.role === 'admin';
   const {
     clearFilters,
@@ -31,7 +51,9 @@ export default function CardFeedV2({
     searchTerm,
     activeDimension,
     collectionId,
+    collectionPathIds,
     collectionTreeCards,
+    activeCollectionIntroductionCard,
     readerMode,
     isGuidedCollectionTransition,
     guidedTransitionTitle,
@@ -42,7 +64,107 @@ export default function CardFeedV2({
     activeDimension === 'collections' && collectionId
       ? collectionTreeCards.find((card) => card.docId === collectionId) ?? null
       : null;
+  const activeCollectionPath = useMemo(
+    () => collectionId
+      ? resolveCuratedPathToCard(collectionTreeCards, collectionId, collectionPathIds)
+      : [],
+    [collectionId, collectionPathIds, collectionTreeCards]
+  );
   const curatedContextRef = useRef<HTMLDivElement | null>(null);
+
+  const selectedTagsByDimension = useMemo(() => {
+    const dimensionById = buildResolvedTagDimensionMap(tags);
+    const groups: Record<FeedDimension, string[]> = {
+      who: [],
+      what: [],
+      when: [],
+      where: [],
+    };
+    const tagById = new Map(tags.filter((tag) => tag.docId).map((tag) => [tag.docId!, tag]));
+
+    selectedTags.forEach((tagId) => {
+      const dimension = dimensionById.get(tagId);
+      if (!dimension) return;
+      groups[dimension].push(tagById.get(tagId)?.name ?? tagId);
+    });
+
+    return groups;
+  }, [selectedTags, tags]);
+
+  const renderFeedContext = () => {
+    if (showFeedContext === false || (showFeedContext === undefined && readerMode !== 'freeform')) return null;
+    return (
+      <section className={styles.feedContextBar} aria-labelledby="feed-context-title">
+        <div className={styles.feedContextHeadingRow}>
+          <div>
+            <p className={styles.feedContextLabel}>Stories from</p>
+            <p className={styles.feedContextAuthor}>This archive</p>
+          </div>
+          <h1 id="feed-context-title" className={styles.feedContextTitle}>Feed</h1>
+        </div>
+        <div className={styles.feedDimensionSummary} aria-label="Feed tag filters">
+          {FEED_DIMENSIONS.map(({ id, label }) => {
+            const values = selectedTagsByDimension[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className={styles.feedDimensionButton}
+                data-feed-dimension={id}
+                onClick={() => openFeedDimension(id)}
+                aria-label={`Open ${label} filters`}
+              >
+                <span className={styles.feedDimensionLabel}>{label}</span>
+                <span className={styles.feedDimensionValues}>
+                  {values.length > 0
+                    ? values.map((value) => <span key={value}>{value}</span>)
+                    : <span className={styles.feedDimensionAll}>All</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    );
+  };
+
+  const renderCuratedContext = () => {
+    if (!activeCollectionCard) return null;
+    const ancestors = activeCollectionPath.slice(0, -1);
+    const introductionCard =
+      activeCollectionIntroductionCard?.docId === activeCollectionCard.docId
+        ? activeCollectionIntroductionCard
+        : null;
+    const hasIntroduction = hasCollectionIntroduction(introductionCard);
+    return (
+      <div
+        ref={curatedContextRef}
+        className={`${styles.curatedContextBar} ${hasIntroduction ? styles.curatedContextBarWithIntroduction : ''}`}
+      >
+        <p className={styles.curatedContextLabel}>Collection</p>
+        {ancestors.length > 0 ? (
+          <nav aria-label="Collection breadcrumb">
+            <ol className={styles.curatedBreadcrumbs}>
+              {ancestors.map((card) => (
+                <li key={card.docId}>{card.title || card.subtitle || 'Untitled'}</li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+        <div className={styles.curatedContextTitleRow}>
+          <h2 className={styles.curatedContextTitle}>
+            {activeCollectionCard.title || activeCollectionCard.subtitle || 'Untitled'}
+          </h2>
+          <span className={styles.curatedContextCount}>
+            {cards.length} {cards.length === 1 ? 'card' : 'cards'}
+          </span>
+        </div>
+        {introductionCard ? (
+          <CollectionIntroduction card={introductionCard} />
+        ) : null}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const body = document.body;
@@ -73,6 +195,7 @@ export default function CardFeedV2({
   if (loading) {
     return (
       <div className={styles.page}>
+        {renderFeedContext()}
         <main>Loading...</main>
       </div>
     );
@@ -81,6 +204,8 @@ export default function CardFeedV2({
   if (isGuidedCollectionTransition) {
     return (
       <main className={styles.feedMain} aria-busy="true" aria-live="polite">
+        {renderFeedContext()}
+        {renderCuratedContext()}
         <div className={styles.guidedTransition}>
           <p className={styles.guidedTransitionTitle}>
             {guidedTransitionTitle ? `Loading ${guidedTransitionTitle}...` : 'Loading this guided section...'}
@@ -101,6 +226,8 @@ export default function CardFeedV2({
 
     return (
       <main className={styles.feedMain}>
+        {renderFeedContext()}
+        {renderCuratedContext()}
         <div className={styles.emptyFeed}>
           <p className={styles.emptyFeedTitle}>
             {isCollectionsListMode ? 'No guided collections to show.' : 'No cards match the current view.'}
@@ -159,18 +286,13 @@ export default function CardFeedV2({
 
   return (
     <main className={styles.feedMain}>
+      {renderFeedContext()}
       {refreshing ? (
         <div className={styles.refreshingNotice} aria-live="polite">
           Refreshing the journal view...
         </div>
       ) : null}
-      {activeCollectionCard ? (
-        <div ref={curatedContextRef} className={styles.curatedContextBar}>
-          <h2 className={styles.curatedContextTitle}>
-            {activeCollectionCard.title || activeCollectionCard.subtitle || 'Untitled'}
-          </h2>
-        </div>
-      ) : null}
+      {renderCuratedContext()}
       {renderGrid(cards)}
 
       <div ref={loadMoreRef} />
