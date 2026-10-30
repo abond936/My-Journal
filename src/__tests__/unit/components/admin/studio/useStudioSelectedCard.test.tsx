@@ -8,6 +8,8 @@ const upsert = jest.fn();
 const setBusy = jest.fn();
 const setError = jest.fn();
 const setInfo = jest.fn();
+const denyLeave = jest.fn().mockResolvedValue(false);
+const allowLeave = jest.fn().mockResolvedValue(true);
 
 function apiResponse(card: Partial<Card>) {
   return {
@@ -36,6 +38,9 @@ function Harness() {
       <button type="button" onClick={() => selected.selectCard('card-1', { docId: 'card-1', title: 'Preview' } as Card)}>Select</button>
       <button type="button" onClick={() => void selected.patchSelectedCard({ title: 'Patched' }, 'Saved')}>Patch</button>
       <button type="button" onClick={() => selected.evictCard('card-1')}>Evict</button>
+      <button type="button" onClick={() => selected.registerComposeLeaveGuard(denyLeave)}>Guard deny</button>
+      <button type="button" onClick={() => selected.registerComposeLeaveGuard(allowLeave)}>Guard allow</button>
+      <button type="button" onClick={() => void selected.requestClearSelectedCard()}>Clear</button>
     </div>
   );
 }
@@ -43,6 +48,8 @@ function Harness() {
 describe('useStudioSelectedCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    denyLeave.mockResolvedValue(false);
+    allowLeave.mockResolvedValue(true);
     global.fetch = jest.fn()
       .mockResolvedValueOnce(apiResponse({ docId: 'card-1', title: 'Loaded', galleryMedia: [], contentMedia: [] }))
       .mockResolvedValueOnce(apiResponse({ docId: 'card-1', title: 'Patched', galleryMedia: [], contentMedia: [] }));
@@ -64,5 +71,22 @@ describe('useStudioSelectedCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Evict' }));
     await waitFor(() => expect(screen.getByTestId('id')).toHaveTextContent('none'));
+  });
+
+  it('keeps Compose selected when the dirty leave guard declines, then clears after approval', async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent('Loaded'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guard deny' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    await waitFor(() => expect(denyLeave).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('id')).toHaveTextContent('card-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guard allow' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    await waitFor(() => expect(screen.getByTestId('id')).toHaveTextContent('none'));
+    expect(allowLeave).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('status')).toHaveTextContent('empty');
   });
 });

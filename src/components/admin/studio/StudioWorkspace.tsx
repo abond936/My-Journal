@@ -40,8 +40,23 @@ import {
 import { useStudioPaneLayout } from './useStudioPaneLayout';
 import { useStudioSelectedCard } from './useStudioSelectedCard';
 import { collectAssignedMediaIds, mediaRolesOnCard, removeCardFromCardsCache } from './studioCardSelectionModel';
+import {
+  MOBILE_AUTHOR_DESTINATIONS,
+  parseMobileAuthorDestination,
+  readStoredMobileAuthorDestination,
+  resolveMobileStudioPresentation,
+  writeStoredMobileAuthorDestination,
+  type MobileAuthorDestination,
+} from '@/lib/preferences/mobileAuthorDestination';
 
 const STUDIO_ACTION_INFO_TIMEOUT_MS = 3000;
+const MOBILE_DESTINATION_LABELS: Record<MobileAuthorDestination, string> = {
+  cards: 'Cards',
+  media: 'Media',
+  prompts: 'Prompts',
+  collections: 'Collections',
+  tags: 'Tags',
+};
 
 export default function StudioWorkspace() {
   const feedback = useAppFeedback();
@@ -66,6 +81,12 @@ export default function StudioWorkspace() {
     () => (newCardRequested ? '__new__' : requestedCardId ?? '__none__'),
     [newCardRequested, requestedCardId]
   );
+  const [mobileDestination, setMobileDestination] = useState<MobileAuthorDestination>(() => {
+    if (requestedCardId || newCardRequested) return 'cards';
+    if (requestedCollectionId) return 'collections';
+    return parseMobileAuthorDestination(searchParams.get('destination')) ?? 'cards';
+  });
+  const mobileDestinationHydratedRef = useRef(false);
   const {
     wideLayout,
     paneVisibility,
@@ -131,6 +152,8 @@ export default function StudioWorkspace() {
     setCardLoading,
     selectCard,
     requestSelectCard,
+    confirmComposeLeave,
+    requestClearSelectedCard,
     registerComposeLeaveGuard,
     getKnownCardPreview,
     loadSelectedCard,
@@ -146,6 +169,103 @@ export default function StudioWorkspace() {
     setActionError,
     setActionInfo,
   });
+  const mobileCardEditorOpen = Boolean(selectedCardId || newCardRequested);
+  const mobilePresentation = useMemo(
+    () => resolveMobileStudioPresentation({
+      destination: mobileDestination,
+      cardEditorOpen: mobileCardEditorOpen,
+    }),
+    [mobileCardEditorOpen, mobileDestination]
+  );
+  const effectivePaneVisibility = wideLayout
+    ? paneVisibility
+    : mobilePresentation.paneVisibility;
+
+  useEffect(() => {
+    if (wideLayout || mobileDestinationHydratedRef.current) return;
+    mobileDestinationHydratedRef.current = true;
+    const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
+    const initialDestination = requestedCardId || newCardRequested
+      ? 'cards'
+      : requestedCollectionId
+        ? 'collections'
+        : explicitDestination ?? readStoredMobileAuthorDestination();
+    setMobileDestination(initialDestination);
+  }, [newCardRequested, requestedCardId, requestedCollectionId, searchParams, wideLayout]);
+
+  useEffect(() => {
+    if (wideLayout) return;
+    if (requestedCardId || newCardRequested) setMobileDestination('cards');
+    else if (requestedCollectionId) setMobileDestination('collections');
+  }, [newCardRequested, requestedCardId, requestedCollectionId, wideLayout]);
+
+  const replaceStudioQuery = useCallback((update: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(searchParams.toString());
+    update(params);
+    const query = params.toString();
+    router.replace(query ? `/admin/studio?${query}` : '/admin/studio');
+  }, [router, searchParams]);
+
+  const selectMobileDestination = useCallback(async (destination: MobileAuthorDestination) => {
+    if (destination === mobileDestination) return;
+    if (mobileDestination === 'cards' && mobileCardEditorOpen) {
+      const canLeave = await confirmComposeLeave();
+      if (!canLeave) return;
+    }
+    setMobileDestination(destination);
+    writeStoredMobileAuthorDestination(destination);
+    replaceStudioQuery((params) => {
+      params.set('destination', destination);
+      params.delete('collection');
+      if (destination !== 'cards') {
+        params.delete('card');
+        params.delete('new');
+      }
+    });
+  }, [confirmComposeLeave, mobileCardEditorOpen, mobileDestination, replaceStudioQuery]);
+
+  const openCardInWorkspace = useCallback(async (
+    cardId: string,
+    preview?: Card | null
+  ) => {
+    const selected = await requestSelectCard(cardId, preview);
+    if (!selected || wideLayout) return selected;
+    setMobileDestination('cards');
+    writeStoredMobileAuthorDestination('cards');
+    replaceStudioQuery((params) => {
+      params.set('destination', 'cards');
+      params.set('card', cardId);
+      params.delete('new');
+      params.delete('collection');
+    });
+    return true;
+  }, [replaceStudioQuery, requestSelectCard, wideLayout]);
+
+  const showMobileCardsList = useCallback(async () => {
+    const cleared = await requestClearSelectedCard();
+    if (!cleared) return;
+    setMobileDestination('cards');
+    writeStoredMobileAuthorDestination('cards');
+    replaceStudioQuery((params) => {
+      params.set('destination', 'cards');
+      params.delete('card');
+      params.delete('new');
+      params.delete('collection');
+    });
+  }, [replaceStudioQuery, requestClearSelectedCard]);
+
+  const startMobileCard = useCallback(async () => {
+    const cleared = await requestClearSelectedCard();
+    if (!cleared) return;
+    setMobileDestination('cards');
+    writeStoredMobileAuthorDestination('cards');
+    replaceStudioQuery((params) => {
+      params.set('destination', 'cards');
+      params.set('new', '1');
+      params.delete('card');
+      params.delete('collection');
+    });
+  }, [replaceStudioQuery, requestClearSelectedCard]);
   useEffect(() => {
     const handleMediaTagReconciliation = (event: Event) => {
       const detail = (event as CustomEvent<{ affectedCardIds?: string[] }>).detail;
@@ -484,11 +604,33 @@ export default function StudioWorkspace() {
 
   return (
     <StudioShellProvider value={studioShellValue}>
-      <div className={styles.page}>
+      <div className={`${styles.page} ${!wideLayout ? styles.pageMobile : ''}`}>
         <div className={`${cardAdminPageStyles.stickyTop} ${styles.studioChrome}`}>
           <div className={styles.studioHeaderRow}>
-            <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>Studio</h1>
-            <div className={styles.studioPaneToolbar} aria-label="Studio panes">
+            <div className={styles.studioTitleRow}>
+              <h1 className={`${cardAdminPageStyles.title} ${styles.studioPageTitle}`}>
+                {wideLayout ? 'Studio' : MOBILE_DESTINATION_LABELS[mobileDestination]}
+              </h1>
+              {!wideLayout && mobilePresentation.cardsStage === 'compose' ? (
+                <button
+                  type="button"
+                  className={styles.mobileHeaderButton}
+                  onClick={() => void showMobileCardsList()}
+                >
+                  Back to Cards
+                </button>
+              ) : null}
+              {!wideLayout && mobilePresentation.cardsStage === 'list' ? (
+                <button
+                  type="button"
+                  className={styles.mobileHeaderButton}
+                  onClick={() => void startMobileCard()}
+                >
+                  New Card
+                </button>
+              ) : null}
+            </div>
+            {wideLayout ? <div className={styles.studioPaneToolbar} aria-label="Studio panes">
               <button
                 type="button"
                 className={`${styles.studioPaneToggle} ${!paneVisibility.tagsCollapsed ? styles.studioPaneToggleActive : ''}`}
@@ -537,14 +679,14 @@ export default function StudioWorkspace() {
               >
                 Media
               </button>
-            </div>
+            </div> : null}
           </div>
         </div>
         <div className={wideLayout ? styles.grid : styles.gridStacked}>
           <div className={styles.collectionsHost}>
               <CollectionsAdminClient
               initialCollectionId={requestedCollectionId}
-              onSelectCard={requestSelectCard}
+              onSelectCard={openCardInWorkspace}
               onDeleteCard={async (card) => {
                 const confirmed = await feedback.confirm({
                   title: 'Delete card?',
@@ -563,16 +705,18 @@ export default function StudioWorkspace() {
                   void loadSelectedCard(parentId, { quiet: true });
                   return;
                 }
-                void requestSelectCard(parentId);
+                void openCardInWorkspace(parentId);
               }}
-              embeddedTagsCollapsed={paneVisibility.tagsCollapsed}
-              embeddedCollectionsCollapsed={paneVisibility.collectionsCollapsed}
-              embeddedCardsCollapsed={paneVisibility.cardsCollapsed}
-              embeddedRightSlotMinWidth={embeddedRightSlotMinWidth}
+              embeddedTagsCollapsed={effectivePaneVisibility.tagsCollapsed}
+              embeddedCollectionsCollapsed={effectivePaneVisibility.collectionsCollapsed}
+              embeddedCardsCollapsed={effectivePaneVisibility.cardsCollapsed}
+              embeddedRightSlotCollapsed={!wideLayout && mobilePresentation.rightSlotCollapsed}
+              embeddedStacked={!wideLayout}
+              embeddedRightSlotMinWidth={wideLayout ? embeddedRightSlotMinWidth : undefined}
               embeddedUnparentedReplacement={(ctx) => (
                   <StudioTreeCandidateCardBank
                     {...ctx}
-                    autoSelectFirstCard={!newCardRequested}
+                    autoSelectFirstCard={wideLayout && !newCardRequested}
                     registerCatalogRemove={(fn) => {
                       cardsBankRemoveRef.current = fn;
                     }}
@@ -585,9 +729,9 @@ export default function StudioWorkspace() {
                 collectionsRefreshRef.current = refreshStructure;
                 collectionsUpsertCardRef.current = upsertCard;
                 collectionsRemoveCardRef.current = removeCard;
-                const showComposePane = !paneVisibility.composeCollapsed;
-                const showQuestionsPane = !paneVisibility.questionsCollapsed;
-                const showMediaPane = !paneVisibility.mediaCollapsed;
+                const showComposePane = !effectivePaneVisibility.composeCollapsed;
+                const showQuestionsPane = !effectivePaneVisibility.questionsCollapsed;
+                const showMediaPane = !effectivePaneVisibility.mediaCollapsed;
                 return (
                   <div ref={studioRightColumnRef} className={styles.studioRightColumn}>
                     {actionInfo || actionError ? (
@@ -606,16 +750,20 @@ export default function StudioWorkspace() {
                     ) : null}
                     <div
                       ref={bindStudioMediaCardRowRef}
-                      className={styles.studioMediaCardRow}
+                      className={`${styles.studioMediaCardRow} ${!wideLayout ? styles.studioMediaCardRowMobile : ''}`}
                     >
                         {showComposePane ? (
                           <div
                             ref={cardEditColumnRef}
                             className={styles.studioCardEditInBankColumn}
-                            style={{
+                            style={wideLayout ? {
                               flex: `0 0 ${DEFAULT_CARD_EDIT_WIDTH}px`,
                               width: DEFAULT_CARD_EDIT_WIDTH,
                               minWidth: MIN_CARD_EDIT_PX,
+                            } : {
+                              flex: '1 1 auto',
+                              width: '100%',
+                              minWidth: 0,
                             }}
                           >
                             <StudioCardEditPane
@@ -628,10 +776,14 @@ export default function StudioWorkspace() {
                           <div
                             ref={questionsColumnRef}
                             className={styles.studioQuestionsColumn}
-                            style={{
+                            style={wideLayout ? {
                               flex: `0 0 ${DEFAULT_QUESTIONS_WIDTH}px`,
                               width: DEFAULT_QUESTIONS_WIDTH,
                               minWidth: MIN_QUESTIONS_PX,
+                            } : {
+                              flex: '1 1 auto',
+                              width: '100%',
+                              minWidth: 0,
                             }}
                           >
                             <StudioQuestionsPane />
@@ -651,6 +803,23 @@ export default function StudioWorkspace() {
             />
           </div>
         </div>
+        {!wideLayout ? (
+          <nav className={styles.mobileDestinationNav} aria-label="Author destinations">
+            {MOBILE_AUTHOR_DESTINATIONS.map((destination) => (
+              <button
+                key={destination}
+                type="button"
+                className={`${styles.mobileDestinationButton} ${
+                  destination === mobileDestination ? styles.mobileDestinationButtonActive : ''
+                }`}
+                aria-current={destination === mobileDestination ? 'page' : undefined}
+                onClick={() => void selectMobileDestination(destination)}
+              >
+                {MOBILE_DESTINATION_LABELS[destination]}
+              </button>
+            ))}
+          </nav>
+        ) : null}
       </div>
       <MediaEditModal
         isOpen={cardMediaEditorOpen}

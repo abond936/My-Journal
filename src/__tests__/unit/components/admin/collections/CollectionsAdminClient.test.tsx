@@ -99,6 +99,31 @@ describe('CollectionsAdminClient', () => {
     });
   });
 
+  it('supports one sequential embedded pane without rendering the desktop right slot', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ items: [] }),
+    } as Response)) as typeof fetch;
+
+    render(
+      <CollectionsAdminClient
+        embeddedUnparentedReplacement={() => <div data-testid="cards-bank" />}
+        embeddedRightSlot={<div data-testid="right-slot" />}
+        embeddedTagsCollapsed
+        embeddedCollectionsCollapsed
+        embeddedRightSlotCollapsed
+        embeddedStacked
+      />
+    );
+
+    expect(screen.getByTestId('cards-bank')).toBeInTheDocument();
+    expect(screen.queryByTestId('right-slot')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tag-pane')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Collections' })).not.toBeInTheDocument();
+    await waitForEmbeddedCollectionsReady();
+  });
+
   it('keeps embedded Collections on a roots-first path until its independent pane is opened', async () => {
     const fetchMock = jest.fn(async () => {
       return {

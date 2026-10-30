@@ -7,7 +7,7 @@ This file is the concise operational handoff for the next project session. It is
 - `01` remains the owner of product vision, architecture, technical principles, and stable invariants.
 - `02` now records the shipped durable Collection authority and placement-native Studio/Reader behavior separately from still-planned multi-Collection creation, audience, sharing, distribution, and Book editions.
 - `03` records the completed first durable Collection activation and the read-only publication-readiness evidence. Active structure is not publication.
-- The accepted deployed activation baseline is `b13983589e17440d92ce427057620c74c102b4c9`, following merged PRs #15 through #18. The present branch adds only the diagnostic and documentation closeout described here.
+- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present branch adds the sequential mobile Author-destination foundation and its documentation; it makes no production-data mutation.
 
 ## Durable Collection state
 
@@ -41,7 +41,7 @@ The ordinary Reader already requires a published Collection, every required Card
 - Reader Home has no contextual sidebar before a reading path is selected. After selection, Collection navigation preserves nested hierarchy with generous full-row targets, while Feed keeps authorship separate from Who/What/When/Where filters.
 - Card is the durable authored content object; Story is one Card type. Collection is the approachable name for the durable reading work, and a Book is a later print/export edition.
 - Parts, Chapters, and Sections are bounded Collection-local placement roles. A canonical Card may be reused through distinct placements without copying its content.
-- Desktop remains the configurable simultaneous Studio. Mobile should support complete individual Card creation where practical through sequential Cards, Media, Prompts, Collections, and Tags destinations; archive-scale administration remains desktop-primary.
+- Desktop remains the configurable simultaneous Studio. The delivered mobile foundation presents sequential Cards, Media, Prompts, Collections, and Tags destinations, with Cards list → Compose and safe return; complete destination-specific touch workflows remain unfinished, and archive-scale administration remains desktop-primary.
 - AI assistance is optional and author-invoked except for quiet integrity validation. Machine evidence remains provisional until author-confirmed.
 - Draft saving stays permissive. Publishing is a deliberate integrity boundary; access, sharing, and distribution are separate decisions.
 
@@ -51,12 +51,12 @@ Do not attempt to publish `My Life` by flipping existing Card statuses or the Co
 
 1. Preserve the shared read-only readiness result as the owner for dashboard and diagnostic evidence; do not convert attention counts into automatic repair.
 2. Preserve the delivered exact Collection-to-Studio handoff. Add other attention links only when their owning surface can reproduce the represented population; do not label broader global filters as Collection-scoped work.
-3. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Define the remaining explicit placement consequence, protected working-revision behavior, and Collection publication owner before expanding enforcement.
+3. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Implement the approved protected-revision behavior in a separate bounded slice: the first edit to a published Card automatically creates a private working revision, readers retain the prior published version until explicit republish, and unpublish remains separate. Explicit placement consequence and the Collection publication owner still require definition before expanding enforcement.
 4. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
 5. Define audience/visibility separately from publication and distribution before any reader-facing activation.
 6. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.
 
-Until that gate is approved, safe work is limited to read-only assessment, presentation of the existing evidence, and correction of diagnostic or documentation defects. No lifecycle, Card-status, audience, sharing, or distribution mutation is authorized.
+Further bounded, reversible implementation may continue against the approved experience architecture, but no production lifecycle, Card-status, audience, sharing, distribution, repair, or bulk-reconciliation mutation is authorized without its own explicit gate.
 
 ## Workspace and verification notes
 
