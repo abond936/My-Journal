@@ -4,7 +4,7 @@ test.describe('admin card save', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('@admin saves reader quick-edit metadata via PATCH', async ({ page }) => {
-    await page.goto('/view');
+    await page.goto('/view?mode=freeform');
 
     const firstCardLink = page.locator('a[data-card-id]').first();
     await expect(firstCardLink).toBeVisible({ timeout: 45_000 });
