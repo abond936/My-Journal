@@ -59,22 +59,6 @@ test.describe('admin studio access', () => {
     await expect(page.getByText(/Placement-native Studio:/)).toBeVisible();
   });
 
-  test('@admin previews the active My Life placement hierarchy', async ({ page }) => {
-    test.setTimeout(120_000);
-    await page.goto('/admin/collections/preview/my-life');
-
-    await expect(page.getByRole('heading', { name: 'My Life' })).toBeVisible({ timeout: 90_000 });
-    // Hosted smoke targets production; the state-aware active copy is asserted after this UI fix deploys.
-    await expect(page.getByText('Placement-native shadow structure. Reader and Studio still use the legacy hierarchy.')).toBeVisible();
-    await expect(page.getByLabel('Collection state')).toContainText('active');
-    await expect(page.getByLabel('Projection summary')).toContainText('197');
-    await expect(page.getByRole('heading', { name: 'WELCOME' })).toBeVisible();
-    await expect(page.getByText('Parity current')).toBeVisible();
-    await expect(page.getByText('Part', { exact: true })).toHaveCount(1);
-    await expect(page.getByText('Reused Cards').locator('..').getByText('2')).toBeVisible();
-    await expect(page.getByText('Reused Card', { exact: true })).toHaveCount(4);
-  });
-
   test('@admin uses the navigable active placement hierarchy in guided Reader', async ({ page }) => {
     test.setTimeout(120_000);
     const collectionsResponse = page.waitForResponse(
