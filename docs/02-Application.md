@@ -577,13 +577,14 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Drag** — Reorder and nest with distinct cues.
 - **Compose** — Manage children while authoring.
 - **Reader** — Project published structure into Guided navigation.
+- **Durable Collection authority** — Store a top-level Collection separately from Cards, with its own title, description, lifecycle, order, optional introduction Card, structure revision, and reversible authority revision.
+- **Local Parts, Chapters, and Sections** — Organize an active Collection through explicit Collection-local placement roles while preserving the referenced Card as the only authored content object.
+- **Reusable Card placements** — Place one canonical Card more than once with distinct placement identity, parent, role, order, and clicked-path context.
+- **Placement-native Studio and Reader** — When a durable Collection is active, use its placements for structure editing and Reader navigation; retain the legacy hierarchy only as a compatibility and rollback path when no durable Collection is active.
 
 ⭕1 **Planned**
 
-- **Durable Collection work** — Replace the root-Card presentation model with a durable top-level Collection that owns its title, description, audience context, order, and local reading structure without becoming a Card type.
-- **Local Parts, Chapters, and Sections** — Organize one Collection through Collection-local Part, Chapter, and Section placement roles. Part is an optional bounded level for broad divisions; a parent Card may occupy any structural role and retain optional title, subtitle, cover, body, embedded Media, and Gallery content. Small Collections may place Cards directly without requiring empty structural layers.
-- **Explicit placement actions** — Use Add Part, Add Chapter, Add Section, and Add Card rather than an ambiguous generic Add child action. Collection level accepts Parts, Chapters, or Cards; a Part accepts Chapters or Cards; a Chapter accepts Sections or Cards; a Section accepts Cards.
-- **Reusable Card placements** — Place the same canonical Story, Gallery, Question, Callout, or later approved Card in more than one Collection, Part, Chapter, or Section without copying the Card document.
+- **Additional Collection creation and explicit placement actions** — Extend the first active durable Collection into ordinary author-created Collections with clear Add Part, Add Chapter, Add Section, and Add Card actions rather than an ambiguous generic Add child action.
 - **Promote structure** — Create a new Collection from an existing Part, Chapter, or Section by copying that local arrangement and its Card placements while continuing to reference the same Cards. Later structural edits remain independent rather than propagating through live shared-parent hierarchy.
 - **Book edition** — Export or print a stable edition of the Collection's selected structure, Card versions, Media, order, and presentation without freezing continued work on the living Collection.
 - **Book playback** — Let the author choose original telling, final human narration, disclosed synthetic narration when separately available, or no playback for each included Card. Generate edition-owned QR destinations that remain stable after the living Card changes.
@@ -595,7 +596,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - A multi-parent card appears once on each authored path but opens the same card document.
 - Draft cards and subtrees remain hidden from readers.
 - Collection relationships never imply tag assignments.
-- The delivered root-Card and nested-Card implementation remains current behavior until a separately approved migration introduces durable Collection ownership and local Part/Chapter/Section placement roles. Planned terminology does not claim that the new storage model is shipped.
+- `My Life` is the first active durable Collection authority. Its placement-native Studio and Reader paths are shipped, while the untouched root-Card and nested-Card fields remain a compatibility and rollback projection rather than the active structure owner for that Collection. This activation does not publish the Collection, assign an audience, or imply that general multi-Collection creation is complete.
 - Collection is the reader- and author-facing durable work. Part, Chapter, and Section are placement roles owned by one Collection rather than globally shared content objects. The Card occupying a role may remain title-only or carry full optional introductory content.
 - The author assigns Part, Chapter, Section, or Card role explicitly when creating or placing content. Role is local placement metadata and is not inferred from body content, Media, child count, or whether the Card also appears elsewhere. Migration may propose the shallowest legal role needed to preserve an existing path, but that proposal remains reviewable.
 - Card placements own local order and context; the Card owns its durable content. Copying or promoting structure duplicates placement arrangement, not Card content.

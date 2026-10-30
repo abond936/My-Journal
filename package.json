@@ -35,6 +35,7 @@
     "migrate:collection-shadow": "tsx -r dotenv/config src/lib/scripts/cards/apply-collection-placement-shadow.ts",
     "verify:collection-shadow": "tsx -r dotenv/config src/lib/scripts/cards/verify-collection-shadow-parity.ts",
     "transition:collection-authority": "tsx -r dotenv/config src/lib/scripts/cards/transition-collection-authority.ts",
+    "audit:collection-publication": "tsx -r dotenv/config src/lib/scripts/cards/audit-collection-publication-readiness.ts",
     "migrate:when-temporal": "tsx -r dotenv/config src/lib/scripts/tags/migrate-when-temporal.ts",
     "migrate:what-structure": "tsx -r dotenv/config src/lib/scripts/tags/migrate-what-structure.ts",
     "migrate:what-deterministic": "tsx -r dotenv/config src/lib/scripts/tags/migrate-what-deterministic.ts",
