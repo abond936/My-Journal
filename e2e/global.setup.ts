@@ -17,6 +17,6 @@ setup('authenticate admin', async ({ page }) => {
   const username = requireEnv('E2E_ADMIN_USERNAME');
   const password = requireEnv('E2E_ADMIN_PASSWORD');
 
-  await signInThroughHome(page, username, password, '/admin');
+  await signInThroughHome(page, username, password);
   await page.context().storageState({ path: adminAuthFile });
 });

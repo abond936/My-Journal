@@ -8,18 +8,10 @@ export function requireEnv(name: string): string {
   return value;
 }
 
-export async function signInThroughHome(
-  page: Page,
-  username: string,
-  password: string,
-  expectedEntry: '/view' | '/admin' = '/view'
-): Promise<void> {
+export async function signInThroughHome(page: Page, username: string, password: string): Promise<void> {
   await page.goto('/login');
   await page.getByPlaceholder('Username').fill(username);
   await page.getByPlaceholder('Password').fill(password);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  const expectedUrl = expectedEntry === '/admin'
-    ? /\/admin(?:\/|\?|$)/
-    : /\/view(?:\/|\?|$)/;
-  await expect(page).toHaveURL(expectedUrl, { timeout: 45_000 });
+  await expect(page).toHaveURL(/\/view(?:\/|\?|$)/, { timeout: 30_000 });
 }
