@@ -6,6 +6,7 @@
  */
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getActiveCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { evaluateCollectionPublicationAttention } from '@/lib/services/publicationReadinessService';
 import type { Card } from '@/lib/types/card';
 import type { DimensionReviewMap } from '@/lib/types/dimensionReview';
 import type { Media } from '@/lib/types/photo';
@@ -18,8 +19,13 @@ function readArg(name: string): string | undefined {
   return exact?.slice(name.length + 1).trim() || undefined;
 }
 
-function isReviewed(review: DimensionReviewMap, dimension: Dimension): boolean {
-  return review?.[dimension]?.reviewed === true;
+function isReviewComplete(review: DimensionReviewMap, dimension: Dimension): boolean {
+  const entry = review?.[dimension];
+  return (
+    entry?.reviewed === true ||
+    entry?.resolution === 'unknown' ||
+    entry?.resolution === 'not_applicable'
+  );
 }
 
 function referencedMedia(card: Card) {
@@ -71,11 +77,11 @@ async function main() {
 
   const cardReviewCounts = Object.fromEntries(DIMENSIONS.map((dimension) => [
     dimension,
-    cards.filter((card) => isReviewed(card.dimensionReview, dimension)).length,
+    cards.filter((card) => isReviewComplete(card.dimensionReview, dimension)).length,
   ]));
   const mediaReviewCounts = Object.fromEntries(DIMENSIONS.map((dimension) => [
     dimension,
-    media.filter((item) => isReviewed(item.dimensionReview, dimension)).length,
+    media.filter((item) => isReviewComplete(item.dimensionReview, dimension)).length,
   ]));
   const rawCollection = collectionSnap.data() ?? {};
   const audienceFieldKeys = Object.keys(rawCollection).filter((key) =>
@@ -85,18 +91,19 @@ async function main() {
   const draftCards = cards.filter((card) => card.status !== 'published');
   const publishedCards = cards.filter((card) => card.status === 'published');
   const cardsWithAllDimensionsReviewed = cards.filter((card) =>
-    DIMENSIONS.every((dimension) => isReviewed(card.dimensionReview, dimension))
+    DIMENSIONS.every((dimension) => isReviewComplete(card.dimensionReview, dimension))
   );
   const cardsWithReviewedMeaningfulWhat = cards.filter((card) =>
-    isReviewed(card.dimensionReview, 'what') && (card.what?.length ?? 0) > 0
+    isReviewComplete(card.dimensionReview, 'what') && (card.what?.length ?? 0) > 0
   );
   const readyMedia = media.filter((item) => item.readiness?.overall === 'ready');
   const unassessedMedia = media.filter((item) => !item.readiness);
   const pendingMedia = media.filter((item) => item.readiness?.overall === 'pending');
   const failedMedia = media.filter((item) => item.readiness?.overall === 'failed');
   const mediaWithAllDimensionsReviewed = media.filter((item) =>
-    DIMENSIONS.every((dimension) => isReviewed(item.dimensionReview, dimension))
+    DIMENSIONS.every((dimension) => isReviewComplete(item.dimensionReview, dimension))
   );
+  const publicationAttention = evaluateCollectionPublicationAttention({ structure, media });
 
   const report = {
     ok: true,
@@ -132,10 +139,10 @@ async function main() {
       samples: {
         draft: sampleCards(cards, (card) => card.status !== 'published'),
         incompleteDimensionReview: sampleCards(cards, (card) =>
-          !DIMENSIONS.every((dimension) => isReviewed(card.dimensionReview, dimension))
+          !DIMENSIONS.every((dimension) => isReviewComplete(card.dimensionReview, dimension))
         ),
         missingReviewedMeaningfulWhat: sampleCards(cards, (card) =>
-          !(isReviewed(card.dimensionReview, 'what') && (card.what?.length ?? 0) > 0)
+          !(isReviewComplete(card.dimensionReview, 'what') && (card.what?.length ?? 0) > 0)
         ),
       },
     },
@@ -158,6 +165,7 @@ async function main() {
       reviewedByDimension: mediaReviewCounts,
       allDimensionsReviewed: mediaWithAllDimensionsReviewed.length,
     },
+    publicationAttention,
     currentImplementation: {
       ordinaryReaderRequiresPublishedCollection: true,
       ordinaryReaderRequiresEveryRequiredCardPublished: true,

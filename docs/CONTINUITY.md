@@ -47,13 +47,14 @@ The ordinary Reader already requires a published Collection, every required Card
 
 ## Next definition gate
 
-Do not attempt to publish `My Life` by flipping existing Card statuses or the Collection lifecycle. The next bounded decision is the publication-integrity foundation:
+Do not attempt to publish `My Life` by flipping existing Card statuses or the Collection lifecycle. The read-only Collection Needs Attention foundation is now implemented: unfinished work remains valid draft work while Author Home reports separate Card, Media, review, readiness, and audience-infrastructure areas. The remaining publication-integrity sequence is:
 
-1. Define one server-owned readiness result for a Card and a Collection using the canon Who/What/When/Where, Media, placement, and audience contracts.
-2. Decide whether the first publishable unit should be the complete `My Life` Collection or a smaller deliberately selected Collection; do not infer this from the migrated hierarchy.
-3. Repair or explicitly resolve the 17 missing Media references and establish how historical Media readiness is assessed without silently approving it.
-4. Define audience/visibility separately from publication and distribution before any reader-facing activation.
-5. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.
+1. Preserve the shared read-only readiness result as the owner for dashboard and diagnostic evidence; do not convert attention counts into automatic repair.
+2. Add truthful owning-surface handoffs only where Studio can reproduce the represented population.
+3. Define Card and Collection publication enforcement separately from draft authoring, including exact consequences and working-revision behavior.
+4. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
+5. Define audience/visibility separately from publication and distribution before any reader-facing activation.
+6. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.
 
 Until that gate is approved, safe work is limited to read-only assessment, presentation of the existing evidence, and correction of diagnostic or documentation defects. No lifecycle, Card-status, audience, sharing, or distribution mutation is authorized.
 

@@ -99,6 +99,10 @@
   grid-column: 1 / -1;
 }
 
+.attentionSection {
+  border-color: var(--admin-state-warning-border-color);
+}
+
 .sectionHeader {
   display: flex;
   align-items: flex-start;
@@ -186,6 +190,50 @@
 
 .reviewList dd {
   font-weight: var(--font-weight-semibold);
+}
+
+.collectionAttentionList {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.collectionAttention {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  background: var(--admin-support-control-background-color);
+}
+
+.collectionAttentionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.collectionAttentionHeader h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.lifecycle {
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-full);
+  padding: var(--spacing-2xs) var(--spacing-sm);
+  color: var(--admin-support-label-color);
+  font-size: var(--admin-support-meta-font-size);
+  text-transform: capitalize;
+}
+
+.notAvailable {
+  color: var(--admin-support-meta-color);
+  font-size: var(--admin-support-meta-font-size);
+}
+
+.emptyState {
+  margin: 0;
+  color: var(--admin-support-label-color);
 }
 
 .unavailable {

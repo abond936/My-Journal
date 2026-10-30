@@ -316,11 +316,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Boundary** — Viewing users remain read-only; authors have practical in-context Reader editing; archive-wide and bulk organization remain in Studio.
 - **Desktop Author Home foundation** — Administrator-only `/admin` is a read-only Author Home with Continue in Studio, Card totals by status, Media totals and unresolved Who/What/When/Where review counts, failed Media processing, and active or failed durable-operation counts. Home navigation returns administrators to this overview; truthful Card-status actions set only the existing Studio Card filter, while Media and operations use honest owning-surface links where no equivalent filter handoff exists.
 - **Role-aware fresh entry** — Successful credential login and an already-authenticated `/login` visit preserve a safe explicit callback; without one, Authors enter the delivered Author Home and Readers enter Reader.
+- **Collection Needs Attention** — Author Home derives read-only publication work from each active durable Collection and its required Cards and referenced Media. Draft Cards, dimensional review, meaningful What, missing references, Media review, rendition readiness, and unavailable audience selection remain separate truthful work areas; overlapping counts are not collapsed into a fabricated completion percentage. Draft work continues normally, and the dashboard performs no publication or content mutation.
 
 ⭕1 **Planned**
 
 - **Mobile Author entry** — Fresh Author entry opens the same Author Home in a touch-first presentation. Cards remains the default object-work destination, with Continue Draft, Create Card, Drafts, recent publication, and required-attention context rather than attempting to reproduce the multi-pane Studio.
-- **Author dashboard expansion** — Extend the delivered Card, Media-review, and durable-operation foundation with bounded import progress, publication integrity, Collection activity, recent accomplishment, and matching mobile-destination indicators only as their authoritative state and truthful destination handoffs are defined.
+- **Author dashboard expansion** — Extend the delivered Card, Media-review, Collection-attention, and durable-operation foundation with bounded import progress, recent accomplishment, more precise owning-surface handoffs, and matching mobile-destination indicators only as their authoritative state is defined. Publication enforcement remains a separate mutation gate rather than a dashboard responsibility.
 
 📋 **Planned dashboard contracts**
 

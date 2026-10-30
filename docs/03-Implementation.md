@@ -1066,6 +1066,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Publication-readiness evidence — Read-only assessment, not authorization** — A reproducible diagnostic of active `my-life` found lifecycle `draft`, 197 placements, 196 unique required Cards including the introduction, and no missing required Card records. Of those Cards, 109 are published and 87 are drafts; none has all four Who/What/When/Where dimensions reviewed, and none has both a reviewed What dimension and a meaningful What assignment. The Cards reference 295 unique Media records across 313 cover, Gallery, and body occurrences; 278 records load, 17 references are missing, all 278 loaded records have unassessed rendition readiness, and 77 have all four dimensions reviewed. The Collection stores no audience-, visibility-, access-, recipient-, or sharing-like field. Current Reader enforcement correctly requires a published Collection, every required Card published, and no missing required Card, but the current Card-status mutation does not enforce the canon publication-integrity contract, and Collection publication, audience groups, guest recipients, and distribution notifications are not implemented. Therefore active structural authority is verified, but `My Life` is not publication-ready and remains draft. This assessment made no Collection, Card, Media, lifecycle, audience, sharing, or distribution write.
 
+### Eighth implementation slice — Collection Needs Attention foundation
+
+**Definition:** Ready
+
+**Execution:** Verified locally and against live read-only production truth
+
+**Outcome** — Let unfinished Collection work remain ordinary draft work while surfacing the exact known integrity areas on Author Home, without requiring publication, inventing a life-completion percentage, or creating a second Task system.
+
+**Includes** — One reusable read-only evaluator for every active durable Collection; unique required-Card and referenced-Media populations; separate counts for draft Cards, missing required Cards, incomplete dimensional review, missing reviewed What meaning, missing Media references, incomplete Media review, and ready/pending/failed/unassessed Media readiness; explicit disclosure that audience selection is unavailable; independent dashboard degradation; focused service and component verification; live read-only evidence.
+
+**Excludes** — Card or Collection status mutation; publication enforcement; audience groups; guest recipients; distribution; automatic repair; bulk confirmation; inferred completion percentages; new Task records; deep links that Studio cannot reproduce; and any production write.
+
+**Contracts** — Counts may overlap because one Card or Media item can need several kinds of attention; the interface does not sum them into a misleading total. Unknown and Not applicable complete dimensional review when truthful. Meaningful What still requires confirmed What classification. Draft saving and continued authoring remain unrestricted. Dashboard failure in this section does not hide Cards, Media, or operation summaries. The evaluator reads canonical Collection, placement, Card, Media, review, and readiness truth and is also used by the diagnostic command so operational evidence and Author Home do not diverge.
+
+**Completion evidence** — The Author Home now begins with a responsive Needs Attention section for active durable Collections and explicitly states that draft work may continue. The shared evaluator deduplicates introduction and placement Card references, deduplicates cover/Gallery/body Media references, treats intentional Unknown and Not applicable resolutions as reviewed, and keeps unavailable audience selection distinct from author-fixable content work. Focused service, dashboard-service, and component suites pass 11 tests; touched-code lint and non-incremental production typecheck pass. A live read-only `my-life` evaluation reports 196 required Cards, zero missing Card records, 87 drafts, 196 Cards with dimensional review remaining, 196 without reviewed What meaning, 295 referenced Media IDs, 17 missing Media records, 201 loaded Media records with dimensional review remaining, and 278 loaded Media records with unassessed readiness. The Collection remains active/draft, and no Collection, Card, Media, audience, publication, sharing, or distribution record changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
