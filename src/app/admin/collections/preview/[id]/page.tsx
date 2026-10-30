@@ -11,6 +11,6 @@ export default async function CollectionShadowPreviewPage({
 }) {
   const { id } = await params;
   const readModel = await getCollectionProjectionReadModel(id);
-  if (!readModel || readModel.projection.collection.recordState !== 'shadow') notFound();
+  if (!readModel) notFound();
   return <CollectionShadowPreview projection={readModel.projection} readiness={readModel.readiness} />;
 }
