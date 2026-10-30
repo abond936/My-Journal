@@ -70,7 +70,7 @@ test.describe('admin studio access', () => {
     await expect(page.getByText('Reused Card', { exact: true })).toHaveCount(4);
   });
 
-  test('@admin retains legacy guided Reader while the durable Collection is shadow', async ({ page }) => {
+  test('@admin retains navigable legacy guided Reader while the durable Collection is shadow', async ({ page }) => {
     test.setTimeout(120_000);
     const collectionsResponse = page.waitForResponse(
       (response) => response.url().endsWith('/api/collections') && response.request().method() === 'GET'
@@ -79,6 +79,38 @@ test.describe('admin studio access', () => {
     const collections = await (await collectionsResponse).json() as { collections?: unknown[] };
     expect(collections.collections).toEqual([]);
     await expect(page.getByRole('tab', { name: 'Collections' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('button', { name: /^My Life/ })).toBeVisible({ timeout: 90_000 });
+    const root = page.locator(
+      'button[data-collection-level="0"][data-collection-has-children="true"]'
+    ).first();
+    await expect(root).toBeVisible({ timeout: 90_000 });
+
+    const rootTitle = await root.getAttribute('data-collection-title');
+    expect(rootTitle).toBeTruthy();
+    const rootRow = root.locator('..');
+    const rootDisclosure = rootRow.locator('button').first();
+    const [rowBox, disclosureBox] = await Promise.all([
+      root.boundingBox(),
+      rootDisclosure.boundingBox(),
+    ]);
+    expect(rowBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect(disclosureBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(disclosureBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    await root.click();
+    await expect(root).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { name: rootTitle!, exact: true })).toBeVisible();
+
+    const nestedParent = page.locator(
+      'button[data-collection-level="1"][data-collection-has-children="true"]'
+    ).first();
+    await expect(nestedParent).toBeVisible();
+    const nestedTitle = await nestedParent.getAttribute('data-collection-title');
+    expect(nestedTitle).toBeTruthy();
+
+    await nestedParent.click();
+    await expect(page.getByRole('heading', { name: nestedTitle!, exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Collection breadcrumb' })).toContainText(
+      rootTitle!
+    );
   });
 });
