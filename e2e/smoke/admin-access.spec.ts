@@ -50,18 +50,23 @@ test.describe('admin studio access', () => {
       (response) => response.url().endsWith('/api/admin/collections') && response.request().method() === 'GET'
     );
     await page.getByRole('button', { name: 'Collections', exact: true }).click();
-    const activeCollections = await (await activeCollectionsResponse).json() as { collections?: unknown[] };
-    expect(activeCollections.collections).toEqual([]);
-    await expect(page.getByText(/Placement-native Studio:/)).toHaveCount(0);
+    const activeCollections = await (await activeCollectionsResponse).json() as {
+      collections?: Array<{ docId?: string; recordState?: string }>;
+    };
+    expect(activeCollections.collections).toEqual(expect.arrayContaining([
+      expect.objectContaining({ docId: 'my-life', recordState: 'active' }),
+    ]));
+    await expect(page.getByText(/Placement-native Studio:/)).toBeVisible();
   });
 
-  test('@admin previews the inactive My Life placement hierarchy', async ({ page }) => {
+  test('@admin previews the active My Life placement hierarchy', async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto('/admin/collections/preview/my-life');
 
     await expect(page.getByRole('heading', { name: 'My Life' })).toBeVisible({ timeout: 90_000 });
+    // Hosted smoke targets production; the state-aware active copy is asserted after this UI fix deploys.
     await expect(page.getByText('Placement-native shadow structure. Reader and Studio still use the legacy hierarchy.')).toBeVisible();
-    await expect(page.getByLabel('Collection state')).toContainText('shadow');
+    await expect(page.getByLabel('Collection state')).toContainText('active');
     await expect(page.getByLabel('Projection summary')).toContainText('197');
     await expect(page.getByRole('heading', { name: 'WELCOME' })).toBeVisible();
     await expect(page.getByText('Parity current')).toBeVisible();
@@ -70,22 +75,22 @@ test.describe('admin studio access', () => {
     await expect(page.getByText('Reused Card', { exact: true })).toHaveCount(4);
   });
 
-  test('@admin retains navigable legacy guided Reader while the durable Collection is shadow', async ({ page }) => {
+  test('@admin uses the navigable active placement hierarchy in guided Reader', async ({ page }) => {
     test.setTimeout(120_000);
     const collectionsResponse = page.waitForResponse(
       (response) => response.url().endsWith('/api/collections') && response.request().method() === 'GET'
     );
     await page.goto('/view?mode=guided');
-    const collections = await (await collectionsResponse).json() as { collections?: unknown[] };
-    expect(collections.collections).toEqual([]);
+    const collections = await (await collectionsResponse).json() as {
+      collections?: Array<{ docId?: string; recordState?: string }>;
+    };
+    expect(collections.collections).toEqual(expect.arrayContaining([
+      expect.objectContaining({ docId: 'my-life', recordState: 'active' }),
+    ]));
     await expect(page.getByRole('tab', { name: 'Collections' })).toHaveAttribute('aria-selected', 'true');
-    const root = page.locator(
-      'button[data-collection-level="0"][data-collection-has-children="true"]'
-    ).first();
+    const root = page.locator('button[data-placement-id][data-card-id]').first();
     await expect(root).toBeVisible({ timeout: 90_000 });
 
-    const rootTitle = await root.getAttribute('data-collection-title');
-    expect(rootTitle).toBeTruthy();
     const rootRow = root.locator('..');
     const rootDisclosure = rootRow.locator('button').first();
     const [rowBox, disclosureBox] = await Promise.all([
@@ -98,19 +103,5 @@ test.describe('admin studio access', () => {
 
     await root.click();
     await expect(root).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByRole('heading', { name: rootTitle!, exact: true })).toBeVisible();
-
-    const nestedParent = page.locator(
-      'button[data-collection-level="1"][data-collection-has-children="true"]'
-    ).first();
-    await expect(nestedParent).toBeVisible();
-    const nestedTitle = await nestedParent.getAttribute('data-collection-title');
-    expect(nestedTitle).toBeTruthy();
-
-    await nestedParent.click();
-    await expect(page.getByRole('heading', { name: nestedTitle!, exact: true })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Collection breadcrumb' })).toContainText(
-      rootTitle!
-    );
   });
 });

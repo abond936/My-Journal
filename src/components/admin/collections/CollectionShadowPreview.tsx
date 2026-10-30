@@ -47,6 +47,7 @@ function PreviewNode({
 }
 
 export default function CollectionShadowPreview({ projection, readiness }: Props) {
+  const isActive = projection.collection.recordState === 'active';
   const nodes = Array.from(projection.nodesByPlacementId.values());
   const occurrenceCounts = nodes.reduce((counts, node) => {
     counts.set(node.cardId, (counts.get(node.cardId) ?? 0) + 1);
@@ -66,7 +67,9 @@ export default function CollectionShadowPreview({ projection, readiness }: Props
           <p className={styles.eyebrow}>Administrator diagnostic preview</p>
           <h1>{projection.collection.title}</h1>
           <p className={styles.subtitle}>
-            Placement-native shadow structure. Reader and Studio still use the legacy hierarchy.
+            {isActive
+              ? 'Placement-native active structure. Studio and eligible Reader paths use this hierarchy.'
+              : 'Placement-native shadow structure. Reader and Studio still use the legacy hierarchy.'}
           </p>
         </div>
         <div className={styles.stateBadges} aria-label="Collection state">
@@ -75,7 +78,10 @@ export default function CollectionShadowPreview({ projection, readiness }: Props
         </div>
       </header>
 
-      <section className={readiness.ready ? styles.ready : styles.stale} aria-label="Shadow readiness">
+      <section
+        className={readiness.ready ? styles.ready : styles.stale}
+        aria-label={isActive ? 'Authority readiness' : 'Shadow readiness'}
+      >
         <strong>{readiness.ready ? 'Parity current' : 'Parity stale'}</strong>
         <span>
           {readiness.ready
@@ -105,7 +111,7 @@ export default function CollectionShadowPreview({ projection, readiness }: Props
         <div className={styles.structureHeading}>
           <div>
             <p className={styles.sectionLabel}>Placement tree</p>
-            <h2 id="structure-heading">Complete shadow hierarchy</h2>
+            <h2 id="structure-heading">Complete {isActive ? 'active' : 'shadow'} hierarchy</h2>
           </div>
           <p>Roles and order are local to this Collection; Card content remains canonical.</p>
         </div>

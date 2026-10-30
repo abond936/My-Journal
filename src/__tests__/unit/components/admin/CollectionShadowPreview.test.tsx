@@ -49,4 +49,31 @@ describe('CollectionShadowPreview', () => {
     expect(screen.getByText('Parity current')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('describes an active projection as the current authority', () => {
+    const collection = {
+      docId: 'my-life',
+      title: 'My Life',
+      lifecycle: 'draft',
+      recordState: 'active',
+      order: 10,
+      createdAt: 1,
+      updatedAt: 1,
+    } as Collection;
+    const projection = buildReaderCollectionProjection({ collection, placements: [], cards: [] });
+
+    render(<CollectionShadowPreview projection={projection} readiness={{
+      ready: true,
+      currentSourceFingerprint: 'a'.repeat(64),
+      currentTargetFingerprint: 'b'.repeat(64),
+      sourceFingerprintMatches: true,
+      targetFingerprintMatches: true,
+      parityIssues: [],
+      sourceIssueCount: 0,
+    }} />);
+
+    expect(screen.getByText('Placement-native active structure. Studio and eligible Reader paths use this hierarchy.')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Authority readiness' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Complete active hierarchy' })).toBeInTheDocument();
+  });
 });

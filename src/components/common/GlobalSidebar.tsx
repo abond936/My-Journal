@@ -483,6 +483,9 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
             aria-current={isSelected ? 'page' : undefined}
             data-placement-id={placement.docId}
             data-card-id={placement.cardId}
+            data-collection-title={title}
+            data-collection-level={level}
+            data-collection-has-children={children.length ? 'true' : 'false'}
           >
             <span className={styles.collectionItemContent}>
               <span className={styles.collectionItemMainRow}>
