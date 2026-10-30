@@ -21,6 +21,7 @@ import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
 import { reconcileDimensionReviewMap } from '@/lib/utils/dimensionReview';
 import { getMediaIdsFromCard, computeCardMediaSignalsFromMediaIds, stripHydratedGalleryItem } from '@/lib/services/cards/cardMediaHydrationService';
 import { FieldValue } from 'firebase-admin/firestore';
+import { assertCardHasNoCollectionPlacements } from '@/lib/services/collections/collectionCardReferenceService';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -457,6 +458,7 @@ export async function deleteCard(cardId: string): Promise<void> {
         const parentCardsQuery = firestore.collection(CARDS_COLLECTION)
             .where('childrenIds', 'array-contains', cardId);
         const parentCardsSnapshot = await transaction.get(parentCardsQuery);
+        await assertCardHasNoCollectionPlacements({ transaction, firestore, cardId });
         const mediaRefs = mediaToDetach.map((mediaId) =>
           firestore.collection(MEDIA_COLLECTION).doc(mediaId)
         );

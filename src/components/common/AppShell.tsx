@@ -2,11 +2,14 @@
 
 import React, { Suspense, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/common/Navigation';
 import GlobalSidebar from '@/components/common/GlobalSidebar';
+import { ReaderSidebarProvider } from '@/components/common/ReaderSidebarContext';
+import { useCardContext, type ActiveDimension } from '@/components/providers/CardProvider';
 import LazyThemeAdminOverlay from '@/components/common/LazyThemeAdminOverlay';
 import { isMarketingRoute } from '@/lib/utils/marketingRoutes';
+import { isReaderHomeRoute } from '@/lib/utils/readerEntry';
 import styles from './AppShell.module.css';
 
 interface AppShellProps {
@@ -21,6 +24,8 @@ const MOBILE_SWIPE_OPEN_INSET_END_PX = 80;
 export default function AppShell({ children }: AppShellProps) {
   const { status } = useSession();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isReaderHome = isReaderHomeRoute(pathname, searchParams.get('mode'));
   const isMarketingSurface = isMarketingRoute(pathname);
   const isReaderProtectedRoute =
     pathname === '/view' ||
@@ -35,6 +40,7 @@ export default function AppShell({ children }: AppShellProps) {
     (status === 'authenticated' || status === 'loading' || isReaderProtectedRoute || isAdminRoute);
   // SSR and first client render must match (false); desktop open state syncs in useLayoutEffect.
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const { setActiveDimension } = useCardContext();
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const swipeStartRef = useRef<{ x: number; y: number; tracking: boolean } | null>(null);
 
@@ -51,6 +57,7 @@ export default function AppShell({ children }: AppShellProps) {
 
       setIsMobileViewport(isMobile);
       setSidebarOpen((current) => {
+        if (isReaderHome) return false;
         if (isMobile) return false;
         if (forceDesktopDefault || !current) return true;
         return current;
@@ -68,7 +75,7 @@ export default function AppShell({ children }: AppShellProps) {
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };
-  }, [pathname]);
+  }, [isReaderHome, pathname]);
 
   // Update sidebar state when route changes
   useEffect(() => {
@@ -78,15 +85,24 @@ export default function AppShell({ children }: AppShellProps) {
     }
     if (pathname?.startsWith('/admin')) {
       setSidebarOpen(false);
+      return;
     }
-  }, [pathname]);
+    if (isReaderHome) setSidebarOpen(false);
+  }, [isReaderHome, pathname]);
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
   };
 
+  const openFeedDimension = (dimension: Extract<ActiveDimension, 'who' | 'what' | 'when' | 'where'>) => {
+    setActiveDimension(dimension);
+    setSidebarOpen(true);
+  };
+
   const canUseMobileSwipe =
-    isMobileViewport && !isMarketingRoute(pathname) && !isAdminRoute;
+    isMobileViewport && !isMarketingRoute(pathname) && !isAdminRoute && !isReaderHome;
+  const shouldShowContextualSidebar =
+    !isMarketingSurface && !isSpecialistAdminRoute && !isReaderHome;
 
   const beginSwipeTracking = (event: React.TouchEvent<HTMLElement>) => {
     if (!canUseMobileSwipe) return;
@@ -157,9 +173,10 @@ export default function AppShell({ children }: AppShellProps) {
   // Render the application shell for protected reader/admin surfaces even while the
   // client session is hydrating, so route-level auth truth and reader chrome stay aligned.
   return (
+    <ReaderSidebarProvider openFeedDimension={openFeedDimension}>
     <div className={styles.appShell}>
       <div className={styles.header}>
-        {!isMarketingSurface && !isSpecialistAdminRoute && (
+        {shouldShowContextualSidebar && (
           <button
             className={styles.sidebarToggle}
             onClick={toggleSidebar}
@@ -178,7 +195,7 @@ export default function AppShell({ children }: AppShellProps) {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchCancel}
       >
-        {!isMarketingSurface && !isSpecialistAdminRoute && (
+        {shouldShowContextualSidebar && (
           <>
             <div
               className={`${styles.sidebarBackdrop} ${isSidebarOpen ? styles.sidebarBackdropOpen : ''}`}
@@ -207,5 +224,6 @@ export default function AppShell({ children }: AppShellProps) {
       </div>
       <LazyThemeAdminOverlay />
     </div>
+    </ReaderSidebarProvider>
   );
 }

@@ -5,7 +5,7 @@ export function resolveReaderRouteMode(
   explicitMode: string | null | undefined,
   persistedMode: ReaderRouteMode
 ): ReaderRouteMode {
-  if (pathname?.startsWith('/view/') && (explicitMode === 'guided' || explicitMode === 'freeform')) {
+  if (pathname?.startsWith('/view') && (explicitMode === 'guided' || explicitMode === 'freeform')) {
     return explicitMode;
   }
   return persistedMode;

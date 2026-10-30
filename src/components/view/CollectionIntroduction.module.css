@@ -1,0 +1,111 @@
+.introduction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--reader-page-border-color);
+}
+
+.introductionContent {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.introductionContentCollapsed {
+  max-height: min(42vh, 32rem);
+}
+
+.introductionContentExpanded {
+  max-height: none;
+  overflow: visible;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--reader-page-muted-color);
+  font-family: var(--reader-chrome-text-font-family);
+  font-size: var(--reader-chrome-text-font-size);
+  font-weight: var(--reader-chrome-text-font-weight);
+  line-height: var(--reader-chrome-text-line-height);
+}
+
+.coverFrame {
+  width: 100%;
+  max-height: 26rem;
+  overflow: hidden;
+  border-radius: var(--reader-card-border-radius);
+  background: var(--reader-media-frame-background-color);
+}
+
+.coverImage {
+  display: block;
+  width: 100%;
+  height: min(42vh, 26rem);
+}
+
+.prose {
+  color: var(--reader-page-text-color);
+}
+
+.fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--reader-window-background-color));
+}
+
+.expansionButton {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width-thin) solid var(--reader-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  cursor: pointer;
+  font-family: var(--reader-support-control-font-family);
+  font-size: var(--reader-support-control-font-size);
+  font-weight: var(--reader-support-control-font-weight);
+  line-height: var(--reader-support-control-line-height);
+}
+
+.expansionButton:hover,
+.expansionButton:focus-visible {
+  background: var(--reader-support-control-hover-background-color);
+  border-color: var(--reader-support-control-hover-border-color);
+  color: var(--reader-support-control-hover-text-color);
+}
+
+@media (max-width: 768px) {
+  .introductionContentCollapsed {
+    max-height: min(34vh, 22rem);
+  }
+
+  .coverFrame,
+  .coverImage {
+    max-height: 20rem;
+  }
+
+  .coverImage {
+    height: min(34vh, 20rem);
+  }
+}
+
+@media print {
+  .introductionContentCollapsed {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .fade,
+  .expansionButton {
+    display: none;
+  }
+}

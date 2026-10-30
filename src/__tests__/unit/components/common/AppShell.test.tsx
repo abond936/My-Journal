@@ -2,7 +2,9 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import AppShell from '@/components/common/AppShell';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useCardContext } from '@/components/providers/CardProvider';
+import { useReaderSidebar } from '@/components/common/ReaderSidebarContext';
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
@@ -10,6 +12,11 @@ jest.mock('next-auth/react', () => ({
 
 jest.mock('next/navigation', () => ({
   usePathname: jest.fn(),
+  useSearchParams: jest.fn(),
+}));
+
+jest.mock('@/components/providers/CardProvider', () => ({
+  useCardContext: jest.fn(),
 }));
 
 jest.mock('@/components/common/Navigation', () => ({
@@ -35,6 +42,8 @@ jest.mock('@/components/common/LazyThemeAdminOverlay', () => ({
 
 const mockedUseSession = useSession as jest.MockedFunction<typeof useSession>;
 const mockedUsePathname = usePathname as jest.MockedFunction<typeof usePathname>;
+const mockedUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>;
+const mockedUseCardContext = useCardContext as jest.MockedFunction<typeof useCardContext>;
 
 function mockMatchMedia(matches: boolean) {
   const listeners = new Set<(event: MediaQueryListEvent) => void>();
@@ -55,14 +64,21 @@ function mockMatchMedia(matches: boolean) {
   });
 }
 
+function FeedDimensionTrigger() {
+  const { openFeedDimension } = useReaderSidebar();
+  return <button onClick={() => openFeedDimension('where')}>Open Where summary</button>;
+}
+
 describe('AppShell mobile sidebar drawer', () => {
   beforeEach(() => {
+    mockedUseCardContext.mockReturnValue({ setActiveDimension: jest.fn() } as never);
     mockedUseSession.mockReturnValue({
       status: 'authenticated',
       data: { user: { role: 'viewer' } },
       update: jest.fn(),
     } as never);
     mockedUsePathname.mockReturnValue('/view');
+    mockedUseSearchParams.mockReturnValue(new URLSearchParams('mode=freeform') as never);
   });
 
   it('leaves the mobile left edge available to browser navigation', async () => {
@@ -91,6 +107,25 @@ describe('AppShell mobile sidebar drawer', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('global-sidebar')).toHaveAttribute('data-open', 'false');
+    });
+  });
+
+  it('opens the existing drawer and focuses a Feed dimension through shell controls', async () => {
+    mockMatchMedia(true);
+    const setActiveDimension = jest.fn();
+    mockedUseCardContext.mockReturnValue({ setActiveDimension } as never);
+
+    render(
+      <AppShell>
+        <FeedDimensionTrigger />
+      </AppShell>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open Where summary' }));
+
+    expect(setActiveDimension).toHaveBeenCalledWith('where');
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Toggle sidebar' })).toHaveAttribute('aria-expanded', 'true');
     });
   });
 
@@ -172,6 +207,21 @@ describe('AppShell mobile sidebar drawer', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Toggle sidebar' })).toBeInTheDocument();
+  });
+
+  it('keeps contextual sidebar controls off bare Reader Home', () => {
+    mockMatchMedia(false);
+    mockedUseSearchParams.mockReturnValue(new URLSearchParams() as never);
+
+    render(
+      <AppShell>
+        <div>Reader Home</div>
+      </AppShell>
+    );
+
+    expect(screen.getByTestId('navigation')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Toggle sidebar' })).toBeNull();
+    expect(screen.queryByTestId('global-sidebar')).toBeNull();
   });
 
   it('keeps reader shell chrome visible while session is loading on protected routes', () => {

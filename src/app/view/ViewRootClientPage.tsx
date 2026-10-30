@@ -1,12 +1,16 @@
 'use client';
 
-import React, { Suspense, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { Suspense, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCardContext } from '@/components/providers/CardProvider';
+import { parseReaderEntryMode, READER_LAST_MODE_KEY } from '@/lib/utils/readerEntry';
 import styles from './ViewPage.module.css';
 import AdminFAB from '@/components/admin/studio/cards/AdminFAB';
 import CardFeedV2 from '@/components/view/CardFeedV2';
 import ViewMediaFeed from '@/components/view/ViewMediaFeed';
+import ReaderHome from '@/components/view/ReaderHome';
+import DurableCollectionFeed from '@/components/view/DurableCollectionFeed';
+import { useDurableCollectionReader } from '@/components/view/useDurableCollectionReader';
 
 const SCROLL_POSITION_KEY = 'contentViewScrollPos';
 const FOCUS_CARD_KEY = 'contentViewFocusCardId';
@@ -23,7 +27,7 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
   return ref;
 }
 
-function ViewPageContent() {
+function ViewPageContent({ explicitMode }: { explicitMode: 'guided' | 'freeform' }) {
   const {
     visibleCards,
     loadingMore,
@@ -34,6 +38,7 @@ function ViewPageContent() {
     error,
     browseTarget,
     readerMode,
+    setReaderMode,
     isGuidedCollectionTransition,
   } =
     useCardContext();
@@ -41,6 +46,11 @@ function ViewPageContent() {
   const focusCardId = searchParams.get('focusCardId');
   const consumedFocusRef = useRef<string | null>(null);
   const prepositionedFocusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(READER_LAST_MODE_KEY, explicitMode);
+    if (readerMode !== explicitMode) setReaderMode(explicitMode);
+  }, [explicitMode, readerMode, setReaderMode]);
 
   const loadingLock = useRef(false);
   const handleLoadMore = useCallback(() => {
@@ -163,6 +173,7 @@ function ViewPageContent() {
         cards={visibleCards}
         loading={isInitialLoading}
         refreshing={isRefreshing}
+        showFeedContext={explicitMode === 'freeform'}
         loadMoreRef={loadMoreRef}
         onSaveScrollPosition={onSaveScrollPosition}
       />
@@ -172,6 +183,34 @@ function ViewPageContent() {
   );
 }
 
+function ViewRouteContent() {
+  const searchParams = useSearchParams();
+  const explicitMode = parseReaderEntryMode(searchParams.get('mode'));
+  const durable = useDurableCollectionReader(explicitMode === 'guided');
+
+  if (!explicitMode) return <ReaderHome />;
+  if (explicitMode === 'guided') {
+    if (durable.loading) return <ViewPageFallback />;
+    if (durable.error) {
+      return (
+        <div className={`${styles.page} ${styles.errorState}`} role="alert">
+          <p className={styles.errorTitle}>Collections could not be loaded.</p>
+          <p className={styles.errorDetail}>Reload Reader to try again.</p>
+        </div>
+      );
+    }
+    if (durable.hasDurableCollections && durable.structure) {
+      return (
+        <DurableCollectionFeed
+          structure={durable.structure}
+          selectedPlacementId={durable.selectedPlacementId}
+        />
+      );
+    }
+  }
+  return <ViewPageContent explicitMode={explicitMode} />;
+}
+
 function ViewPageFallback() {
   return (
     <div className={styles.page}>
@@ -179,6 +218,7 @@ function ViewPageFallback() {
         cards={[]}
         loading
         refreshing={false}
+        showFeedContext={false}
         loadMoreRef={() => {}}
         onSaveScrollPosition={() => {}}
       />
@@ -189,7 +229,7 @@ function ViewPageFallback() {
 export default function ViewRootClientPage() {
   return (
     <Suspense fallback={<ViewPageFallback />}>
-      <ViewPageContent />
+      <ViewRouteContent />
     </Suspense>
   );
 }

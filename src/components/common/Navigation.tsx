@@ -38,6 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const { data: session } = useSession();
   const { theme, isThemeAdminOpen, openThemeAdmin } = useTheme();
   const isAdmin = session?.user?.role === 'admin';
+  const homeHref = isAdmin ? '/admin' : '/';
   const { showBack, backHref } = useReaderBackTarget(pathname, returnTo);
   const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
   const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
@@ -129,8 +130,8 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
 
         <div className={`${styles.navLinks} ${isMenuOpen ? styles.open : ''}`}>
           <Link
-            href="/"
-            className={`${styles.navLink} ${pathname === '/' ? styles.active : ''}`}
+            href={homeHref}
+            className={`${styles.navLink} ${pathname === homeHref ? styles.active : ''}`}
           >
             Home
           </Link>

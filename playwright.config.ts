@@ -5,8 +5,10 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config({ path: path.resolve(__dirname, '.env.local'), override: true });
 
-const hostedBaseURL =
-  process.env.E2E_BASE_URL?.trim() || process.env.PLAYWRIGHT_BASE_URL?.trim() || '';
+const forceLocal = process.env.E2E_LOCAL === '1';
+const hostedBaseURL = forceLocal
+  ? ''
+  : process.env.E2E_BASE_URL?.trim() || process.env.PLAYWRIGHT_BASE_URL?.trim() || '';
 const baseURL = hostedBaseURL || 'http://localhost:3000';
 const viewerAuthFile = path.join(__dirname, 'e2e/.auth/viewer.json');
 const adminAuthFile = path.join(__dirname, 'e2e/.auth/admin.json');

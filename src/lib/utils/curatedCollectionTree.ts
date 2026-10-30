@@ -128,6 +128,59 @@ export function listCollectionRootCards(cards: Card[]): Card[] {
     .sort(compareCollectionRootCards);
 }
 
+/**
+ * Finds one deterministic root-to-card path for Reader context when no explicit clicked path is
+ * available. The current delivered tree can reuse a Card in more than one branch, so callers
+ * should prefer the path captured by the navigation interaction whenever possible.
+ */
+export function findCuratedPathToCard(cards: Card[], targetId: string): Card[] {
+  if (!targetId) return [];
+  const byId = new Map(cards.filter((card) => card.docId).map((card) => [card.docId!, card]));
+
+  const visit = (cardId: string, path: Card[], seen: Set<string>): Card[] | null => {
+    const card = byId.get(cardId);
+    if (!card || seen.has(cardId)) return null;
+    const nextPath = [...path, card];
+    if (cardId === targetId) return nextPath;
+
+    const nextSeen = new Set(seen);
+    nextSeen.add(cardId);
+    for (const childId of normalizeCuratedChildIds(card.childrenIds)) {
+      const result = visit(childId, nextPath, nextSeen);
+      if (result) return result;
+    }
+    return null;
+  };
+
+  for (const root of listCollectionRootCards(cards)) {
+    const result = visit(root.docId!, [], new Set());
+    if (result) return result;
+  }
+
+  const standalone = byId.get(targetId);
+  return standalone ? [standalone] : [];
+}
+
+export function resolveCuratedPathToCard(
+  cards: Card[],
+  targetId: string,
+  preferredPathIds: readonly string[] = []
+): Card[] {
+  const byId = new Map(cards.filter((card) => card.docId).map((card) => [card.docId!, card]));
+  const preferredCards = preferredPathIds
+    .map((cardId) => byId.get(cardId))
+    .filter((card): card is Card => Boolean(card));
+  const preferredIsValid =
+    preferredCards.length === preferredPathIds.length &&
+    preferredCards.at(-1)?.docId === targetId &&
+    preferredCards.every((card, index) => {
+      if (index === preferredCards.length - 1) return true;
+      return normalizeCuratedChildIds(card.childrenIds).includes(preferredCards[index + 1].docId!);
+    });
+
+  return preferredIsValid ? preferredCards : findCuratedPathToCard(cards, targetId);
+}
+
 export type CuratedTreePatchFn = (cardId: string, payload: Partial<Card>) => Promise<void>;
 
 export type CuratedDropIntent =

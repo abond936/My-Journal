@@ -1,0 +1,102 @@
+.pane {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  overflow: auto;
+  padding: var(--spacing-sm);
+}
+
+.heading,
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.heading {
+  justify-content: space-between;
+}
+
+.heading span,
+.note {
+  color: var(--text2-color);
+  font-size: var(--font-size-xs);
+}
+
+.note {
+  margin: 0;
+}
+
+.addCard,
+.searchResults li {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.addCard input,
+.searchResults li span {
+  min-width: 0;
+  flex: 1;
+}
+
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  padding: var(--spacing-xs);
+  list-style: none;
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.tree,
+.tree ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree ol {
+  margin-left: 1rem;
+  padding-left: var(--spacing-xs);
+  border-left: 1px solid var(--border1-color);
+}
+
+.node {
+  margin: 0.15rem 0;
+}
+
+.row {
+  min-height: 2.75rem;
+  padding: 0.2rem;
+}
+
+.titleButton {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row select,
+.row button:not(.titleButton) {
+  min-height: 2.25rem;
+}
+
+.error {
+  color: var(--admin-state-error-text-color);
+}
+
+.message {
+  color: var(--admin-state-success-text-color);
+}

@@ -1,0 +1,126 @@
+import Link from 'next/link';
+import type { AuthorDashboardSummary } from '@/lib/services/authorDashboardService';
+import DashboardCardStatusLink from './DashboardCardStatusLink';
+import styles from './AuthorDashboard.module.css';
+
+type AuthorDashboardProps = {
+  summary: AuthorDashboardSummary;
+};
+
+const DIMENSION_LABELS = {
+  who: 'Who',
+  what: 'What',
+  when: 'When',
+  where: 'Where',
+} as const;
+
+export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
+  const mediaData = summary.media.status === 'ready' ? summary.media.data : null;
+
+  return (
+    <main className={styles.dashboard}>
+      <header className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>Author home</p>
+          <h1>What would you like to work on?</h1>
+          <p className={styles.intro}>
+            See the state of your archive, then continue in the Studio when you are ready.
+          </p>
+        </div>
+        <Link className={styles.primaryAction} href="/admin/studio">
+          Continue in Studio
+        </Link>
+      </header>
+
+      <div className={styles.sectionGrid}>
+        <section className={styles.section} aria-labelledby="cards-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="cards-heading">Cards</h2>
+              <p>Continue writing or review what is ready to read.</p>
+            </div>
+          </div>
+          {summary.cards.status === 'ready' ? (
+            <div className={styles.metrics}>
+              <DashboardCardStatusLink className={styles.metric} status="all">
+                <strong>{summary.cards.data.total.toLocaleString()}</strong>
+                <span>Total cards</span>
+              </DashboardCardStatusLink>
+              <DashboardCardStatusLink className={styles.metric} status="draft">
+                <strong>{summary.cards.data.draft.toLocaleString()}</strong>
+                <span>Draft</span>
+              </DashboardCardStatusLink>
+              <DashboardCardStatusLink className={styles.metric} status="published">
+                <strong>{summary.cards.data.published.toLocaleString()}</strong>
+                <span>Published</span>
+              </DashboardCardStatusLink>
+            </div>
+          ) : (
+            <p className={styles.unavailable} role="status">Card summary is temporarily unavailable.</p>
+          )}
+        </section>
+
+        <section className={styles.section} aria-labelledby="media-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="media-heading">Media</h2>
+              <p>Review the parts of your archive that still need context.</p>
+            </div>
+            <Link className={styles.secondaryAction} href="/admin/studio">Open Media in Studio</Link>
+          </div>
+          {mediaData ? (
+            <>
+              <p className={styles.totalLine}>{mediaData.total.toLocaleString()} media items</p>
+              <dl className={styles.reviewList}>
+                {Object.entries(DIMENSION_LABELS).map(([dimension, label]) => (
+                  <div key={dimension}>
+                    <dt>{label} still to review</dt>
+                    <dd>{mediaData.unreviewed[dimension as keyof typeof DIMENSION_LABELS].toLocaleString()}</dd>
+                  </div>
+                ))}
+                <div>
+                  <dt>Processing failures</dt>
+                  <dd>{mediaData.failedReadiness.toLocaleString()}</dd>
+                </div>
+              </dl>
+            </>
+          ) : (
+            <p className={styles.unavailable} role="status">Media summary is temporarily unavailable.</p>
+          )}
+        </section>
+
+        <section className={styles.section} aria-labelledby="operations-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="operations-heading">Archive operations</h2>
+              <p>Check background work that is active or needs attention.</p>
+            </div>
+            <Link className={styles.secondaryAction} href="/admin/settings">Open Settings</Link>
+          </div>
+          {summary.operations.status === 'ready' ? (
+            <div className={styles.metrics}>
+              <div className={styles.staticMetric}>
+                <strong>{summary.operations.data.attention.toLocaleString()}</strong>
+                <span>Need attention</span>
+              </div>
+              <div className={styles.staticMetric}>
+                <strong>{summary.operations.data.active.toLocaleString()}</strong>
+                <span>Active</span>
+              </div>
+              <div className={`${styles.staticMetric} ${summary.operations.data.failed > 0 ? styles.warningMetric : ''}`}>
+                <strong>{summary.operations.data.failed.toLocaleString()}</strong>
+                <span>Failed</span>
+              </div>
+            </div>
+          ) : (
+            <p className={styles.unavailable} role="status">Operation summary is temporarily unavailable.</p>
+          )}
+        </section>
+      </div>
+
+      <p className={styles.generatedAt}>
+        Summary generated {new Date(summary.generatedAt).toLocaleString()}.
+      </p>
+    </main>
+  );
+}

@@ -6,21 +6,22 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession, signIn } from 'next-auth/react';
+import { getSession, useSession, signIn } from 'next-auth/react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
-import { safeInternalCallbackPath } from '@/lib/utils/marketingRoutes';
+import { resolveAuthenticatedEntryPath } from '@/lib/utils/marketingRoutes';
 import styles from '@/components/view/Home.module.css';
 
 const Home: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl');
+  const { data: session, status } = useSession();
   const afterLogin = useMemo(
-    () => safeInternalCallbackPath(searchParams.get('callbackUrl')),
-    [searchParams]
+    () => resolveAuthenticatedEntryPath(callbackUrl, session?.user?.role),
+    [callbackUrl, session?.user?.role]
   );
-  const { status } = useSession();
   const { theme } = useTheme();
   const feedback = useAppFeedback();
   const [username, setUsername] = useState('');
@@ -38,7 +39,8 @@ const Home: React.FC = () => {
     if (result?.error) {
       feedback.showError('Invalid credentials. Please try again.', 'Sign in failed');
     } else if (result?.ok) {
-      router.push(afterLogin);
+      const authenticatedSession = await getSession();
+      router.push(resolveAuthenticatedEntryPath(callbackUrl, authenticatedSession?.user?.role));
     }
   };
   

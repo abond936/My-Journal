@@ -58,6 +58,7 @@ import {
 } from '@/lib/dnd/collectionsDragContract';
 import { mergeStudioCatalogCard, toStudioCatalogCard } from '@/components/admin/studio/studioCardProjection';
 import { resolveStudioShellExternalDropId } from '@/lib/dnd/studioShellDragRouter';
+import DurableCollectionStudioPane from '@/components/admin/collections/DurableCollectionStudioPane';
 
 const COLLECTIONS_CENTER_COLUMNS_KEY = 'collectionsCenterPaneWidths';
 const COLLECTIONS_TREE_EXPANSION_KEY = 'collectionsTreeExpandedIds';
@@ -401,6 +402,7 @@ export default function CollectionsAdminClient({
   const [treeExpansionHydrated, setTreeExpansionHydrated] = useState(false);
   const [embeddedTreeDescendantsLoaded, setEmbeddedTreeDescendantsLoaded] = useState(false);
   const [embeddedTreeDescendantsLoading, setEmbeddedTreeDescendantsLoading] = useState(false);
+  const [durableCollectionAvailability, setDurableCollectionAvailability] = useState<'loading' | 'active' | 'none' | 'error'>('loading');
   const sensors = useDefaultDndSensors({ pointerActivationDistance: 4 });
   const curatedTreeDnd = isCuratedTreeDndEnabled();
   /** Studio: middle column uses `embeddedUnparentedReplacement` (card bank) instead of the title-only list. */
@@ -1488,6 +1490,11 @@ export default function CollectionsAdminClient({
             {showCollectionsPane ? (
               <section className={styles.panel}>
                 <h2 className={studioAttachBank ? styles.panelStudioColumnTitle : undefined}>Collections</h2>
+                <DurableCollectionStudioPane
+                  onAvailabilityChange={setDurableCollectionAvailability}
+                  onSelectCard={onSelectCard}
+                />
+                {durableCollectionAvailability === 'none' ? <>
                 <div className={styles.collectionsToolbarRow}>
                   <div className={styles.treeToolbar} aria-label="Collections tree display">
                     <button
@@ -1557,6 +1564,7 @@ export default function CollectionsAdminClient({
                     </>
                   )}
                 </div>
+                </> : null}
               </section>
             ) : null}
 
