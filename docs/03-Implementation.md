@@ -1130,6 +1130,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Eight focused workspace, preference, pane-layout, selected-Card controller, Cards bank, Media pane, and embedded Collections suites pass 54 tests. Workspace-level phone coverage proves the five labelled destinations, Cards-list default, focused Media switch and route, direct durable-Collection entry, Compose presentation, and dirty-leave refusal. Production typecheck, touched-code lint, diff checks, and the optimized production build pass; unauthenticated build-time theme reads use the existing checked-in fallback as designed. No Collection, Card, Media, Tag, Question, lifecycle, audience, sharing, distribution, or other production record changes in this slice.
 
+### Twelfth implementation slice — Author Home mobile object handoffs
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let Author Home open the intended phone object destination without disrupting desktop Studio restoration or overstating the dashboard's available filters.
+
+**Includes** — Cards status actions that preserve the existing exact `all`, `draft`, or `published` Card-bank preference and add the Cards destination hint; generic Media and Collections actions that add their corresponding destination hints; focused dashboard, handoff, and mobile-workspace coverage.
+
+**Excludes** — New dashboard counts; Collection-scoped Card or Media filters; destination badges; mobile Author Home redesign; a Home bottom-navigation item; mutation; and desktop pane preference changes.
+
+**Contracts** — General Continue in Studio remains unqualified and therefore resumes the last mobile destination or saved desktop layout. A destination hint chooses phone presentation only; desktop Studio continues to use its existing simultaneous pane preferences. Media and Collections links name only their owning surface and do not claim that Studio can reproduce the dashboard's Collection-specific attention populations.
+
+**Completion evidence** — Three focused suites pass seven tests covering exact Card-status preference handoff, Cards destination routing, generic Media and Collections routes, the five-destination mobile workspace, and dirty-Compose refusal. Touched-code lint, production typecheck, diff checks, and the optimized production build pass; unauthenticated build-time theme reads use the existing checked-in fallback as designed. No production record changes.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

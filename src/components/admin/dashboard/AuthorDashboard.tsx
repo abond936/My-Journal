@@ -42,7 +42,7 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
                 Draft work can continue. These Collection checks become important when you choose to publish.
               </p>
             </div>
-            <Link className={styles.secondaryAction} href="/admin/studio">Open Collections in Studio</Link>
+            <Link className={styles.secondaryAction} href="/admin/studio?destination=collections">Open Collections in Studio</Link>
           </div>
           {collectionData ? (
             collectionData.items.length > 0 ? (
@@ -144,7 +144,7 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
               <h2 id="media-heading">Media</h2>
               <p>Review the parts of your archive that still need context.</p>
             </div>
-            <Link className={styles.secondaryAction} href="/admin/studio">Open Media in Studio</Link>
+            <Link className={styles.secondaryAction} href="/admin/studio?destination=media">Open Media in Studio</Link>
           </div>
           {mediaData ? (
             <>

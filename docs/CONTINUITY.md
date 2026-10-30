@@ -7,7 +7,15 @@ This file is the concise operational handoff for the next project session. It is
 - `01` remains the owner of product vision, architecture, technical principles, and stable invariants.
 - `02` now records the shipped durable Collection authority and placement-native Studio/Reader behavior separately from still-planned multi-Collection creation, audience, sharing, distribution, and Book editions.
 - `03` records the completed first durable Collection activation and the read-only publication-readiness evidence. Active structure is not publication.
-- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present branch adds the sequential mobile Author-destination foundation and its documentation; it makes no production-data mutation.
+- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present local branch extends the sequential mobile Author-destination foundation with truthful Author Home handoffs; it makes no production-data mutation.
+
+## Local implementation checkpoint
+
+- `codex/mobile-author-destinations` at `54ba53fb` is the verified sequential mobile Studio foundation: Cards, Media, Prompts, Collections, and Tags appear one at a time at phone width, while desktop keeps its configurable simultaneous panes.
+- `codex/mobile-author-dashboard-handoffs` is based on `54ba53fb` and is the current handoff branch. It adds Cards, Media, and Collections destination hints from Author Home, preserves the exact existing Card-status preference, and leaves general Continue unqualified so prior work resumes.
+- `codex/published-card-working-revision-foundation` at `42ae7c2e` is a separate sibling branch based on `54ba53fb`. It contains an inactive, verified private working-revision persistence foundation for published Cards. It is deliberately not wired to routes or UI.
+- None of these three local commits is merged into or deployed from `origin/main`. No GitHub push is authorized by the current approval record. Preserve the sibling branches rather than assuming the dashboard-handoff branch contains the working-revision foundation.
+- Before activating working revisions, define whether later Media or Tag changes that alter inherited published-Card truth remain immediately live or become part of the Card's private working revision. The present mutation surface includes direct, narrow, bulk, and automatic owners, so partial interception must not be represented as protected published-version behavior.
 
 ## Durable Collection state
 
@@ -42,6 +50,7 @@ The ordinary Reader already requires a published Collection, every required Card
 - Card is the durable authored content object; Story is one Card type. Collection is the approachable name for the durable reading work, and a Book is a later print/export edition.
 - Parts, Chapters, and Sections are bounded Collection-local placement roles. A canonical Card may be reused through distinct placements without copying its content.
 - Desktop remains the configurable simultaneous Studio. The delivered mobile foundation presents sequential Cards, Media, Prompts, Collections, and Tags destinations, with Cards list → Compose and safe return; complete destination-specific touch workflows remain unfinished, and archive-scale administration remains desktop-primary.
+- Author Home's general Continue resumes existing work. Its Cards status, generic Media, and generic Collections actions now carry truthful mobile destination hints; desktop retains the saved simultaneous Studio, and no Collection-specific attention count is mislabelled as a reproducible filter.
 - AI assistance is optional and author-invoked except for quiet integrity validation. Machine evidence remains provisional until author-confirmed.
 - Draft saving stays permissive. Publishing is a deliberate integrity boundary; access, sharing, and distribution are separate decisions.
 

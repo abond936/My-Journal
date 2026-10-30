@@ -60,6 +60,14 @@ describe('AuthorDashboard', () => {
     expect(screen.getByText('17')).toBeInTheDocument();
     expect(screen.getByText('278')).toBeInTheDocument();
     expect(screen.getByText('Not yet available')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Collections in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio?destination=collections'
+    );
+    expect(screen.getByRole('link', { name: 'Open Media in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio?destination=media'
+    );
   });
 
   it('degrades Collection attention independently', () => {
