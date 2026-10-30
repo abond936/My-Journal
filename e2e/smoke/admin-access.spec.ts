@@ -59,6 +59,20 @@ test.describe('admin studio access', () => {
     await expect(page.getByText(/Placement-native Studio:/)).toBeVisible();
   });
 
+  test('@admin previews the active My Life placement hierarchy', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto('/admin/collections/preview/my-life');
+
+    await expect(page.getByRole('heading', { name: 'My Life' })).toBeVisible({ timeout: 90_000 });
+    await expect(page.getByText('Placement-native active structure. Studio and eligible Reader paths use this hierarchy.')).toBeVisible();
+    await expect(page.getByLabel('Collection state')).toContainText('active');
+    await expect(page.getByLabel('Authority readiness')).toContainText('Parity current');
+    await expect(page.getByLabel('Projection summary')).toContainText('197');
+    await expect(page.getByRole('heading', { name: 'Complete active hierarchy' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'WELCOME' })).toBeVisible();
+    await expect(page.getByText('Reused Cards').locator('..').getByText('2')).toBeVisible();
+  });
+
   test('@admin uses the navigable active placement hierarchy in guided Reader', async ({ page }) => {
     test.setTimeout(120_000);
     const collectionsResponse = page.waitForResponse(
@@ -72,9 +86,13 @@ test.describe('admin studio access', () => {
       expect.objectContaining({ docId: 'my-life', recordState: 'active' }),
     ]));
     await expect(page.getByRole('tab', { name: 'Collections' })).toHaveAttribute('aria-selected', 'true');
-    const root = page.locator('button[data-placement-id][data-card-id]').first();
+    const root = page.locator(
+      'button[data-collection-level="0"][data-collection-has-children="true"]'
+    ).first();
     await expect(root).toBeVisible({ timeout: 90_000 });
 
+    const rootTitle = await root.getAttribute('data-collection-title');
+    expect(rootTitle).toBeTruthy();
     const rootRow = root.locator('..');
     const rootDisclosure = rootRow.locator('button').first();
     const [rowBox, disclosureBox] = await Promise.all([
@@ -87,5 +105,19 @@ test.describe('admin studio access', () => {
 
     await root.click();
     await expect(root).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { name: rootTitle!, exact: true })).toBeVisible();
+
+    const nestedParent = page.locator(
+      'button[data-collection-level="1"][data-collection-has-children="true"]'
+    ).first();
+    await expect(nestedParent).toBeVisible();
+    const nestedTitle = await nestedParent.getAttribute('data-collection-title');
+    expect(nestedTitle).toBeTruthy();
+
+    await nestedParent.click();
+    await expect(page.getByRole('heading', { name: nestedTitle!, exact: true })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Collection breadcrumb' })).toContainText(
+      rootTitle!
+    );
   });
 });
