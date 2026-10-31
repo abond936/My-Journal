@@ -3,6 +3,7 @@ import { apiRouteError, apiRouteSuccess, withApiRouteHandler } from '@/lib/api/r
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 import { hydrateCards } from '@/lib/services/cards/cardMediaHydrationService';
 import { protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
+import { canReadCollectionForAudience } from '@/lib/auth/audienceAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         includeDrafts: isAdminSession(session),
       });
       if (!structure) {
+        return apiRouteError({
+          code: 'COLLECTION_NOT_FOUND',
+          message: 'Collection not found.',
+          status: 404,
+          retryable: false,
+        });
+      }
+      if (!(await canReadCollectionForAudience(session, structure.collection))) {
         return apiRouteError({
           code: 'COLLECTION_NOT_FOUND',
           message: 'Collection not found.',

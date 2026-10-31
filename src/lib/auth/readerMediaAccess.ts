@@ -5,6 +5,7 @@ import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess'
 import { getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationService';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 export async function canReadMedia(
   session: Session | null | undefined,
@@ -25,11 +26,15 @@ export async function canReadMedia(
       .collection('cards')
       .where(FieldPath.documentId(), 'in', chunk)
       .get();
+    const referencedPublishedCards: Card[] = [];
     for (const doc of snapshot.docs) {
       const card = { docId: doc.id, ...doc.data() } as Card;
       if (card.status === 'published' && getMediaIdsFromCard(card).has(media.docId)) {
-        return true;
+        referencedPublishedCards.push(card);
       }
+    }
+    if ((await filterCardsForAudience(session, referencedPublishedCards, firestore)).length > 0) {
+      return true;
     }
   }
   return false;

@@ -14,6 +14,7 @@ import {
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
 import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,8 +113,11 @@ export async function GET(request: Request) {
         };
       }
       const payload: CardSearchResult = { ...result, searchMode, degraded };
+      const authorizedPayload = readerFeedOnly
+        ? { ...payload, items: await filterCardsForAudience(session, payload.items) }
+        : payload;
       return apiRouteSuccess<CardSearchResult>(
-        readerFeedOnly ? protectCardListForReader(payload) : payload
+        readerFeedOnly ? protectCardListForReader(authorizedPayload) : authorizedPayload
       );
     }
   );

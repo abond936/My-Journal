@@ -24,6 +24,9 @@ jest.mock('next-auth/next', () => ({
 jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
+jest.mock('@/lib/auth/audienceAccess', () => ({
+  filterCardsForAudience: jest.fn(async (_session, cards) => cards),
+}));
 
 jest.mock('@/lib/services/cards/cardListQueryService', () => ({
   getCards: jest.fn(),

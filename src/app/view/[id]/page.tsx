@@ -7,8 +7,9 @@ import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
-import { canReadCard, filterReadableCards, isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { protectCardForReader, protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
+import { canReadCardForAudience, filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 interface CardPageProps {
   params: Promise<{
@@ -28,7 +29,7 @@ async function getCardData(id: string, session: Session | null): Promise<CardPag
   try {
     // 1. Fetch the parent card
     const card = await getCardById(id);
-    if (!card || !canReadCard(session, card)) {
+    if (!card || !(await canReadCardForAudience(session, card))) {
       return null;
     }
 
@@ -36,7 +37,7 @@ async function getCardData(id: string, session: Session | null): Promise<CardPag
     let children: Card[] = [];
     if (card.childrenIds && card.childrenIds.length > 0) {
       const hydratedChildren = await getCardsByIds(card.childrenIds, { hydrationMode: 'cover-only' });
-      children = filterReadableCards(session, hydratedChildren);
+      children = await filterCardsForAudience(session, hydratedChildren);
     }
     
     return isAdminSession(session)

@@ -7,6 +7,7 @@ import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess'
 import { readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import { protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -313,8 +314,11 @@ export async function GET(request: Request) {
     // Fetch only the selected cards by ID
     const randomCards = await getCardsByIds(randomCardIds);
 
+    const authorizedCards = isAdminSession(session)
+      ? randomCards
+      : await filterCardsForAudience(session, randomCards);
     return NextResponse.json(
-      isAdminSession(session) ? randomCards : protectCardsForReader(randomCards)
+      isAdminSession(session) ? authorizedCards : protectCardsForReader(authorizedCards)
     );
   } catch (error) {
     console.error('Error in GET /api/cards/random:', error);

@@ -39,9 +39,10 @@ import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import { z } from 'zod';
-import { canReadCard, filterReadableCards, isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { protectCardPageForReader } from '@/lib/utils/readerMediaDelivery';
+import { canReadCardForAudience, filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,7 +97,7 @@ export async function GET(
         `Card with ID ${id} not found`
       );
     }
-    if (!canReadCard(session, card)) {
+    if (!(await canReadCardForAudience(session, card))) {
       throw new AppError(
         ErrorCode.NOT_FOUND,
         `Card with ID ${id} not found`
@@ -129,7 +130,7 @@ export async function GET(
     const rawChildrenResult: PaginatedResult<Card> = skipChildren
       ? { items: [], hasMore: false, lastDocId: undefined }
       : await getPaginatedCardsByIds(card.childrenIds || [], { limit, lastDocId });
-    const readableChildren = filterReadableCards(session, rawChildrenResult.items);
+    const readableChildren = await filterCardsForAudience(session, rawChildrenResult.items);
     const childrenResult: PaginatedResult<Card> = {
       ...rawChildrenResult,
       items: readableChildren,

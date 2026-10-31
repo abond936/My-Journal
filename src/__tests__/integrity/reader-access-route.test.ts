@@ -49,6 +49,13 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
+jest.mock('@/lib/auth/audienceAccess', () => ({
+  canReadCardForAudience: jest.fn(async (_session, card) => card.status === 'published'),
+  filterCardsForAudience: jest.fn(async (_session, cards) =>
+    cards.filter((card: { status?: string }) => card.status === 'published')
+  ),
+}));
+
 jest.mock('@/lib/services/cards/cardReadService', () => ({
   getCardById: jest.fn(),
   getCardsByIds: jest.fn(),

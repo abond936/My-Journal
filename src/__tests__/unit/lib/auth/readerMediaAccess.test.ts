@@ -4,13 +4,23 @@ jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({ firestore: jest.fn() })),
 }));
 
-function firestoreWithCards(cards: Array<{ id: string; data: Record<string, unknown> }>) {
-  const get = jest.fn().mockResolvedValue({
-    docs: cards.map((card) => ({ id: card.id, data: () => card.data })),
-  });
-  const where = jest.fn(() => ({ get }));
-  const collection = jest.fn(() => ({ where }));
-  return { collection, where, get };
+function firestoreWithCards(
+  cards: Array<{ id: string; data: Record<string, unknown> }>,
+  groupIds: string[] = []
+) {
+  const collection = jest.fn((name: string) => ({
+    where: jest.fn(() => ({
+      get: jest.fn().mockResolvedValue({
+        docs:
+          name === 'cards'
+            ? cards.map((card) => ({ id: card.id, data: () => card.data }))
+            : name === 'audience_groups'
+              ? groupIds.map((id) => ({ id, data: () => ({}) }))
+              : [],
+      }),
+    })),
+  }));
+  return { collection };
 }
 
 describe('Reader Media authorization', () => {
@@ -57,6 +67,27 @@ describe('Reader Media authorization', () => {
     ).resolves.toBe(false);
     await expect(
       canReadMedia(viewer, { docId: 'media-1', referencedByCardIds: [] }, stale as never)
+    ).resolves.toBe(false);
+  });
+
+  it('denies referenced Media when no active Card or Collection audience includes the viewer', async () => {
+    const firestore = firestoreWithCards([
+      {
+        id: 'card-1',
+        data: {
+          status: 'published',
+          coverImageId: 'media-1',
+          audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+        },
+      },
+    ]);
+
+    await expect(
+      canReadMedia(
+        viewer,
+        { docId: 'media-1', referencedByCardIds: ['card-1'] },
+        firestore as never
+      )
     ).resolves.toBe(false);
   });
 });

@@ -36,6 +36,7 @@ import {
 import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
@@ -145,8 +146,11 @@ export async function GET(request: Request) {
   }
   const session = auth.session;
   const isAdmin = isAdminSession(session);
-  const jsonCardList = <T extends { items: Card[] }>(payload: T) =>
-    NextResponse.json(isAdmin ? payload : protectCardListForReader(payload));
+  const jsonCardList = async <T extends { items: Card[] }>(payload: T) => {
+    if (isAdmin) return NextResponse.json(payload);
+    const authorized = { ...payload, items: await filterCardsForAudience(session, payload.items) };
+    return NextResponse.json(protectCardListForReader(authorized));
+  };
 
   try {
     const { searchParams } = new URL(request.url);

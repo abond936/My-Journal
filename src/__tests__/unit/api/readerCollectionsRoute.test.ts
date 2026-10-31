@@ -8,6 +8,10 @@ import {
 
 jest.mock('next-auth/next', () => ({ getServerSession: jest.fn() }));
 jest.mock('@/lib/auth/authOptions', () => ({ authOptions: {} }));
+jest.mock('@/lib/auth/audienceAccess', () => ({
+  filterCollectionsForAudience: jest.fn(async (_session, collections) => collections),
+  canReadCollectionForAudience: jest.fn(async () => true),
+}));
 jest.mock('next/server', () => ({
   NextResponse: {
     json: (data: unknown, init?: { status?: number }) => ({

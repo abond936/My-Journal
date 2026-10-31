@@ -763,7 +763,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕1 **Planned**
 
-- **Audience groups** — Create reusable named groups of Reader accounts and invited recipients, and select one or more groups or individuals when publishing a Card or Collection.
+- **Audience groups** — The active local Reader boundary now has one legacy-compatible evaluator for standalone Feed Cards, Collection routes, and their referenced Media: missing audience data includes all enabled readers, while explicit individual and reusable-group IDs restrict access and Card access is the union of its active Feed and authorized Collection routes. Author-facing group management, audience selection, consequence preview, and publication enforcement remain planned.
 - **Private Media delivery** — The active local implementation now replaces Reader-facing permanent URLs with authenticated delivery for Media actually referenced by a published Card and reduces hydrated Reader Media to display-only data. Protected activation remains planned until the public Storage/IAM bypass is closed in a coordinated release and readback proves anonymous denial plus authorized delivery; audience controls must not be represented as protected before that gate passes.
 - **Shared Media Collections** — After Story and Collection audiences are protected, allow the author to curate a bounded Media set, assign its audience, and change membership without changing the Media's use in Stories or exposing unrelated archive Media.
 - **Guest recipients** — Invite a non-account holder by email into a bounded access grant without requiring the current temporary-password administration flow. A recipient may later establish a fuller account without changing the authored audience decision.
