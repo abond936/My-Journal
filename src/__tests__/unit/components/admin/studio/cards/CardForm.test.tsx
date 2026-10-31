@@ -319,6 +319,46 @@ describe('CardForm', () => {
     );
   });
 
+  it('reviews exact Reader losses before removing a published Card from Feed', async () => {
+    mockOnSave.mockResolvedValue({ ...mockCard, status: 'published', feedIncluded: false });
+    global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith('/audience-impact') && init?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({ impact: {
+            basis: 'current_after_save', standaloneIncluded: false,
+            effectiveReaders: [{ contactId: 'reader-2', displayName: 'Blair' }],
+            gainingReaders: [],
+            losingReaders: [{ contactId: 'reader-1', displayName: 'Alex' }],
+            otherRoutes: [],
+          } }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ settings: {
+          galleryTagInheritance: { who: true, what: true, when: true, where: true },
+          galleryTagInheritanceConfigured: true,
+        } }),
+      } as Response;
+    }) as typeof fetch;
+    renderCardForm({
+      ...mockCard,
+      status: 'published',
+      feedIncluded: true,
+      audience: { allContacts: false, groupIds: [], contactIds: ['reader-1'] },
+    });
+
+    await userEvent.click(screen.getAllByLabelText('Include in Reader Feed')[0]);
+
+    await waitFor(() => expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Remove published Story from Reader Feed?',
+      message: expect.stringContaining('Readers losing access: Alex'),
+    })));
+    await waitFor(() => expect(mockOnSave).toHaveBeenCalledWith({ feedIncluded: false }));
+  });
+
   it('returns to Draft and explains why a publication attempt was blocked', async () => {
     mockOnSave.mockRejectedValue(
       new Error('This Card cannot be published yet: review Card what, when, where.')

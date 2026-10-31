@@ -15,11 +15,12 @@ export async function POST(
 ) {
   const session = await getServerSession(authOptions);
   if (!isAdminSession(session)) return error('Forbidden.', 403);
-  const parsed = audienceSelectionSchema.safeParse(await request.json().catch(() => null));
+  const parsed = audienceSelectionSchema.extend({ feedIncluded: audienceSelectionSchema.shape.allContacts.optional() })
+    .safeParse(await request.json().catch(() => null));
   if (!parsed.success) return error('Choose a valid Card audience.', 400);
   const { id } = await params;
   try {
-    const impact = await getCardAudienceImpact(id, parsed.data);
+    const impact = await getCardAudienceImpact(id, parsed.data, undefined, parsed.data.feedIncluded);
     if (!impact) return error('Card not found.', 404);
     return NextResponse.json({ impact });
   } catch (cause) {

@@ -81,11 +81,52 @@ describe('audienceImpactService', () => {
         { contactId: 'reader-1', displayName: 'Alex' },
         { contactId: 'reader-2', displayName: 'Blair' },
       ],
+      gainingReaders: [],
+      losingReaders: [],
       otherRoutes: [{
         collectionId: 'collection-1',
         title: 'Family Book',
         readers: [{ contactId: 'reader-2', displayName: 'Blair' }],
       }],
+    });
+  });
+
+  it('reports exact losses when standalone Feed inclusion is removed', async () => {
+    getCollectionRoutes.mockResolvedValue(new Map());
+    const snapshots = {
+      cards: doc('card-1', {
+        status: 'published', feedIncluded: true,
+        audience: { allContacts: false, groupIds: [], contactIds: ['reader-1', 'reader-2'] },
+      }),
+      journal_users: { docs: [
+        doc('reader-1', { displayName: 'Alex', disabled: false }),
+        doc('reader-2', { displayName: 'Blair', disabled: false }),
+      ] },
+      audience_groups: { docs: [] },
+    };
+    const firestore = {
+      collection: jest.fn((name: keyof typeof snapshots) => ({
+        doc: jest.fn(() => ({ get: jest.fn().mockResolvedValue(snapshots.cards) })),
+        where: jest.fn(() => ({ get: jest.fn().mockResolvedValue(snapshots[name]) })),
+        get: jest.fn().mockResolvedValue(snapshots[name]),
+      })),
+    };
+
+    const result = await getCardAudienceImpact(
+      'card-1',
+      { allContacts: false, groupIds: [], contactIds: ['reader-1', 'reader-2'] },
+      firestore as never,
+      false
+    );
+
+    expect(result).toMatchObject({
+      standaloneIncluded: false,
+      effectiveReaders: [],
+      gainingReaders: [],
+      losingReaders: [
+        { contactId: 'reader-1', displayName: 'Alex' },
+        { contactId: 'reader-2', displayName: 'Blair' },
+      ],
     });
   });
 

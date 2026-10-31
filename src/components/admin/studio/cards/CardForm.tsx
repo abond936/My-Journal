@@ -130,12 +130,12 @@ const CardForm: React.FC = () => {
     const response = await fetch(`/api/admin/cards/${encodeURIComponent(cardData.docId)}/audience-impact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(audience),
+      body: JSON.stringify({ ...audience, feedIncluded: cardData.feedIncluded !== false }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.impact) throw new Error(data.message || 'Combined audience could not be calculated.');
     return data.impact as CardAudienceImpact;
-  }, [cardData.docId]);
+  }, [cardData.docId, cardData.feedIncluded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,12 +261,41 @@ const CardForm: React.FC = () => {
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     persistStatusChange(e.target.value as Card['status']);
   }, [persistStatusChange]);
-  const handleFeedIncludedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFeedIncludedChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const feedIncluded = e.target.checked;
-    setField('feedIncluded', feedIncluded);
     if ((lastSavedState.cardData.feedIncluded !== false) === feedIncluded) return;
-    void persistFieldPatch({ feedIncluded });
-  }, [lastSavedState.cardData.feedIncluded, persistFieldPatch, setField]);
+    if (cardData.status === 'published' && cardData.docId) {
+      try {
+        const response = await fetch(`/api/admin/cards/${encodeURIComponent(cardData.docId)}/audience-impact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(cardData.audience ?? { allContacts: true, groupIds: [], contactIds: [] }),
+            feedIncluded,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.impact) throw new Error(data.message || 'Feed access impact could not be calculated.');
+        const impact = data.impact as CardAudienceImpact;
+        const list = (readers: CardAudienceImpact['effectiveReaders']) => readers.length
+          ? readers.map((reader) => reader.displayName).join(', ')
+          : 'none';
+        const confirmed = await feedback.confirm({
+          title: feedIncluded ? 'Add published Story to Reader Feed?' : 'Remove published Story from Reader Feed?',
+          message: `Readers gaining access: ${list(impact.gainingReaders)}. Readers losing access: ${list(impact.losingReaders)}. Effective readers after this change: ${list(impact.effectiveReaders)}. Collection routes remain independent. No one will be notified.`,
+          confirmLabel: feedIncluded ? 'Include in Feed' : 'Remove from Feed',
+          cancelLabel: 'Keep current placement',
+        });
+        if (!confirmed) return;
+      } catch (error) {
+        feedback.showError(error instanceof Error ? error.message : 'Feed access impact could not be calculated.', 'Placement not changed');
+        return;
+      }
+    }
+    setField('feedIncluded', feedIncluded);
+    const saved = await persistFieldPatch({ feedIncluded });
+    if (!saved) setField('feedIncluded', lastSavedState.cardData.feedIncluded !== false);
+  }, [cardData.audience, cardData.docId, cardData.status, feedback, lastSavedState.cardData.feedIncluded, persistFieldPatch, setField]);
   const handleTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const nextType = e.target.value as Card['type'];

@@ -11,6 +11,8 @@ export type CardAudienceImpact = {
   basis: 'current_after_save' | 'if_published';
   standaloneIncluded: boolean;
   effectiveReaders: AudienceImpactReader[];
+  gainingReaders: AudienceImpactReader[];
+  losingReaders: AudienceImpactReader[];
   otherRoutes: Array<{ collectionId: string; title: string; readers: AudienceImpactReader[] }>;
 };
 export type CollectionAudienceImpactRoute = {
@@ -65,7 +67,8 @@ function readersForIds(
 export async function getCardAudienceImpact(
   cardId: string,
   proposedAudience: AudienceSelection,
-  firestore: FirebaseFirestore.Firestore = getAdminApp().firestore()
+  firestore: FirebaseFirestore.Firestore = getAdminApp().firestore(),
+  proposedFeedIncluded?: boolean
 ): Promise<CardAudienceImpact | null> {
   const [cardSnapshot, readersSnapshot, groupsSnapshot] = await Promise.all([
     firestore.collection('cards').doc(cardId).get(),
@@ -94,11 +97,15 @@ export async function getCardAudienceImpact(
     firestore,
   })).get(cardId) ?? [];
 
-  const effectiveIds = isCardIncludedInFeed(card)
+  const currentIds = isCardIncludedInFeed(card)
+    ? resolveAudienceReaderIds({ audience: card.audience, enabledReaderIds, groups })
+    : new Set<string>();
+  const effectiveIds = (proposedFeedIncluded ?? isCardIncludedInFeed(card))
     ? resolveAudienceReaderIds({ audience: proposedAudience, enabledReaderIds, groups })
     : new Set<string>();
   const otherRoutes = collections.map((collection) => {
     const ids = resolveAudienceReaderIds({ audience: collection.audience, enabledReaderIds, groups });
+    ids.forEach((id) => currentIds.add(id));
     ids.forEach((id) => effectiveIds.add(id));
     return {
       collectionId: collection.docId,
@@ -109,8 +116,10 @@ export async function getCardAudienceImpact(
 
   return {
     basis: card.status === 'published' ? 'current_after_save' : 'if_published',
-    standaloneIncluded: isCardIncludedInFeed(card),
+    standaloneIncluded: proposedFeedIncluded ?? isCardIncludedInFeed(card),
     effectiveReaders: readersForIds(effectiveIds, readersById),
+    gainingReaders: readersForIds(new Set([...effectiveIds].filter((id) => !currentIds.has(id))), readersById),
+    losingReaders: readersForIds(new Set([...currentIds].filter((id) => !effectiveIds.has(id))), readersById),
     otherRoutes,
   };
 }

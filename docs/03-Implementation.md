@@ -1286,6 +1286,10 @@ The former stabilization objective and its controlling execution order are compl
 
 **Twelfth-step limits and evidence** — This is an account-creation consequence review, not an invitation, delivery, or guest-recipient workflow. Focused prospective-access, account-impact, API, User Management, and administrator-boundary suites pass; production typecheck and touched-code lint pass. No account was created in production and no production audience, Card, Collection, Media, Storage, IAM, Git remote, or deployment changed.
 
+**Thirteenth hardening step delivered locally** — Published Card Feed-inclusion changes no longer persist as an unreviewed checkbox mutation. Before adding or removing the standalone Feed route, Compose calculates the Card's proposed complete route union and names the exact enabled readers who gain access, lose access, or remain able to read through an independent Collection route. Cancellation preserves the current placement, and an impact-calculation failure blocks the change instead of guessing.
+
+**Thirteenth-step limits and evidence** — Draft Feed placement remains freely editable because it changes no current Reader access and is rechecked at publication. Focused audience-impact service, route, and Compose tests pass 20 tests; production typecheck and touched-code lint pass. No production Card, audience, Feed placement, Collection, account, notification, Storage, IAM, Git remote, or deployment changed.
+
 **Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
 ### 1. Release Candidate

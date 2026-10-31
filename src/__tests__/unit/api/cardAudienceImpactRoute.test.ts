@@ -37,8 +37,16 @@ describe('Card audience impact route', () => {
     mockGetImpact.mockResolvedValue(impact);
     const response = await POST(request(audience), { params: Promise.resolve({ id: 'card-1' }) });
     expect(response.status).toBe(200);
-    expect(mockGetImpact).toHaveBeenCalledWith('card-1', audience);
+    expect(mockGetImpact).toHaveBeenCalledWith('card-1', audience, undefined, undefined);
     expect(await response.json()).toEqual({ impact });
+  });
+
+  it('passes a proposed Feed-inclusion change into the impact calculation', async () => {
+    mockGetImpact.mockResolvedValue({ effectiveReaders: [], gainingReaders: [], losingReaders: [] });
+    const body = { allContacts: true, groupIds: [], contactIds: [], feedIncluded: false };
+    const response = await POST(request(body), { params: Promise.resolve({ id: 'card-1' }) });
+    expect(response.status).toBe(200);
+    expect(mockGetImpact).toHaveBeenCalledWith('card-1', body, undefined, false);
   });
 
   it('rejects non-administrators before calculating impact', async () => {
