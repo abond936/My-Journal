@@ -1,11 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StudioCardFormGallery from '@/components/admin/studio/StudioCardFormGallery';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 
 const mockSetField = jest.fn();
+const mockRegisterCreatedMedia = jest.fn();
+const mockOpenDevicePicker = jest.fn();
+const mockUploadImageFileToMediaBank = jest.fn();
+let dropzoneOptions: { onDrop?: (files: File[]) => void; multiple?: boolean } = {};
 
 jest.mock('@/components/providers/CardFormProvider', () => ({
   useCardForm: () => ({
@@ -39,7 +43,11 @@ jest.mock('@/components/providers/CardFormProvider', () => ({
 }));
 
 jest.mock('@/components/providers/MediaProvider', () => ({
-  useMedia: () => ({ registerCreatedMedia: jest.fn() }),
+  useMedia: () => ({ registerCreatedMedia: mockRegisterCreatedMedia }),
+}));
+
+jest.mock('@/lib/utils/uploadImageFileToMediaBank', () => ({
+  uploadImageFileToMediaBank: (...args: unknown[]) => mockUploadImageFileToMediaBank(...args),
 }));
 
 jest.mock('@/components/admin/studio/cards/PhotoPicker', () => ({
@@ -48,11 +56,15 @@ jest.mock('@/components/admin/studio/cards/PhotoPicker', () => ({
 }));
 
 jest.mock('react-dropzone', () => ({
-  useDropzone: () => ({
-    getRootProps: () => ({}),
-    getInputProps: () => ({}),
-    isDragActive: false,
-  }),
+  useDropzone: (options: typeof dropzoneOptions) => {
+    dropzoneOptions = options;
+    return {
+      getRootProps: () => ({}),
+      getInputProps: () => ({}),
+      isDragActive: false,
+      open: mockOpenDevicePicker,
+    };
+  },
 }));
 
 jest.mock('@/components/admin/studio/studioRelationshipDndPrimitives', () => ({
@@ -82,6 +94,10 @@ jest.mock('@/components/common/JournalImage', () => ({
 describe('StudioCardFormGallery modal contract', () => {
   beforeEach(() => {
     mockSetField.mockClear();
+    mockRegisterCreatedMedia.mockClear();
+    mockOpenDevicePicker.mockClear();
+    mockUploadImageFileToMediaBank.mockReset();
+    dropzoneOptions = {};
   });
 
   it('shows Add from library for gallery assignment', () => {
@@ -94,6 +110,82 @@ describe('StudioCardFormGallery modal contract', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Add from library' })).toBeInTheDocument();
+  });
+
+  it('opens a multi-select device photo picker', async () => {
+    render(
+      <StudioCardFormGallery
+        disabled={false}
+        onSetAsCover={jest.fn()}
+        currentCoverMediaId={null}
+      />
+    );
+
+    expect(dropzoneOptions.multiple).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Add from device' }));
+    expect(mockOpenDevicePicker).toHaveBeenCalledTimes(1);
+  });
+
+  it('imports every selected device photo and appends the successful media in order', async () => {
+    mockUploadImageFileToMediaBank
+      .mockResolvedValueOnce({ docId: 'media-2', filename: 'first.jpg' })
+      .mockResolvedValueOnce({ docId: 'media-3', filename: 'second.jpg' });
+
+    render(
+      <StudioCardFormGallery
+        disabled={false}
+        onSetAsCover={jest.fn()}
+        currentCoverMediaId={null}
+      />
+    );
+
+    const files = [
+      new File(['first'], 'first.jpg', { type: 'image/jpeg' }),
+      new File(['second'], 'second.jpg', { type: 'image/jpeg' }),
+    ];
+    act(() => dropzoneOptions.onDrop?.(files));
+
+    await waitFor(() => expect(mockUploadImageFileToMediaBank).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mockSetField).toHaveBeenCalledWith(
+        'galleryMedia',
+        expect.arrayContaining([
+          expect.objectContaining({ mediaId: 'media-2', order: 1 }),
+          expect.objectContaining({ mediaId: 'media-3', order: 2 }),
+        ])
+      )
+    );
+    expect(mockRegisterCreatedMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps successful device imports when another selected photo fails', async () => {
+    mockUploadImageFileToMediaBank
+      .mockResolvedValueOnce({ docId: 'media-2', filename: 'first.jpg' })
+      .mockRejectedValueOnce(new Error('Upload failed'));
+
+    render(
+      <StudioCardFormGallery
+        disabled={false}
+        onSetAsCover={jest.fn()}
+        currentCoverMediaId={null}
+      />
+    );
+
+    act(() =>
+      dropzoneOptions.onDrop?.([
+        new File(['first'], 'first.jpg', { type: 'image/jpeg' }),
+        new File(['second'], 'second.jpg', { type: 'image/jpeg' }),
+      ])
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 photo could not be added: second.jpg'
+    );
+    expect(mockSetField).toHaveBeenCalledWith(
+      'galleryMedia',
+      expect.arrayContaining([expect.objectContaining({ mediaId: 'media-2', order: 1 })])
+    );
+    expect(mockRegisterCreatedMedia).toHaveBeenCalledTimes(1);
   });
 
   it('uses the shared crop-override editor and not a caption modal', async () => {

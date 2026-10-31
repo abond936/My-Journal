@@ -6,6 +6,8 @@ import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import MediaLocalImportDialog from '@/components/admin/studio/media/MediaLocalImportDialog';
 
 const showToastMock = jest.fn();
+const registerCreatedMediaMock = jest.fn();
+const uploadImageFileToMediaBankMock = jest.fn();
 
 jest.mock('next/image', () => {
   return function MockImage({
@@ -23,6 +25,14 @@ jest.mock('next/image', () => {
 
 jest.mock('@/components/providers/TagProvider', () => ({
   useTag: () => ({ tags: [] }),
+}));
+
+jest.mock('@/components/providers/MediaProvider', () => ({
+  useMedia: () => ({ registerCreatedMedia: registerCreatedMediaMock }),
+}));
+
+jest.mock('@/lib/utils/uploadImageFileToMediaBank', () => ({
+  uploadImageFileToMediaBank: (...args: unknown[]) => uploadImageFileToMediaBankMock(...args),
 }));
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
@@ -51,6 +61,7 @@ describe('media picker ownership boundaries', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    uploadImageFileToMediaBankMock.mockReset();
     window.localStorage.clear();
     localImportPayload = {
       results: [
@@ -196,6 +207,60 @@ describe('media picker ownership boundaries', () => {
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({ docId: 'media-lib-1', filename: 'library-photo.jpg' })
     );
+  });
+
+  it('uploads one selected device photo and returns it in single mode', async () => {
+    const onSelect = jest.fn();
+    const onClose = jest.fn();
+    uploadImageFileToMediaBankMock.mockResolvedValue({
+      docId: 'device-media-1',
+      filename: 'phone-photo.jpg',
+    });
+    render(
+      <PhotoPicker isOpen onClose={onClose} onSelect={onSelect} initialMode="single" />
+    );
+
+    const input = screen.getByTestId('photo-picker-device-input') as HTMLInputElement;
+    await userEvent.upload(
+      input,
+      new File(['phone'], 'phone-photo.jpg', { type: 'image/jpeg' })
+    );
+
+    await waitFor(() =>
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ docId: 'device-media-1', filename: 'phone-photo.jpg' })
+      )
+    );
+    expect(registerCreatedMediaMock).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('uploads selected device photos and stages them for multi-select use', async () => {
+    const onMultiSelect = jest.fn();
+    uploadImageFileToMediaBankMock
+      .mockResolvedValueOnce({ docId: 'device-media-1', filename: 'first.jpg' })
+      .mockResolvedValueOnce({ docId: 'device-media-2', filename: 'second.jpg' });
+    render(
+      <PhotoPicker
+        isOpen
+        onClose={jest.fn()}
+        onMultiSelect={onMultiSelect}
+        initialMode="multi"
+      />
+    );
+
+    const input = screen.getByTestId('photo-picker-device-input') as HTMLInputElement;
+    await userEvent.upload(input, [
+      new File(['first'], 'first.jpg', { type: 'image/jpeg' }),
+      new File(['second'], 'second.jpg', { type: 'image/jpeg' }),
+    ]);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Use 2 photos' }));
+    expect(onMultiSelect).toHaveBeenCalledWith([
+      expect.objectContaining({ mediaId: 'device-media-1', order: 0 }),
+      expect.objectContaining({ mediaId: 'device-media-2', order: 1 }),
+    ]);
+    expect(registerCreatedMediaMock).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the Media local import dialog source-only and never touches library fetches', async () => {

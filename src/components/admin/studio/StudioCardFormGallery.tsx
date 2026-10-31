@@ -11,6 +11,7 @@ import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import { useCardForm } from '@/components/providers/CardFormProvider';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { HydratedGalleryMediaItem } from '@/lib/types/card';
+import type { Media } from '@/lib/types/photo';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { appendGalleryMediaItems } from '@/lib/utils/appendGalleryMediaItems';
 import { getImageFileFromDataTransfer } from '@/lib/utils/clipboardImage';
@@ -85,16 +86,31 @@ export default function StudioCardFormGallery({
     [gallery, setField]
   );
 
-  const ingestImageFile = useCallback(
-    async (file: File) => {
+  const ingestImageFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
       setPasteError(null);
       setPasteBusy(true);
+      const imported: Media[] = [];
+      const failedNames: string[] = [];
       try {
-        const media = await uploadImageFileToMediaBank(file);
-        registerCreatedMedia(media);
-        setField('galleryMedia', appendGalleryMediaItems(gallery, [media]));
-      } catch (error) {
-        setPasteError(error instanceof Error ? error.message : 'Failed to add image to gallery');
+        for (const file of files) {
+          try {
+            const media = await uploadImageFileToMediaBank(file);
+            registerCreatedMedia(media);
+            imported.push(media);
+          } catch {
+            failedNames.push(file.name);
+          }
+        }
+        if (imported.length > 0) {
+          setField('galleryMedia', appendGalleryMediaItems(gallery, imported));
+        }
+        if (failedNames.length > 0) {
+          setPasteError(
+            `${failedNames.length} photo${failedNames.length === 1 ? '' : 's'} could not be added: ${failedNames.join(', ')}`
+          );
+        }
       } finally {
         setPasteBusy(false);
       }
@@ -104,17 +120,16 @@ export default function StudioCardFormGallery({
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file || disabled || pasteBusy) return;
-      void ingestImageFile(file);
+      if (acceptedFiles.length === 0 || disabled || pasteBusy) return;
+      void ingestImageFiles(acceptedFiles);
     },
-    [disabled, ingestImageFile, pasteBusy]
+    [disabled, ingestImageFiles, pasteBusy]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open: openDevicePicker } = useDropzone({
     onDrop,
     accept: { 'image/*': [] },
-    multiple: false,
+    multiple: true,
     noClick: true,
     disabled: disabled || pasteBusy,
   });
@@ -126,11 +141,11 @@ export default function StudioCardFormGallery({
       const file = getImageFileFromDataTransfer(event.clipboardData);
       if (!file || disabled || pasteBusy) return;
       event.preventDefault();
-      void ingestImageFile(file);
+      void ingestImageFiles([file]);
     };
     el.addEventListener('paste', onPaste);
     return () => el.removeEventListener('paste', onPaste);
-  }, [disabled, ingestImageFile, pasteBusy]);
+  }, [disabled, ingestImageFiles, pasteBusy]);
 
   const updateGalleryItem = useCallback(
     (mediaId: string, updater: (item: HydratedGalleryMediaItem) => HydratedGalleryMediaItem) => {
@@ -190,17 +205,27 @@ export default function StudioCardFormGallery({
     <div>
       <div className={styles.studioGallerySectionHeader}>
         <h4 className={styles.studioFormSectionTitle}>Gallery</h4>
-        <button
-          type="button"
-          className={styles.inlineActionButton}
-          disabled={disabled || pasteBusy}
-          onClick={() => setIsPickerOpen(true)}
-        >
-          Add from library
-        </button>
+        <div>
+          <button
+            type="button"
+            className={styles.inlineActionButton}
+            disabled={disabled || pasteBusy}
+            onClick={openDevicePicker}
+          >
+            Add from device
+          </button>{' '}
+          <button
+            type="button"
+            className={styles.inlineActionButton}
+            disabled={disabled || pasteBusy}
+            onClick={() => setIsPickerOpen(true)}
+          >
+            Add from library
+          </button>
+        </div>
       </div>
       <p className={styles.metaMuted}>
-        Paste or drop an image here, pick from the library, or drag from the Media pane (Studio).
+        Choose one or more photos from this device, paste or drop images, pick from the library, or drag from the Media pane on desktop.
       </p>
       {pasteError ? (
         <p className={styles.studioGalleryPasteError} role="alert">
@@ -340,7 +365,7 @@ export default function StudioCardFormGallery({
             <div className={styles.studioAppendDropEmptyState}>
               <p className={styles.metaMuted}>
                 {pasteBusy
-                  ? 'Adding image…'
+                  ? 'Adding photos…'
                   : isDragActive
                     ? 'Drop image to add to gallery'
                     : 'No gallery media assigned.'}

@@ -14,6 +14,8 @@ import {
 } from '@/lib/utils/tagUtils';
 import type { Tag } from '@/lib/types/tag';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
+import { useMedia } from '@/components/providers/MediaProvider';
+import { uploadImageFileToMediaBank } from '@/lib/utils/uploadImageFileToMediaBank';
 import styles from './PhotoPicker.module.css';
 
 const LIBRARY_PAGE_LIMIT = 40;
@@ -48,6 +50,7 @@ export default function PhotoPicker({
   filterTagIds,
 }: PhotoPickerProps) {
   const { tags: allTags } = useTag();
+  const { registerCreatedMedia } = useMedia();
   const [mode] = useState<'single' | 'multi'>(initialMode);
 
   const [libraryItems, setLibraryItems] = useState<Media[]>([]);
@@ -64,6 +67,9 @@ export default function PhotoPicker({
   const librarySearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const libraryLoadMoreRef = useRef<HTMLDivElement | null>(null);
   const libraryScrollRef = useRef<HTMLDivElement | null>(null);
+  const deviceInputRef = useRef<HTMLInputElement | null>(null);
+  const [deviceUploadBusy, setDeviceUploadBusy] = useState(false);
+  const [deviceUploadError, setDeviceUploadError] = useState<string | null>(null);
 
   const [libSource, setLibSource] = useState('all');
   const [libDimensions, setLibDimensions] = useState('all');
@@ -122,6 +128,53 @@ export default function PhotoPicker({
       });
     },
     [mode, onSelect, onClose]
+  );
+
+  const handleDeviceFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0 || deviceUploadBusy) return;
+      setDeviceUploadBusy(true);
+      setDeviceUploadError(null);
+      const imported: Media[] = [];
+      const failedNames: string[] = [];
+      try {
+        for (const file of files) {
+          try {
+            const media = await uploadImageFileToMediaBank(file);
+            registerCreatedMedia(media);
+            imported.push(media);
+          } catch {
+            failedNames.push(file.name);
+          }
+        }
+
+        if (mode === 'single' && imported[0]) {
+          onSelect?.(imported[0]);
+          onClose();
+          return;
+        }
+
+        if (imported.length > 0) {
+          setLibraryItems((current) => {
+            const importedIds = new Set(imported.map((item) => item.docId));
+            return [...imported, ...current.filter((item) => !importedIds.has(item.docId))];
+          });
+          setSelectedLibraryMedia((current) => {
+            const currentIds = new Set(current.map((item) => item.docId));
+            return [...current, ...imported.filter((item) => !currentIds.has(item.docId))];
+          });
+        }
+
+        if (failedNames.length > 0) {
+          setDeviceUploadError(
+            `${failedNames.length} photo${failedNames.length === 1 ? '' : 's'} could not be added: ${failedNames.join(', ')}`
+          );
+        }
+      } finally {
+        setDeviceUploadBusy(false);
+      }
+    },
+    [deviceUploadBusy, mode, onClose, onSelect, registerCreatedMedia]
   );
 
   const flushLibrarySearch = useCallback(() => {
@@ -243,6 +296,8 @@ export default function PhotoPicker({
     setLibraryPickerTagIds([]);
     setLibraryRefreshKey(0);
     setLibraryError(null);
+    setDeviceUploadError(null);
+    setDeviceUploadBusy(false);
   }, [isOpen, filterTagIds]);
 
   useEffect(() => {
@@ -347,9 +402,39 @@ export default function PhotoPicker({
           </button>
         </div>
 
-        <p className={styles.sourceHint}>
-          Pick from the media bank. Import new files from Studio Media → Import.
-        </p>
+        <div className={styles.sourceHint}>
+          <p>
+            Pick from the Media bank or add only the photo{mode === 'multi' ? 's' : ''} needed
+            from this device.
+          </p>
+          <input
+            ref={deviceInputRef}
+            type="file"
+            accept="image/*"
+            multiple={mode === 'multi'}
+            hidden
+            data-testid="photo-picker-device-input"
+            onChange={(event) => {
+              const files = Array.from(event.currentTarget.files ?? []);
+              event.currentTarget.value = '';
+              void handleDeviceFiles(files);
+            }}
+          />
+          <button
+            type="button"
+            className={styles.librarySearchButton}
+            onClick={() => deviceInputRef.current?.click()}
+            disabled={deviceUploadBusy}
+          >
+            {deviceUploadBusy ? 'Adding photos…' : 'Add from device'}
+          </button>
+        </div>
+
+        {deviceUploadError ? (
+          <div className={styles.error} role="alert">
+            {deviceUploadError}
+          </div>
+        ) : null}
 
         <div className={styles.libraryPanel}>
           <div className={styles.libraryControls}>

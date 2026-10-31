@@ -1146,6 +1146,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Three focused suites pass seven tests covering exact Card-status preference handoff, Cards destination routing, generic Media and Collections routes, the five-destination mobile workspace, and dirty-Compose refusal. Touched-code lint, production typecheck, diff checks, and the optimized production build pass; unauthenticated build-time theme reads use the existing checked-in fallback as designed. No production record changes.
 
+### Thirteenth implementation slice — Selected-device-photo Story intake
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author select the photos needed for the current Story directly from the device without first importing the whole device library or navigating through the existing Media bank.
+
+**Includes** — A visible Add from device action in the Card Gallery editor and shared Media picker; browser or operating-system image selection; one-photo selection for cover or body insertion; multi-selection for Gallery composition; sequential import of only the selected files into the canonical Media bank; Gallery assignment in the selected order; retention of successful imports when another selected file fails; exact failed filenames; and continued support for paste, drop, and Add from library.
+
+**Excludes** — Whole-library import; Apple Photos or Google Photos API integration; import without canonical Media persistence; camera-specific capture presentation; background or resumable batch processing; automatic cover selection; automatic or mandatory four-dimensional classification; machine-derived tags; publication expansion; private working revisions; and production data mutation.
+
+**Contracts** — Device selection is an author-controlled intake path, not an archive migration. Only chosen files are copied into the canonical Media bank, because a durable Story cannot depend on an external device-library reference that may later disappear. The intake path does not claim that imported Media have been classified, reviewed, or made publication-ready. Draft authoring remains permissive; the existing publication boundary remains unchanged.
+
+**Completion evidence** — The focused shared-picker and Gallery suites pass thirteen tests, including single-photo return for cover or body use, multi-photo staging, Gallery picker activation, ordered two-photo import, and partial-failure retention. Touched-code lint, non-incremental production typecheck, and the optimized production build pass; unauthenticated build-time theme reads use the checked-in fallback as designed. No production record or Storage object changed during verification.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

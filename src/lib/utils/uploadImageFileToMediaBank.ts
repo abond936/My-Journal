@@ -1,6 +1,6 @@
 import type { Media } from '@/lib/types/photo';
 
-/** Upload a browser file (paste/drop) into the media bank (`source: paste`). */
+/** Upload a browser-selected, pasted, or dropped file into the Media bank. */
 export async function uploadImageFileToMediaBank(file: File): Promise<Media> {
   const formData = new FormData();
   formData.append('file', file);

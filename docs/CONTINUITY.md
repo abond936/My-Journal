@@ -7,15 +7,17 @@ This file is the concise operational handoff for the next project session. It is
 - `01` remains the owner of product vision, architecture, technical principles, and stable invariants.
 - `02` now records the shipped durable Collection authority and placement-native Studio/Reader behavior separately from still-planned multi-Collection creation, audience, sharing, distribution, and Book editions.
 - `03` records the completed first durable Collection activation and the read-only publication-readiness evidence. Active structure is not publication.
-- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present local branch extends the sequential mobile Author-destination foundation with truthful Author Home handoffs; it makes no production-data mutation.
+- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present local branch combines the sequential mobile Author destinations, truthful Author Home handoffs, and selected-device-photo Story intake; it makes no production-data mutation.
 
 ## Local implementation checkpoint
 
 - `codex/mobile-author-destinations` at `54ba53fb` is the verified sequential mobile Studio foundation: Cards, Media, Prompts, Collections, and Tags appear one at a time at phone width, while desktop keeps its configurable simultaneous panes.
-- `codex/mobile-author-dashboard-handoffs` is based on `54ba53fb` and is the current handoff branch. It adds Cards, Media, and Collections destination hints from Author Home, preserves the exact existing Card-status preference, and leaves general Continue unqualified so prior work resumes.
+- `codex/mobile-author-dashboard-handoffs` at `422c5537` is based on `54ba53fb`. It adds Cards, Media, and Collections destination hints from Author Home, preserves the exact existing Card-status preference, and leaves general Continue unqualified so prior work resumes.
 - `codex/published-card-working-revision-foundation` at `42ae7c2e` is a separate sibling branch based on `54ba53fb`. It contains an inactive, verified private working-revision persistence foundation for published Cards. It is deliberately not wired to routes or UI.
-- None of these three local commits is merged into or deployed from `origin/main`. No GitHub push is authorized by the current approval record. Preserve the sibling branches rather than assuming the dashboard-handoff branch contains the working-revision foundation.
-- Before activating working revisions, define whether later Media or Tag changes that alter inherited published-Card truth remain immediately live or become part of the Card's private working revision. The present mutation surface includes direct, narrow, bulk, and automatic owners, so partial interception must not be represented as protected published-version behavior.
+- `codex/story-first-practical-publication` is the current successor branch based on `422c5537`. It carries selected-device-photo Story intake for cover, Gallery, and body composition without the inactive working-revision foundation.
+- `codex/story-first-selective-revisions` preserves the later working-revision, publication-route, audience-grant, and immutable-presentation experiments. Those experiments are not part of the active implementation direction and must not be represented as delivered publication protection.
+- None of these local branches is merged into or deployed from `origin/main`. No GitHub push is authorized by the current approval record. Preserve the sibling branches as recoverable topology rather than rewriting their history.
+- The current bounded publication policy keeps a published Card as one live object: saved edits may become visible to readers immediately. An author who needs privacy while changing it must explicitly return it to Draft first. Private working revisions remain deferred unless demonstrated use warrants the additional mutation-owner coverage and version infrastructure.
 
 ## Durable Collection state
 
@@ -41,7 +43,9 @@ The new `audit:collection-publication` command is read-only. Its 2026-10-30 prod
 - All 278 loaded Media records have unassessed rendition readiness; 77 have all four dimensions reviewed.
 - No audience-, visibility-, access-, recipient-, or sharing-like Collection field.
 
-The ordinary Reader already requires a published Collection, every required Card published, and no missing required Card. Draft-to-Published Card mutations now enforce the implemented Card-level integrity core: dimensional review, meaningful What, referenced-Media existence and review, and Media readiness. The complete canon publication contract is still unfinished because explicit Collection-or-Feed placement, protected working revisions, Collection publication, audience groups, guest recipients, and distribution notifications are not implemented. `My Life` is therefore not publication-ready and remains draft.
+These results are backlog evidence, not proof that four-dimensional classification is undesirable or that the application model failed. In particular, zero Cards passing the new review gate means the existing Cards have not yet been reviewed under that gate. The assessment does not establish how many Cards or Media the author ultimately wants fully classified. Full archival classification remains a distinct benefit for authors who want more precise freeform exploration than device-library search provides.
+
+The ordinary Reader already requires a published Collection, every required Card published, and no missing required Card. Draft-to-Published Card mutations now enforce the implemented Card-level integrity core: dimensional review, meaningful What, referenced-Media existence and review, and Media readiness. The complete canon publication contract is still unfinished because explicit Collection-or-Feed placement, Collection publication, audience groups, guest recipients, and distribution notifications are not implemented. `My Life` is therefore not publication-ready and remains draft.
 
 ## Current product direction
 
@@ -60,7 +64,7 @@ Do not attempt to publish `My Life` by flipping existing Card statuses or the Co
 
 1. Preserve the shared read-only readiness result as the owner for dashboard and diagnostic evidence; do not convert attention counts into automatic repair.
 2. Preserve the delivered exact Collection-to-Studio handoff. Add other attention links only when their owning surface can reproduce the represented population; do not label broader global filters as Collection-scoped work.
-3. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Implement the approved protected-revision behavior in a separate bounded slice: the first edit to a published Card automatically creates a private working revision, readers retain the prior published version until explicit republish, and unpublish remains separate. Explicit placement consequence and the Collection publication owner still require definition before expanding enforcement.
+3. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Keep published Cards live in the current stage, warn that saved edits may be reader-visible, and retain the explicit return-to-Draft path for private editing. Do not revive partial working-revision protection. Explicit placement consequence and the Collection publication owner still require definition before expanding enforcement.
 4. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
 5. Define audience/visibility separately from publication and distribution before any reader-facing activation.
 6. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.
