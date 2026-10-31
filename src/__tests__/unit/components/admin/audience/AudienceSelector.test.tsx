@@ -75,4 +75,39 @@ describe('AudienceSelector', () => {
     );
     expect(await screen.findByText('No enabled readers.')).toBeInTheDocument();
   });
+
+  it('shows the combined Reader consequence supplied by other published routes', async () => {
+    const getCombinedImpact = jest.fn().mockResolvedValue({
+      basis: 'current_after_save',
+      standaloneIncluded: true,
+      effectiveReaders: [
+        { contactId: 'reader-1', displayName: 'Alex' },
+        { contactId: 'reader-2', displayName: 'Blair' },
+      ],
+      otherRoutes: [{
+        collectionId: 'family-book',
+        title: 'Family Book',
+        readers: [{ contactId: 'reader-2', displayName: 'Blair' }],
+      }],
+    });
+    render(
+      <AudienceSelector
+        value={{ allContacts: false, groupIds: [], contactIds: ['reader-1'] }}
+        scopeLabel="Standalone Story"
+        consequence="Standalone consequence."
+        onSave={jest.fn()}
+        getCombinedImpact={getCombinedImpact}
+      />
+    );
+
+    const combinedLabel = await screen.findByText(/Combined access after Save:/);
+    await waitFor(() => expect(combinedLabel.parentElement).toHaveTextContent(
+      'Alex, Blair Routes included: standalone Feed, Family Book.'
+    ));
+    expect(getCombinedImpact).toHaveBeenCalledWith({
+      allContacts: false,
+      groupIds: [],
+      contactIds: ['reader-1'],
+    });
+  });
 });

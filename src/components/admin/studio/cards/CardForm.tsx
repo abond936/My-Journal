@@ -48,6 +48,7 @@ import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils
 import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import type { AudienceSelection } from '@/lib/types/audience';
+import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -121,6 +122,20 @@ const CardForm: React.FC = () => {
     }
     return persistFieldPatch({ audience });
   }, [cardData.docId, cardData.status, feedback, persistFieldPatch, setField]);
+
+  const getCombinedAudienceImpact = useCallback(async (audience: AudienceSelection): Promise<CardAudienceImpact> => {
+    if (!cardData.docId) {
+      throw new Error('Save the Story before calculating Collection routes.');
+    }
+    const response = await fetch(`/api/admin/cards/${encodeURIComponent(cardData.docId)}/audience-impact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(audience),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.impact) throw new Error(data.message || 'Combined audience could not be calculated.');
+    return data.impact as CardAudienceImpact;
+  }, [cardData.docId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -984,6 +999,7 @@ const CardForm: React.FC = () => {
           : 'Controls the standalone and Feed route. A Collection placement may separately grant access to this Story.'}
         disabled={isSaving}
         onSave={saveStandaloneAudience}
+        getCombinedImpact={cardData.docId ? getCombinedAudienceImpact : undefined}
       />
       {studioShellForm && !studioShellDnd ? (
         <DndContext

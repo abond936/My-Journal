@@ -92,6 +92,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'POST', path: '/api/admin/audience-groups', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'PATCH', path: '/api/admin/audience-groups/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'DELETE', path: '/api/admin/audience-groups/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/cards/[id]/audience-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only proposed Card audience union across standalone and published Collection routes' },
 
   { method: 'GET', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -196,6 +197,7 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-audience-groups-post', method: 'POST', path: '/api/admin/audience-groups', modulePath: '@/app/api/admin/audience-groups/route', requestUrl: 'https://example.test/api/admin/audience-groups', body: { name: 'Family', memberContactIds: [] } },
   { id: 'admin-audience-groups-patch', method: 'PATCH', path: '/api/admin/audience-groups/[id]', modulePath: '@/app/api/admin/audience-groups/[id]/route', requestUrl: 'https://example.test/api/admin/audience-groups/family', params: Promise.resolve({ id: 'family' }), body: { name: 'Family', memberContactIds: [] } },
   { id: 'admin-audience-groups-delete', method: 'DELETE', path: '/api/admin/audience-groups/[id]', modulePath: '@/app/api/admin/audience-groups/[id]/route', requestUrl: 'https://example.test/api/admin/audience-groups/family', params: Promise.resolve({ id: 'family' }) },
+  { id: 'admin-card-audience-impact-post', method: 'POST', path: '/api/admin/cards/[id]/audience-impact', modulePath: '@/app/api/admin/cards/[id]/audience-impact/route', requestUrl: 'https://example.test/api/admin/cards/card-1/audience-impact', params: Promise.resolve({ id: 'card-1' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
 
   { id: 'admin-archive-identity-get', method: 'GET', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity' },
   { id: 'admin-archive-identity-post', method: 'POST', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity', body: { entity: 'person', data: { canonicalName: 'Test Person' } } },

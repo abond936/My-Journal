@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import type { AudienceGroup, AudienceSelection } from '@/lib/types/audience';
+import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
 import styles from './AudienceSelector.module.css';
 
 type AudienceSelectorProps = {
@@ -11,6 +12,7 @@ type AudienceSelectorProps = {
   consequence: string;
   disabled?: boolean;
   onSave: (selection: AudienceSelection) => Promise<boolean>;
+  getCombinedImpact?: (selection: AudienceSelection) => Promise<CardAudienceImpact>;
 };
 
 const allReadersSelection = (): AudienceSelection => ({
@@ -38,6 +40,7 @@ export default function AudienceSelector({
   consequence,
   disabled = false,
   onSave,
+  getCombinedImpact,
 }: AudienceSelectorProps) {
   const normalizedValue = useMemo(() => normalize(value), [value]);
   const [draft, setDraft] = useState<AudienceSelection>(normalizedValue);
@@ -47,6 +50,9 @@ export default function AudienceSelector({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [impact, setImpact] = useState<CardAudienceImpact | null>(null);
+  const [impactLoading, setImpactLoading] = useState(false);
+  const [impactError, setImpactError] = useState<string | null>(null);
 
   useEffect(() => setDraft(normalizedValue), [normalizedValue]);
 
@@ -76,6 +82,36 @@ export default function AudienceSelector({
     void load();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!getCombinedImpact) {
+      setImpact(null);
+      setImpactError(null);
+      return;
+    }
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      setImpactLoading(true);
+      setImpactError(null);
+      void getCombinedImpact(normalize(draft))
+        .then((nextImpact) => {
+          if (!cancelled) setImpact(nextImpact);
+        })
+        .catch((impactFailure) => {
+          if (!cancelled) {
+            setImpact(null);
+            setImpactError(impactFailure instanceof Error ? impactFailure.message : 'Combined audience could not be calculated.');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setImpactLoading(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [draft, getCombinedImpact]);
 
   const readerUsers = useMemo(
     () => users.filter((user) => user.role === 'viewer').sort((a, b) => a.displayName.localeCompare(b.displayName)),
@@ -197,6 +233,22 @@ export default function AudienceSelector({
               ? effectiveReaders.map((user) => user.displayName).join(', ')
               : 'No enabled readers.'}
           </div>
+          {getCombinedImpact ? (
+            <div className={styles.preview} aria-live="polite">
+              <strong>{impact?.basis === 'if_published' ? 'If published with this audience:' : 'Combined access after Save:'}</strong>{' '}
+              {impactLoading ? 'Calculating all routes...' : impact ? (
+                <>
+                  {impact.effectiveReaders.length
+                    ? impact.effectiveReaders.map((reader) => reader.displayName).join(', ')
+                    : 'No enabled readers.'}
+                  {' '}Routes included: {[
+                    ...(impact.standaloneIncluded ? ['standalone Feed'] : []),
+                    ...impact.otherRoutes.map((route) => route.title),
+                  ].join(', ') || 'none'}.
+                </>
+              ) : impactError || 'Combined audience has not been calculated.'}
+            </div>
+          ) : null}
           <button type="button" disabled={disabled || saving || !changed} onClick={() => void save()}>
             {saving ? 'Saving audience...' : 'Save audience'}
           </button>
