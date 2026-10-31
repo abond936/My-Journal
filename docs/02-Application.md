@@ -759,7 +759,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Passwords** — Set a new temporary password.
 - **Roles** — Enforce Reader and administrator boundaries.
 - **Revocation** — Revalidate JWT-backed account truth and end existing authorization on the next server request when an account is disabled or missing.
-- **Reusable audience groups** — The active local implementation lets the author create, rename, populate, and delete Reader-account groups in User Management. A referenced group cannot be deleted until it is removed from every Card and Collection audience.
+- **Reusable audience groups** — The active local implementation lets the author create, rename, populate, and delete Reader-account groups in User Management. Before a membership change can be saved, User Management shows the exact enabled readers who gain or lose access to each currently Reader-visible Collection and published Card, including access unions through Feed, placements, and Collection-introduction routes. A referenced group cannot be deleted until it is removed from every Card and Collection audience.
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
 
 ⭕1 **Planned**

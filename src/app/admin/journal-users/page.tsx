@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import type { AudienceGroup } from '@/lib/types/audience';
+import type { AudienceGroupMembershipImpact } from '@/lib/services/audienceGroupImpactService';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './journal-users.module.css';
 
@@ -42,6 +43,10 @@ export default function JournalUsersAdminPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupMemberIds, setNewGroupMemberIds] = useState<string[]>([]);
   const [groupBusy, setGroupBusy] = useState<string | null>(null);
+  const [groupImpacts, setGroupImpacts] = useState<Record<string, {
+    signature: string;
+    impact: AudienceGroupMembershipImpact;
+  }>>({});
 
   const load = useCallback(async () => {
     setListError(null);
@@ -54,6 +59,7 @@ export default function JournalUsersAdminPage() {
         group.docId,
         { name: group.name, memberContactIds: group.memberContactIds },
       ])));
+      setGroupImpacts({});
     } catch (e) {
       setListError(e instanceof Error ? e.message : 'Users could not be loaded. Try again.');
     } finally {
@@ -156,6 +162,11 @@ export default function JournalUsersAdminPage() {
   const toggleMember = (ids: string[], id: string) =>
     ids.includes(id) ? ids.filter((candidate) => candidate !== id) : [...ids, id];
 
+  const membershipSignature = (ids: string[]) => [...new Set(ids)].sort().join('\u0000');
+
+  const names = (readers: Array<{ displayName: string }>) =>
+    readers.length ? readers.map((reader) => reader.displayName).join(', ') : 'none';
+
   const handleCreateGroup = async (event: React.FormEvent) => {
     event.preventDefault();
     setGroupBusy('new');
@@ -180,9 +191,26 @@ export default function JournalUsersAdminPage() {
 
   const handleSaveGroup = async (id: string) => {
     const draft = groupDrafts[id];
-    if (!draft) return;
+    const group = groups.find((candidate) => candidate.docId === id);
+    if (!draft || !group) return;
+    const signature = membershipSignature(draft.memberContactIds);
+    const membershipChanged = signature !== membershipSignature(group.memberContactIds);
     setGroupBusy(id);
     try {
+      if (membershipChanged && groupImpacts[id]?.signature !== signature) {
+        const impactResponse = await fetch(`/api/admin/audience-groups/${id}/impact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberContactIds: draft.memberContactIds }),
+        });
+        const impactData = await impactResponse.json();
+        throwIfJsonApiFailed(impactResponse, impactData, 'This access impact could not be calculated.');
+        setGroupImpacts((current) => ({
+          ...current,
+          [id]: { signature, impact: impactData.impact as AudienceGroupMembershipImpact },
+        }));
+        return;
+      }
       const res = await fetch(`/api/admin/audience-groups/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -311,6 +339,11 @@ export default function JournalUsersAdminPage() {
         <div className={styles.groupList}>
           {groups.map((group) => {
             const draft = groupDrafts[group.docId] ?? { name: group.name, memberContactIds: group.memberContactIds };
+            const signature = membershipSignature(draft.memberContactIds);
+            const reviewedImpact = groupImpacts[group.docId]?.signature === signature
+              ? groupImpacts[group.docId].impact
+              : null;
+            const membershipChanged = signature !== membershipSignature(group.memberContactIds);
             return (
               <div key={group.docId} className={styles.groupEditor}>
                 <div className={styles.inputGroup}>
@@ -343,6 +376,43 @@ export default function JournalUsersAdminPage() {
                     </label>
                   ))}
                 </div>
+                {reviewedImpact ? (
+                  <div className={styles.impactReview} role="status">
+                    <strong>Review this access change before saving</strong>
+                    <p>Adds: {names(reviewedImpact.addedMembers)}. Removes: {names(reviewedImpact.removedMembers)}.</p>
+                    {reviewedImpact.cards.length || reviewedImpact.collections.length ? (
+                      <>
+                        {reviewedImpact.collections.length ? (
+                          <div>
+                            <strong>Collection access</strong>
+                            <ul>
+                              {reviewedImpact.collections.map((item) => (
+                                <li key={item.id}>{item.title}: gains {names(item.gainingReaders)}; loses {names(item.losingReaders)}.</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {reviewedImpact.cards.length ? (
+                          <details>
+                            <summary>{reviewedImpact.cards.length} published Card{reviewedImpact.cards.length === 1 ? '' : 's'} change effective access</summary>
+                            <ul>
+                              {reviewedImpact.cards.map((item) => (
+                                <li key={item.id}>{item.title}: gains {names(item.gainingReaders)}; loses {names(item.losingReaders)}.</li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p>No currently Reader-visible Card or Collection changes access.</p>
+                    )}
+                    <p className={styles.impactNote}>
+                      This group is selected by {reviewedImpact.referencedCardAudiences} Card audience{reviewedImpact.referencedCardAudiences === 1 ? '' : 's'} and {reviewedImpact.referencedCollectionAudiences} Collection audience{reviewedImpact.referencedCollectionAudiences === 1 ? '' : 's'}. Draft or incomplete content does not change Reader access now.
+                    </p>
+                  </div>
+                ) : membershipChanged ? (
+                  <p className={styles.impactNote}>Review the Reader-access consequence before this membership change can be saved.</p>
+                ) : null}
                 <div className={styles.actions}>
                   <button
                     type="button"
@@ -350,7 +420,7 @@ export default function JournalUsersAdminPage() {
                     disabled={groupBusy === group.docId}
                     onClick={() => void handleSaveGroup(group.docId)}
                   >
-                    Save group
+                    {reviewedImpact ? 'Apply reviewed access change' : membershipChanged ? 'Review access change' : 'Save group'}
                   </button>
                   <button
                     type="button"

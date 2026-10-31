@@ -4,6 +4,7 @@ import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { getReaderValidCollectionRoutesByCard } from '@/lib/services/collections/cardCollectionRouteService';
 
 export type AudienceImpactReader = { contactId: string; displayName: string };
 export type CardAudienceImpact = {
@@ -66,11 +67,10 @@ export async function getCardAudienceImpact(
   proposedAudience: AudienceSelection,
   firestore: FirebaseFirestore.Firestore = getAdminApp().firestore()
 ): Promise<CardAudienceImpact | null> {
-  const [cardSnapshot, readersSnapshot, groupsSnapshot, placementsSnapshot] = await Promise.all([
+  const [cardSnapshot, readersSnapshot, groupsSnapshot] = await Promise.all([
     firestore.collection('cards').doc(cardId).get(),
     firestore.collection('journal_users').where('role', '==', 'viewer').get(),
     firestore.collection('audience_groups').get(),
-    firestore.collection('collection_placements').where('cardId', '==', cardId).get(),
   ]);
   if (!cardSnapshot.exists) return null;
   const card = { docId: cardSnapshot.id, ...cardSnapshot.data() } as Card;
@@ -89,24 +89,10 @@ export async function getCardAudienceImpact(
       : [],
   }));
 
-  const collectionIds = Array.from(new Set(placementsSnapshot.docs
-    .map((doc) => String((doc.data() as { collectionId?: string }).collectionId || ''))
-    .filter(Boolean)));
-  const collectionSnapshots = collectionIds.length
-    ? await firestore.getAll(...collectionIds.map((id) => firestore.collection('collections').doc(id)))
-    : [];
-  const collectionCandidates = collectionSnapshots
-    .filter((snapshot) => snapshot.exists)
-    .map((snapshot) => ({ docId: snapshot.id, ...snapshot.data() } as Collection))
-    .filter((collection) => collection.recordState === 'active' && collection.lifecycle === 'published');
-  const collections = (await Promise.all(collectionCandidates.map(async (collection) => ({
-    collection,
-    valid: Boolean(await getReaderCollectionStructure({
-      collectionId: collection.docId,
-      includeDrafts: false,
-      firestore,
-    })),
-  })))).filter((result) => result.valid).map((result) => result.collection);
+  const collections = (await getReaderValidCollectionRoutesByCard({
+    cardIds: [cardId],
+    firestore,
+  })).get(cardId) ?? [];
 
   const effectiveIds = isCardIncludedInFeed(card)
     ? resolveAudienceReaderIds({ audience: proposedAudience, enabledReaderIds, groups })
@@ -188,42 +174,11 @@ export async function getCollectionAudienceImpact(
   const cardsById = new Map(cards.map((card) => [card.docId!, card]));
   const missingCardIds = cardIds.filter((id) => !cardsById.has(id)).sort();
 
-  const placementSnapshots = cardIds.length
-    ? await Promise.all(chunks(cardIds, 30).map((batch) =>
-      firestore.collection('collection_placements').where('cardId', 'in', batch).get()
-    ))
-    : [];
-  const otherCollectionIdsByCard = new Map<string, Set<string>>();
-  placementSnapshots.flatMap((snapshot) => snapshot.docs).forEach((doc) => {
-    const data = doc.data() as { cardId?: unknown; collectionId?: unknown };
-    if (typeof data.cardId !== 'string' || typeof data.collectionId !== 'string') return;
-    if (data.collectionId === collectionId) return;
-    const ids = otherCollectionIdsByCard.get(data.cardId) ?? new Set<string>();
-    ids.add(data.collectionId);
-    otherCollectionIdsByCard.set(data.cardId, ids);
+  const otherCollectionsByCard = await getReaderValidCollectionRoutesByCard({
+    cardIds,
+    excludeCollectionIds: new Set([collectionId]),
+    firestore,
   });
-  const otherCollectionIds = Array.from(new Set(
-    [...otherCollectionIdsByCard.values()].flatMap((ids) => [...ids])
-  ));
-  const otherCollectionSnapshotBatches = otherCollectionIds.length
-    ? await Promise.all(chunks(otherCollectionIds, 300).map((batch) =>
-      firestore.getAll(...batch.map((id) => firestore.collection('collections').doc(id)))
-    ))
-    : [];
-  const otherCollectionSnapshots = otherCollectionSnapshotBatches.flat();
-  const otherCandidates = otherCollectionSnapshots
-    .filter((snapshot) => snapshot.exists)
-    .map((snapshot) => ({ docId: snapshot.id, ...snapshot.data() } as Collection))
-    .filter((candidate) => candidate.recordState === 'active' && candidate.lifecycle === 'published');
-  const validOtherCollections = (await Promise.all(otherCandidates.map(async (candidate) => ({
-    collection: candidate,
-    valid: Boolean(await getReaderCollectionStructure({
-      collectionId: candidate.docId,
-      includeDrafts: false,
-      firestore,
-    })),
-  })))).filter((result) => result.valid).map((result) => result.collection);
-  const validOtherCollectionsById = new Map(validOtherCollections.map((candidate) => [candidate.docId, candidate]));
   const currentRouteActive = collection.recordState === 'active'
     && collection.lifecycle === 'published'
     && Boolean(await getReaderCollectionStructure({ collectionId, includeDrafts: false, firestore }));
@@ -249,10 +204,7 @@ export async function getCollectionAudienceImpact(
         readers: readersForIds(standaloneIds, readersById),
       });
     }
-    const otherCollections = [...(otherCollectionIdsByCard.get(card.docId!) ?? [])]
-      .map((id) => validOtherCollectionsById.get(id))
-      .filter((candidate): candidate is Collection => Boolean(candidate))
-      .sort((left, right) => left.title.localeCompare(right.title) || left.docId.localeCompare(right.docId));
+    const otherCollections = otherCollectionsByCard.get(card.docId!) ?? [];
     otherCollections.forEach((candidate) => {
       const ids = resolveAudienceReaderIds({
         audience: candidate.audience,

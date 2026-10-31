@@ -4,6 +4,7 @@ import {
   resolveAudienceReaderIds,
 } from '@/lib/services/audienceImpactService';
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { getReaderValidCollectionRoutesByCard } from '@/lib/services/collections/cardCollectionRouteService';
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({ firestore: jest.fn() })),
@@ -11,8 +12,12 @@ jest.mock('@/lib/config/firebase/admin', () => ({
 jest.mock('@/lib/services/collections/collectionProjectionReadService', () => ({
   getReaderCollectionStructure: jest.fn(),
 }));
+jest.mock('@/lib/services/collections/cardCollectionRouteService', () => ({
+  getReaderValidCollectionRoutesByCard: jest.fn(),
+}));
 
 const getReaderStructure = getReaderCollectionStructure as jest.MockedFunction<typeof getReaderCollectionStructure>;
+const getCollectionRoutes = getReaderValidCollectionRoutesByCard as jest.MockedFunction<typeof getReaderValidCollectionRoutesByCard>;
 
 function doc(id: string, data: Record<string, unknown>, exists = true) {
   return { id, exists, data: () => data };
@@ -22,6 +27,7 @@ describe('audienceImpactService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     getReaderStructure.mockResolvedValue({} as never);
+    getCollectionRoutes.mockResolvedValue(new Map());
   });
   it('resolves enabled group and individual members without duplication', () => {
     expect([...resolveAudienceReaderIds({
@@ -32,6 +38,10 @@ describe('audienceImpactService', () => {
   });
 
   it('combines the proposed standalone audience with active published Collection routes', async () => {
+    getCollectionRoutes.mockResolvedValue(new Map([['card-1', [{
+      docId: 'collection-1', title: 'Family Book', lifecycle: 'published', recordState: 'active',
+      audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+    } as never]]]));
     const snapshots = {
       cards: doc('card-1', { status: 'published', feedIncluded: true }),
       journal_users: {
@@ -106,6 +116,14 @@ describe('audienceImpactService', () => {
   });
 
   it('previews every placed Card across the proposed Collection and its other routes', async () => {
+    getCollectionRoutes.mockResolvedValue(new Map([
+      ['card-1', [{
+        docId: 'other-book', title: 'Other Book', lifecycle: 'published', recordState: 'active',
+        audience: { allContacts: false, groupIds: [], contactIds: ['reader-1'] },
+      } as never]],
+      ['card-2', []],
+      ['missing-card', []],
+    ]));
     const collections = {
       'collection-1': doc('collection-1', {
         title: 'Family Archive', lifecycle: 'draft', recordState: 'active',

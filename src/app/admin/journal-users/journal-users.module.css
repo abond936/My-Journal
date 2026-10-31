@@ -209,6 +209,26 @@
   background: var(--layout-background1-color);
 }
 
+.impactReview {
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}
+
+.impactReview p,
+.impactReview ul {
+  margin: var(--spacing-xs) 0;
+}
+
+.impactNote {
+  margin: 0;
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
 .memberGrid {
   display: flex;
   flex-wrap: wrap;
