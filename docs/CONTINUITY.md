@@ -77,6 +77,6 @@ Further bounded, reversible implementation may continue against the approved exp
 ## Workspace and verification notes
 
 - Preserve the unrelated untracked `.next-stale-20260725-192102/` directory in the primary checkout.
-- The diagnostic script is `src/lib/scripts/cards/audit-collection-publication-readiness.ts`; package command: `npm run audit:collection-publication -- --collection-id=my-life`.
+- The diagnostic script is `src/lib/scripts/cards/audit-collection-publication-readiness.ts`; package command: `npm run audit:collection-publication -- --collection-id=my-life`. It reads and reports the saved classification requirements so its required-review attention agrees with Author Home; its raw review inventory remains visible as evidence regardless of the selected mode.
 - The script performs Firestore reads only and emits JSON. It must remain non-mutating.
 - Before release, run touched-file lint, production typecheck, the diagnostic readback, and diff checks. Use the repository integrity gate for any pushed PR.

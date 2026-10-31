@@ -7,6 +7,7 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getActiveCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 import { evaluateCollectionPublicationAttention } from '@/lib/services/publicationReadinessService';
+import { getAuthorSettings } from '@/lib/services/authorSettingsService';
 import type { Card } from '@/lib/types/card';
 import type { DimensionReviewMap } from '@/lib/types/dimensionReview';
 import type { Media } from '@/lib/types/photo';
@@ -53,6 +54,7 @@ async function main() {
 
   const structure = await getActiveCollectionStructure(collectionId, firestore);
   if (!structure) throw new Error(`Collection ${collectionId} is not active.`);
+  const authorSettings = await getAuthorSettings(firestore);
 
   const cards = structure.cards;
   const cardsById = new Map(cards.flatMap((card) => card.docId ? [[card.docId, card]] : []));
@@ -103,7 +105,11 @@ async function main() {
   const mediaWithAllDimensionsReviewed = media.filter((item) =>
     DIMENSIONS.every((dimension) => isReviewComplete(item.dimensionReview, dimension))
   );
-  const publicationAttention = evaluateCollectionPublicationAttention({ structure, media });
+  const publicationAttention = evaluateCollectionPublicationAttention({
+    structure,
+    media,
+    classificationRequirements: authorSettings.classificationRequirements,
+  });
 
   const report = {
     ok: true,
@@ -167,9 +173,11 @@ async function main() {
     },
     publicationAttention,
     currentImplementation: {
+      classificationRequirements: authorSettings.classificationRequirements,
       ordinaryReaderRequiresPublishedCollection: true,
       ordinaryReaderRequiresEveryRequiredCardPublished: true,
       ordinaryReaderFailsClosedOnMissingRequiredCard: true,
+      cardStatusMutationEnforcesCardIntegrityCore: true,
       cardStatusMutationEnforcesCanonPublicationIntegrity: false,
       collectionPublicationMutationImplemented: false,
       audienceGroupsImplemented: false,

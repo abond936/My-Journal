@@ -1208,7 +1208,7 @@ The former stabilization objective and its controlling execution order are compl
 
 **Contracts** — Blank is presentation, not a stored tag or reviewed resolution. Unknown and Not applicable require explicit author action and remain searchable. Draft creation and saving are unrestricted. Required Card classification is enforced when that Card is published. Required Media classification makes every Media item archive review work and blocks publication only when an incomplete item is referenced by that Card; unrelated Media never blocks the Story. Missing references and Media readiness remain inherent publication integrity in every classification mode.
 
-**Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
+**Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
 ### 1. Release Candidate
 
