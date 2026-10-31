@@ -68,6 +68,7 @@ describe('authorDashboardService', () => {
   });
 
   it('uses aggregate counts without downloading document populations', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const whereCallByCollection = new Map<string, number>();
     const aggregateCounts: Record<string, number[]> = {
       cards: [12, 5],
@@ -124,7 +125,9 @@ describe('authorDashboardService', () => {
       status: 'ready',
       data: { total: 0, items: [] },
     });
+    expect(summary.storyWork).toEqual({ status: 'unavailable' });
     expect(select).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   it('degrades a failed section without hiding successful sections', async () => {
@@ -162,6 +165,7 @@ describe('authorDashboardService', () => {
       status: 'ready',
       data: { total: 0, items: [] },
     });
+    expect(summary.storyWork).toEqual({ status: 'unavailable' });
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
     warningSpy.mockRestore();

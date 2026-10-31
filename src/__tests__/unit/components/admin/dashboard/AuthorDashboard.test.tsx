@@ -43,6 +43,13 @@ const baseSummary: AuthorDashboardSummary = {
       }],
     },
   },
+  storyWork: {
+    status: 'ready',
+    data: {
+      recentDraft: { docId: 'draft-story', title: 'Charlie at the Beach', updatedAt: 20 },
+      recentPublished: { docId: 'published-story', title: 'Welcome', updatedAt: 10 },
+    },
+  },
 };
 
 describe('AuthorDashboard', () => {
@@ -75,6 +82,14 @@ describe('AuthorDashboard', () => {
     expect(screen.getByRole('link', { name: 'Open Media in Studio' })).toHaveAttribute(
       'href',
       '/admin/studio?destination=media'
+    );
+    expect(screen.getByRole('link', { name: /Continue writing Charlie at the Beach/ })).toHaveAttribute(
+      'href',
+      '/admin/studio?card=draft-story'
+    );
+    expect(screen.getByRole('link', { name: /Recently published Welcome/ })).toHaveAttribute(
+      'href',
+      '/admin/studio?card=published-story'
     );
   });
 

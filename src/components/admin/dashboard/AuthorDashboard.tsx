@@ -45,6 +45,51 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
         </div>
       </header>
 
+      <section className={`${styles.section} ${styles.storyFocus}`} aria-labelledby="story-work-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 id="story-work-heading">Your Stories</h2>
+            <p>Pick up the Story you were writing or begin another.</p>
+          </div>
+        </div>
+        {summary.storyWork.status === 'ready' ? (
+          <div className={styles.storyWorkGrid}>
+            {summary.storyWork.data.recentDraft ? (
+              <Link
+                className={styles.storyWorkCard}
+                href={`/admin/studio?card=${encodeURIComponent(summary.storyWork.data.recentDraft.docId)}`}
+              >
+                <span>Continue writing</span>
+                <strong>{summary.storyWork.data.recentDraft.title}</strong>
+              </Link>
+            ) : (
+              <Link className={styles.storyWorkCard} href="/admin/studio?new=1">
+                <span>No draft Story waiting</span>
+                <strong>Start a Story</strong>
+              </Link>
+            )}
+            {summary.storyWork.data.recentPublished ? (
+              <Link
+                className={styles.storyWorkCard}
+                href={`/admin/studio?card=${encodeURIComponent(summary.storyWork.data.recentPublished.docId)}`}
+              >
+                <span>Recently published</span>
+                <strong>{summary.storyWork.data.recentPublished.title}</strong>
+              </Link>
+            ) : (
+              <div className={styles.storyWorkCard}>
+                <span>Recently published</span>
+                <strong>No published Story yet</strong>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className={styles.unavailable} role="status">
+            Recent Story links are temporarily unavailable. Continue in Studio still works.
+          </p>
+        )}
+      </section>
+
       <div className={styles.sectionGrid}>
         <section className={`${styles.section} ${styles.attentionSection}`} aria-labelledby="attention-heading">
           <div className={styles.sectionHeader}>

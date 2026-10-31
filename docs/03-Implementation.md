@@ -1310,6 +1310,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Production inspection first reproduced the global `Admin only available on desktop` dialog on Author Home, Cards, and Start a Story at phone width and traced it to the shared Administration gate. Four focused gate, navigation, Theme-overlay, and Author Home suites pass thirteen tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. Authenticated local browser rendering could not run without Firebase service credentials and was not replaced with fabricated credentials. No production record or Storage object changed.
 
+### Twentieth implementation slice — Resume a real Story from Author Home
+
+**Definition:** Ready
+
+**Execution:** Verified locally; index and application are not deployed
+
+**Outcome** — Put current creative work ahead of archive administration by naming and directly opening the most recently edited draft Story, while retaining a recent published Story reference.
+
+**Includes** — A read-only recent-Story dashboard section; direct durable Card handoffs for the latest draft and latest published Story; truthful empty and independently unavailable states; responsive Story cards before the Collection backlog; and the narrow `status` + `type` + `updatedAt` Firestore index required by the bounded query.
+
+**Excludes** — Automatic Story creation; mutation or migration of Cards; a new activity log; per-author ownership; changing the definition of draft or published; mobile Compose redesign; index deployment; application deployment; and publication of any Card or Collection.
+
+**Contracts** — The query reads only `type: story` Cards and uses durable Card IDs. Failure of the recent-Story query does not hide Card counts, Media, operations, or Collection attention. General Continue in Studio retains its saved-workspace meaning; the named draft handoff is the specific resume path.
+
+**Completion evidence** — Focused dashboard service, component, and page suites pass eleven tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. No production query, index, record, or Storage object changed during local verification.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

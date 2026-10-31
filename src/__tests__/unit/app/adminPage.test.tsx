@@ -41,6 +41,8 @@ describe('AdminIndexPage', () => {
       cards: { status: 'unavailable' },
       media: { status: 'unavailable' },
       operations: { status: 'unavailable' },
+      collections: { status: 'unavailable' },
+      storyWork: { status: 'unavailable' },
     });
 
     await AdminIndexPage();
