@@ -91,8 +91,27 @@ describe('publicationReadinessService', () => {
       missingMedia: 1,
       mediaNeedingDimensionReview: 1,
       mediaReadiness: { ready: 1, pending: 0, failed: 0, unassessed: 1 },
-      audienceSelectionAvailable: false,
+      audienceSelectionState: 'legacy_all_enabled',
     });
+  });
+
+  it.each([
+    [{ allContacts: true, groupIds: [], contactIds: [] }, 'all_enabled'],
+    [{ allContacts: false, groupIds: ['family'], contactIds: [] }, 'selected'],
+    [{ allContacts: false, groupIds: [], contactIds: [] }, 'none'],
+  ] as const)('reports the authored Collection audience state for %j', (audience, expected) => {
+    const result = evaluateCollectionPublicationAttention({
+      structure: {
+        collection: {
+          docId: 'collection-1', title: 'Family Stories', lifecycle: 'draft', recordState: 'active',
+          structureRevision: 0, authorityRevision: 0, order: 0, createdAt: 1, updatedAt: 1, audience,
+        },
+        placements: [],
+        cards: [],
+      },
+      media: [],
+    });
+    expect(result.audienceSelectionState).toBe(expected);
   });
 
   it('counts Unknown and Not applicable as completed dimensional review', () => {

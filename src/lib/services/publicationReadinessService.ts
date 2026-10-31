@@ -32,8 +32,17 @@ export type CollectionPublicationAttention = {
     failed: number;
     unassessed: number;
   };
-  audienceSelectionAvailable: false;
+  audienceSelectionState: 'legacy_all_enabled' | 'all_enabled' | 'selected' | 'none';
 };
+
+function audienceSelectionState(
+  collection: Collection
+): CollectionPublicationAttention['audienceSelectionState'] {
+  if (!collection.audience) return 'legacy_all_enabled';
+  if (collection.audience.allContacts) return 'all_enabled';
+  if (collection.audience.groupIds.length || collection.audience.contactIds.length) return 'selected';
+  return 'none';
+}
 
 function referencedMediaIds(cards: Card[]): string[] {
   const ids = new Set<string>();
@@ -99,7 +108,7 @@ export function evaluateCollectionPublicationAttention(args: {
       failed: referencedMedia.filter((item) => item.readiness?.overall === 'failed').length,
       unassessed: referencedMedia.filter((item) => !item.readiness).length,
     },
-    audienceSelectionAvailable: false,
+    audienceSelectionState: audienceSelectionState(collection),
   };
 }
 

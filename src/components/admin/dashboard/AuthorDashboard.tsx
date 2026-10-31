@@ -14,6 +14,13 @@ const DIMENSION_LABELS = {
   where: 'Where',
 } as const;
 
+const AUDIENCE_LABELS = {
+  legacy_all_enabled: 'All enabled readers (legacy default)',
+  all_enabled: 'All enabled readers',
+  selected: 'Selected groups and people',
+  none: 'No readers selected',
+} as const;
+
 export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
   const mediaData = summary.media.status === 'ready' ? summary.media.data : null;
   const collectionData = summary.collections.status === 'ready' ? summary.collections.data : null;
@@ -100,8 +107,10 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
                           <dd>{readinessAttention.toLocaleString()}</dd>
                         </div>
                         <div>
-                          <dt>Audience selection</dt>
-                          <dd className={styles.notAvailable}>Not yet available</dd>
+                          <dt>Collection audience</dt>
+                          <dd className={item.audienceSelectionState === 'none' ? styles.notAvailable : undefined}>
+                            {AUDIENCE_LABELS[item.audienceSelectionState]}
+                          </dd>
                         </div>
                       </dl>
                     </article>

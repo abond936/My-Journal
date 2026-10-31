@@ -39,7 +39,7 @@ const baseSummary: AuthorDashboardSummary = {
         missingMedia: 17,
         mediaNeedingDimensionReview: 201,
         mediaReadiness: { ready: 0, pending: 2, failed: 1, unassessed: 275 },
-        audienceSelectionAvailable: false,
+        audienceSelectionState: 'legacy_all_enabled',
       }],
     },
   },
@@ -67,7 +67,7 @@ describe('AuthorDashboard', () => {
     expect(screen.getByText('87')).toBeInTheDocument();
     expect(screen.getByText('17')).toBeInTheDocument();
     expect(screen.getByText('278')).toBeInTheDocument();
-    expect(screen.getByText('Not yet available')).toBeInTheDocument();
+    expect(screen.getByText('All enabled readers (legacy default)')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Collections in Studio' })).toHaveAttribute(
       'href',
       '/admin/studio?destination=collections'
