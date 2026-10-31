@@ -4,10 +4,16 @@ import {
   filterCardsForAudience,
   filterCollectionsForAudience,
 } from '@/lib/auth/audienceAccess';
+import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({ firestore: jest.fn() })),
 }));
+jest.mock('@/lib/services/collections/collectionProjectionReadService', () => ({
+  getReaderCollectionStructure: jest.fn(),
+}));
+
+const getReaderStructure = getReaderCollectionStructure as jest.MockedFunction<typeof getReaderCollectionStructure>;
 
 type Row = { id: string; data: Record<string, unknown> };
 
@@ -38,6 +44,11 @@ function firestoreFixture(args: {
 describe('audience access', () => {
   const viewer = { user: { id: 'reader-1', role: 'viewer' } } as never;
   const admin = { user: { id: 'admin-1', role: 'admin' } } as never;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    getReaderStructure.mockResolvedValue({} as never);
+  });
 
   it('preserves legacy all-enabled-reader access and resolves explicit union choices', () => {
     const context = { contactId: 'reader-1', groupIds: new Set(['family']) };
@@ -123,6 +134,25 @@ describe('audience access', () => {
         firestore as never
       )
     ).resolves.toEqual([]);
+  });
+
+  it('does not inherit direct Card access from an incomplete published Collection', async () => {
+    getReaderStructure.mockResolvedValue(null);
+    const firestore = firestoreFixture({
+      placements: [{ id: 'placement-1', data: { cardId: 'placed-card', collectionId: 'broken-book' } }],
+      collections: [{
+        id: 'broken-book',
+        data: { lifecycle: 'published', recordState: 'active' },
+      }],
+    });
+    const card = { docId: 'placed-card', status: 'published', feedIncluded: false } as never;
+
+    await expect(filterCardsForAudience(viewer, [card], firestore as never)).resolves.toEqual([]);
+    expect(getReaderStructure).toHaveBeenCalledWith({
+      collectionId: 'broken-book',
+      includeDrafts: false,
+      firestore,
+    });
   });
 
   it('keeps administrator access independent of audience fields', async () => {

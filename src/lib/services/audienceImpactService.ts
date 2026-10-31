@@ -3,6 +3,7 @@ import type { AudienceSelection } from '@/lib/types/audience';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
+import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 
 export type AudienceImpactReader = { contactId: string; displayName: string };
 export type CardAudienceImpact = {
@@ -75,10 +76,18 @@ export async function getCardAudienceImpact(
   const collectionSnapshots = collectionIds.length
     ? await firestore.getAll(...collectionIds.map((id) => firestore.collection('collections').doc(id)))
     : [];
-  const collections = collectionSnapshots
+  const collectionCandidates = collectionSnapshots
     .filter((snapshot) => snapshot.exists)
     .map((snapshot) => ({ docId: snapshot.id, ...snapshot.data() } as Collection))
     .filter((collection) => collection.recordState === 'active' && collection.lifecycle === 'published');
+  const collections = (await Promise.all(collectionCandidates.map(async (collection) => ({
+    collection,
+    valid: Boolean(await getReaderCollectionStructure({
+      collectionId: collection.docId,
+      includeDrafts: false,
+      firestore,
+    })),
+  })))).filter((result) => result.valid).map((result) => result.collection);
 
   const effectiveIds = isCardIncludedInFeed(card)
     ? resolveAudienceReaderIds({ audience: proposedAudience, enabledReaderIds, groups })

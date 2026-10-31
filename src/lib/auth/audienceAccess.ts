@@ -6,6 +6,7 @@ import type { AudienceSelection } from '@/lib/types/audience';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
+import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 
 type AudienceContactContext = {
   contactId: string;
@@ -120,13 +121,26 @@ export async function filterCardsForAudience<T extends Card>(
 
   const collectionIds = Array.from(new Set(placements.map((placement) => placement.collectionId)));
   const collections = await loadCollectionsByIds(collectionIds, firestore);
-  for (const placement of placements) {
-    const collection = collections.get(placement.collectionId);
-    if (
+  const candidateCollectionIds = collectionIds.filter((collectionId) => {
+    const collection = collections.get(collectionId);
+    return Boolean(
       collection?.recordState === 'active' &&
       collection.lifecycle === 'published' &&
       audienceAllowsContact(collection.audience, context)
-    ) {
+    );
+  });
+  const readerValidCollectionIds = new Set((await Promise.all(
+    candidateCollectionIds.map(async (collectionId) => ({
+      collectionId,
+      valid: Boolean(await getReaderCollectionStructure({
+        collectionId,
+        includeDrafts: false,
+        firestore,
+      })),
+    }))
+  )).filter((result) => result.valid).map((result) => result.collectionId));
+  for (const placement of placements) {
+    if (readerValidCollectionIds.has(placement.collectionId)) {
       allowedIds.add(placement.cardId);
     }
   }

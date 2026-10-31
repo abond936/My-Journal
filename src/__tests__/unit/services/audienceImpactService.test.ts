@@ -2,16 +2,26 @@ import {
   getCardAudienceImpact,
   resolveAudienceReaderIds,
 } from '@/lib/services/audienceImpactService';
+import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({ firestore: jest.fn() })),
 }));
+jest.mock('@/lib/services/collections/collectionProjectionReadService', () => ({
+  getReaderCollectionStructure: jest.fn(),
+}));
+
+const getReaderStructure = getReaderCollectionStructure as jest.MockedFunction<typeof getReaderCollectionStructure>;
 
 function doc(id: string, data: Record<string, unknown>, exists = true) {
   return { id, exists, data: () => data };
 }
 
 describe('audienceImpactService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    getReaderStructure.mockResolvedValue({} as never);
+  });
   it('resolves enabled group and individual members without duplication', () => {
     expect([...resolveAudienceReaderIds({
       audience: { allContacts: false, groupIds: ['family'], contactIds: ['reader-2'] },
@@ -66,5 +76,31 @@ describe('audienceImpactService', () => {
         readers: [{ contactId: 'reader-2', displayName: 'Blair' }],
       }],
     });
+  });
+
+  it('omits a Collection route that is not reader-valid', async () => {
+    getReaderStructure.mockResolvedValue(null);
+    const snapshots = {
+      cards: doc('card-1', { status: 'published', feedIncluded: false }),
+      journal_users: { docs: [doc('reader-1', { displayName: 'Alex', disabled: false })] },
+      audience_groups: { docs: [] },
+      collection_placements: { docs: [doc('placement-1', { collectionId: 'broken-book' })] },
+    };
+    const firestore = {
+      collection: jest.fn((name: keyof typeof snapshots | 'collections') => ({
+        doc: jest.fn(() => ({ get: jest.fn().mockResolvedValue(snapshots.cards) })),
+        where: jest.fn(() => ({ get: jest.fn().mockResolvedValue(snapshots[name as keyof typeof snapshots]) })),
+        get: jest.fn().mockResolvedValue(snapshots[name as keyof typeof snapshots]),
+      })),
+      getAll: jest.fn().mockResolvedValue([
+        doc('broken-book', { title: 'Broken Book', lifecycle: 'published', recordState: 'active' }),
+      ]),
+    };
+
+    await expect(getCardAudienceImpact(
+      'card-1',
+      { allContacts: true, groupIds: [], contactIds: [] },
+      firestore as never
+    )).resolves.toMatchObject({ effectiveReaders: [], otherRoutes: [] });
   });
 });
