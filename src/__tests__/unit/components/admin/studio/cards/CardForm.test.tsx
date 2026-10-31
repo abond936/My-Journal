@@ -8,6 +8,7 @@ import { Tag } from '@/lib/types/tag';
 
 const confirmMock = jest.fn();
 const showErrorMock = jest.fn();
+let mockAuthoringSurface: { compact?: boolean; mobileStoryFlow?: boolean } | null = null;
 
 jest.mock('react-dnd', () => ({
   DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -39,6 +40,12 @@ jest.mock('@/components/admin/studio/cards/CoverPhotoContainer', () => {
         </button>
       </div>
     );
+  };
+});
+
+jest.mock('@/components/admin/studio/cards/ComposeFeedTilePreview', () => {
+  return function MockComposeFeedTilePreview() {
+    return <div data-testid="mock-reader-preview">Mock Reader Preview</div>;
   };
 });
 
@@ -108,7 +115,7 @@ jest.mock('@/components/common/RichTextEditor', () => {
 });
 
 jest.mock('@/components/authoring/CardFormSurfaceContext', () => ({
-  useCardFormSurfaceOptional: () => null,
+  useCardFormSurfaceOptional: () => mockAuthoringSurface,
 }));
 
 jest.mock('@/components/admin/studio/StudioShellContext', () => ({
@@ -182,6 +189,7 @@ describe('CardForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthoringSurface = null;
     confirmMock.mockResolvedValue(true);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -197,6 +205,23 @@ describe('CardForm', () => {
         },
       }),
     }) as jest.Mock;
+  });
+
+  it('shows one mobile Story workflow panel at a time', async () => {
+    const user = userEvent.setup();
+    mockAuthoringSurface = { compact: true, mobileStoryFlow: true };
+
+    renderCardForm();
+
+    expect(screen.getByRole('button', { name: 'Words' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByTestId('mock-editor')).toBeVisible();
+    expect(screen.getByTestId('mock-cover-photo')).not.toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Media' }));
+
+    expect(screen.getByRole('button', { name: 'Media' })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByTestId('mock-editor')).not.toBeVisible();
+    expect(screen.getByTestId('mock-cover-photo')).toBeVisible();
   });
 
   it('asks before a manual tag change overrides an inherited dimension', async () => {

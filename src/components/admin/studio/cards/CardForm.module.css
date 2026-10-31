@@ -48,6 +48,20 @@
     color: var(--admin-support-control-text-color);
     font-size: clamp(0.65rem, 2.7vw, var(--font-size-sm));
   }
+
+  .mobileStoryFlowButtonActive {
+    border-color: var(--admin-support-control-strong-border-color);
+    background: var(--admin-support-control-strong-background-color);
+    color: var(--admin-support-control-strong-text-color);
+  }
+}
+
+.mobileStoryDetailsControls,
+.mobileStoryPlacementControls,
+.mobileStoryPublishControls {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
 }
 
 .compactShellForm {

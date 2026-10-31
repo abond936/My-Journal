@@ -5,12 +5,9 @@ import MobileStoryFlowNav from '@/components/admin/studio/cards/MobileStoryFlowN
 describe('MobileStoryFlowNav', () => {
   it('presents the approved Story sequence and moves to the selected section', async () => {
     const user = userEvent.setup();
-    const target = document.createElement('section');
-    target.id = 'mobile-story-placement';
-    target.scrollIntoView = jest.fn();
-    document.body.appendChild(target);
+    const onStepChange = jest.fn();
 
-    render(<MobileStoryFlowNav />);
+    render(<MobileStoryFlowNav activeStep="words" onStepChange={onStepChange} />);
 
     expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
       'Words',
@@ -21,8 +18,7 @@ describe('MobileStoryFlowNav', () => {
     ]);
 
     await user.click(screen.getByRole('button', { name: 'Placement' }));
-    expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
-
-    target.remove();
+    expect(onStepChange).toHaveBeenCalledWith('placement');
+    expect(screen.getByRole('button', { name: 'Words' })).toHaveAttribute('aria-current', 'step');
   });
 });

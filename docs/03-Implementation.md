@@ -1342,6 +1342,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused workflow navigation, mobile workspace, and Card-form suites pass seventeen tests. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production record or Storage object changed.
 
+### Twenty-second implementation slice — Step-by-step mobile Story and direct Collection placement
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make phone Story creation genuinely sequential and let the author place a saved Story at a Collection's top level or an exact Part, Chapter, or Section without leaving Compose.
+
+**Includes** — Mutually exclusive Words, Media, Details, Placement, and Preview panels; active-step indication; title, prose, Story assistance, cover, Gallery, classification, type and display controls assigned to their owning step; Feed and audience controls in Placement; live Reader preview and publication status in Preview; active Collection selection; top-level placement as the simple default; optional exact structural destination; existing-placement display and removal; duplicate same-destination prevention; published-Collection locking; and revision-checked writes through the existing durable Collection structure owner.
+
+**Excludes** — Creating a new Collection or structural destination from Compose; restructuring a Collection; bypassing published-structure locks; automatic placement; autosave redesign; Reader-detail preview; notifications; deployment; production data mutation; and changes to desktop Compose.
+
+**Contracts** — A Story must be saved before it can be placed. Placement creates a durable placement reference and never copies the Card. One Card may be placed in multiple Collections or distinct locations. Top-level placement is an explicit valid choice, not an inferred fallback. Every write submits the full current structure with its expected revision to the existing transactional owner; conflicts reload rather than overwrite concurrent work.
+
+**Completion evidence** — Focused mobile workflow, Story placement, durable Collection pane, workspace, and Card-form suites pass. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production Card, Collection, placement, Media, audience, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

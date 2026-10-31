@@ -49,7 +49,8 @@ import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import type { AudienceSelection } from '@/lib/types/audience';
 import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
-import MobileStoryFlowNav from '@/components/admin/studio/cards/MobileStoryFlowNav';
+import MobileStoryFlowNav, { type MobileStoryStep } from '@/components/admin/studio/cards/MobileStoryFlowNav';
+import StoryCollectionPlacementControl from '@/components/admin/studio/cards/StoryCollectionPlacementControl';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -95,6 +96,7 @@ const CardForm: React.FC = () => {
     commitGalleryMediaPersisted,
     commitChildrenIdsPersisted,
   } = useCardForm();
+  const [mobileStoryStep, setMobileStoryStep] = useState<MobileStoryStep>('words');
 
   const authoringSurface = useCardFormSurfaceOptional();
   const studioShellForm = Boolean(authoringSurface?.compact);
@@ -981,8 +983,13 @@ const CardForm: React.FC = () => {
   );
 
   const mobileStoryFlow = Boolean(authoringSurface?.mobileStoryFlow && cardData.type === 'story');
+  const mobileStepHidden = (step: MobileStoryStep) => mobileStoryFlow && mobileStoryStep !== step;
   const audienceSection = (
-    <div id={mobileStoryFlow ? 'mobile-story-placement' : undefined} className={styles.mobileStoryAnchor}>
+    <div
+      id={mobileStoryFlow ? 'mobile-story-placement' : undefined}
+      className={styles.mobileStoryAnchor}
+      hidden={mobileStepHidden('placement')}
+    >
       <AudienceSelector
         value={cardData.audience}
         scopeLabel="Standalone Story"
@@ -1037,7 +1044,9 @@ const CardForm: React.FC = () => {
           filterTagIds={cardData.tags ?? []}
         />
       )}
-      {mobileStoryFlow ? <MobileStoryFlowNav /> : null}
+      {mobileStoryFlow ? (
+        <MobileStoryFlowNav activeStep={mobileStoryStep} onStepChange={setMobileStoryStep} />
+      ) : null}
       {!mobileStoryFlow ? audienceSection : null}
       {studioShellForm && !studioShellDnd ? (
         <DndContext
@@ -1051,7 +1060,11 @@ const CardForm: React.FC = () => {
         >
           <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
             <div className={styles.mainContent}>
-              <div className={styles.header} id={mobileStoryFlow ? 'mobile-story-words' : undefined}>
+              <div
+                className={styles.header}
+                id={mobileStoryFlow ? 'mobile-story-words' : undefined}
+                hidden={mobileStepHidden('words')}
+              >
                 <input
                   type="text"
                   value={titleDraft}
@@ -1126,7 +1139,7 @@ const CardForm: React.FC = () => {
                   )}
                 </div>
                 {publishedEditNotice}
-                <div className={styles.statusSection}>
+                <div className={styles.statusSection} hidden={mobileStoryFlow}>
                   {studioShellForm ? studioStatusToggle : (
                     <div className={styles.selectGroup}>
                       <label htmlFor="status-select" className={styles.selectLabel}>Status</label>
@@ -1187,7 +1200,11 @@ const CardForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`${styles.coverPhotoSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-media' : undefined}>
+              <div
+                className={`${styles.coverPhotoSection} ${styles.mobileStoryAnchor}`}
+                id={mobileStoryFlow ? 'mobile-story-media' : undefined}
+                hidden={mobileStepHidden('media')}
+              >
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
                   coverImageMode={coverImageMode}
@@ -1211,7 +1228,11 @@ const CardForm: React.FC = () => {
                 />
               </div>
 
-              <div className={`${styles.tagsSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-details' : undefined}>
+              <div
+                className={`${styles.tagsSection} ${styles.mobileStoryAnchor}`}
+                id={mobileStoryFlow ? 'mobile-story-details' : undefined}
+                hidden={mobileStepHidden('details')}
+              >
                 <CardDimensionalTagCommandBar
                   card={cardData}
                   allTags={allTags}
@@ -1268,16 +1289,50 @@ const CardForm: React.FC = () => {
                   collapsedSummary="none"
                   className={clsx(styles.tagSelector, errors.tags && styles.inputError)}
                 />
+                {mobileStoryFlow ? (
+                  <div className={styles.mobileStoryDetailsControls}>
+                    <div className={styles.selectGroup}>
+                      <label htmlFor="mobile-type-select" className={styles.selectLabel}>Type</label>
+                      <select
+                        id="mobile-type-select"
+                        value={cardData.type}
+                        onChange={handleTypeChange}
+                        className={clsx(styles.statusSelect, errors.type && styles.inputError)}
+                      >
+                        <option value="story">Story</option>
+                        {canUseQuestionType && <option value="qa">Question</option>}
+                        <option value="quote">Quote</option>
+                        <option value="callout">Callout</option>
+                        <option value="gallery">Gallery</option>
+                      </select>
+                    </div>
+                    <div className={styles.selectGroup}>
+                      <label htmlFor="mobile-display-mode-select" className={styles.selectLabel}>Display Mode</label>
+                      <select
+                        id="mobile-display-mode-select"
+                        value={normalizeDisplayModeForType(cardData.type ?? 'story', cardData.displayMode)}
+                        onChange={handleDisplayModeChange}
+                        className={clsx(styles.statusSelect, errors.displayMode && styles.inputError)}
+                      >
+                        {allowedDisplayModes.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode === 'inline' ? 'Inline' : mode === 'navigate' ? 'Navigate' : 'Static'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
-              <div className={styles.editorSection}>
+              <div className={styles.editorSection} hidden={mobileStepHidden('words')}>
                 <h4 className={styles.sectionTitle}>Content</h4>
                 {bodyRichTextEditor}
               </div>
 
-              {storyAssistSection}
+              <div hidden={mobileStepHidden('words')}>{storyAssistSection}</div>
 
-              <div className={styles.gallerySection}>
+              <div className={styles.gallerySection} hidden={mobileStepHidden('media')}>
                 <StudioCardFormGallery
                   disabled={isSaving}
                   onSetAsCover={handleSetGalleryItemAsCover}
@@ -1287,14 +1342,35 @@ const CardForm: React.FC = () => {
                 />
               </div>
 
-              <div className={styles.childrenSection}>
+              <div className={styles.childrenSection} hidden={mobileStepHidden('details')}>
                 <StudioCardFormChildren disabled={isSaving} />
               </div>
 
               {mobileStoryFlow ? audienceSection : null}
 
               {mobileStoryFlow ? (
-                <section id="mobile-story-preview" className={`${styles.mobileStoryPreview} ${styles.mobileStoryAnchor}`}>
+                <div className={styles.mobileStoryPlacementControls} hidden={mobileStepHidden('placement')}>
+                  <div className={styles.selectGroup}>
+                    <span className={styles.selectLabel}>Feed placement</span>
+                    <label className={styles.excerptToggle}>
+                      <input
+                        type="checkbox"
+                        checked={cardData.feedIncluded !== false}
+                        onChange={handleFeedIncludedChange}
+                      />
+                      <span className={styles.excerptToggleLabel}>Include in Reader Feed</span>
+                    </label>
+                  </div>
+                  <StoryCollectionPlacementControl cardId={cardData.docId} />
+                </div>
+              ) : null}
+
+              {mobileStoryFlow ? (
+                <section
+                  id="mobile-story-preview"
+                  className={`${styles.mobileStoryPreview} ${styles.mobileStoryAnchor}`}
+                  hidden={mobileStepHidden('preview')}
+                >
                   <h4 className={styles.sectionTitle}>Reader preview</h4>
                   <ComposeFeedTilePreview
                     card={{
@@ -1304,6 +1380,9 @@ const CardForm: React.FC = () => {
                     } as Card}
                     allTags={allTags}
                   />
+                  <div className={styles.mobileStoryPublishControls}>
+                    {studioStatusToggle}
+                  </div>
                 </section>
               ) : null}
             </div>

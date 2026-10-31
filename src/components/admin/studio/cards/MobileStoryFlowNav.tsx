@@ -10,13 +10,15 @@ export const MOBILE_STORY_STEPS = [
   { id: 'preview', label: 'Preview' },
 ] as const;
 
-export default function MobileStoryFlowNav() {
-  const goTo = (id: string) => {
-    document.getElementById(`mobile-story-${id}`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  };
+export type MobileStoryStep = (typeof MOBILE_STORY_STEPS)[number]['id'];
+
+export default function MobileStoryFlowNav({
+  activeStep,
+  onStepChange,
+}: {
+  activeStep: MobileStoryStep;
+  onStepChange: (step: MobileStoryStep) => void;
+}) {
 
   return (
     <nav className={styles.mobileStoryFlowNav} aria-label="Story workflow">
@@ -24,8 +26,9 @@ export default function MobileStoryFlowNav() {
         <button
           key={step.id}
           type="button"
-          className={styles.mobileStoryFlowButton}
-          onClick={() => goTo(step.id)}
+          className={`${styles.mobileStoryFlowButton} ${activeStep === step.id ? styles.mobileStoryFlowButtonActive : ''}`}
+          aria-current={activeStep === step.id ? 'step' : undefined}
+          onClick={() => onStepChange(step.id)}
         >
           {step.label}
         </button>
