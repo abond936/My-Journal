@@ -193,3 +193,32 @@
   font-size: var(--font-size-sm);
   color: var(--text1-color);
 }
+
+.groupList {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.groupEditor {
+  display: grid;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+}
+
+.memberGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+}
+
+.memberChoice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text1-color);
+  font-size: var(--font-size-sm);
+}

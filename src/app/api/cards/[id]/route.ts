@@ -34,7 +34,7 @@ import { getCardById, getPaginatedCardsByIds } from '@/lib/services/cards/cardRe
 import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
 import { updateCardTags } from '@/lib/services/cards/cardTagMutationService';
 import { updateCardTagAssignmentWithInheritance } from '@/lib/services/galleryTagInheritanceService';
-import { Card, cardUpdateValidationSchema } from '@/lib/types/card';
+import { Card, CardUpdate, cardUpdateValidationSchema } from '@/lib/types/card';
 import { PaginatedResult } from '@/lib/types/services';
 import { withErrorHandler } from '@/lib/middleware/errorHandler';
 import { AppError, ErrorCode } from '@/lib/types/error';
@@ -43,6 +43,7 @@ import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { protectCardPageForReader } from '@/lib/utils/readerMediaDelivery';
 import { canReadCardForAudience, filterCardsForAudience } from '@/lib/auth/audienceAccess';
+import { validateAudienceSelectionReferences } from '@/lib/services/audienceGroupService';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,18 @@ type RouteParams = Promise<{ id: string }>;
 
 // Use centralized validation schema for consistency
 const cardUpdateSchema = cardUpdateValidationSchema;
+
+async function validateAudienceReferencesForCardUpdate(data: CardUpdate): Promise<void> {
+  if (!data.audience) return;
+  try {
+    await validateAudienceSelectionReferences(data.audience);
+  } catch (cause) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      cause instanceof Error ? cause.message : 'Choose a valid Card audience.'
+    );
+  }
+}
 
 function isCoverOnlyPatch(payload: Record<string, unknown>): boolean {
   const keys = Object.keys(payload).filter((key) => key !== 'coverImage');
@@ -179,6 +192,7 @@ export async function PUT(
     // Parse and validate the request body
     const body = await request.json();
     const validatedData = cardUpdateSchema.parse(body);
+    await validateAudienceReferencesForCardUpdate(validatedData);
 
     const existingCard = await getCardById(id);
     if (!existingCard) {
@@ -217,6 +231,7 @@ export async function PATCH(
     // Parse and validate the request body
     const body = await request.json();
     const validatedData = cardUpdateSchema.parse(body);
+    await validateAudienceReferencesForCardUpdate(validatedData);
 
     const existingCardSnap = await getAdminApp().firestore().collection('cards').doc(id).get();
     if (!existingCardSnap.exists) {

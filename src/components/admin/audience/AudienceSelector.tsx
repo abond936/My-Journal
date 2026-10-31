@@ -1,0 +1,209 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
+import type { AudienceGroup, AudienceSelection } from '@/lib/types/audience';
+import styles from './AudienceSelector.module.css';
+
+type AudienceSelectorProps = {
+  value?: AudienceSelection;
+  scopeLabel: string;
+  consequence: string;
+  disabled?: boolean;
+  onSave: (selection: AudienceSelection) => Promise<boolean>;
+};
+
+const allReadersSelection = (): AudienceSelection => ({
+  allContacts: true,
+  groupIds: [],
+  contactIds: [],
+});
+
+function normalize(selection?: AudienceSelection): AudienceSelection {
+  if (!selection) return allReadersSelection();
+  return {
+    allContacts: selection.allContacts,
+    groupIds: [...new Set(selection.groupIds)].sort(),
+    contactIds: [...new Set(selection.contactIds)].sort(),
+  };
+}
+
+function sameSelection(left: AudienceSelection, right: AudienceSelection): boolean {
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
+
+export default function AudienceSelector({
+  value,
+  scopeLabel,
+  consequence,
+  disabled = false,
+  onSave,
+}: AudienceSelectorProps) {
+  const normalizedValue = useMemo(() => normalize(value), [value]);
+  const [draft, setDraft] = useState<AudienceSelection>(normalizedValue);
+  const [users, setUsers] = useState<JournalUserPublic[]>([]);
+  const [groups, setGroups] = useState<AudienceGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => setDraft(normalizedValue), [normalizedValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [usersResponse, groupsResponse] = await Promise.all([
+          fetch('/api/admin/journal-users'),
+          fetch('/api/admin/audience-groups'),
+        ]);
+        const usersData = await usersResponse.json().catch(() => ({}));
+        const groupsData = await groupsResponse.json().catch(() => ({}));
+        if (!usersResponse.ok) throw new Error(usersData.message || 'Readers could not be loaded.');
+        if (!groupsResponse.ok) throw new Error(groupsData.message || 'Audience groups could not be loaded.');
+        if (cancelled) return;
+        setUsers(Array.isArray(usersData.users) ? usersData.users : []);
+        setGroups(Array.isArray(groupsData.groups) ? groupsData.groups : []);
+      } catch (loadError) {
+        if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'Audience choices could not be loaded.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const readerUsers = useMemo(
+    () => users.filter((user) => user.role === 'viewer').sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    [users]
+  );
+  const enabledReaderIds = useMemo(
+    () => new Set(readerUsers.filter((user) => !user.disabled).map((user) => user.docId)),
+    [readerUsers]
+  );
+  const effectiveIds = useMemo(() => {
+    if (draft.allContacts) return enabledReaderIds;
+    const ids = new Set(draft.contactIds.filter((id) => enabledReaderIds.has(id)));
+    groups
+      .filter((group) => draft.groupIds.includes(group.docId))
+      .forEach((group) => group.memberContactIds.forEach((id) => {
+        if (enabledReaderIds.has(id)) ids.add(id);
+      }));
+    return ids;
+  }, [draft, enabledReaderIds, groups]);
+  const effectiveReaders = readerUsers.filter((user) => effectiveIds.has(user.docId));
+  const changed = !sameSelection(draft, normalizedValue);
+
+  const toggleId = (field: 'groupIds' | 'contactIds', id: string) => {
+    setMessage(null);
+    setDraft((current) => ({
+      ...current,
+      [field]: current[field].includes(id)
+        ? current[field].filter((candidate) => candidate !== id)
+        : [...current[field], id].sort(),
+    }));
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const selection = normalize(draft);
+      const saved = await onSave(selection);
+      if (saved) {
+        setDraft(selection);
+        setMessage('Audience saved. Access changes take effect on the next Reader request.');
+      }
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Audience could not be saved.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className={styles.selector} aria-label={`${scopeLabel} audience`}>
+      <div className={styles.heading}>
+        <div>
+          <strong>{scopeLabel} audience</strong>
+          {!value ? <span className={styles.legacy}>Legacy default: all enabled readers</span> : null}
+        </div>
+        <span>{effectiveReaders.length} enabled reader{effectiveReaders.length === 1 ? '' : 's'}</span>
+      </div>
+      <p className={styles.consequence}>{consequence}</p>
+      {loading ? <p aria-busy="true">Loading readers and groups...</p> : null}
+      {!loading ? (
+        <>
+          <label className={styles.mode}>
+            <input
+              type="radio"
+              name={`${scopeLabel}-audience-mode`}
+              checked={draft.allContacts}
+              disabled={disabled || saving}
+              onChange={() => setDraft(allReadersSelection())}
+            />
+            All enabled readers
+          </label>
+          <label className={styles.mode}>
+            <input
+              type="radio"
+              name={`${scopeLabel}-audience-mode`}
+              checked={!draft.allContacts}
+              disabled={disabled || saving}
+              onChange={() => setDraft((current) => ({ ...current, allContacts: false }))}
+            />
+            Selected groups and people
+          </label>
+          {!draft.allContacts ? (
+            <div className={styles.choices}>
+              <fieldset>
+                <legend>Groups</legend>
+                {groups.length ? groups.map((group) => (
+                  <label key={group.docId}>
+                    <input
+                      type="checkbox"
+                      checked={draft.groupIds.includes(group.docId)}
+                      disabled={disabled || saving}
+                      onChange={() => toggleId('groupIds', group.docId)}
+                    />
+                    {group.name}
+                  </label>
+                )) : <span>No groups created.</span>}
+              </fieldset>
+              <fieldset>
+                <legend>Individual readers</legend>
+                {readerUsers.length ? readerUsers.map((user) => (
+                  <label key={user.docId}>
+                    <input
+                      type="checkbox"
+                      checked={draft.contactIds.includes(user.docId)}
+                      disabled={disabled || saving}
+                      onChange={() => toggleId('contactIds', user.docId)}
+                    />
+                    {user.displayName}{user.disabled ? ' (disabled)' : ''}
+                  </label>
+                )) : <span>No Reader accounts created.</span>}
+              </fieldset>
+            </div>
+          ) : null}
+          <div className={styles.preview} role="status">
+            <strong>Who can read through this route:</strong>{' '}
+            {effectiveReaders.length
+              ? effectiveReaders.map((user) => user.displayName).join(', ')
+              : 'No enabled readers.'}
+          </div>
+          <button type="button" disabled={disabled || saving || !changed} onClick={() => void save()}>
+            {saving ? 'Saving audience...' : 'Save audience'}
+          </button>
+        </>
+      ) : null}
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      {message ? <p className={styles.message} role="status">{message}</p> : null}
+    </section>
+  );
+}

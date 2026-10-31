@@ -8,6 +8,8 @@ import type {
   CollectionPlacementRole,
   CollectionPlacementStructureInput,
 } from '@/lib/types/collection';
+import type { AudienceSelection } from '@/lib/types/audience';
+import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import styles from './DurableCollectionStudioPane.module.css';
 
 type Availability = 'loading' | 'active' | 'none' | 'error';
@@ -155,6 +157,33 @@ export default function DurableCollectionStudioPane({
       setSaving(false);
     }
   }, [loadStructure, saving, structure]);
+
+  const saveAudience = useCallback(async (audience: AudienceSelection): Promise<boolean> => {
+    if (!structure || saving) return false;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/admin/collections/${encodeURIComponent(structure.collection.docId)}/audience`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audience),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Collection audience could not be saved.');
+      setStructure((current) => current ? {
+        ...current,
+        collection: { ...current.collection, audience: data.audience as AudienceSelection },
+      } : current);
+      setMessage('Collection audience saved. Access changes take effect on the next Reader request.');
+      return true;
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Collection audience could not be saved.');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [saving, structure]);
 
   const searchCards = useCallback(async () => {
     const query = cardSearch.trim();
@@ -348,6 +377,15 @@ export default function DurableCollectionStudioPane({
         </div>
       ) : null}
       <p className={styles.note}>Placement-native Studio: Cards remain canonical while this Collection owns role, parent, and order.</p>
+      {structure ? (
+        <AudienceSelector
+          value={structure.collection.audience}
+          scopeLabel="Collection"
+          consequence="Every published Story placed here is available to this audience through the Collection. A Story may also be available through its standalone route or another Collection."
+          disabled={saving}
+          onSave={saveAudience}
+        />
+      ) : null}
       <div className={styles.addCard}>
         <input
           type="search"

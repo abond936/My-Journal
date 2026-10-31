@@ -46,6 +46,8 @@ import {
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
+import AudienceSelector from '@/components/admin/audience/AudienceSelector';
+import type { AudienceSelection } from '@/lib/types/audience';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -102,6 +104,23 @@ const CardForm: React.FC = () => {
   const [calloutFits, setCalloutFits] = useState(true);
 
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  const saveStandaloneAudience = useCallback(async (audience: AudienceSelection): Promise<boolean> => {
+    if (cardData.status === 'published' && cardData.docId) {
+      const confirmed = await feedback.confirm({
+        title: 'Change published Story audience?',
+        message: 'This changes who can read the published Story through its standalone or Feed route on their next request. Collection placement may separately grant access. No one will be notified.',
+        confirmLabel: 'Save audience',
+        cancelLabel: 'Keep current audience',
+      });
+      if (!confirmed) return false;
+    }
+    if (!cardData.docId) {
+      setField('audience', audience);
+      return true;
+    }
+    return persistFieldPatch({ audience });
+  }, [cardData.docId, cardData.status, feedback, persistFieldPatch, setField]);
 
   useEffect(() => {
     let cancelled = false;
@@ -957,6 +976,15 @@ const CardForm: React.FC = () => {
           filterTagIds={cardData.tags ?? []}
         />
       )}
+      <AudienceSelector
+        value={cardData.audience}
+        scopeLabel="Standalone Story"
+        consequence={cardData.feedIncluded === false
+          ? 'Standalone Feed access is currently off. This audience is retained for use if Feed inclusion is restored; Collection audiences remain separate.'
+          : 'Controls the standalone and Feed route. A Collection placement may separately grant access to this Story.'}
+        disabled={isSaving}
+        onSave={saveStandaloneAudience}
+      />
       {studioShellForm && !studioShellDnd ? (
         <DndContext
           sensors={localShellFormSensors}

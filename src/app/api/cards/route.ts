@@ -37,6 +37,7 @@ import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
 import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
+import { validateAudienceSelectionReferences } from '@/lib/services/audienceGroupService';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
@@ -714,6 +715,18 @@ export async function POST(request: Request) {
         status: 400,
         retryable: false,
       });
+    }
+    if (validationResult.data.audience) {
+      try {
+        await validateAudienceSelectionReferences(validationResult.data.audience);
+      } catch (cause) {
+        return apiRouteError({
+          code: 'CARD_CREATE_AUDIENCE_INVALID',
+          message: cause instanceof Error ? cause.message : 'Choose a valid Card audience.',
+          status: 400,
+          retryable: false,
+        });
+      }
     }
     
     // The createCard service function will handle defaults and timestamps
