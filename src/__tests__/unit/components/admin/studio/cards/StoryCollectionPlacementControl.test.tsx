@@ -67,4 +67,41 @@ describe('StoryCollectionPlacementControl', () => {
     ]));
     expect(await screen.findByText('Story added to My Life.')).toBeInTheDocument();
   });
+
+  it('inserts a Story at the author-selected sibling position', async () => {
+    const user = userEvent.setup();
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ collections: [collection] }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          collection,
+          placements: [
+            { docId: 'first', collectionId: 'my-life', cardId: 'first-card', parentPlacementId: null, role: 'card', order: 10, createdAt: 1, updatedAt: 1 },
+            { docId: 'second', collectionId: 'my-life', cardId: 'second-card', parentPlacementId: null, role: 'card', order: 20, createdAt: 1, updatedAt: 1 },
+          ],
+          cards: [
+            { docId: 'first-card', title: 'First Story' },
+            { docId: 'second-card', title: 'Second Story' },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ structureRevision: 3 }) });
+    global.fetch = fetchMock as jest.Mock;
+
+    render(<StoryCollectionPlacementControl cardId="story-1" />);
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Position' }), 'after:first');
+    await user.click(screen.getByRole('button', { name: 'Add to Collection' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const request = fetchMock.mock.calls[2][1] as RequestInit;
+    const payload = JSON.parse(request.body as string);
+    expect(payload.placements.map((placement: { cardId: string; order: number }) => [placement.cardId, placement.order])).toEqual([
+      ['first-card', 10],
+      ['second-card', 30],
+      ['story-1', 20],
+    ]);
+  });
 });

@@ -1358,6 +1358,20 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused mobile workflow, Story placement, durable Collection pane, workspace, and Card-form suites pass. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production Card, Collection, placement, Media, audience, or Storage object changed.
 
+### Twenty-third implementation slice — Focused mobile Story exit and placement order
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Keep phone Story creation focused on its five Story steps while preserving one guarded exit, and let the author choose where the new Story appears among siblings at the selected Collection destination.
+
+**Includes** — Hide the global Author-destination bar only while a new or existing Story is open in phone Compose; retain Back to Cards as the unsaved-work-protected exit; leave non-Story mobile Card editing and ordinary destination navigation unchanged; show Collection placement roles beside destination titles; choose beginning, end, or after an existing sibling; and normalize only that destination's sibling order through the existing revision-checked structure owner.
+
+**Excludes** — New Collection or structural-destination creation; Collection restructuring outside the selected Story insertion; automatic placement; changes to desktop Studio; and production mutation or deployment.
+
+**Completion evidence** — Focused mobile-workspace and Story-placement suites pass eight tests. Touched-code lint and non-incremental production typecheck pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

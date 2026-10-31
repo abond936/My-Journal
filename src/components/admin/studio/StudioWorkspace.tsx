@@ -177,6 +177,15 @@ export default function StudioWorkspace() {
     }),
     [mobileCardEditorOpen, mobileDestination]
   );
+  const mobileStoryComposerOpen = Boolean(
+    !wideLayout
+    && mobilePresentation.cardsStage === 'compose'
+    && (
+      newCardRequested
+      || activeCardViewModel.card?.type === 'story'
+      || selectedPreview?.type === 'story'
+    )
+  );
   const effectivePaneVisibility = wideLayout
     ? paneVisibility
     : mobilePresentation.paneVisibility;
@@ -804,7 +813,7 @@ export default function StudioWorkspace() {
             />
           </div>
         </div>
-        {!wideLayout ? (
+        {!wideLayout && !mobileStoryComposerOpen ? (
           <nav className={styles.mobileDestinationNav} aria-label="Author destinations">
             {MOBILE_AUTHOR_DESTINATIONS.map((destination) => (
               <button

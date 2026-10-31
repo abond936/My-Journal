@@ -27,6 +27,7 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
   const [collectionId, setCollectionId] = useState('');
   const [structure, setStructure] = useState<StructureResponse | null>(null);
   const [destinationId, setDestinationId] = useState('');
+  const [position, setPosition] = useState('end');
   const [loading, setLoading] = useState(Boolean(cardId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
       if (!response.ok) throw new Error(data.message || 'Collection structure could not be loaded.');
       setStructure(data as StructureResponse);
       setDestinationId('');
+      setPosition('end');
     } catch (loadError) {
       setStructure(null);
       setError(loadError instanceof Error ? loadError.message : 'Collection structure could not be loaded.');
@@ -89,6 +91,12 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
   const currentPlacements = useMemo(
     () => (structure?.placements ?? []).filter((placement) => placement.cardId === cardId),
     [cardId, structure?.placements]
+  );
+  const destinationSiblings = useMemo(
+    () => (structure?.placements ?? [])
+      .filter((placement) => (placement.parentPlacementId ?? '') === destinationId)
+      .sort((left, right) => left.order - right.order || left.docId.localeCompare(right.docId)),
+    [destinationId, structure?.placements]
   );
   const alreadyAtDestination = currentPlacements.some(
     (placement) => (placement.parentPlacementId ?? '') === destinationId
@@ -135,10 +143,6 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
   const addPlacement = () => {
     if (!structure || !cardId || locked) return;
     const parentPlacementId = destinationId || null;
-    const siblings = structure.placements.filter(
-      (placement) => (placement.parentPlacementId ?? null) === parentPlacementId
-    );
-    const order = siblings.length ? Math.max(...siblings.map((placement) => placement.order)) + 10 : 10;
     const now = Date.now();
     const placement: CollectionPlacement = {
       docId: `pl-${structure.collection.docId}-${globalThis.crypto?.randomUUID?.() ?? `${now}-${Math.random().toString(36).slice(2)}`}`,
@@ -146,11 +150,28 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
       cardId,
       parentPlacementId,
       role: 'card',
-      order,
+      order: 10,
       createdAt: now,
       updatedAt: now,
     };
-    void save([...structure.placements, placement], `Story added to ${structure.collection.title}.`);
+    const afterIndex = position.startsWith('after:')
+      ? destinationSiblings.findIndex((sibling) => sibling.docId === position.slice(6))
+      : -1;
+    let insertionIndex = destinationSiblings.length;
+    if (position === 'start') insertionIndex = 0;
+    else if (afterIndex >= 0) insertionIndex = afterIndex + 1;
+    const orderedSiblings = [...destinationSiblings];
+    orderedSiblings.splice(insertionIndex, 0, placement);
+    const siblingOrders = new Map(orderedSiblings.map((sibling, index) => [sibling.docId, (index + 1) * 10]));
+    const nextPlacements = structure.placements.map((candidate) => (
+      siblingOrders.has(candidate.docId)
+        ? { ...candidate, order: siblingOrders.get(candidate.docId)! }
+        : candidate
+    ));
+    void save(
+      [...nextPlacements, { ...placement, order: siblingOrders.get(placement.docId)! }],
+      `Story added to ${structure.collection.title}.`
+    );
   };
 
   return (
@@ -168,11 +189,30 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
         <>
           <label>
             Place at
-            <select value={destinationId} onChange={(event) => setDestinationId(event.target.value)} disabled={saving || locked}>
+            <select
+              value={destinationId}
+              onChange={(event) => {
+                setDestinationId(event.target.value);
+                setPosition('end');
+              }}
+              disabled={saving || locked}
+            >
               <option value="">Top level of {structure.collection.title}</option>
               {destinations.map((placement) => (
                 <option key={placement.docId} value={placement.docId}>
-                  {cardsById.get(placement.cardId)?.title || 'Untitled destination'}
+                  {placement.role[0].toUpperCase() + placement.role.slice(1)} — {cardsById.get(placement.cardId)?.title || 'Untitled destination'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Position
+            <select value={position} onChange={(event) => setPosition(event.target.value)} disabled={saving || locked}>
+              <option value="end">At end</option>
+              <option value="start">At beginning</option>
+              {destinationSiblings.map((placement) => (
+                <option key={placement.docId} value={`after:${placement.docId}`}>
+                  After {cardsById.get(placement.cardId)?.title || 'Untitled Card'}
                 </option>
               ))}
             </select>
