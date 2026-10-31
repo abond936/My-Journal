@@ -208,6 +208,16 @@ describe('reader access boundary', () => {
     expect(mediaRes.status).toBe(401);
   });
 
+  it('does not expose the private Media archive to reader accounts', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { id: 'viewer-1', role: 'viewer' } } as never);
+
+    const res = await viewMedia(makeRequest('https://example.test/api/view/media'));
+    const payload = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(payload.message).toBe('The private Media archive is available only to the author.');
+  });
+
   it('passes the Reader Gallery hydration tier through the card list route', async () => {
     mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
     mockedGetCards.mockResolvedValue({ items: [], hasMore: false });

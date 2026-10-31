@@ -59,6 +59,8 @@ The ordinary Reader already requires a published Collection, every required Card
 - Author Home also offers Start a Story, which opens the existing unsaved new-Card Compose state whose default type is Story. It does not create a record until the author saves.
 - AI assistance is optional and author-invoked except for quiet integrity validation. Machine evidence remains provisional until author-confirmed.
 - Draft saving stays permissive. Publishing is a deliberate integrity boundary; access, sharing, and distribution are separate decisions.
+- Media remains private archive material by default. The target Reader shares Cards and Collections plus only their referenced Media; unrestricted Media-bank browsing is not a reader entitlement. Curated Shared Media Collections are a later, separately authorized capability.
+- Ordinary reader accounts no longer receive the raw Media-bank tab or `/api/view/media` enumeration; administrators retain that archive view. This is an initial exposure reduction, not the completed audience gate, because referenced Media still uses permanent Storage URLs.
 
 ## Next definition gate
 
@@ -69,7 +71,7 @@ Do not attempt to publish `My Life` by flipping existing Card statuses or the Co
 3. Preserve the delivered exact Collection-to-Studio handoff. Add other attention links only when their owning surface can reproduce the represented population; do not label broader global filters as Collection-scoped work.
 4. Preserve the delivered Card publication-integrity core separately from unrestricted draft authoring. Keep published Cards live in the current stage, warn that saved edits may be reader-visible, and retain the explicit return-to-Draft path for private editing. Do not revive partial working-revision protection. Preserve explicit Feed inclusion independently from Collection placement; the consequence of publishing with no Reader destination and the Collection publication owner still require definition before expanding enforcement.
 5. Repair or explicitly resolve missing Media references and establish how historical Media readiness is assessed without silently approving it.
-6. Define audience/visibility separately from publication and distribution before any reader-facing activation.
+6. Implement the approved audience gate in dependency order: private authenticated Media delivery and removal of ordinary-reader raw Media browsing first; then one shared Card/Collection individual-and-group evaluator across every Reader enumeration, direct read, Collection path, and referenced-Media delivery. Missing audience fields preserve current all-enabled-reader access until explicitly restricted. Do not claim protected audience behavior through UI-only or partial route interception.
 7. Add author-reviewable exception queues and exact consequence previews; do not turn the readiness assessment into automatic bulk reconciliation.
 
 Further bounded, reversible implementation may continue against the approved experience architecture, but no production lifecycle, Card-status, audience, sharing, distribution, repair, or bulk-reconciliation mutation is authorized without its own explicit gate.

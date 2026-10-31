@@ -17,7 +17,7 @@ import {
 } from '@/lib/utils/tagUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 
 type ExactDimensionalTagIdMap = Partial<Record<'who' | 'what' | 'when' | 'where', string[]>>;
@@ -170,6 +170,9 @@ export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!isAuthenticatedSession(session)) {
     return errorResponse('Authentication required.', 401);
+  }
+  if (!isAdminSession(session)) {
+    return errorResponse('The private Media archive is available only to the author.', 403);
   }
 
   try {

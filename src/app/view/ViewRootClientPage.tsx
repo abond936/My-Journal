@@ -2,6 +2,7 @@
 
 import React, { Suspense, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useCardContext } from '@/components/providers/CardProvider';
 import { parseReaderEntryMode, READER_LAST_MODE_KEY } from '@/lib/utils/readerEntry';
 import styles from './ViewPage.module.css';
@@ -28,6 +29,8 @@ function useIntersectionObserver(callback: () => void, options?: IntersectionObs
 }
 
 function ViewPageContent({ explicitMode }: { explicitMode: 'guided' | 'freeform' }) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
   const {
     visibleCards,
     loadingMore,
@@ -143,7 +146,7 @@ function ViewPageContent({ explicitMode }: { explicitMode: 'guided' | 'freeform'
       ? error.message.trim()
       : 'The journal view could not refresh right now.';
   
-  if (browseTarget === 'media' && readerMode === 'freeform') {
+  if (isAdmin && browseTarget === 'media' && readerMode === 'freeform') {
     return (
       <div className={styles.page}>
         <ViewMediaFeed />

@@ -1220,6 +1220,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused Reader access, search-route, Compose, and Feed-inclusion tests pass. Production typecheck and touched-code lint pass. No Card, Collection, Media, audience, sharing, distribution, or production record changed.
 
+### Eighteenth definition gate — Audience protection and private Media delivery
+
+**Definition:** Approved; implementation must proceed as security-complete vertical slices
+
+**Outcome** — The author shares Stories and Collections with selected people or reusable groups without exposing the private Media archive. Authorized content renders only its referenced Media. Reader access, placement, publication, and notification remain separate decisions.
+
+**Sequence** — First replace Reader-facing permanent Media URLs, including URLs embedded in authored HTML, with authenticated authorization-aware delivery and remove ordinary-reader raw Media-bank browsing. Then add reusable audience groups and individual selections to Cards and Collections, enforce the same effective-audience union across Feed, search, random discovery, direct Card links, Collection lists, Collection contents, and referenced Media delivery, and expose exact effective-audience consequences in authoring. Curated Shared Media Collections follow only after that boundary is protected.
+
+**Compatibility** — Existing Cards and Collections without an audience selection continue to authorize all enabled reader accounts until the author explicitly restricts them. This preserves current access without rewriting production records. Administrators retain access. Drafts remain unavailable to readers.
+
+**Excludes** — Public registration, guest recipients, notification delivery, possession-based public links, per-Media global sharing flags, migration of existing content, production data mutation, and Shared Media Collection implementation in the first protected slice.
+
+**Completion gate** — Do not claim protected audience behavior until permanent Reader bypass URLs are absent, every Reader enumeration and direct-read path uses the shared evaluator, raw Media-library browsing is unavailable to ordinary readers, and focused authorization tests prove permitted and denied access for direct individuals, group members, non-members, disabled accounts, legacy content, administrators, Cards reused across differently authorized Collections, and referenced Media.
+
+**First hardening step delivered** — The freeform Reader no longer presents the raw Media-bank tab to ordinary reader accounts, stale reader-side Media selection returns to Cards, and `/api/view/media` now rejects non-administrators while preserving the author's contextual archive view. This closes unrestricted application-level Media enumeration but does not yet make referenced Media delivery audience-protected: Reader payloads and authored HTML still contain permanent Storage URLs. Focused Reader boundary, sidebar, and Collection-root tests pass with production typecheck and touched-file lint.
+
 **Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
 ### 1. Release Candidate

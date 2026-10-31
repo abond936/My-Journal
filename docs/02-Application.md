@@ -20,7 +20,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ✅ **Complete**
 
-- **Reader** — Published stories and media through Collection and Feed entry paths over the delivered curated and freeform reading mechanisms.
+- **Reader** — Published Cards and their deliberately referenced Media through Collection and Feed entry paths over the delivered curated and freeform reading mechanisms. The former raw Media browse path is now author-only and does not expose the private archive to ordinary readers.
 - **Administration** — Protected Studio, Users, Themes, Settings, and operations.
 - **Content** — Story, Gallery, Question, and Callout forms.
 - **State communication** — Loading, empty, success, warning, error, and unavailable states appear only when true. Normal asynchronous work does not masquerade as missing data, and recoverable failures provide a useful next action where one exists.
@@ -154,6 +154,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Collection context uses the published nested hierarchy to select the Card feed. Choosing a Part, Chapter, or Section updates the feed directly rather than requiring intermediary overview pages or repeated drill-down before Cards are readable.
 - Feed context retains the reader's author and dimensional filters, Card position, and return state. Collection context retains the selected Collection placement, expanded contents, current Part, Chapter, or Section, Card position, and return state.
 - Viewing users are read-only; Reader mutations remain administrator-authorized server-side.
+- Reader authorization applies to Cards and Collections. Media referenced by authorized content is visible in that content context; authorization does not expose the complete Media bank or create a standalone Media publication decision.
+- Ordinary readers do not receive raw Media-library browsing. A later Shared Media Collection is an explicitly curated publication object with its own audience rather than a filter over the author's private library.
 - Authors may edit the current card and visible media as fully as practical while preserving their Reader position.
 - Studio remains the primary workspace for archive-wide, bulk, and taxonomy-structure operations; Reader retains contextual assignment and correction.
 
@@ -762,6 +764,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ⭕1 **Planned**
 
 - **Audience groups** — Create reusable named groups of Reader accounts and invited recipients, and select one or more groups or individuals when publishing a Card or Collection.
+- **Private Media delivery** — Replace permanent public Media delivery with an authenticated, authorization-aware path before audience controls are represented as protected sharing. Reader payloads and authored HTML must not retain bypass URLs.
+- **Shared Media Collections** — After Story and Collection audiences are protected, allow the author to curate a bounded Media set, assign its audience, and change membership without changing the Media's use in Stories or exposing unrelated archive Media.
 - **Guest recipients** — Invite a non-account holder by email into a bounded access grant without requiring the current temporary-password administration flow. A recipient may later establish a fuller account without changing the authored audience decision.
 - **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
 - **Distribution** — Publish controls availability; Share chooses which authorized recipients receive a direct link or notification. Making content available to a large audience does not imply notifying everyone after every change.
@@ -779,6 +783,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - v1 disables accounts rather than deleting them.
 - Who identity, relationship graph, access identity, audience membership, publication, and notification remain separate authorities.
 - Audience membership is explicit and reviewable. Editing a Who relationship or Card tag never grants or revokes Reader access.
+- A Card's effective audience is the union of its own explicit audience and each authorized Collection placement that contains it. The author sees that consequence before confirming a placement or audience change.
+- Media access derives from an authorized Card, Collection, or later Shared Media Collection context. Media has no global `shared` boolean, and raw archive membership never implies reader access.
 - Guest links are unguessable, revocable, bounded to their grant, and do not expose unrelated archive content.
 - Commercial plan limits may bound authors, recipients, storage, processing, notifications, or AI use later, but authorization semantics do not depend on a particular pricing package.
 

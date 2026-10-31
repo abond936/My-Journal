@@ -141,4 +141,20 @@ describe('GlobalSidebar Collection navigation', () => {
       'chapter-placement'
     );
   });
+
+  it('removes raw Media-bank browsing for reader accounts', async () => {
+    const setBrowseTarget = jest.fn();
+    mockedUseCardContext.mockReturnValue({
+      ...mockedUseCardContext(),
+      activeDimension: 'who',
+      readerMode: 'freeform',
+      browseTarget: 'media',
+      setBrowseTarget,
+    } as never);
+
+    render(<GlobalSidebar isOpen />);
+
+    expect(screen.queryByRole('tab', { name: 'Media' })).toBeNull();
+    await waitFor(() => expect(setBrowseTarget).toHaveBeenCalledWith('cards'));
+  });
 });
