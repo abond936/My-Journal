@@ -311,6 +311,14 @@ describe('CardForm', () => {
     });
   });
 
+  it('warns that edits to a published Card may be visible to readers', async () => {
+    renderCardForm({ ...mockCard, status: 'published' });
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Saved changes may be visible to readers. Return it to Draft first if you want to take it offline while editing.'
+    );
+  });
+
   it('returns to Draft and explains why a publication attempt was blocked', async () => {
     mockOnSave.mockRejectedValue(
       new Error('This Card cannot be published yet: review Card what, when, where.')

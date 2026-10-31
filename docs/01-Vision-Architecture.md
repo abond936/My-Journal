@@ -92,7 +92,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Tenancy** — Isolate private personal workspaces and shared family spaces without weakening current integrity guarantees.
 - **Publishing and sharing** — Publishing releases an approved Card or Collection version to explicitly selected individuals or reusable audience groups. Groups may contain Reader accounts and lightweight invited recipients. Who identities and relationship facts may suggest recipients only when linked to access identities; they never grant access automatically. Sharing separately distributes or notifies, and a link never bypasses authorization unless the author explicitly enables bounded link or Book-holder access. Never treat the author's complete Media library as shared by default.
 - **Family feed** — Present recently published family stories chronologically as one view of the durable shared archive, not as an engagement-ranked social network or the product's primary authority.
-- **Extended history** — Add complete content-version browsing and recovery beyond the minimum safe separation of a published version from its unpublished working revision and republish rollback.
+- **Extended history** — Add private working revisions, content-version browsing, recovery, and republish rollback only when demonstrated use justifies the additional version and mutation-owner infrastructure. The current living archive keeps a published Card as one live object; stable Book editions remain separate snapshots.
 - **Observability** — Add tracing and operational dashboards beyond baseline monitoring.
 - **Storage** — Abstract storage operations when migration or multi-provider needs justify it.
 

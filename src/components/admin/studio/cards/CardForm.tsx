@@ -891,6 +891,12 @@ const CardForm: React.FC = () => {
     </div>
   );
 
+  const publishedEditNotice = cardData.status === 'published' ? (
+    <p className={styles.publishedEditNotice} role="note">
+      This Card is published. Saved changes may be visible to readers. Return it to Draft first if you want to take it offline while editing.
+    </p>
+  ) : null;
+
   const storyAssistSection = (
     <CardStoryAssist
       title={cardData.title || ''}
@@ -1031,6 +1037,7 @@ const CardForm: React.FC = () => {
                     </>
                   )}
                 </div>
+                {publishedEditNotice}
                 <div className={styles.statusSection}>
                   {studioShellForm ? studioStatusToggle : (
                     <div className={styles.selectGroup}>
@@ -1268,6 +1275,7 @@ const CardForm: React.FC = () => {
                 </>
               )}
             </div>
+            {publishedEditNotice}
             <div className={styles.statusSection}>
               {studioShellForm ? studioStatusToggle : (
                 <div className={styles.selectGroup}>
