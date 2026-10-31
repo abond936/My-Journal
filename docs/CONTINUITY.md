@@ -61,6 +61,7 @@ The ordinary Reader already requires a published Collection, every required Card
 - Draft saving stays permissive. Publishing is a deliberate integrity boundary; access, sharing, and distribution are separate decisions.
 - Media remains private archive material by default. The target Reader shares Cards and Collections plus only their referenced Media; unrestricted Media-bank browsing is not a reader entitlement. Curated Shared Media Collections are a later, separately authorized capability.
 - Ordinary reader accounts no longer receive the raw Media-bank tab or `/api/view/media` enumeration; administrators retain that archive view. This is an initial exposure reduction, not the completed audience gate, because referenced Media still uses permanent Storage URLs.
+- Read-only production verification found that one stored Media URL has no token and returns HTTP 200 to an anonymous HEAD request. Media delivery is therefore publicly reachable at the bucket/object layer despite the checked-in deny-all Storage rule. Audience activation must couple proxy/Reader URL rewriting with an explicitly authorized Storage/IAM closure and both anonymous-denial and authorized-delivery readback; application filtering alone must never be called protected.
 
 ## Next definition gate
 
