@@ -35,6 +35,7 @@ import {
 } from '@/lib/utils/temporalValue';
 import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
+import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
@@ -144,6 +145,8 @@ export async function GET(request: Request) {
   }
   const session = auth.session;
   const isAdmin = isAdminSession(session);
+  const jsonCardList = <T extends { items: Card[] }>(payload: T) =>
+    NextResponse.json(isAdmin ? payload : protectCardListForReader(payload));
 
   try {
     const { searchParams } = new URL(request.url);
@@ -338,7 +341,7 @@ export async function GET(request: Request) {
           hydrationMode,
           includeDescendants,
         });
-        return NextResponse.json({ items: collectionCards, hasMore: false });
+        return jsonCardList({ items: collectionCards, hasMore: false });
       }
 
       // Fetch a specific collection's children (paginated)
@@ -349,7 +352,7 @@ export async function GET(request: Request) {
           status,
           hydrationMode,
         });
-        return NextResponse.json(result);
+        return jsonCardList(result);
       }
 
       if (
@@ -375,7 +378,7 @@ export async function GET(request: Request) {
           hydrationMode,
           feedOnly: readerFeedOnly,
         });
-        return NextResponse.json(result);
+        return jsonCardList(result);
       }
 
       // Dedicated narrow parent lookup path (used by admin delete warning flow).
@@ -394,7 +397,7 @@ export async function GET(request: Request) {
           limit,
           hydrationMode,
         });
-        return NextResponse.json({
+        return jsonCardList({
           items,
           hasMore: items.length >= limit,
         } as PaginatedResult<Card>);
@@ -501,7 +504,7 @@ export async function GET(request: Request) {
           });
 
           if (searchResult.docIds.length === 0) {
-            return NextResponse.json({
+            return jsonCardList({
               items: [],
               hasMore: false,
               lastDocId: undefined,
@@ -515,7 +518,7 @@ export async function GET(request: Request) {
             items.length > 0 ? items[items.length - 1].docId : undefined;
           const hasMore = (pageIdx + 1) * limit < searchResult.totalFound;
 
-          return NextResponse.json({
+          return jsonCardList({
             items,
             lastDocId,
             hasMore,
@@ -565,7 +568,7 @@ export async function GET(request: Request) {
               : -1;
             const hasMoreWithinCurrentBatch =
               lastReturnedIndex >= 0 && lastReturnedIndex < batch.items.length - 1;
-            return NextResponse.json({
+            return jsonCardList({
               items: collected,
               lastDocId: lastReturnedDocId,
               hasMore: hasMoreWithinCurrentBatch || batch.hasMore,
@@ -577,7 +580,7 @@ export async function GET(request: Request) {
           if (!scanCursor) break;
         }
 
-        return NextResponse.json({
+        return jsonCardList({
           items: collected,
           lastDocId: lastReturnedDocId,
           hasMore: false,
@@ -604,7 +607,7 @@ export async function GET(request: Request) {
         ...(sortDir ? { sortDir } : {}),
       });
 
-      return NextResponse.json(result);
+      return jsonCardList(result);
     } catch (error) {
       console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

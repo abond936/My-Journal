@@ -41,6 +41,7 @@ import { AppError, ErrorCode } from '@/lib/types/error';
 import { z } from 'zod';
 import { canReadCard, filterReadableCards, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { getAdminApp } from '@/lib/config/firebase/admin';
+import { protectCardPageForReader } from '@/lib/utils/readerMediaDelivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,7 +142,9 @@ export async function GET(
       lastChildId: childrenResult.lastDocId,
     };
 
-    const response = NextResponse.json(responseData);
+    const response = NextResponse.json(
+      isAdminSession(session) ? responseData : protectCardPageForReader(responseData)
+    );
 
     // Set cache control headers
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

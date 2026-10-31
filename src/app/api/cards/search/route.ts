@@ -13,6 +13,7 @@ import {
   apiRouteSuccess,
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
+import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,10 @@ export async function GET(request: Request) {
           lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
         };
       }
-      return apiRouteSuccess<CardSearchResult>({ ...result, searchMode, degraded });
+      const payload: CardSearchResult = { ...result, searchMode, degraded };
+      return apiRouteSuccess<CardSearchResult>(
+        readerFeedOnly ? protectCardListForReader(payload) : payload
+      );
     }
   );
 }

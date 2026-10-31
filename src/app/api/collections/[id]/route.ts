@@ -1,6 +1,8 @@
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import { apiRouteError, apiRouteSuccess, withApiRouteHandler } from '@/lib/api/routeEnvelope';
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { hydrateCards } from '@/lib/services/cards/cardMediaHydrationService';
+import { protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +27,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           retryable: false,
         });
       }
-      return apiRouteSuccess(structure);
+      if (isAdminSession(session)) return apiRouteSuccess(structure);
+      return apiRouteSuccess({
+        ...structure,
+        cards: protectCardsForReader(await hydrateCards(structure.cards)),
+      });
     }
   );
 }

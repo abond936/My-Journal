@@ -232,6 +232,39 @@ describe('reader access boundary', () => {
     );
   });
 
+  it('removes permanent Media URLs and private archive fields from Reader card lists', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
+    mockedGetCards.mockResolvedValue({
+      items: [
+        {
+          docId: 'card-1',
+          title: 'Published story',
+          status: 'published',
+          content: '<figure data-media-id="media-1"><img src="https://firebasestorage.googleapis.com/public.jpg"></figure>',
+          coverImage: {
+            docId: 'media-1',
+            storageUrl: 'https://firebasestorage.googleapis.com/public.jpg',
+            storagePath: 'images/private-path.jpg',
+            sourcePath: 'private/source/path.jpg',
+            tags: ['private-tag'],
+          },
+        } as never,
+      ],
+      hasMore: false,
+    });
+
+    const response = await listCards(
+      makeRequest('https://example.test/api/cards?status=published&limit=10')
+    );
+    const payload = await response.json();
+
+    expect(payload.items[0].coverImage.storageUrl).toBe('/api/reader/media/media-1');
+    expect(payload.items[0].coverImage).not.toHaveProperty('storagePath');
+    expect(payload.items[0].coverImage).not.toHaveProperty('sourcePath');
+    expect(payload.items[0].coverImage).not.toHaveProperty('tags');
+    expect(JSON.stringify(payload)).not.toContain('firebasestorage.googleapis.com');
+  });
+
   it('scans additional ordered card batches before paginating dimension-subject results', async () => {
     mockedGetServerSession.mockResolvedValue({ user: { role: 'admin' } } as never);
     mockedGetCards

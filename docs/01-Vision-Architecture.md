@@ -105,6 +105,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Server rules** — Authorization, validation, counts, tag derivation, and relationship integrity are enforced server-side.
 - **Narrow writes** — Tag, status, and single-field changes use bounded paths; rich content, gallery, cover, and structure use wide paths.
 - **No shortcuts** — Efficiency never permits inaccurate counts, tags, publication state, authorization, or reader truth.
+- **Private Media delivery** — Reader payloads expose only display data and authenticated application delivery URLs for Media referenced by content that the reader may access. They never expose the author's raw Media catalog, source or Storage paths, archive metadata, or permanent object URLs. Application authorization is not a complete privacy boundary while the underlying object remains anonymously readable; Storage/IAM closure and anonymous-denial readback are part of activation.
 - **Stable lists** — Filters apply to the full server-side population; chunked results preserve filters and deterministic ordering.
 - **Bulk work** — Bulk mutations use bounded batch work rather than repeated full-card saves.
 - **Targeted refresh** — Patch or invalidate the affected query when possible; do not reload full catalogs by default.

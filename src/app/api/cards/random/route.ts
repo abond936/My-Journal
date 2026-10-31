@@ -3,9 +3,10 @@ import { getCardsByIds } from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
+import { protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -312,7 +313,9 @@ export async function GET(request: Request) {
     // Fetch only the selected cards by ID
     const randomCards = await getCardsByIds(randomCardIds);
 
-    return NextResponse.json(randomCards);
+    return NextResponse.json(
+      isAdminSession(session) ? randomCards : protectCardsForReader(randomCards)
+    );
   } catch (error) {
     console.error('Error in GET /api/cards/random:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

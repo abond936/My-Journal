@@ -7,7 +7,8 @@ import { getServerSession } from 'next-auth/next';
 import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth/authOptions';
 import { buildLoginRedirectPath } from '@/lib/utils/marketingRoutes';
-import { canReadCard, filterReadableCards, isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { canReadCard, filterReadableCards, isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { protectCardForReader, protectCardsForReader } from '@/lib/utils/readerMediaDelivery';
 
 interface CardPageProps {
   params: Promise<{
@@ -38,7 +39,9 @@ async function getCardData(id: string, session: Session | null): Promise<CardPag
       children = filterReadableCards(session, hydratedChildren);
     }
     
-    return { card, children };
+    return isAdminSession(session)
+      ? { card, children }
+      : { card: protectCardForReader(card), children: protectCardsForReader(children) };
   } catch (error) {
     console.error(`Error fetching card data for ${id}:`, error);
     return null;
