@@ -44,12 +44,12 @@ function SectionIntro({
   return (
     <div className={`max-w-2xl ${className}`.trim()}>
       <p className="kicker reveal mb-5">{kicker}</p>
-      <h2 className="reveal reveal-d1 font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
+      <h2 className="reveal reveal-d1 livingAlbumDisplay font-semibold text-espresso text-4xl md:text-5xl leading-[1.08] tracking-tight">
         {title}
         {titleEmphasis ? (
           <>
             {' '}
-            <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
+            <em className="livingAlbumEditorial italic font-medium text-terracotta hand-underline">
               {titleEmphasis}
             </em>
           </>
@@ -94,10 +94,10 @@ function StoryCardTextMock() {
             Family
           </span>
         </div>
-        <h4 className="mt-4 font-[Fraunces] text-2xl font-semibold text-[oklch(0.97_0.008_85)]">
+        <h4 className="mt-4 livingAlbumDisplay text-2xl font-semibold text-[oklch(0.97_0.008_85)]">
           Wood&apos;s Lake
         </h4>
-        <p className="mt-3 font-[Newsreader] text-base leading-relaxed text-[oklch(0.88_0.012_85)]">
+        <p className="mt-3 livingAlbumEditorial text-base leading-relaxed text-[oklch(0.88_0.012_85)]">
           Occasionally we would go swimming at Wood&apos;s Lake — a short drive from our house.
         </p>
       </div>
@@ -155,9 +155,9 @@ function Hero() {
       <div className="container relative grid items-center gap-16 lg:grid-cols-[55fr_45fr]">
         <div className="max-w-xl">
           <p className="kicker reveal mb-5">The Living Album</p>
-          <h1 className="reveal reveal-d1 font-[Fraunces] font-semibold text-espresso text-4xl md:text-5xl leading-[1.1] tracking-tight">
+          <h1 className="reveal reveal-d1 livingAlbumDisplay font-semibold text-espresso text-4xl md:text-5xl leading-[1.1] tracking-tight">
             Combine your photos and stories to create a powerful{' '}
-            <em className="font-[Newsreader] italic font-medium text-terracotta hand-underline">
+            <em className="livingAlbumEditorial italic font-medium text-terracotta hand-underline">
               sharing experience.
             </em>
           </h1>
@@ -215,7 +215,7 @@ function About() {
 
         <div>
           <p className="reveal kicker mb-4">The problem</p>
-          <h3 className="reveal reveal-d1 font-[Fraunces] text-2xl font-semibold text-espresso">
+          <h3 className="reveal reveal-d1 livingAlbumDisplay text-2xl font-semibold text-espresso">
             Photos pile up. Stories get trapped.
           </h3>
           <figure className="photo-print reveal reveal-d2 mx-auto mt-8 w-full max-w-lg rotate-[1.5deg]">
@@ -224,7 +224,7 @@ function About() {
               alt="A scattered pile of old printed photographs and a closed album"
               className="block w-full"
             />
-            <figcaption className="mt-2 text-center font-[Newsreader] italic text-sm text-espresso/70">
+            <figcaption className="mt-2 text-center livingAlbumEditorial italic text-sm text-espresso/70">
               Saved, but not seen.
             </figcaption>
           </figure>
@@ -235,7 +235,7 @@ function About() {
                 key={failure.title}
                 className={`reveal ${index % 2 === 1 ? 'reveal-d1' : ''} bg-card p-6`}
               >
-                <h4 className="font-[Fraunces] font-semibold text-lg text-espresso">{failure.title}</h4>
+                <h4 className="livingAlbumDisplay font-semibold text-lg text-espresso">{failure.title}</h4>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{failure.text}</p>
               </div>
             ))}
@@ -283,7 +283,7 @@ function Features() {
               key={feature.title}
               className={`featureCard reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-6 md:p-7`}
             >
-              <h3 className="font-[Fraunces] text-xl font-semibold text-espresso">{feature.title}</h3>
+              <h3 className="livingAlbumDisplay text-xl font-semibold text-espresso">{feature.title}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground md:text-base">{feature.text}</p>
             </article>
           ))}
@@ -313,22 +313,22 @@ function HowItWorks() {
         <div className="mt-16 grid gap-12 lg:grid-cols-2 lg:gap-20">
           <div className="reveal space-y-10">
             <div>
-              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">01</span>
-              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Organize the photos</h3>
+              <span className="livingAlbumDisplay text-6xl font-medium text-terracotta/30">01</span>
+              <h3 className="mt-3 livingAlbumDisplay font-semibold text-3xl text-espresso">Organize the photos</h3>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 Bring order to unruly media with powerful, AI-assisted tools — always under your control.
               </p>
             </div>
             <div>
-              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">02</span>
-              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Tell the stories</h3>
+              <span className="livingAlbumDisplay text-6xl font-medium text-terracotta/30">02</span>
+              <h3 className="mt-3 livingAlbumDisplay font-semibold text-3xl text-espresso">Tell the stories</h3>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 Add titles, covers, narrative, and captions that give your images context.
               </p>
             </div>
             <div>
-              <span className="font-[Fraunces] text-6xl font-medium text-terracotta/30">03</span>
-              <h3 className="mt-3 font-[Fraunces] font-semibold text-3xl text-espresso">Enjoy and share</h3>
+              <span className="livingAlbumDisplay text-6xl font-medium text-terracotta/30">03</span>
+              <h3 className="mt-3 livingAlbumDisplay font-semibold text-3xl text-espresso">Enjoy and share</h3>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 Publish to a private, always-available feed for family and friends.
               </p>
@@ -428,9 +428,9 @@ function Pricing() {
               ) : (
                 <div className="mb-4 h-[1.625rem]" aria-hidden="true" />
               )}
-              <h3 className="font-[Fraunces] text-2xl font-semibold text-espresso">{tier.name}</h3>
+              <h3 className="livingAlbumDisplay text-2xl font-semibold text-espresso">{tier.name}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tier.tagline}</p>
-              <p className="pricingPrice mt-6 font-[Fraunces] text-3xl font-semibold text-espresso">
+              <p className="pricingPrice mt-6 livingAlbumDisplay text-3xl font-semibold text-espresso">
                 Pricing TBD
               </p>
               <p className="mt-1 text-xs text-muted-foreground">Per month · details coming soon</p>
@@ -552,7 +552,7 @@ function PrivacyTrust() {
               key={point.title}
               className={`trustCard reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-6`}
             >
-              <h3 className="font-[Fraunces] text-lg font-semibold text-espresso">{point.title}</h3>
+              <h3 className="livingAlbumDisplay text-lg font-semibold text-espresso">{point.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{point.text}</p>
             </article>
           ))}
@@ -596,7 +596,7 @@ function FAQ() {
         <dl className="mt-12 space-y-4">
           {faqs.map((faq, index) => (
             <div key={faq.q} className={`faqItem reveal ${index % 2 === 1 ? 'reveal-d1' : ''} p-5 md:p-6`}>
-              <dt className="font-[Fraunces] text-lg font-semibold text-espresso">{faq.q}</dt>
+              <dt className="livingAlbumDisplay text-lg font-semibold text-espresso">{faq.q}</dt>
               <dd className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">{faq.a}</dd>
             </div>
           ))}
@@ -626,7 +626,7 @@ function ContactAccess() {
         </SectionIntro>
 
         <div className="reveal reveal-d1 rounded-xl border border-border bg-card p-6 md:p-8">
-          <h3 className="font-[Fraunces] text-xl font-semibold text-espresso">Request access (placeholder)</h3>
+          <h3 className="livingAlbumDisplay text-xl font-semibold text-espresso">Request access (placeholder)</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Disabled until the contact channel is configured. No data is sent.
           </p>
@@ -666,7 +666,7 @@ function ClosingCta() {
   return (
     <section className="relative overflow-hidden border-t border-border py-20 md:py-24">
       <div className="container relative text-center">
-        <blockquote className="reveal font-[Newsreader] italic text-2xl md:text-3xl leading-snug text-espresso">
+        <blockquote className="reveal livingAlbumEditorial italic text-2xl md:text-3xl leading-snug text-espresso">
           &ldquo;Your images captured the moments.{' '}
           <span className="text-terracotta">My Stories</span> brings them to life.&rdquo;
         </blockquote>

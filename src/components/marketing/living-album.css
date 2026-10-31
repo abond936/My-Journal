@@ -65,11 +65,14 @@
   --input: oklch(0.87 0.02 75);
   --ring: var(--terracotta);
   --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --living-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --living-font-display: Georgia, 'Times New Roman', serif;
+  --living-font-editorial: Georgia, 'Times New Roman', serif;
 
   min-height: 100dvh;
   background: var(--paper);
   color: var(--espresso);
-  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--living-font-sans);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
@@ -119,12 +122,20 @@
 }
 
 .livingAlbum .kicker {
-  font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--living-font-sans);
   font-weight: 600;
   font-size: 0.75rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--terracotta);
+}
+
+.livingAlbum .livingAlbumDisplay {
+  font-family: var(--living-font-display);
+}
+
+.livingAlbum .livingAlbumEditorial {
+  font-family: var(--living-font-editorial);
 }
 
 .livingAlbum .photo-print {
