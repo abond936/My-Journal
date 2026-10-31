@@ -245,4 +245,48 @@ describe('DurableCollectionStudioPane', () => {
     ]);
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/api/cards/story-card'))).toBe(false);
   });
+
+  it('shows placement-wide audience impact before the Collection audience is saved', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [activeCollection] });
+      if (url === '/api/admin/journal-users') return response({ users: [] });
+      if (url === '/api/admin/audience-groups') return response({ groups: [] });
+      if (url.endsWith('/audience-impact') && init?.method === 'POST') {
+        return response({
+          impact: {
+            basis: 'if_published_and_reader_valid',
+            proposedRouteReaders: [],
+            missingCardIds: [],
+            cards: [{
+              cardId: 'story-card', title: 'A Story', status: 'draft',
+              effectiveReaders: [],
+              routes: [{
+                kind: 'this_collection', collectionId: 'my-life', title: 'My Life', readers: [],
+              }],
+            }],
+          },
+        });
+      }
+      return response({
+        ok: true,
+        collection: activeCollection,
+        placements: [
+          { docId: 'story', collectionId: 'my-life', cardId: 'story-card', role: 'card', order: 10, createdAt: 1, updatedAt: 1 },
+        ],
+        cards: [{ docId: 'story-card', title: 'A Story', status: 'draft' }],
+      });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    expect(await screen.findByText(/If this Collection is published and reader-ready:/)).toBeInTheDocument();
+    expect(screen.getByText('A Story', { selector: 'strong' }).parentElement).toHaveTextContent(
+      'A Story (Draft): No enabled readers. Routes: My Life.'
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/collections/my-life/audience-impact',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
 });

@@ -110,4 +110,39 @@ describe('AudienceSelector', () => {
       contactIds: ['reader-1'],
     });
   });
+
+  it('shows the placement-wide consequence of a proposed Collection audience', async () => {
+    const getCollectionImpact = jest.fn().mockResolvedValue({
+      basis: 'if_published_and_reader_valid',
+      proposedRouteReaders: [{ contactId: 'reader-2', displayName: 'Blair' }],
+      missingCardIds: [],
+      cards: [{
+        cardId: 'card-1',
+        title: 'Beach Story',
+        status: 'draft',
+        effectiveReaders: [
+          { contactId: 'reader-1', displayName: 'Alex' },
+          { contactId: 'reader-2', displayName: 'Blair' },
+        ],
+        routes: [
+          { kind: 'this_collection', collectionId: 'family-book', title: 'Family Book', readers: [] },
+          { kind: 'standalone_feed', title: 'standalone Feed', readers: [] },
+        ],
+      }],
+    });
+    render(
+      <AudienceSelector
+        value={{ allContacts: false, groupIds: ['family'], contactIds: [] }}
+        scopeLabel="Collection"
+        consequence="Collection consequence."
+        onSave={jest.fn()}
+        getCollectionImpact={getCollectionImpact}
+      />
+    );
+
+    expect(await screen.findByText(/If this Collection is published and reader-ready:/)).toBeInTheDocument();
+    expect(screen.getByText(/Beach Story/).parentElement).toHaveTextContent(
+      'Beach Story (Draft): Alex, Blair Routes: Family Book, standalone Feed.'
+    );
+  });
 });

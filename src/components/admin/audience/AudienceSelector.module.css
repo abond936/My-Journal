@@ -63,6 +63,22 @@
   font-size: var(--font-size-sm);
 }
 
+.impactList {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin: var(--spacing-xs) 0 0;
+  padding-left: var(--spacing-lg);
+}
+
+.impactDetails {
+  margin-top: var(--spacing-xs);
+}
+
+.impactDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .selector button {
   align-self: flex-start;
 }

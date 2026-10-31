@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import type { AudienceGroup, AudienceSelection } from '@/lib/types/audience';
-import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
+import type {
+  CardAudienceImpact,
+  CollectionAudienceImpact,
+} from '@/lib/services/audienceImpactService';
 import styles from './AudienceSelector.module.css';
 
 type AudienceSelectorProps = {
@@ -13,7 +16,12 @@ type AudienceSelectorProps = {
   disabled?: boolean;
   onSave: (selection: AudienceSelection) => Promise<boolean>;
   getCombinedImpact?: (selection: AudienceSelection) => Promise<CardAudienceImpact>;
+  getCollectionImpact?: (selection: AudienceSelection) => Promise<CollectionAudienceImpact>;
 };
+
+type ImpactState =
+  | { scope: 'card'; value: CardAudienceImpact }
+  | { scope: 'collection'; value: CollectionAudienceImpact };
 
 const allReadersSelection = (): AudienceSelection => ({
   allContacts: true,
@@ -41,6 +49,7 @@ export default function AudienceSelector({
   disabled = false,
   onSave,
   getCombinedImpact,
+  getCollectionImpact,
 }: AudienceSelectorProps) {
   const normalizedValue = useMemo(() => normalize(value), [value]);
   const [draft, setDraft] = useState<AudienceSelection>(normalizedValue);
@@ -50,7 +59,7 @@ export default function AudienceSelector({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [impact, setImpact] = useState<CardAudienceImpact | null>(null);
+  const [impact, setImpact] = useState<ImpactState | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
   const [impactError, setImpactError] = useState<string | null>(null);
 
@@ -84,7 +93,7 @@ export default function AudienceSelector({
   }, []);
 
   useEffect(() => {
-    if (!getCombinedImpact) {
+    if (!getCombinedImpact && !getCollectionImpact) {
       setImpact(null);
       setImpactError(null);
       return;
@@ -93,7 +102,10 @@ export default function AudienceSelector({
     const timeout = window.setTimeout(() => {
       setImpactLoading(true);
       setImpactError(null);
-      void getCombinedImpact(normalize(draft))
+      const request = getCollectionImpact
+        ? getCollectionImpact(normalize(draft)).then((value) => ({ scope: 'collection', value }) as const)
+        : getCombinedImpact!(normalize(draft)).then((value) => ({ scope: 'card', value }) as const);
+      void request
         .then((nextImpact) => {
           if (!cancelled) setImpact(nextImpact);
         })
@@ -111,7 +123,7 @@ export default function AudienceSelector({
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [draft, getCombinedImpact]);
+  }, [draft, getCombinedImpact, getCollectionImpact]);
 
   const readerUsers = useMemo(
     () => users.filter((user) => user.role === 'viewer').sort((a, b) => a.displayName.localeCompare(b.displayName)),
@@ -233,18 +245,46 @@ export default function AudienceSelector({
               ? effectiveReaders.map((user) => user.displayName).join(', ')
               : 'No enabled readers.'}
           </div>
-          {getCombinedImpact ? (
+          {getCombinedImpact || getCollectionImpact ? (
             <div className={styles.preview} aria-live="polite">
-              <strong>{impact?.basis === 'if_published' ? 'If published with this audience:' : 'Combined access after Save:'}</strong>{' '}
-              {impactLoading ? 'Calculating all routes...' : impact ? (
+              {impactLoading ? 'Calculating all routes...' : impact?.scope === 'card' ? (
                 <>
-                  {impact.effectiveReaders.length
-                    ? impact.effectiveReaders.map((reader) => reader.displayName).join(', ')
+                  <strong>{impact.value.basis === 'if_published' ? 'If published with this audience:' : 'Combined access after Save:'}</strong>{' '}
+                  {impact.value.effectiveReaders.length
+                    ? impact.value.effectiveReaders.map((reader) => reader.displayName).join(', ')
                     : 'No enabled readers.'}
                   {' '}Routes included: {[
-                    ...(impact.standaloneIncluded ? ['standalone Feed'] : []),
-                    ...impact.otherRoutes.map((route) => route.title),
+                    ...(impact.value.standaloneIncluded ? ['standalone Feed'] : []),
+                    ...impact.value.otherRoutes.map((route) => route.title),
                   ].join(', ') || 'none'}.
+                </>
+              ) : impact?.scope === 'collection' ? (
+                <>
+                  <strong>
+                    {impact.value.basis === 'current_after_save'
+                      ? 'Placed Card access after Save:'
+                      : 'If this Collection is published and reader-ready:'}
+                  </strong>{' '}
+                  {impact.value.cards.length} unique placed Card{impact.value.cards.length === 1 ? '' : 's'}.
+                  {impact.value.missingCardIds.length ? (
+                    <> {impact.value.missingCardIds.length} missing Card reference{impact.value.missingCardIds.length === 1 ? '' : 's'} must be resolved.</>
+                  ) : null}
+                  {impact.value.cards.length ? (
+                    <details className={styles.impactDetails}>
+                      <summary>Review each placed Card consequence</summary>
+                      <ul className={styles.impactList}>
+                        {impact.value.cards.map((card) => (
+                          <li key={card.cardId}>
+                            <strong>{card.title}</strong>{card.status !== 'published' ? ' (Draft)' : ''}: {' '}
+                            {card.effectiveReaders.length
+                              ? card.effectiveReaders.map((reader) => reader.displayName).join(', ')
+                              : 'No enabled readers.'}
+                            {' '}Routes: {card.routes.map((route) => route.title).join(', ')}.
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
                 </>
               ) : impactError || 'Combined audience has not been calculated.'}
             </div>

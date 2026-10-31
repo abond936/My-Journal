@@ -1,5 +1,6 @@
 import {
   getCardAudienceImpact,
+  getCollectionAudienceImpact,
   resolveAudienceReaderIds,
 } from '@/lib/services/audienceImpactService';
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
@@ -102,5 +103,97 @@ describe('audienceImpactService', () => {
       { allContacts: true, groupIds: [], contactIds: [] },
       firestore as never
     )).resolves.toMatchObject({ effectiveReaders: [], otherRoutes: [] });
+  });
+
+  it('previews every placed Card across the proposed Collection and its other routes', async () => {
+    const collections = {
+      'collection-1': doc('collection-1', {
+        title: 'Family Archive', lifecycle: 'draft', recordState: 'active',
+      }),
+      'other-book': doc('other-book', {
+        title: 'Other Book', lifecycle: 'published', recordState: 'active',
+        audience: { allContacts: false, groupIds: [], contactIds: ['reader-1'] },
+      }),
+    };
+    const cards = {
+      'card-1': doc('card-1', { title: 'Beach Story', status: 'published', feedIncluded: false }),
+      'card-2': doc('card-2', {
+        title: 'Birthday Story', status: 'draft', feedIncluded: true,
+        audience: { allContacts: false, groupIds: [], contactIds: ['reader-1'] },
+      }),
+    };
+    const firestore = {
+      collection: jest.fn((name: string) => ({
+        doc: jest.fn((id: string) => ({
+          name,
+          id,
+          get: jest.fn().mockResolvedValue(name === 'collections'
+            ? collections[id as keyof typeof collections]
+            : cards[id as keyof typeof cards]),
+        })),
+        where: jest.fn((field: string, _operator: string, value: unknown) => ({
+          get: jest.fn().mockResolvedValue(
+            name === 'journal_users'
+              ? { docs: [
+                  doc('reader-1', { displayName: 'Alex', role: 'viewer', disabled: false }),
+                  doc('reader-2', { displayName: 'Blair', role: 'viewer', disabled: false }),
+                ] }
+              : field === 'collectionId'
+                ? { docs: [
+                    doc('placement-1', { collectionId: 'collection-1', cardId: 'card-1' }),
+                    doc('placement-2', { collectionId: 'collection-1', cardId: 'card-2' }),
+                    doc('placement-missing', { collectionId: 'collection-1', cardId: 'missing-card' }),
+                  ] }
+                : { docs: (value as string[]).includes('card-1')
+                    ? [doc('other-placement', { collectionId: 'other-book', cardId: 'card-1' })]
+                    : [] },
+          ),
+        })),
+        get: jest.fn().mockResolvedValue(name === 'audience_groups'
+          ? { docs: [doc('family', { memberContactIds: ['reader-2'] })] }
+          : { docs: [] }),
+      })),
+      getAll: jest.fn(async (...refs: Array<{ name: string; id: string }>) => refs.map((ref) =>
+        ref.name === 'collections'
+          ? collections[ref.id as keyof typeof collections] ?? doc(ref.id, {}, false)
+          : cards[ref.id as keyof typeof cards] ?? doc(ref.id, {}, false)
+      )),
+    };
+
+    const result = await getCollectionAudienceImpact(
+      'collection-1',
+      { allContacts: false, groupIds: ['family'], contactIds: [] },
+      firestore as never
+    );
+
+    expect(result).toMatchObject({
+      basis: 'if_published_and_reader_valid',
+      proposedRouteReaders: [{ contactId: 'reader-2', displayName: 'Blair' }],
+      missingCardIds: ['missing-card'],
+      cards: [
+        {
+          cardId: 'card-1', title: 'Beach Story', status: 'published',
+          effectiveReaders: [
+            { contactId: 'reader-1', displayName: 'Alex' },
+            { contactId: 'reader-2', displayName: 'Blair' },
+          ],
+          routes: [
+            expect.objectContaining({ kind: 'this_collection', title: 'Family Archive' }),
+            expect.objectContaining({ kind: 'other_collection', title: 'Other Book' }),
+          ],
+        },
+        {
+          cardId: 'card-2', title: 'Birthday Story', status: 'draft',
+          effectiveReaders: [
+            { contactId: 'reader-1', displayName: 'Alex' },
+            { contactId: 'reader-2', displayName: 'Blair' },
+          ],
+          routes: [
+            expect.objectContaining({ kind: 'this_collection', title: 'Family Archive' }),
+            expect.objectContaining({ kind: 'standalone_feed', title: 'standalone Feed' }),
+          ],
+        },
+      ],
+    });
   });
 });

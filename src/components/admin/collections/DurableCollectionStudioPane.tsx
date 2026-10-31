@@ -10,6 +10,7 @@ import type {
 } from '@/lib/types/collection';
 import type { AudienceSelection } from '@/lib/types/audience';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
+import type { CollectionAudienceImpact } from '@/lib/services/audienceImpactService';
 import styles from './DurableCollectionStudioPane.module.css';
 
 type Availability = 'loading' | 'active' | 'none' | 'error';
@@ -184,6 +185,24 @@ export default function DurableCollectionStudioPane({
       setSaving(false);
     }
   }, [saving, structure]);
+
+  const getCollectionAudienceImpact = useCallback(async (
+    audience: AudienceSelection
+  ): Promise<CollectionAudienceImpact> => {
+    if (!structure) throw new Error('Collection structure is not loaded.');
+    const response = await fetch(
+      `/api/admin/collections/${encodeURIComponent(structure.collection.docId)}/audience-impact`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(audience),
+      }
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Collection audience impact could not be calculated.');
+    if (!data.impact) throw new Error('Collection audience impact could not be calculated.');
+    return data.impact as CollectionAudienceImpact;
+  }, [structure]);
 
   const searchCards = useCallback(async () => {
     const query = cardSearch.trim();
@@ -384,6 +403,7 @@ export default function DurableCollectionStudioPane({
           consequence="Every published Story placed here is available to this audience through the Collection. A Story may also be available through its standalone route or another Collection."
           disabled={saving}
           onSave={saveAudience}
+          getCollectionImpact={getCollectionAudienceImpact}
         />
       ) : null}
       <div className={styles.addCard}>
