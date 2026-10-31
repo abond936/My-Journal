@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import { importFromBuffer } from '@/lib/services/images/imageImportService';
+import { protectMediaForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
 type ApiErrorPayload = {
   ok: false;
@@ -66,7 +67,13 @@ export async function POST(req: NextRequest) {
     
     const newMedia = await importFromBuffer(fileBuffer, file.name);
 
-    return NextResponse.json(newMedia, { status: 201 });
+    return NextResponse.json(
+      {
+        ...newMedia,
+        media: protectMediaForAuthenticatedSession(newMedia.media),
+      },
+      { status: 201 }
+    );
 
   } catch (error) {
     console.error('Error uploading file:', error);

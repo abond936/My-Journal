@@ -3,7 +3,7 @@ import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
 import type { Tag } from '@/lib/types/tag';
 import { hydrateContentImageSrc } from '@/lib/utils/cardUtils';
-import { applyPublicStorageUrlsToMedia } from '@/lib/utils/storageUrl';
+import { protectMediaForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
 const firestore = getAdminApp().firestore();
 const MEDIA_COLLECTION = 'media';
@@ -26,9 +26,9 @@ export function deriveFocalPointFromObjectPosition(
   };
 }
 
-function applyPublicStorageUrls(mediaMap: Map<string, Media>): void {
+function applyAuthenticatedStorageUrls(mediaMap: Map<string, Media>): void {
   mediaMap.forEach((media, id) => {
-    mediaMap.set(id, applyPublicStorageUrlsToMedia(media));
+    mediaMap.set(id, protectMediaForAuthenticatedSession(media));
   });
 }
 
@@ -111,7 +111,7 @@ export async function loadMediaMapByIds(mediaIds: Iterable<string>): Promise<Map
   docs.forEach((doc) => {
     if (doc.exists) mediaMap.set(doc.id, doc.data() as Media);
   });
-  applyPublicStorageUrls(mediaMap);
+  applyAuthenticatedStorageUrls(mediaMap);
   return mediaMap;
 }
 

@@ -1,5 +1,6 @@
 import {
   protectCardForReader,
+  protectMediaForAuthenticatedSession,
   protectMediaForReader,
 } from '@/lib/utils/readerMediaDelivery';
 import type { Card } from '@/lib/types/card';
@@ -33,6 +34,32 @@ function media(id: string): Media {
 }
 
 describe('Reader Media delivery transformation', () => {
+  it('protects author URLs while preserving private author metadata', () => {
+    const sourceMedia = {
+      ...media('media author'),
+      caption: 'Archive caption',
+      tags: ['family'],
+      sourcePath: 'scans/family/photo.jpg',
+    } as Media;
+
+    const protectedMedia = protectMediaForAuthenticatedSession(sourceMedia);
+
+    expect(protectedMedia.storageUrl).toBe(
+      '/api/reader/media/media%20author?rendition=original'
+    );
+    expect(protectedMedia.renditions?.reader?.storageUrl).toBe(
+      '/api/reader/media/media%20author'
+    );
+    expect(protectedMedia.renditions?.studio?.storageUrl).toBe(
+      '/api/reader/media/media%20author?rendition=studio'
+    );
+    expect(protectedMedia.storagePath).toBe('images/media author.jpg');
+    expect(protectedMedia.sourcePath).toBe('scans/family/photo.jpg');
+    expect(protectedMedia.tags).toEqual(['family']);
+    expect(JSON.stringify(protectedMedia)).not.toContain('firebasestorage.googleapis.com');
+    expect(sourceMedia.storageUrl).toBe(publicUrl);
+  });
+
   it('replaces every hydrated Media URL with authenticated delivery URLs', () => {
     const protectedMedia = protectMediaForReader(media('media one'))!;
 

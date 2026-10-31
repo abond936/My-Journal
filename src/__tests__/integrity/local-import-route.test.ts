@@ -66,7 +66,12 @@ describe('local import route duplicate policy', () => {
 
     const res = await POST(req);
     const payload = (await res.json()) as {
-      results: Array<{ sourcePath: string; mediaId: string; skipped?: boolean }>;
+      results: Array<{
+        sourcePath: string;
+        mediaId: string;
+        media: { storageUrl?: string };
+        skipped?: boolean;
+      }>;
     };
 
     expect(getMockedImportFromLocalDrive()).toHaveBeenCalledWith(
@@ -84,6 +89,9 @@ describe('local import route duplicate policy', () => {
         skipped: true,
       }),
     ]);
+    expect(payload.results[0]?.media.storageUrl).toBe(
+      '/api/reader/media/media-existing-1?rendition=original'
+    );
   });
 
   it('always enables sourcePath duplicate skipping for single-file imports and returns skipped=true', async () => {
@@ -105,7 +113,11 @@ describe('local import route duplicate policy', () => {
     } as NextRequest;
 
     const res = await POST(req);
-    const payload = (await res.json()) as { mediaId: string; skipped?: boolean };
+    const payload = (await res.json()) as {
+      mediaId: string;
+      media: { storageUrl?: string };
+      skipped?: boolean;
+    };
 
     expect(getMockedImportFromLocalDrive()).toHaveBeenCalledWith(
       'folder/photo-2.jpg',
@@ -120,6 +132,9 @@ describe('local import route duplicate policy', () => {
         mediaId: 'media-existing-2',
         skipped: true,
       })
+    );
+    expect(payload.media.storageUrl).toBe(
+      '/api/reader/media/media-existing-2?rendition=original'
     );
   });
 });

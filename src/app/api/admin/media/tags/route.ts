@@ -17,6 +17,7 @@ import {
   dimensionResolutionSchema,
   type DimensionResolution,
 } from '@/lib/types/dimensionReview';
+import { protectMediaListForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
@@ -330,7 +331,9 @@ export async function POST(request: NextRequest) {
         ok: true,
         updated: updatedIds.length,
         mode: effectiveMode,
-        media: updatedMedia,
+        media: updatedMedia
+          ? protectMediaListForAuthenticatedSession(updatedMedia)
+          : updatedMedia,
         reconciliationOperationId,
       });
     }

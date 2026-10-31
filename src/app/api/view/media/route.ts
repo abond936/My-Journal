@@ -4,7 +4,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
 import { PaginatedResult } from '@/lib/types/services';
-import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
+import { protectMediaListForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 import { mediaMatchesSearch } from '@/lib/utils/mediaAssignmentSeek';
 import {
   ensureMediaCollection,
@@ -144,7 +144,7 @@ async function seekMediaWithPredicates(
   }
 
   return {
-    items: applyPublicStorageUrls(matched),
+    items: protectMediaListForAuthenticatedSession(matched),
     hasMore,
     lastDocId,
   };
@@ -209,7 +209,9 @@ export async function GET(request: NextRequest) {
         dimensionalTags,
         tagSelectionMode,
       });
-      const items = applyPublicStorageUrls(await fetchMediaByIdsInOrder(firestore, result.docIds));
+      const items = protectMediaListForAuthenticatedSession(
+        await fetchMediaByIdsInOrder(firestore, result.docIds)
+      );
       const filteredItems = items.filter((row) => mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode));
       return NextResponse.json({
         items: filteredItems,

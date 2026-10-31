@@ -11,6 +11,46 @@ export function buildReaderMediaUrl(
   return rendition === 'reader' ? base : `${base}?rendition=${rendition}`;
 }
 
+/**
+ * Preserve the author's full Media record while making every browser-facing
+ * image URL pass through the authenticated delivery boundary.
+ */
+export function protectMediaForAuthenticatedSession<T extends Media>(media: T): T {
+  if (!media?.docId) return media;
+  const mediaId = media.docId;
+  return {
+    ...media,
+    storageUrl: buildReaderMediaUrl(mediaId, 'original'),
+    ...(media.renditions
+      ? {
+          renditions: {
+            ...media.renditions,
+            ...(media.renditions.studio
+              ? {
+                  studio: {
+                    ...media.renditions.studio,
+                    storageUrl: buildReaderMediaUrl(mediaId, 'studio'),
+                  },
+                }
+              : {}),
+            ...(media.renditions.reader
+              ? {
+                  reader: {
+                    ...media.renditions.reader,
+                    storageUrl: buildReaderMediaUrl(mediaId),
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
+  };
+}
+
+export function protectMediaListForAuthenticatedSession<T extends Media>(media: T[]): T[] {
+  return media.map(protectMediaForAuthenticatedSession);
+}
+
 export function protectMediaForReader(media: Media | null | undefined): Media | null | undefined {
   if (!media?.docId) return media;
   const mediaId = media.docId;
