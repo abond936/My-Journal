@@ -1,12 +1,11 @@
 import type { Session } from 'next-auth';
-import { FieldPath } from 'firebase-admin/firestore';
 import { getAdminApp } from '@/lib/config/firebase/admin';
 import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import type { AudienceSelection } from '@/lib/types/audience';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
-import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { getReaderValidCollectionRoutesByCard } from '@/lib/services/collections/cardCollectionRouteService';
 
 type AudienceContactContext = {
   contactId: string;
@@ -36,25 +35,6 @@ async function loadContactContext(
     .where('memberContactIds', 'array-contains', contactId)
     .get();
   return { contactId, groupIds: new Set(snapshot.docs.map((doc) => doc.id)) };
-}
-
-async function loadCollectionsByIds(
-  ids: string[],
-  firestore: FirebaseFirestore.Firestore
-): Promise<Map<string, Collection>> {
-  const collections = new Map<string, Collection>();
-  for (let index = 0; index < ids.length; index += 30) {
-    const chunk = ids.slice(index, index + 30);
-    if (!chunk.length) continue;
-    const snapshot = await firestore
-      .collection('collections')
-      .where(FieldPath.documentId(), 'in', chunk)
-      .get();
-    snapshot.docs.forEach((doc) => {
-      collections.set(doc.id, { docId: doc.id, ...doc.data() } as Collection);
-    });
-  }
-  return collections;
 }
 
 export async function filterCollectionsForAudience<T extends Collection>(
@@ -105,45 +85,16 @@ export async function filterCardsForAudience<T extends Card>(
     .map((card) => card.docId)
     .filter((id): id is string => Boolean(id) && !allowedIds.has(id));
 
-  const placements: Array<{ cardId: string; collectionId: string }> = [];
-  for (let index = 0; index < unresolvedIds.length; index += 30) {
-    const chunk = unresolvedIds.slice(index, index + 30);
-    if (!chunk.length) continue;
-    const snapshot = await firestore
-      .collection('collection_placements')
-      .where('cardId', 'in', chunk)
-      .get();
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() as { cardId?: string; collectionId?: string };
-      if (data.cardId && data.collectionId) placements.push({ cardId: data.cardId, collectionId: data.collectionId });
-    });
-  }
-
-  const collectionIds = Array.from(new Set(placements.map((placement) => placement.collectionId)));
-  const collections = await loadCollectionsByIds(collectionIds, firestore);
-  const candidateCollectionIds = collectionIds.filter((collectionId) => {
-    const collection = collections.get(collectionId);
-    return Boolean(
-      collection?.recordState === 'active' &&
-      collection.lifecycle === 'published' &&
-      audienceAllowsContact(collection.audience, context)
-    );
+  const collectionRoutesByCard = await getReaderValidCollectionRoutesByCard({
+    cardIds: unresolvedIds,
+    firestore,
   });
-  const readerValidCollectionIds = new Set((await Promise.all(
-    candidateCollectionIds.map(async (collectionId) => ({
-      collectionId,
-      valid: Boolean(await getReaderCollectionStructure({
-        collectionId,
-        includeDrafts: false,
-        firestore,
-      })),
-    }))
-  )).filter((result) => result.valid).map((result) => result.collectionId));
-  for (const placement of placements) {
-    if (readerValidCollectionIds.has(placement.collectionId)) {
-      allowedIds.add(placement.cardId);
+  unresolvedIds.forEach((cardId) => {
+    if ((collectionRoutesByCard.get(cardId) ?? []).some((collection) =>
+      audienceAllowsContact(collection.audience, context))) {
+      allowedIds.add(cardId);
     }
-  }
+  });
 
   return publishedCards.filter((card) => Boolean(card.docId && allowedIds.has(card.docId)));
 }

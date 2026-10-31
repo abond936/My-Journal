@@ -5,6 +5,7 @@ import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import type { AudienceGroup } from '@/lib/types/audience';
 import type { AudienceGroupMembershipImpact } from '@/lib/services/audienceGroupImpactService';
+import type { ReaderAccountAccessImpact } from '@/lib/services/readerAccountImpactService';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './journal-users.module.css';
 
@@ -40,6 +41,7 @@ export default function JournalUsersAdminPage() {
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [passwordErrorById, setPasswordErrorById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
+  const [userAccessImpacts, setUserAccessImpacts] = useState<Record<string, ReaderAccountAccessImpact>>({});
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupMemberIds, setNewGroupMemberIds] = useState<string[]>([]);
   const [groupBusy, setGroupBusy] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export default function JournalUsersAdminPage() {
         { name: group.name, memberContactIds: group.memberContactIds },
       ])));
       setGroupImpacts({});
+      setUserAccessImpacts({});
     } catch (e) {
       setListError(e instanceof Error ? e.message : 'Users could not be loaded. Try again.');
     } finally {
@@ -140,7 +143,29 @@ export default function JournalUsersAdminPage() {
   };
 
   const handleToggleDisabled = async (user: JournalUserPublic) => {
-    if (!user.disabled) {
+    const proposedDisabled = !user.disabled;
+    if (user.role === 'viewer' && userAccessImpacts[user.docId]?.proposedDisabled !== proposedDisabled) {
+      setRowBusy(user.docId);
+      try {
+        const response = await fetch(`/api/admin/journal-users/${user.docId}/access-impact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ disabled: proposedDisabled }),
+        });
+        const data = await response.json();
+        throwIfJsonApiFailed(response, data, 'This Reader access impact could not be calculated.');
+        setUserAccessImpacts((current) => ({
+          ...current,
+          [user.docId]: data.impact as ReaderAccountAccessImpact,
+        }));
+      } catch (error) {
+        feedback.showError(error instanceof Error ? error.message : 'This Reader access impact could not be calculated.', 'Access not changed');
+      } finally {
+        setRowBusy(null);
+      }
+      return;
+    }
+    if (user.role !== 'viewer' && !user.disabled) {
       const confirmed = await feedback.confirm({
         title: 'Disable user?',
         message: `${user.displayName} will lose access on their next request. Their account and content access can be restored by enabling the account again.`,
@@ -151,7 +176,7 @@ export default function JournalUsersAdminPage() {
       if (!confirmed) return;
     }
 
-    const updated = await patchUser(user.docId, { disabled: !user.disabled });
+    const updated = await patchUser(user.docId, { disabled: proposedDisabled });
     if (updated) {
       feedback.showSuccess(user.disabled ? 'User enabled.' : 'User disabled.');
     }
@@ -456,7 +481,11 @@ export default function JournalUsersAdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => (
+                  {users.map(u => {
+                    const accessImpact = userAccessImpacts[u.docId];
+                    const reviewedState = accessImpact?.proposedDisabled === !u.disabled;
+                    const action = u.disabled ? 'enable' : 'disable';
+                    return (
                     <tr key={u.docId} className={u.disabled ? styles.rowDisabled : undefined}>
                       <td>{u.username}</td>
                       <td>{u.displayName}</td>
@@ -470,8 +499,28 @@ export default function JournalUsersAdminPage() {
                             disabled={rowBusy === u.docId}
                             onClick={() => void handleToggleDisabled(u)}
                           >
-                            {u.disabled ? 'Enable' : 'Disable'}
+                            {u.role === 'viewer'
+                              ? reviewedState ? `Apply reviewed ${action}` : `Review ${action} access`
+                              : u.disabled ? 'Enable' : 'Disable'}
                           </button>
+                          {u.role === 'viewer' && reviewedState ? (
+                            <div className={styles.impactReview}>
+                              <strong>Review Reader access before {action}</strong>
+                              <p>{u.displayName} will {accessImpact.effect} access to {accessImpact.collections.length} Collection{accessImpact.collections.length === 1 ? '' : 's'} and {accessImpact.cards.length} published Card{accessImpact.cards.length === 1 ? '' : 's'}.</p>
+                              {accessImpact.collections.length ? (
+                                <details>
+                                  <summary>Collections</summary>
+                                  <ul>{accessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
+                                </details>
+                              ) : null}
+                              {accessImpact.cards.length ? (
+                                <details>
+                                  <summary>Published Cards</summary>
+                                  <ul>{accessImpact.cards.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
+                                </details>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <input
                             type="password"
                             className={styles.input}
@@ -506,7 +555,8 @@ export default function JournalUsersAdminPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

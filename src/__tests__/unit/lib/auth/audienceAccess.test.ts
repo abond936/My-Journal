@@ -4,16 +4,16 @@ import {
   filterCardsForAudience,
   filterCollectionsForAudience,
 } from '@/lib/auth/audienceAccess';
-import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
+import { getReaderValidCollectionRoutesByCard } from '@/lib/services/collections/cardCollectionRouteService';
 
 jest.mock('@/lib/config/firebase/admin', () => ({
   getAdminApp: jest.fn(() => ({ firestore: jest.fn() })),
 }));
-jest.mock('@/lib/services/collections/collectionProjectionReadService', () => ({
-  getReaderCollectionStructure: jest.fn(),
+jest.mock('@/lib/services/collections/cardCollectionRouteService', () => ({
+  getReaderValidCollectionRoutesByCard: jest.fn(),
 }));
 
-const getReaderStructure = getReaderCollectionStructure as jest.MockedFunction<typeof getReaderCollectionStructure>;
+const getCollectionRoutes = getReaderValidCollectionRoutesByCard as jest.MockedFunction<typeof getReaderValidCollectionRoutesByCard>;
 
 type Row = { id: string; data: Record<string, unknown> };
 
@@ -47,7 +47,7 @@ describe('audience access', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    getReaderStructure.mockResolvedValue({} as never);
+    getCollectionRoutes.mockResolvedValue(new Map());
   });
 
   it('preserves legacy all-enabled-reader access and resolves explicit union choices', () => {
@@ -68,6 +68,16 @@ describe('audience access', () => {
   });
 
   it('unions standalone Card and authorized Collection routes while preserving order', async () => {
+    getCollectionRoutes.mockResolvedValue(new Map([
+      ['collection-card', [{
+        docId: 'family-book', title: 'Family Book', lifecycle: 'published', recordState: 'active',
+        audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+      } as never]],
+      ['blocked-card', [{
+        docId: 'friends-book', title: 'Friends Book', lifecycle: 'published', recordState: 'active',
+        audience: { allContacts: false, groupIds: ['friends'], contactIds: [] },
+      } as never]],
+    ]));
     const firestore = firestoreFixture({
       groupIds: ['family'],
       placements: [
@@ -137,7 +147,6 @@ describe('audience access', () => {
   });
 
   it('does not inherit direct Card access from an incomplete published Collection', async () => {
-    getReaderStructure.mockResolvedValue(null);
     const firestore = firestoreFixture({
       placements: [{ id: 'placement-1', data: { cardId: 'placed-card', collectionId: 'broken-book' } }],
       collections: [{
@@ -148,11 +157,19 @@ describe('audience access', () => {
     const card = { docId: 'placed-card', status: 'published', feedIncluded: false } as never;
 
     await expect(filterCardsForAudience(viewer, [card], firestore as never)).resolves.toEqual([]);
-    expect(getReaderStructure).toHaveBeenCalledWith({
-      collectionId: 'broken-book',
-      includeDrafts: false,
-      firestore,
-    });
+    expect(getCollectionRoutes).toHaveBeenCalledWith({ cardIds: ['placed-card'], firestore });
+  });
+
+  it('inherits direct Card access through a reader-valid Collection introduction route', async () => {
+    const firestore = firestoreFixture({ groupIds: ['family'] });
+    getCollectionRoutes.mockResolvedValue(new Map([['introduction-card', [{
+      docId: 'family-book', title: 'Family Book', lifecycle: 'published', recordState: 'active',
+      introductionCardId: 'introduction-card',
+      audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+    } as never]]]));
+    const card = { docId: 'introduction-card', status: 'published', feedIncluded: false } as never;
+
+    await expect(filterCardsForAudience(viewer, [card], firestore as never)).resolves.toEqual([card]);
   });
 
   it('keeps administrator access independent of audience fields', async () => {

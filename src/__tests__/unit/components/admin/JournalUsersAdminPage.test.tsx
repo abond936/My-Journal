@@ -69,4 +69,34 @@ describe('JournalUsersAdminPage audience-group consequences', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
       String(input).endsWith('/family') && init?.method === 'PATCH')).toBe(true));
   });
+
+  it('reviews exact Reader access before disabling an account', async () => {
+    const reader = {
+      docId: 'alex', username: 'alex', displayName: 'Alex', role: 'viewer', disabled: false,
+    };
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/journal-users' && !init?.method) return response({ users: [reader] });
+      if (url === '/api/admin/audience-groups') return response({ groups: [] });
+      if (url.endsWith('/access-impact')) return response({ impact: {
+        contactId: 'alex', displayName: 'Alex', currentDisabled: false, proposedDisabled: true,
+        effect: 'lose',
+        collections: [{ id: 'book', title: 'Family Book' }],
+        cards: [{ id: 'story', title: 'Birthday Story' }],
+      } });
+      if (url.endsWith('/alex') && init?.method === 'PATCH') return response({ ok: true });
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? 'GET'}`);
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<JournalUsersAdminPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Review disable access' }));
+    expect(await screen.findByText('Review Reader access before disable')).toBeInTheDocument();
+    expect(screen.getByText(/lose access to 1 Collection and 1 published Card/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apply reviewed disable' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
+      String(input).endsWith('/alex') && init?.method === 'PATCH')).toBe(true));
+  });
 });

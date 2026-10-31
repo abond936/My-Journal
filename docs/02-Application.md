@@ -755,7 +755,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Admin** — Initial administrator setup.
 - **Readers** — Create individual reader accounts.
-- **Status** — List, enable, and disable accounts.
+- **Status** — List, enable, and disable accounts. Before a Reader status change is applied, show the exact currently published Cards and Reader-valid Collections whose access will be lost or restored through all-reader, individual, group, Feed, placement, and Collection-introduction routes.
 - **Passwords** — Set a new temporary password.
 - **Roles** — Enforce Reader and administrator boundaries.
 - **Revocation** — Revalidate JWT-backed account truth and end existing authorization on the next server request when an account is disabled or missing.
