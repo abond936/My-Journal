@@ -78,7 +78,10 @@ export async function createCard(
 
   // Pre-read tag catalog + derived fields outside the transaction (docs/01 → Catalog reads).
   const normalizedChildren = normalizeChildrenIds(validatedData.childrenIds);
-  const allTagsForJournal = await getAllTags();
+  const [allTagsForJournal, authorSettings] = await Promise.all([
+    getAllTags(),
+    getAuthorSettings(),
+  ]);
   const tagPathLookup = buildTagMap(allTagsForJournal);
   const { filterTags, dimensionalTags } = await mergeDerivedTagsForCardRecord(
     { tags: selectedTags },
@@ -116,7 +119,7 @@ export async function createCard(
   contentMediaIds.forEach((id) => mediaIdsForSignals.add(id));
   const mediaSignals = await computeCardMediaSignalsFromMediaIds(mediaIdsForSignals, allTagsForJournal);
   const inheritanceOverrides = resolveNewCardInheritanceOverrides(
-    await getAuthorSettings(),
+    authorSettings,
     validatedData.galleryTagInheritanceOverrides
   );
 
@@ -176,7 +179,11 @@ export async function createCard(
           transaction,
           getMediaIdsFromCard(newCard)
         );
-        assertCardPublicationIntegrity(newCard, publicationMediaById);
+        assertCardPublicationIntegrity(
+          newCard,
+          publicationMediaById,
+          authorSettings.classificationRequirements
+        );
       }
       // 1. Update tag counts before transaction writes begin.
       await updateTagCountsForCard(null, newCard, transaction, tagPathLookup);

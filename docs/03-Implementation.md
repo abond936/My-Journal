@@ -894,7 +894,7 @@ The former stabilization objective and its controlling execution order are compl
 
 **Accepted Reader architecture** — Reader-only accounts enter Reader. The author-administrator enters Author Home by default and reaches the same Reader through normal navigation or a safe direct destination. Fresh Reader entry provides Continue when meaningful plus Collections and Feed, with no sidebar before a path is selected. Collection and Feed replace Guided/Freeform as reader-facing mode language. Collection context retains an easier full-row nested table of contents and presents the selected hierarchy as breadcrumbs above the Card feed. Feed context retains separate author and Who/What/When/Where filtering and presents authors plus a compact four-column dimensional summary above the Card feed. Direct destinations, context, filters, expansion, position, and return behavior remain truthful and recoverable.
 
-**Accepted mobile Story architecture** — Mobile must support completing one individual Story through entry, rich editing, device Media intake into the canonical bank, cover/Gallery/body composition, contextual Who/What/When/Where review, Collection or explicit Feed placement, Reader preview, audience confirmation, publication, and later correction. It uses a graphical touch-first flow over the shared Card and Media services rather than a compressed Studio. Draft saving remains open; publication requires the integrity review defined in `02`. Desktop remains primary for archive-scale and structural stewardship.
+**Accepted mobile Story architecture** — Mobile must support completing one individual Story through entry, rich editing, device Media intake into the canonical bank, cover/Gallery/body composition, contextual Who/What/When/Where review when required by the archive's selected standard, Collection or explicit Feed placement, Reader preview, audience confirmation, publication, and later correction. It uses a graphical touch-first flow over the shared Card and Media services rather than a compressed Studio. Draft saving remains open; publication applies the integrity and author-selected classification requirements defined in `02`. Desktop remains primary for archive-scale and structural stewardship.
 
 **Accepted assistance and publication architecture** — AI help is contextual, selectable as Off, On demand, or Offer suggestions, restrained when offered, and confirmation-based for canonical decisions. Always-on application validation remains separate from optional AI. Publication releases approved Card content to a confirmed audience; access controls who may see it; sharing separately distributes, notifies, or explicitly grants additional access. Placement that broadens effective audience must disclose that consequence before confirmation. In the current bounded policy a published Card remains one live object, so saved edits may become reader-visible immediately. An author who needs privacy while changing it deliberately returns it to Draft first. Private working revisions and version history remain Future.
 
@@ -1106,7 +1106,7 @@ The former stabilization objective and its controlling execution order are compl
 
 **Outcome** — Preserve unrestricted draft work while making draft-to-Published a real server-enforced integrity boundary for the Card and every Media item it references.
 
-**Includes** — One shared Card publication evaluator; completed Who/What/When/Where review with truthful Unknown and Not applicable resolution; at least one confirmed meaningful What; deduplicated cover, Gallery, and body Media references; rejection of missing Media; completed dimensional review and Ready processing state for every referenced Media item; enforcement in create-as-published, status-only, and broad Card mutation owners; structured HTTP 409 conflicts; exact author-facing failure feedback; optimistic status rollback; focused pure, service, provider, component, and emulator coverage.
+**Includes** — One shared Card publication evaluator; completed Who/What/When/Where review with truthful Unknown and Not applicable resolution plus at least one confirmed meaningful What when Card classification is required; deduplicated cover, Gallery, and body Media references; rejection of missing Media; completed dimensional review when Media classification is required; Ready processing state for every referenced Media item in every mode; enforcement in create-as-published, status-only, and broad Card mutation owners; structured HTTP 409 conflicts; exact author-facing failure feedback; optimistic status rollback; focused pure, service, provider, component, and emulator coverage.
 
 **Excludes** — Explicit Collection-or-Feed placement enforcement; audience, visibility, recipients, sharing, or distribution; Collection lifecycle publication; repair of historical Card or Media records; automatic confirmation; production data mutation; and protected working revisions for edits to already-published Cards.
 
@@ -1193,6 +1193,22 @@ The former stabilization objective and its controlling execution order are compl
 **Contracts** — Draft-to-Published still passes the implemented Card publication-integrity gate. A Card that remains Published is live; saved edits may become visible wherever the Card is already readable. Returning it to Draft is deliberate and separate from editing. No partial mutation interception may be represented as protected published-version behavior.
 
 **Completion evidence** — Focused Card-form coverage proves the warning for a published Card. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass; unauthenticated build-time theme reads use the checked-in fallback as designed. No production record or Storage object changed.
+
+### Sixteenth implementation slice — Archive-wide classification requirements
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let the author choose a dependable archive-wide classification standard without turning optional classification into unreliable implied completeness or blocking ordinary draft work.
+
+**Includes** — Independent Require Media and Require Stories/other Cards settings; the four resulting standards of neither, Media only, Cards only, or both; strict-both normalization for existing settings documents so current behavior does not loosen silently; confirmation when a requirement is newly enabled; policy-aware create-as-published, status-only, and broad-save publication gates; policy-aware Collection attention counts; visible blank presentation for internally unreviewed tag dimensions; and focused contract coverage.
+
+**Excludes** — Automatic assignment of Unknown or Not applicable; mutation or backfill of existing Card, Media, tag, or review records; archive-wide completion claims; per-Story exceptions; audience, placement, Collection lifecycle, or distribution expansion; and production data mutation.
+
+**Contracts** — Blank is presentation, not a stored tag or reviewed resolution. Unknown and Not applicable require explicit author action and remain searchable. Draft creation and saving are unrestricted. Required Card classification is enforced when that Card is published. Required Media classification makes every Media item archive review work and blocks publication only when an incomplete item is referenced by that Card; unrelated Media never blocks the Story. Missing references and Media readiness remain inherent publication integrity in every classification mode.
+
+**Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
 ### 1. Release Candidate
 

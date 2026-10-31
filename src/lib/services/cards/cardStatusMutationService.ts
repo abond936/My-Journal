@@ -7,6 +7,7 @@ import { assertCardPublicationIntegrity } from '@/lib/services/cards/cardPublica
 import { syncCardProjection, withCardMutationRetry } from '@/lib/services/cards/cardMutationSupport';
 import type { Card } from '@/lib/types/card';
 import { buildTagMap } from '@/lib/utils/journalWhenSort';
+import { getAuthorSettings } from '@/lib/services/authorSettingsService';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -16,7 +17,8 @@ export async function updateCardStatus(cardId: string, status: 'draft' | 'publis
     throw new Error(`Invalid status '${status}'; expected 'draft' or 'published'.`);
   }
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
-  const tagPathLookup = buildTagMap(await getAllTags());
+  const [allTags, authorSettings] = await Promise.all([getAllTags(), getAuthorSettings()]);
+  const tagPathLookup = buildTagMap(allTags);
   return withCardMutationRetry(async () => {
     await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
@@ -30,7 +32,8 @@ export async function updateCardStatus(cardId: string, status: 'draft' | 'publis
         );
         assertCardPublicationIntegrity(
           { ...existingData, docId: docSnap.id },
-          mediaById
+          mediaById,
+          authorSettings.classificationRequirements
         );
       }
       await updateTagCountsForCard(existingData, { ...existingData, status }, transaction, tagPathLookup);

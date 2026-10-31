@@ -109,4 +109,29 @@ describe('FeedTileChipStrip', () => {
     expect(screen.getByLabelText('Who: N/A')).toHaveTextContent('N/A');
     expect(screen.getByLabelText('Where: Unknown')).toHaveTextContent('Unknown');
   });
+
+  it('shows unreviewed inherited values as blank rather than as a tag', () => {
+    render(
+      <FeedTileChipStrip
+        card={baseCard({
+          tags: [],
+          who: [],
+          what: [],
+          galleryTagRollupStatuses: {
+            who: 'unreviewed',
+            what: 'unreviewed',
+            when: 'unreviewed',
+            where: 'unreviewed',
+          },
+          galleryTemporalRollupStatus: 'unreviewed',
+        })}
+      />
+    );
+
+    expect(screen.queryByText('Unreviewed')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Who: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('What: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('When: empty')).toHaveTextContent('-');
+    expect(screen.getByLabelText('Where: empty')).toHaveTextContent('-');
+  });
 });

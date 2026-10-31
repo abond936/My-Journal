@@ -55,6 +55,7 @@ It is not a generic journal, a photo manager with captions, or public social med
 - **Card-owned authorship** — Authored content begins in a new or existing draft Card and remains Card content throughout. A structured Prompt Library may guide that work, but it creates no separate answer, interview-response, or draft-material layer. One or many prompts may contribute to one Card, and the author decides when another Card is warranted.
 - **Author control** — Assistance may suggest; it never silently publishes, deletes, tags, or replaces author judgment.
 - **Invited assistance; inherent integrity** — AI writing, classification, identity, Media, and placement help is contextual and author-invoked or quietly offered according to preference. Validation and publication-integrity rules remain active independently of AI preferences.
+- **Author-selected classification standard** — The author independently chooses whether complete Who/What/When/Where review is required for Media and for Stories/other Cards, producing the four supported archive standards: neither, Media only, Cards only, or both. Draft work remains open. Required classification is enforced at publication for the Card and its referenced Media; unreferenced Media remains archive review work and never blocks an unrelated Story. Blank is the visible unreviewed state, while Unknown and Not applicable are explicit, searchable author decisions.
 - **Durability** — Backup, restore, and integrity are product requirements.
 
 ### Product shape

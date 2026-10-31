@@ -50,19 +50,20 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, comp
           );
           const structuredWhen = slot.dimension === 'when'
             ? card.galleryTemporalRollupStatus === 'unreviewed'
-              ? 'Unreviewed'
+              ? null
               : card.temporal
                 ? formatTemporalValue(card.temporal)
                 : null
             : null;
-          const displayLabel = resolutionLabel ?? structuredWhen ?? slot.label;
+          const rollupBlank =
+            card.galleryTagRollupStatuses?.[slot.dimension] === 'unreviewed' ||
+            (slot.dimension === 'when' && card.galleryTemporalRollupStatus === 'unreviewed');
+          const displayLabel = resolutionLabel ?? (rollupBlank ? null : structuredWhen ?? slot.label);
           const empty = !displayLabel;
           const ariaLabel = empty
             ? `${DIMENSION_LABEL[slot.dimension]}: empty`
             : `${DIMENSION_LABEL[slot.dimension]}: ${
-                slot.dimension === 'when' && card.galleryTemporalRollupStatus === 'unreviewed'
-                  ? 'Gallery dates conflict and require review'
-                  : slot.dimension === 'when' && card.temporal
+                slot.dimension === 'when' && card.temporal
                   ? formatTemporalValueLong(card.temporal)
                   : displayLabel
               }`;
@@ -74,9 +75,7 @@ export default function FeedTileChipStrip({ card, allTags: allTagsOverride, comp
               aria-label={ariaLabel}
               title={empty
                 ? undefined
-                : slot.dimension === 'when' && card.galleryTemporalRollupStatus === 'unreviewed'
-                  ? 'Gallery dates conflict and require an explicit Card date'
-                  : slot.dimension === 'when' && card.temporal
+                : slot.dimension === 'when' && card.temporal
                   ? formatTemporalValueLong(card.temporal)
                   : slot.tooltip ?? displayLabel}
             >

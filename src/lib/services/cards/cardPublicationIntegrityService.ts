@@ -2,6 +2,7 @@ import type { Card } from '@/lib/types/card';
 import type { DimensionReviewEntry } from '@/lib/types/dimensionReview';
 import { AppError, ErrorCode } from '@/lib/types/error';
 import type { Media } from '@/lib/types/photo';
+import type { ClassificationRequirements } from '@/lib/types/authorSettings';
 import { getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationService';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
@@ -35,20 +36,23 @@ export function isDimensionReviewComplete(entry: DimensionReviewEntry | undefine
 
 export function evaluateCardPublicationIntegrity(
   card: Card,
-  mediaById: ReadonlyMap<string, Media>
+  mediaById: ReadonlyMap<string, Media>,
+  requirements: ClassificationRequirements = { media: true, cards: true }
 ): CardPublicationIntegrityResult {
   const issues: CardPublicationIntegrityIssue[] = [];
-  const cardDimensions = DIMENSIONS.filter(
-    (dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension])
-  );
-  if (cardDimensions.length > 0) {
-    issues.push({ code: 'card-dimension-review', dimensions: cardDimensions });
-  }
-  if (
-    !isDimensionReviewComplete(card.dimensionReview?.what) ||
-    (card.what?.length ?? 0) === 0
-  ) {
-    issues.push({ code: 'card-meaningful-what' });
+  if (requirements.cards) {
+    const cardDimensions = DIMENSIONS.filter(
+      (dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension])
+    );
+    if (cardDimensions.length > 0) {
+      issues.push({ code: 'card-dimension-review', dimensions: cardDimensions });
+    }
+    if (
+      !isDimensionReviewComplete(card.dimensionReview?.what) ||
+      (card.what?.length ?? 0) === 0
+    ) {
+      issues.push({ code: 'card-meaningful-what' });
+    }
   }
 
   const mediaIds = [...getMediaIdsFromCard(card)];
@@ -68,10 +72,12 @@ export function evaluateCardPublicationIntegrity(
   for (const mediaId of mediaIds) {
     const media = mediaById.get(mediaId);
     if (!media) continue;
-    const dimensions = DIMENSIONS.filter(
-      (dimension) => !isDimensionReviewComplete(media.dimensionReview?.[dimension])
-    );
-    if (dimensions.length > 0) mediaDimensionReview.push({ mediaId, dimensions });
+    if (requirements.media) {
+      const dimensions = DIMENSIONS.filter(
+        (dimension) => !isDimensionReviewComplete(media.dimensionReview?.[dimension])
+      );
+      if (dimensions.length > 0) mediaDimensionReview.push({ mediaId, dimensions });
+    }
     if (media.readiness?.overall !== 'ready') {
       mediaReadiness.push({
         mediaId,
@@ -131,9 +137,10 @@ function publicationBlockMessage(issues: CardPublicationIntegrityIssue[]): strin
 
 export function assertCardPublicationIntegrity(
   card: Card,
-  mediaById: ReadonlyMap<string, Media>
+  mediaById: ReadonlyMap<string, Media>,
+  requirements: ClassificationRequirements = { media: true, cards: true }
 ): void {
-  const result = evaluateCardPublicationIntegrity(card, mediaById);
+  const result = evaluateCardPublicationIntegrity(card, mediaById, requirements);
   if (result.ready) return;
   throw new AppError(
     ErrorCode.CARD_PUBLICATION_INTEGRITY,

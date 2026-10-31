@@ -94,6 +94,51 @@ describe('cardPublicationIntegrityService', () => {
     });
   });
 
+  it('allows unclassified Cards when Card classification is not required', () => {
+    const card = { ...readyCard, what: [], dimensionReview: undefined } as Card;
+
+    expect(
+      evaluateCardPublicationIntegrity(card, new Map(), { media: true, cards: false })
+    ).toEqual({ ready: true, issues: [] });
+  });
+
+  it('allows unreviewed referenced Media when Media classification is not required', () => {
+    const card = { ...readyCard, coverImageId: 'media-1' } as Card;
+    const mediaById = new Map<string, Media>([
+      ['media-1', { docId: 'media-1', readiness: { overall: 'ready' } } as Media],
+    ]);
+
+    expect(
+      evaluateCardPublicationIntegrity(card, mediaById, { media: false, cards: true })
+    ).toEqual({ ready: true, issues: [] });
+  });
+
+  it('always enforces Media existence and readiness', () => {
+    const card = {
+      ...readyCard,
+      what: [],
+      dimensionReview: undefined,
+      coverImageId: 'media-missing',
+      contentMedia: ['media-pending'],
+    } as Card;
+    const mediaById = new Map<string, Media>([
+      ['media-pending', { docId: 'media-pending', readiness: { overall: 'pending' } } as Media],
+    ]);
+
+    expect(
+      evaluateCardPublicationIntegrity(card, mediaById, { media: false, cards: false })
+    ).toEqual({
+      ready: false,
+      issues: [
+        { code: 'media-missing', mediaIds: ['media-missing'] },
+        {
+          code: 'media-readiness',
+          media: [{ mediaId: 'media-pending', status: 'pending' }],
+        },
+      ],
+    });
+  });
+
   it('throws a stable conflict with structured issue details', () => {
     try {
       assertCardPublicationIntegrity({ ...readyCard, what: [] }, new Map());

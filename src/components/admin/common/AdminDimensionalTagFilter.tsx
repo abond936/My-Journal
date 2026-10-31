@@ -170,7 +170,7 @@ export default function AdminDimensionalTagFilter({
                         ? 'Not applicable'
                         : dimensionFilters[dimension].reviewState === 'unknown'
                           ? 'Unknown'
-                          : 'Unreviewed'
+                          : 'Blank'
                       : dimensionFilters[dimension].mode === 'isEmpty'
                       ? dimensionFilters[dimension].subjectOnly
                         ? 'Subjects empty'
@@ -362,7 +362,7 @@ export default function AdminDimensionalTagFilter({
                       }}
                     >
                       <option value="">Any review state</option>
-                      <option value="unreviewed">Unreviewed</option>
+                      <option value="unreviewed">Blank</option>
                       <option value="unknown">Unknown</option>
                       <option value="not_applicable">Not applicable</option>
                     </select>

@@ -1,10 +1,12 @@
 import { getAdminApp } from '@/lib/config/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import {
   authorSettingsSchema,
+  classificationRequirementsSchema,
   DEFAULT_AUTHOR_SETTINGS,
   normalizeAuthorSettings,
   type AuthorSettings,
+  type ClassificationRequirements,
   type GalleryTagInheritanceToggles,
   type TagSet0Status,
 } from '@/lib/types/authorSettings';
@@ -13,8 +15,9 @@ import { getPersonIdentity } from '@/lib/services/personIdentityService';
 const COLLECTION = 'app_settings';
 const DOC_ID = 'author';
 
-export async function getAuthorSettings(): Promise<AuthorSettings> {
-  const firestore = getAdminApp().firestore();
+export async function getAuthorSettings(
+  firestore: Firestore = getAdminApp().firestore()
+): Promise<AuthorSettings> {
   const snap = await firestore.collection(COLLECTION).doc(DOC_ID).get();
   if (!snap.exists) {
     return { ...DEFAULT_AUTHOR_SETTINGS };
@@ -33,6 +36,33 @@ export async function updateGalleryTagInheritanceToggles(
     ...current,
     galleryTagInheritance: parsed,
     galleryTagInheritanceConfigured: true,
+  };
+  await ref.set(next, { merge: true });
+  return next;
+}
+
+export async function updateAuthorPreferences(preferences: {
+  galleryTagInheritance?: GalleryTagInheritanceToggles;
+  classificationRequirements?: ClassificationRequirements;
+}): Promise<AuthorSettings> {
+  const galleryTagInheritance = preferences.galleryTagInheritance
+    ? authorSettingsSchema.shape.galleryTagInheritance.parse(preferences.galleryTagInheritance)
+    : undefined;
+  const classificationRequirements = preferences.classificationRequirements
+    ? classificationRequirementsSchema.parse(preferences.classificationRequirements)
+    : undefined;
+  const firestore = getAdminApp().firestore();
+  const ref = firestore.collection(COLLECTION).doc(DOC_ID);
+  const current = await getAuthorSettings();
+  const next: AuthorSettings = {
+    ...current,
+    ...(galleryTagInheritance
+      ? {
+          galleryTagInheritance,
+          galleryTagInheritanceConfigured: true,
+        }
+      : {}),
+    ...(classificationRequirements ? { classificationRequirements } : {}),
   };
   await ref.set(next, { merge: true });
   return next;
@@ -73,6 +103,7 @@ export async function updateArchivePerspectivePersonId(
     {
       galleryTagInheritance: next.galleryTagInheritance,
       galleryTagInheritanceConfigured: next.galleryTagInheritanceConfigured,
+      classificationRequirements: next.classificationRequirements,
       ...(next.tagSet0 ? { tagSet0: next.tagSet0 } : {}),
       archivePerspectivePersonId: archivePerspectivePersonId ?? FieldValue.delete(),
     },

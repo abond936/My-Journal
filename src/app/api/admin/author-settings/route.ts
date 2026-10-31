@@ -5,13 +5,20 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import {
   getAuthorSettings,
-  updateGalleryTagInheritanceToggles,
+  updateAuthorPreferences,
 } from '@/lib/services/authorSettingsService';
-import { galleryTagInheritanceTogglesSchema } from '@/lib/types/authorSettings';
+import {
+  classificationRequirementsSchema,
+  galleryTagInheritanceTogglesSchema,
+} from '@/lib/types/authorSettings';
 
 const patchBodySchema = z.object({
-  galleryTagInheritance: galleryTagInheritanceTogglesSchema,
-});
+  galleryTagInheritance: galleryTagInheritanceTogglesSchema.optional(),
+  classificationRequirements: classificationRequirementsSchema.optional(),
+}).refine(
+  (value) => Boolean(value.galleryTagInheritance || value.classificationRequirements),
+  { message: 'At least one author preference is required.' }
+);
 
 type ApiErrorPayload = {
   ok: false;
@@ -95,7 +102,7 @@ export async function PATCH(request: NextRequest) {
       {
         ok: false,
         code: 'VALIDATION_ERROR',
-        message: 'Invalid galleryTagInheritance payload.',
+        message: 'Invalid author-settings payload.',
         severity: 'error',
         retryable: false,
       },
@@ -105,10 +112,11 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const previous = await getAuthorSettings();
-    const settings = await updateGalleryTagInheritanceToggles(parsed.data.galleryTagInheritance);
-    const { reconcileGalleryInheritanceForNewlyEnabledDimensions } = await import(
-      '@/lib/services/galleryTagInheritanceService'
-    );
+    const settings = await updateAuthorPreferences(parsed.data);
+    if (!parsed.data.galleryTagInheritance) {
+      return NextResponse.json({ ok: true, settings });
+    }
+    const { reconcileGalleryInheritanceForNewlyEnabledDimensions } = await import('@/lib/services/galleryTagInheritanceService');
     try {
       const reconciliation = await reconcileGalleryInheritanceForNewlyEnabledDimensions(
         previous.galleryTagInheritance,

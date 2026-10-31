@@ -137,4 +137,44 @@ describe('publicationReadinessService', () => {
     expect(result.cardsNeedingDimensionReview).toBe(0);
     expect(result.cardsMissingMeaningfulWhat).toBe(0);
   });
+
+  it('does not report optional classification as required Collection attention', () => {
+    const result = evaluateCollectionPublicationAttention({
+      structure: {
+        collection: {
+          docId: 'collection-1',
+          title: 'Family Stories',
+          lifecycle: 'draft',
+          recordState: 'active',
+          structureRevision: 0,
+          authorityRevision: 0,
+          order: 0,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        placements: [{
+          docId: 'placement-a',
+          collectionId: 'collection-1',
+          cardId: 'card-a',
+          role: 'card',
+          order: 0,
+          createdAt: 1,
+          updatedAt: 1,
+        }],
+        cards: [{
+          docId: 'card-a',
+          title: 'Unclassified story',
+          status: 'draft',
+          what: [],
+          coverImageId: 'media-a',
+        }],
+      } as never,
+      media: [{ docId: 'media-a', readiness: { overall: 'ready' } }] as never,
+      classificationRequirements: { media: false, cards: false },
+    });
+
+    expect(result.cardsNeedingDimensionReview).toBe(0);
+    expect(result.cardsMissingMeaningfulWhat).toBe(0);
+    expect(result.mediaNeedingDimensionReview).toBe(0);
+  });
 });

@@ -8,6 +8,7 @@ describe('normalizeAuthorSettings', () => {
     expect(normalizeAuthorSettings({ archivePerspectivePersonId: 'alan' })).toEqual({
       galleryTagInheritance: DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES,
       galleryTagInheritanceConfigured: false,
+      classificationRequirements: { media: true, cards: true },
       archivePerspectivePersonId: 'alan',
     });
   });
@@ -17,7 +18,16 @@ describe('normalizeAuthorSettings', () => {
     expect(normalizeAuthorSettings({ galleryTagInheritance, archivePerspectivePersonId: 'alan' })).toEqual({
       galleryTagInheritance,
       galleryTagInheritanceConfigured: false,
+      classificationRequirements: { media: true, cards: true },
       archivePerspectivePersonId: 'alan',
     });
+  });
+
+  it('preserves independent Media and Card classification requirements', () => {
+    expect(
+      normalizeAuthorSettings({
+        classificationRequirements: { media: true, cards: false },
+      }).classificationRequirements
+    ).toEqual({ media: true, cards: false });
   });
 });

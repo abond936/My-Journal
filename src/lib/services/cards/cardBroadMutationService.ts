@@ -30,6 +30,7 @@ import {
   resolveSubjectTagState,
 } from '@/lib/utils/subjectTag';
 import { FieldValue } from 'firebase-admin/firestore';
+import { getAuthorSettings } from '@/lib/services/authorSettingsService';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -56,7 +57,10 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
 
     // Pre-read tag catalog once outside the transaction; derived-field helpers are
     // pure on this snapshot (docs/01 → Catalog reads).
-    const allTagsForJournal = await getAllTags();
+    const [allTagsForJournal, authorSettings] = await Promise.all([
+      getAllTags(),
+      getAuthorSettings(),
+    ]);
     const tagPathLookup = buildTagMap(allTagsForJournal);
 
     const preExisting = preSnap.data() as Card;
@@ -325,7 +329,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
             galleryMedia: newGalleryMedia,
             contentMedia: newContentMedia,
           },
-          publicationMediaById
+          publicationMediaById,
+          authorSettings.classificationRequirements
         );
       }
 

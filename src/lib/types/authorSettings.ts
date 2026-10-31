@@ -9,6 +9,13 @@ export const galleryTagInheritanceTogglesSchema = z.object({
 
 export type GalleryTagInheritanceToggles = z.infer<typeof galleryTagInheritanceTogglesSchema>;
 
+export const classificationRequirementsSchema = z.object({
+  media: z.boolean(),
+  cards: z.boolean(),
+});
+
+export type ClassificationRequirements = z.infer<typeof classificationRequirementsSchema>;
+
 export const DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES: GalleryTagInheritanceToggles = {
   who: false,
   what: false,
@@ -27,6 +34,7 @@ export type TagSet0Status = z.infer<typeof tagSet0StatusSchema>;
 export const authorSettingsSchema = z.object({
   galleryTagInheritance: galleryTagInheritanceTogglesSchema,
   galleryTagInheritanceConfigured: z.boolean().default(false),
+  classificationRequirements: classificationRequirementsSchema,
   tagSet0: tagSet0StatusSchema.optional(),
   archivePerspectivePersonId: z.string().min(1).optional(),
 });
@@ -36,6 +44,7 @@ export type AuthorSettings = z.infer<typeof authorSettingsSchema>;
 export const DEFAULT_AUTHOR_SETTINGS: AuthorSettings = {
   galleryTagInheritance: { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
   galleryTagInheritanceConfigured: false,
+  classificationRequirements: { media: true, cards: true },
 };
 
 export const DEFAULT_TAG_SET_0_STATUS: TagSet0Status = {
@@ -49,11 +58,17 @@ export function normalizeAuthorSettings(raw: unknown): AuthorSettings {
   const tagSet = tagSet0StatusSchema.safeParse(source.tagSet0);
   const perspective = z.string().min(1).safeParse(source.archivePerspectivePersonId);
   const configured = z.boolean().safeParse(source.galleryTagInheritanceConfigured);
+  const classificationRequirements = classificationRequirementsSchema.safeParse(
+    source.classificationRequirements
+  );
   return {
     galleryTagInheritance: gallery.success
       ? gallery.data
       : { ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES },
     galleryTagInheritanceConfigured: configured.success ? configured.data : false,
+    classificationRequirements: classificationRequirements.success
+      ? classificationRequirements.data
+      : { ...DEFAULT_AUTHOR_SETTINGS.classificationRequirements },
     ...(tagSet.success ? { tagSet0: tagSet.data } : {}),
     ...(perspective.success ? { archivePerspectivePersonId: perspective.data } : {}),
   };
