@@ -11,6 +11,7 @@ import type {
 } from '@/lib/types/collection';
 import type { AudienceSelection } from '@/lib/types/audience';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
+import CreateCollectionControl from '@/components/admin/collections/CreateCollectionControl';
 import type { CollectionAudienceImpact } from '@/lib/services/audienceImpactService';
 import styles from './DurableCollectionStudioPane.module.css';
 
@@ -421,9 +422,17 @@ export default function DurableCollectionStudioPane({
     );
   };
 
-  if (!collections.length && !loading && !error) return null;
   return (
     <div className={styles.pane}>
+      <CreateCollectionControl onCreated={(collection) => {
+        setCollections((current) => [...current, collection]);
+        setSelectedCollectionId(collection.docId);
+        setMessage(`${collection.title} created as a private draft.`);
+        onAvailabilityChange('active');
+      }} />
+      {!collections.length && !loading && !error ? (
+        <p className={styles.note}>No active Collections yet. Create one when you are ready to shape a Reader path.</p>
+      ) : null}
       {collections.length > 1 ? (
         <select aria-label="Active Collection" value={selectedCollectionId} onChange={(event) => setSelectedCollectionId(event.target.value)}>
           {collections.map((collection) => <option key={collection.docId} value={collection.docId}>{collection.title}</option>)}
@@ -446,7 +455,9 @@ export default function DurableCollectionStudioPane({
           </div>
         </div>
       ) : null}
-      <p className={styles.note}>Placement-native Studio: Cards remain canonical while this Collection owns role, parent, and order.</p>
+      {structure ? (
+        <p className={styles.note}>Placement-native Studio: Cards remain canonical while this Collection owns role, parent, and order.</p>
+      ) : null}
       {structureLocked ? (
         <p className={styles.note}>Published structure is locked. Return the Collection to Draft before adding, removing, moving, or changing placement roles.</p>
       ) : null}
@@ -460,7 +471,7 @@ export default function DurableCollectionStudioPane({
           getCollectionImpact={getCollectionAudienceImpact}
         />
       ) : null}
-      <div className={styles.addCard}>
+      {structure ? <div className={styles.addCard}>
         <input
           type="search"
           aria-label="Find a Card to add"
@@ -478,7 +489,7 @@ export default function DurableCollectionStudioPane({
         <button type="button" disabled={structureLocked || searchingCards || !cardSearch.trim()} onClick={() => void searchCards()}>
           {searchingCards ? 'Searching...' : 'Search'}
         </button>
-      </div>
+      </div> : null}
       {cardSearchResults.length ? (
         <ul className={styles.searchResults} aria-label="Card search results">
           {cardSearchResults.map((card) => (

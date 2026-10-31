@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Card } from '@/lib/types/card';
 import type { Collection, CollectionPlacement, CollectionPlacementStructureInput } from '@/lib/types/collection';
+import CreateCollectionControl from '@/components/admin/collections/CreateCollectionControl';
 import styles from './StoryCollectionPlacementControl.module.css';
 
 type StructureResponse = {
@@ -137,7 +138,19 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
   }
 
   if (loading && !structure) return <p className={styles.note}>Loading Collections…</p>;
-  if (!collections.length && !error) return <p className={styles.note}>No active Collections are available yet.</p>;
+  if (!collections.length && !error) {
+    return (
+      <section className={styles.control} aria-labelledby="story-collection-placement-heading">
+        <h4 id="story-collection-placement-heading">Collections</h4>
+        <p className={styles.note}>No active Collections are available yet.</p>
+        <CreateCollectionControl onCreated={(collection) => {
+          setCollections([collection]);
+          setCollectionId(collection.docId);
+          setMessage(`${collection.title} created as a private draft.`);
+        }} />
+      </section>
+    );
+  }
 
   const locked = structure?.collection.lifecycle === 'published';
   const addPlacement = () => {
@@ -177,6 +190,11 @@ export default function StoryCollectionPlacementControl({ cardId }: { cardId?: s
   return (
     <section className={styles.control} aria-labelledby="story-collection-placement-heading">
       <h4 id="story-collection-placement-heading">Collections</h4>
+      <CreateCollectionControl onCreated={(collection) => {
+        setCollections((current) => [...current, collection]);
+        setCollectionId(collection.docId);
+        setMessage(`${collection.title} created as a private draft.`);
+      }} />
       <label>
         Collection
         <select value={collectionId} onChange={(event) => setCollectionId(event.target.value)} disabled={saving}>

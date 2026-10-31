@@ -1372,6 +1372,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused mobile-workspace and Story-placement suites pass eight tests. Touched-code lint and non-incremental production typecheck pass. No production record or Storage object changed.
 
+### Twenty-fourth implementation slice — Ordinary draft Collection creation
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author begin a second durable Reader path instead of treating migrated `My Life` as the only Collection authority.
+
+**Includes** — Administrator-only creation of an empty active draft Collection; required title and optional description; case-insensitive active-title conflict protection; stable append order; initial authority revision and establishment time; creation from the Collections destination and saved-Story Placement; automatic selection of the new Collection; and the existing audience, structure, placement, and lifecycle owners after creation.
+
+**Excludes** — Audience inference; publication; automatic Story placement; introduction creation; Add Part, Add Chapter, or Add Section; promotion of existing structure; deletion; production mutation; push; and deployment.
+
+**Contracts** — Creation writes one Collection record and no Card or placement. It begins private in Draft, has no implicitly confirmed audience, and cannot become Reader-visible until the existing lifecycle gate accepts its explicit audience and complete Reader-valid contents. Duplicate active titles fail before a write.
+
+**Completion evidence** — Focused creation owner, API, shared control, durable Collection pane, and Story-placement suites pass twenty tests. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

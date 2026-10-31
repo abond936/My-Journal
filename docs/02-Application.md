@@ -590,9 +590,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Reusable Card placements** — Place one canonical Card more than once with distinct placement identity, parent, role, order, and clicked-path context.
 - **Placement-native Studio and Reader** — When a durable Collection is active, use its placements for structure editing and Reader navigation; retain the legacy hierarchy only as a compatibility and rollback path when no durable Collection is active.
 
+✅ **Additional Collection creation** — An author can create an empty active draft Collection with a title and optional description from the Collections destination or Story Placement. Creation establishes durable authority but does not infer an audience, publish, create structural Cards, or place content automatically.
+
 ⭕1 **Planned**
 
-- **Additional Collection creation and explicit placement actions** — Extend the first active durable Collection into ordinary author-created Collections with clear Add Part, Add Chapter, Add Section, and Add Card actions rather than an ambiguous generic Add child action.
+- **Explicit structural placement actions** — Add clear Add Part, Add Chapter, and Add Section actions rather than an ambiguous generic Add child action. Add Card is already available through durable Collection search and Story Placement.
 - **Promote structure** — Create a new Collection from an existing Part, Chapter, or Section by copying that local arrangement and its Card placements while continuing to reference the same Cards. Later structural edits remain independent rather than propagating through live shared-parent hierarchy.
 - **Book edition** — Export or print a stable edition of the Collection's selected structure, Card versions, Media, order, and presentation without freezing continued work on the living Collection.
 - **Book playback** — Let the author choose original telling, final human narration, disclosed synthetic narration when separately available, or no playback for each included Card. Generate edition-owned QR destinations that remain stable after the living Card changes.
