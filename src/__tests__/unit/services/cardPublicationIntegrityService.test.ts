@@ -16,6 +16,7 @@ const completeReview = {
 const readyCard = {
   docId: 'card-1',
   status: 'draft',
+  audience: { allContacts: true, groupIds: [], contactIds: [] },
   what: ['what-family'],
   dimensionReview: completeReview,
 } as Card;
@@ -92,6 +93,35 @@ describe('cardPublicationIntegrityService', () => {
         },
       ],
     });
+  });
+
+  it('requires an explicit nonempty audience and a Reader destination', () => {
+    const result = evaluateCardPublicationIntegrity(
+      {
+        ...readyCard,
+        audience: { allContacts: false, groupIds: [], contactIds: [] },
+        feedIncluded: false,
+      },
+      new Map(),
+      { media: false, cards: false },
+      { hasActiveCollectionPlacement: false }
+    );
+    expect(result).toEqual({
+      ready: false,
+      issues: [
+        { code: 'audience-unconfirmed' },
+        { code: 'destination-missing' },
+      ],
+    });
+  });
+
+  it('accepts an active draft Collection placement as the destination', () => {
+    expect(evaluateCardPublicationIntegrity(
+      { ...readyCard, feedIncluded: false },
+      new Map(),
+      { media: false, cards: false },
+      { hasActiveCollectionPlacement: true }
+    )).toEqual({ ready: true, issues: [] });
   });
 
   it('allows unclassified Cards when Card classification is not required', () => {

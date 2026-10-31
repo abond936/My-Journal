@@ -10,6 +10,7 @@ jest.mock('@/lib/config/firebase/admin', () => ({
     firestore: () => ({
       collection: (collectionName: string) => ({
         doc: (id: string) => ({ id, collectionName }),
+        where: () => ({ kind: 'placement-query', collectionName }),
       }),
       runTransaction: (callback: (value: Record<string, jest.Mock>) => unknown) =>
         callback({
@@ -35,12 +36,19 @@ jest.mock('@/lib/services/cards/cardMutationSupport', () => ({
   withCardMutationRetry: (callback: () => unknown) => callback(),
 }));
 
+jest.mock('@/lib/services/authorSettingsService', () => ({
+  getAuthorSettings: jest.fn().mockResolvedValue({
+    classificationRequirements: { media: true, cards: true },
+  }),
+}));
+
 import { updateCardStatus } from '@/lib/services/cards/cardStatusMutationService';
 import { ErrorCode } from '@/lib/types/error';
 
 const draftCard = {
   docId: 'card-1',
   status: 'draft',
+  audience: { allContacts: true, groupIds: [], contactIds: [] },
   what: ['what-family'],
   dimensionReview: {
     who: { reviewed: true },
@@ -54,20 +62,24 @@ describe('cardStatusMutationService publication integrity', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetCardById.mockResolvedValue({ ...draftCard, status: 'published' });
-    mockTransactionGet.mockResolvedValue({
-      id: draftCard.docId,
-      exists: true,
-      data: () => draftCard,
-    });
+    mockTransactionGet.mockImplementation(async (target: { kind?: string }) =>
+      target.kind === 'placement-query'
+        ? { docs: [], empty: true }
+        : { id: draftCard.docId, exists: true, data: () => draftCard }
+    );
     mockTransactionGetAll.mockResolvedValue([]);
   });
 
   it('blocks an incomplete draft before writing Published', async () => {
-    mockTransactionGet.mockResolvedValue({
-      id: draftCard.docId,
-      exists: true,
-      data: () => ({ ...draftCard, what: [], dimensionReview: undefined }),
-    });
+    mockTransactionGet.mockImplementation(async (target: { kind?: string }) =>
+      target.kind === 'placement-query'
+        ? { docs: [], empty: true }
+        : {
+            id: draftCard.docId,
+            exists: true,
+            data: () => ({ ...draftCard, what: [], dimensionReview: undefined }),
+          }
+    );
 
     await expect(updateCardStatus(draftCard.docId, 'published')).rejects.toMatchObject({
       code: ErrorCode.CARD_PUBLICATION_INTEGRITY,
@@ -85,12 +97,44 @@ describe('cardStatusMutationService publication integrity', () => {
     );
   });
 
+  it('blocks publication until the audience is explicitly confirmed', async () => {
+    mockTransactionGet.mockImplementation(async (target: { kind?: string }) =>
+      target.kind === 'placement-query'
+        ? { docs: [], empty: true }
+        : {
+            id: draftCard.docId,
+            exists: true,
+            data: () => ({ ...draftCard, audience: undefined }),
+          }
+    );
+    await expect(updateCardStatus(draftCard.docId, 'published')).rejects.toMatchObject({
+      code: ErrorCode.CARD_PUBLICATION_INTEGRITY,
+      details: { issues: expect.arrayContaining([{ code: 'audience-unconfirmed' }]) },
+    });
+    expect(mockTransactionUpdate).not.toHaveBeenCalled();
+  });
+
+  it('accepts a placement in an active draft Collection as the destination', async () => {
+    mockTransactionGet.mockImplementation(async (target: { kind?: string }) =>
+      target.kind === 'placement-query'
+        ? {
+            docs: [{ id: 'placement-1', data: () => ({ collectionId: 'collection-1' }) }],
+            empty: false,
+          }
+        : { id: draftCard.docId, exists: true, data: () => ({ ...draftCard, feedIncluded: false }) }
+    );
+    mockTransactionGetAll.mockResolvedValue([
+      { id: 'collection-1', exists: true, data: () => ({ recordState: 'active', lifecycle: 'draft' }) },
+    ]);
+    await expect(updateCardStatus(draftCard.docId, 'published')).resolves.toMatchObject({ status: 'published' });
+  });
+
   it('does not apply the publication gate when returning a Card to Draft', async () => {
-    mockTransactionGet.mockResolvedValue({
+    mockTransactionGet.mockImplementation(async () => ({
       id: draftCard.docId,
       exists: true,
       data: () => ({ ...draftCard, status: 'published', what: [], dimensionReview: undefined }),
-    });
+    }));
     mockGetCardById.mockResolvedValue({ ...draftCard, status: 'draft' });
 
     await expect(updateCardStatus(draftCard.docId, 'draft')).resolves.toMatchObject({

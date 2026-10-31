@@ -4,11 +4,14 @@ import { AppError, ErrorCode } from '@/lib/types/error';
 import type { Media } from '@/lib/types/photo';
 import type { ClassificationRequirements } from '@/lib/types/authorSettings';
 import { getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationService';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 type Dimension = (typeof DIMENSIONS)[number];
 
 export type CardPublicationIntegrityIssue =
+  | { code: 'audience-unconfirmed' }
+  | { code: 'destination-missing' }
   | { code: 'card-dimension-review'; dimensions: Dimension[] }
   | { code: 'card-meaningful-what' }
   | { code: 'media-missing'; mediaIds: string[] }
@@ -37,9 +40,23 @@ export function isDimensionReviewComplete(entry: DimensionReviewEntry | undefine
 export function evaluateCardPublicationIntegrity(
   card: Card,
   mediaById: ReadonlyMap<string, Media>,
-  requirements: ClassificationRequirements = { media: true, cards: true }
+  requirements: ClassificationRequirements = { media: true, cards: true },
+  context: { hasActiveCollectionPlacement: boolean } = { hasActiveCollectionPlacement: false }
 ): CardPublicationIntegrityResult {
   const issues: CardPublicationIntegrityIssue[] = [];
+  if (
+    !card.audience ||
+    (
+      !card.audience.allContacts &&
+      !(card.audience.groupIds?.length ?? 0) &&
+      !(card.audience.contactIds?.length ?? 0)
+    )
+  ) {
+    issues.push({ code: 'audience-unconfirmed' });
+  }
+  if (!isCardIncludedInFeed(card) && !context.hasActiveCollectionPlacement) {
+    issues.push({ code: 'destination-missing' });
+  }
   if (requirements.cards) {
     const cardDimensions = DIMENSIONS.filter(
       (dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension])
@@ -97,6 +114,12 @@ export function evaluateCardPublicationIntegrity(
 
 function publicationBlockMessage(issues: CardPublicationIntegrityIssue[]): string {
   const clauses: string[] = [];
+  if (issues.some((issue) => issue.code === 'audience-unconfirmed')) {
+    clauses.push('explicitly choose all enabled readers or at least one group or individual');
+  }
+  if (issues.some((issue) => issue.code === 'destination-missing')) {
+    clauses.push('include it in the Reader Feed or place it in an active Collection');
+  }
   const cardReview = issues.find(
     (issue): issue is Extract<CardPublicationIntegrityIssue, { code: 'card-dimension-review' }> =>
       issue.code === 'card-dimension-review'
@@ -138,9 +161,10 @@ function publicationBlockMessage(issues: CardPublicationIntegrityIssue[]): strin
 export function assertCardPublicationIntegrity(
   card: Card,
   mediaById: ReadonlyMap<string, Media>,
-  requirements: ClassificationRequirements = { media: true, cards: true }
+  requirements: ClassificationRequirements = { media: true, cards: true },
+  context: { hasActiveCollectionPlacement: boolean } = { hasActiveCollectionPlacement: false }
 ): void {
-  const result = evaluateCardPublicationIntegrity(card, mediaById, requirements);
+  const result = evaluateCardPublicationIntegrity(card, mediaById, requirements, context);
   if (result.ready) return;
   throw new AppError(
     ErrorCode.CARD_PUBLICATION_INTEGRITY,

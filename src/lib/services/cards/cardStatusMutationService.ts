@@ -8,6 +8,7 @@ import { syncCardProjection, withCardMutationRetry } from '@/lib/services/cards/
 import type { Card } from '@/lib/types/card';
 import { buildTagMap } from '@/lib/utils/journalWhenSort';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
+import { hasActiveCollectionPlacement } from '@/lib/services/collections/collectionCardReferenceService';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -25,6 +26,11 @@ export async function updateCardStatus(cardId: string, status: 'draft' | 'publis
       if (!docSnap.exists) throw new Error(`Card with ID ${cardId} not found.`);
       const existingData = docSnap.data() as Card;
       if (status === 'published' && existingData.status !== 'published') {
+        const hasCollectionDestination = await hasActiveCollectionPlacement({
+          transaction,
+          firestore,
+          cardId,
+        });
         const mediaById = await getMediaMapInTransaction(
           firestore,
           transaction,
@@ -33,7 +39,8 @@ export async function updateCardStatus(cardId: string, status: 'draft' | 'publis
         assertCardPublicationIntegrity(
           { ...existingData, docId: docSnap.id },
           mediaById,
-          authorSettings.classificationRequirements
+          authorSettings.classificationRequirements,
+          { hasActiveCollectionPlacement: hasCollectionDestination }
         );
       }
       await updateTagCountsForCard(existingData, { ...existingData, status }, transaction, tagPathLookup);

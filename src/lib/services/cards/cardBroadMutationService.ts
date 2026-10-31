@@ -31,6 +31,7 @@ import {
 } from '@/lib/utils/subjectTag';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAuthorSettings } from '@/lib/services/authorSettingsService';
+import { hasActiveCollectionPlacement } from '@/lib/services/collections/collectionCardReferenceService';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
@@ -315,6 +316,11 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       );
 
       if (cleanedUpdate.status === 'published' && existingData.status !== 'published') {
+        const hasCollectionDestination = await hasActiveCollectionPlacement({
+          transaction,
+          firestore,
+          cardId,
+        });
         const publicationMediaById = await getMediaMapInTransaction(
           firestore,
           transaction,
@@ -330,7 +336,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
             contentMedia: newContentMedia,
           },
           publicationMediaById,
-          authorSettings.classificationRequirements
+          authorSettings.classificationRequirements,
+          { hasActiveCollectionPlacement: hasCollectionDestination }
         );
       }
 

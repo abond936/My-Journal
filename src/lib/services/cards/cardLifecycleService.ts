@@ -182,7 +182,8 @@ export async function createCard(
         assertCardPublicationIntegrity(
           newCard,
           publicationMediaById,
-          authorSettings.classificationRequirements
+          authorSettings.classificationRequirements,
+          { hasActiveCollectionPlacement: false }
         );
       }
       // 1. Update tag counts before transaction writes begin.
