@@ -1178,6 +1178,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused Author Home coverage proves both exact destinations. Touched-code lint, production typecheck, and the optimized production build pass with the selected-device-photo slice. No production record changed.
 
+### Fifteenth implementation slice — Practical published-Card editing policy
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Keep the current living-archive editing model understandable without claiming protection that the application does not provide.
+
+**Includes** — One live published Card object; an author-facing warning that saved changes may be reader-visible; explicit return to Draft as the private-editing path; preservation of stable Book editions as separate snapshots; and removal of private working revisions from the active publication architecture.
+
+**Excludes** — Private working copies; published-version history; restore or rollback; immutable Card presentation records; audience grants; Collection publication; production data migration; and production data mutation. The experiments preserved on `codex/story-first-selective-revisions` remain inactive and are not part of this branch.
+
+**Contracts** — Draft-to-Published still passes the implemented Card publication-integrity gate. A Card that remains Published is live; saved edits may become visible wherever the Card is already readable. Returning it to Draft is deliberate and separate from editing. No partial mutation interception may be represented as protected published-version behavior.
+
+**Completion evidence** — Focused Card-form coverage proves the warning for a published Card. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass; unauthenticated build-time theme reads use the checked-in fallback as designed. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
