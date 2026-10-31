@@ -49,6 +49,14 @@ describe('AuthorDashboard', () => {
   it('presents Collection publication work as attention without blocking drafts', () => {
     render(<AuthorDashboard summary={baseSummary} />);
 
+    expect(screen.getByRole('link', { name: 'Start a Story' })).toHaveAttribute(
+      'href',
+      '/admin/studio?new=1'
+    );
+    expect(screen.getByRole('link', { name: 'Continue in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio'
+    );
     expect(screen.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument();
     expect(screen.getByText(/Draft work can continue/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'My Life' })).toBeInTheDocument();

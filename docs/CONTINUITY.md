@@ -7,14 +7,14 @@ This file is the concise operational handoff for the next project session. It is
 - `01` remains the owner of product vision, architecture, technical principles, and stable invariants.
 - `02` now records the shipped durable Collection authority and placement-native Studio/Reader behavior separately from still-planned multi-Collection creation, audience, sharing, distribution, and Book editions.
 - `03` records the completed first durable Collection activation and the read-only publication-readiness evidence. Active structure is not publication.
-- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present local branch combines the sequential mobile Author destinations, truthful Author Home handoffs, and selected-device-photo Story intake; it makes no production-data mutation.
+- The accepted deployed main revision is `f4d8c7e6780aec33be5821131cfe4c2969db0247`, following PR #22 and the earlier durable-Collection, Needs Attention, exact handoff, and Card publication-integrity slices. The present local branch combines the sequential mobile Author destinations, truthful Author Home handoffs, selected-device-photo Story intake, and a direct Start a Story entry; it makes no production-data mutation.
 
 ## Local implementation checkpoint
 
 - `codex/mobile-author-destinations` at `54ba53fb` is the verified sequential mobile Studio foundation: Cards, Media, Prompts, Collections, and Tags appear one at a time at phone width, while desktop keeps its configurable simultaneous panes.
 - `codex/mobile-author-dashboard-handoffs` at `422c5537` is based on `54ba53fb`. It adds Cards, Media, and Collections destination hints from Author Home, preserves the exact existing Card-status preference, and leaves general Continue unqualified so prior work resumes.
 - `codex/published-card-working-revision-foundation` at `42ae7c2e` is a separate sibling branch based on `54ba53fb`. It contains an inactive, verified private working-revision persistence foundation for published Cards. It is deliberately not wired to routes or UI.
-- `codex/story-first-practical-publication` is the current successor branch based on `422c5537`. It carries selected-device-photo Story intake for cover, Gallery, and body composition without the inactive working-revision foundation.
+- `codex/story-first-practical-publication` is the current successor branch based on `422c5537`. It carries selected-device-photo Story intake for cover, Gallery, and body composition plus direct Start a Story entry, without the inactive working-revision foundation.
 - `codex/story-first-selective-revisions` preserves the later working-revision, publication-route, audience-grant, and immutable-presentation experiments. Those experiments are not part of the active implementation direction and must not be represented as delivered publication protection.
 - None of these local branches is merged into or deployed from `origin/main`. No GitHub push is authorized by the current approval record. Preserve the sibling branches as recoverable topology rather than rewriting their history.
 - The current bounded publication policy keeps a published Card as one live object: saved edits may become visible to readers immediately. An author who needs privacy while changing it must explicitly return it to Draft first. Private working revisions remain deferred unless demonstrated use warrants the additional mutation-owner coverage and version infrastructure.
@@ -55,6 +55,7 @@ The ordinary Reader already requires a published Collection, every required Card
 - Parts, Chapters, and Sections are bounded Collection-local placement roles. A canonical Card may be reused through distinct placements without copying its content.
 - Desktop remains the configurable simultaneous Studio. The delivered mobile foundation presents sequential Cards, Media, Prompts, Collections, and Tags destinations, with Cards list → Compose and safe return; complete destination-specific touch workflows remain unfinished, and archive-scale administration remains desktop-primary.
 - Author Home's general Continue resumes existing work. Its Cards status, generic Media, and generic Collections actions now carry truthful mobile destination hints; desktop retains the saved simultaneous Studio, and no Collection-specific attention count is mislabelled as a reproducible filter.
+- Author Home also offers Start a Story, which opens the existing unsaved new-Card Compose state whose default type is Story. It does not create a record until the author saves.
 - AI assistance is optional and author-invoked except for quiet integrity validation. Machine evidence remains provisional until author-confirmed.
 - Draft saving stays permissive. Publishing is a deliberate integrity boundary; access, sharing, and distribution are separate decisions.
 

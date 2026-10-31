@@ -1162,6 +1162,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The focused shared-picker and Gallery suites pass thirteen tests, including single-photo return for cover or body use, multi-photo staging, Gallery picker activation, ordered two-photo import, and partial-failure retention. Touched-code lint, non-incremental production typecheck, and the optimized production build pass; unauthenticated build-time theme reads use the checked-in fallback as designed. No production record or Storage object changed during verification.
 
+### Fourteenth implementation slice — Story-first Author Home entry
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author begin the product's central creative task directly from fresh Author entry instead of making archive status the only visible starting point.
+
+**Includes** — A prominent Start a Story action on Author Home; direct handoff to the existing new-Card Compose state, whose default type is Story; preservation of the unqualified Continue in Studio action for resuming prior mobile destination or desktop layout; responsive action layout; and focused link-contract coverage.
+
+**Excludes** — Automatic Story creation before the author saves; a new Card type; Prompt selection; Collection placement; audience selection; publication; working-revision activation; dashboard-count changes; and production data mutation.
+
+**Contracts** — Start a Story opens an unsaved new Story in the shared authoring surface. It does not create a Card record merely by following the link. Continue in Studio remains the resume path and retains its existing restoration semantics.
+
+**Completion evidence** — Focused Author Home coverage proves both exact destinations. Touched-code lint, production typecheck, and the optimized production build pass with the selected-device-photo slice. No production record changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

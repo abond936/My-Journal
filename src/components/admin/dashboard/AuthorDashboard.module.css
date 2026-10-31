@@ -50,6 +50,14 @@
   line-height: var(--line-height-relaxed);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
 .primaryAction,
 .secondaryAction {
   display: inline-flex;
@@ -272,5 +280,10 @@
 
   .section:first-child {
     grid-column: auto;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }

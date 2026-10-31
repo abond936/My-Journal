@@ -25,12 +25,17 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
           <p className={styles.eyebrow}>Author home</p>
           <h1>What would you like to work on?</h1>
           <p className={styles.intro}>
-            See the state of your archive, then continue in the Studio when you are ready.
+            Start a Story, resume your work, or review the archive when that is useful.
           </p>
         </div>
-        <Link className={styles.primaryAction} href="/admin/studio">
-          Continue in Studio
-        </Link>
+        <div className={styles.headerActions}>
+          <Link className={styles.primaryAction} href="/admin/studio?new=1">
+            Start a Story
+          </Link>
+          <Link className={styles.secondaryAction} href="/admin/studio">
+            Continue in Studio
+          </Link>
+        </div>
       </header>
 
       <div className={styles.sectionGrid}>
