@@ -1208,6 +1208,18 @@ The former stabilization objective and its controlling execution order are compl
 
 **Contracts** — Blank is presentation, not a stored tag or reviewed resolution. Unknown and Not applicable require explicit author action and remain searchable. Draft creation and saving are unrestricted. Required Card classification is enforced when that Card is published. Required Media classification makes every Media item archive review work and blocks publication only when an incomplete item is referenced by that Card; unrelated Media never blocks the Story. Missing references and Media readiness remain inherent publication integrity in every classification mode.
 
+### Seventeenth implementation slice — Explicit Reader Feed inclusion
+
+**Outcome** — Publishing and freeform Feed placement no longer collapse into one hidden rule. An author can keep one canonical Card in a Collection while deliberately excluding it from freeform Reader discovery.
+
+**Includes** — An optional durable `feedIncluded` Card field; legacy-compatible interpretation in which a missing value remains included; a visible Compose placement control; exclusion from the main freeform Feed, Reader search, seeded random ordering, and legacy random discovery; unchanged Collection reads; and truthful Reader copy.
+
+**Excludes** — Audience groups, individual grants, guest recipients, sharing notifications, Collection lifecycle publication, a requirement that every published Card have at least one destination, migration or mutation of legacy Cards, and production data changes.
+
+**Contracts** — Feed inclusion is independent from Card status and Collection placement. Explicit exclusion removes only freeform Feed/search/random exposure. It does not delete, unpublish, or detach the Card from any Collection. Existing Cards retain current visibility without a backfill because only an explicit false value excludes them. New ordinary Cards begin included in Feed; future structural-parent creation may deliberately begin Collection-only without changing a pre-existing Card's Feed choice.
+
+**Completion evidence** — Focused Reader access, search-route, Compose, and Feed-inclusion tests pass. Production typecheck and touched-code lint pass. No Card, Collection, Media, audience, sharing, distribution, or production record changed.
+
 **Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
 ### 1. Release Candidate

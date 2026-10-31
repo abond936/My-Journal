@@ -8,6 +8,7 @@ import {
   getParentCardsByChildId,
 } from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
@@ -301,6 +302,7 @@ export async function GET(request: Request) {
     const collectionId = searchParams.get('collectionId') || undefined;
     const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
     const includeDescendants = searchParams.get('includeDescendants') === 'true';
+    const readerFeedOnly = !isAdmin && !collectionsOnly && !collectionId && !childrenIds_contains;
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' | 'reader-feed' =
       hydrationParam === 'cover-only'
@@ -371,6 +373,7 @@ export async function GET(request: Request) {
           limit,
           lastDocId,
           hydrationMode,
+          feedOnly: readerFeedOnly,
         });
         return NextResponse.json(result);
       }
@@ -399,6 +402,7 @@ export async function GET(request: Request) {
 
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
+          if (readerFeedOnly && !isCardIncludedInFeed(card)) return false;
           if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
           if (!cardMatchesCodificationFilter(card, codification)) return false;
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
@@ -429,6 +433,7 @@ export async function GET(request: Request) {
       };
 
       const needsSubjectScopedScan =
+        readerFeedOnly ||
         ((tagScope === 'subject' || subjectDimensions.size > 0) &&
           (Boolean(tags?.length) ||
             Object.keys(dimensionalTags).length > 0 ||
@@ -449,6 +454,7 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !readerFeedOnly &&
         !hasTemporalFilter &&
         !hasDimensionPresentFilters &&
         !((tagScope === 'subject' || subjectDimensions.size > 0) &&

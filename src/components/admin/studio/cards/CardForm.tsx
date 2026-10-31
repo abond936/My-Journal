@@ -227,6 +227,12 @@ const CardForm: React.FC = () => {
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     persistStatusChange(e.target.value as Card['status']);
   }, [persistStatusChange]);
+  const handleFeedIncludedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const feedIncluded = e.target.checked;
+    setField('feedIncluded', feedIncluded);
+    if ((lastSavedState.cardData.feedIncluded !== false) === feedIncluded) return;
+    void persistFieldPatch({ feedIncluded });
+  }, [lastSavedState.cardData.feedIncluded, persistFieldPatch, setField]);
   const handleTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const nextType = e.target.value as Card['type'];
@@ -1054,6 +1060,17 @@ const CardForm: React.FC = () => {
                     </div>
                   )}
                   <div className={styles.selectGroup}>
+                    <span className={styles.selectLabel}>Placement</span>
+                    <label className={styles.excerptToggle}>
+                      <input
+                        type="checkbox"
+                        checked={cardData.feedIncluded !== false}
+                        onChange={handleFeedIncludedChange}
+                      />
+                      <span className={styles.excerptToggleLabel}>Include in Reader Feed</span>
+                    </label>
+                  </div>
+                  <div className={styles.selectGroup}>
                     <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                     <select
                       id="type-select"
@@ -1291,6 +1308,17 @@ const CardForm: React.FC = () => {
                   </select>
                 </div>
               )}
+              <div className={styles.selectGroup}>
+                <span className={styles.selectLabel}>Placement</span>
+                <label className={styles.excerptToggle}>
+                  <input
+                    type="checkbox"
+                    checked={cardData.feedIncluded !== false}
+                    onChange={handleFeedIncludedChange}
+                  />
+                  <span className={styles.excerptToggleLabel}>Include in Reader Feed</span>
+                </label>
+              </div>
               <div className={styles.selectGroup}>
                 <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                 <select

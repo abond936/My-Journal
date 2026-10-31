@@ -55,6 +55,8 @@ export const cardSchema = z.object({
   // Card type: drives feed/view rendering. Any type may have childrenIds for structural collections.
   type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery']).default('story'),
   status: z.enum(['draft', 'published']).default('draft'),
+  /** Independent Reader Feed placement. Missing legacy values remain included for compatibility. */
+  feedIncluded: z.boolean().optional(),
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
 
   // For Q&A cards, the source question-bank prompt. New QA cards must be created from Questions.

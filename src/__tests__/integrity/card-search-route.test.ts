@@ -74,7 +74,7 @@ describe('card search route', () => {
     });
     mockedGetCardsByIds.mockResolvedValue([
       { docId: 'card-1', title: 'One' },
-      { docId: 'card-2', title: 'Two' },
+      { docId: 'card-2', title: 'Two', feedIncluded: false },
     ] as never);
 
     const res = await GET(makeRequest('https://example.test/api/cards/search?q=test&limit=2'));
@@ -91,9 +91,9 @@ describe('card search route', () => {
     );
     expect(mockedGetCardsByIds).toHaveBeenCalledWith(['card-1', 'card-2']);
     expect(payload).toMatchObject({
-      items: [{ docId: 'card-1' }, { docId: 'card-2' }],
+      items: [{ docId: 'card-1' }],
       hasMore: true,
-      lastDocId: 'card-2',
+      lastDocId: 'card-1',
       searchMode: 'full-text',
       degraded: false,
     });

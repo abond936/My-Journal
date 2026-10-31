@@ -91,7 +91,7 @@ export default function ReaderHome() {
           <span className={styles.pathIcon} aria-hidden="true"><Rows3 /></span>
           <span className={styles.pathLabel}>Feed</span>
           <span className={styles.pathDescription}>
-            Browse published cards freely and narrow the view by people, subjects, time, or place.
+            Browse published Feed Cards and narrow the view by people, subjects, time, or place.
           </span>
           <span className={styles.pathAction}>Explore the feed <span aria-hidden="true">→</span></span>
         </button>

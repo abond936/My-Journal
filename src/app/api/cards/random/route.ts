@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 
 const CARD_TYPES = ['story', 'qa', 'quote', 'callout', 'gallery'] as const;
 type CardTypeFilter = typeof CARD_TYPES[number] | 'all';
@@ -67,6 +68,7 @@ async function updateCardIdCache() {
     
     snapshot.docs.forEach(doc => {
       const data = doc.data();
+      if (!isCardIncludedInFeed(data)) return;
       const cardId = doc.id;
       const cardType = (data.type as string) || 'story';
       allCardIds.push(cardId);
