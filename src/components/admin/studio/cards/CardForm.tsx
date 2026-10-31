@@ -49,6 +49,7 @@ import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import type { AudienceSelection } from '@/lib/types/audience';
 import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
+import MobileStoryFlowNav from '@/components/admin/studio/cards/MobileStoryFlowNav';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -979,6 +980,22 @@ const CardForm: React.FC = () => {
     />
   );
 
+  const mobileStoryFlow = Boolean(authoringSurface?.mobileStoryFlow && cardData.type === 'story');
+  const audienceSection = (
+    <div id={mobileStoryFlow ? 'mobile-story-placement' : undefined} className={styles.mobileStoryAnchor}>
+      <AudienceSelector
+        value={cardData.audience}
+        scopeLabel="Standalone Story"
+        consequence={cardData.feedIncluded === false
+          ? 'Standalone Feed access is currently off. This audience is retained for use if Feed inclusion is restored; Collection audiences remain separate.'
+          : 'Controls the standalone and Feed route. A Collection placement may separately grant access to this Story.'}
+        disabled={isSaving}
+        onSave={saveStandaloneAudience}
+        getCombinedImpact={cardData.docId ? getCombinedAudienceImpact : undefined}
+      />
+    </div>
+  );
+
   return (
     <>
       {cardData.type === 'qa' ? (
@@ -1020,16 +1037,8 @@ const CardForm: React.FC = () => {
           filterTagIds={cardData.tags ?? []}
         />
       )}
-      <AudienceSelector
-        value={cardData.audience}
-        scopeLabel="Standalone Story"
-        consequence={cardData.feedIncluded === false
-          ? 'Standalone Feed access is currently off. This audience is retained for use if Feed inclusion is restored; Collection audiences remain separate.'
-          : 'Controls the standalone and Feed route. A Collection placement may separately grant access to this Story.'}
-        disabled={isSaving}
-        onSave={saveStandaloneAudience}
-        getCombinedImpact={cardData.docId ? getCombinedAudienceImpact : undefined}
-      />
+      {mobileStoryFlow ? <MobileStoryFlowNav /> : null}
+      {!mobileStoryFlow ? audienceSection : null}
       {studioShellForm && !studioShellDnd ? (
         <DndContext
           sensors={localShellFormSensors}
@@ -1042,7 +1051,7 @@ const CardForm: React.FC = () => {
         >
           <form id="card-form" onSubmit={handleSubmit} className={clsx(styles.form, styles.compactShellForm)}>
             <div className={styles.mainContent}>
-              <div className={styles.header}>
+              <div className={styles.header} id={mobileStoryFlow ? 'mobile-story-words' : undefined}>
                 <input
                   type="text"
                   value={titleDraft}
@@ -1178,7 +1187,7 @@ const CardForm: React.FC = () => {
                 </div>
               </div>
 
-              <div className={styles.coverPhotoSection}>
+              <div className={`${styles.coverPhotoSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-media' : undefined}>
                 <CoverPhotoContainer
                   coverImage={cardData.coverImage}
                   coverImageMode={coverImageMode}
@@ -1202,7 +1211,7 @@ const CardForm: React.FC = () => {
                 />
               </div>
 
-              <div className={styles.tagsSection}>
+              <div className={`${styles.tagsSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-details' : undefined}>
                 <CardDimensionalTagCommandBar
                   card={cardData}
                   allTags={allTags}
@@ -1281,6 +1290,22 @@ const CardForm: React.FC = () => {
               <div className={styles.childrenSection}>
                 <StudioCardFormChildren disabled={isSaving} />
               </div>
+
+              {mobileStoryFlow ? audienceSection : null}
+
+              {mobileStoryFlow ? (
+                <section id="mobile-story-preview" className={`${styles.mobileStoryPreview} ${styles.mobileStoryAnchor}`}>
+                  <h4 className={styles.sectionTitle}>Reader preview</h4>
+                  <ComposeFeedTilePreview
+                    card={{
+                      ...cardData,
+                      docId: cardData.docId ?? 'unsaved-story-preview',
+                      title: titleDraft || cardData.title || 'Untitled Story',
+                    } as Card}
+                    allTags={allTags}
+                  />
+                </section>
+              ) : null}
             </div>
           </form>
         </DndContext>
@@ -1291,7 +1316,7 @@ const CardForm: React.FC = () => {
         className={clsx(styles.form, studioShellForm && styles.compactShellForm)}
       >
         <div className={styles.mainContent}>
-          <div className={styles.header}>
+          <div className={styles.header} id={mobileStoryFlow ? 'mobile-story-words' : undefined}>
             <input
               type="text"
               value={titleDraft}
@@ -1427,7 +1452,7 @@ const CardForm: React.FC = () => {
             </div>
           </div>
 
-          <div className={styles.coverPhotoSection}>
+          <div className={`${styles.coverPhotoSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-media' : undefined}>
             {studioShellDnd ? (
               <StudioDropZone
                 id="drop:cover"
@@ -1483,7 +1508,7 @@ const CardForm: React.FC = () => {
             )}
           </div>
 
-          <div className={styles.tagsSection}>
+          <div className={`${styles.tagsSection} ${styles.mobileStoryAnchor}`} id={mobileStoryFlow ? 'mobile-story-details' : undefined}>
             <CardDimensionalTagCommandBar
               card={cardData}
               allTags={allTags}
@@ -1597,6 +1622,22 @@ const CardForm: React.FC = () => {
               />
             )}
           </div>
+
+          {mobileStoryFlow ? audienceSection : null}
+
+          {mobileStoryFlow ? (
+            <section id="mobile-story-preview" className={`${styles.mobileStoryPreview} ${styles.mobileStoryAnchor}`}>
+              <h4 className={styles.sectionTitle}>Reader preview</h4>
+              <ComposeFeedTilePreview
+                card={{
+                  ...cardData,
+                  docId: cardData.docId ?? 'unsaved-story-preview',
+                  title: titleDraft || cardData.title || 'Untitled Story',
+                } as Card}
+                allTags={allTags}
+              />
+            </section>
+          ) : null}
         </div>
       </form>
       )}

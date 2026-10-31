@@ -1326,6 +1326,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused dashboard service, component, and page suites pass eleven tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. No production query, index, record, or Storage object changed during local verification.
 
+### Twenty-first implementation slice — Mobile Story workflow wayfinding
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Turn the phone Story editor from an undifferentiated long form into one explicitly navigable creative journey without forking the Card model or hiding existing capability prematurely.
+
+**Includes** — Phone-only Words, Media, Details, Placement, and Preview navigation; direct movement to durable sections of the existing form; a live Reader tile preview; phone Story editing without desktop cross-pane relationship drag targets; retained Save, discard, draft, and unsaved-leave behavior; and unchanged desktop Compose.
+
+**Excludes** — Hiding nonactive sections; autosave redesign; new Collection-placement persistence; a full Reader-detail preview; publication from a new owner; content or Media mutation during verification; deployment; and production data changes.
+
+**Contracts** — The workflow is presentation over the shared Card and Media truth. It appears only for Story Cards in phone Studio. Other Card types and desktop Studio keep their current form. Placement continues to use the existing Feed and audience controls; this slice does not claim that Collection placement is complete inside Compose.
+
+**Completion evidence** — Focused workflow navigation, mobile workspace, and Card-form suites pass seventeen tests. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

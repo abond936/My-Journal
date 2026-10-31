@@ -769,6 +769,7 @@ export default function StudioWorkspace() {
                             <StudioCardEditPane
                               newCardRequested={newCardRequested && !selectedCardId}
                               onCardCreated={setSelectedCardId}
+                              mobileStoryFlow={!wideLayout}
                             />
                           </div>
                         ) : null}
