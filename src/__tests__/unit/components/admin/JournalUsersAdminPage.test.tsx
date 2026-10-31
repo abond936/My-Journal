@@ -99,4 +99,33 @@ describe('JournalUsersAdminPage audience-group consequences', () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
       String(input).endsWith('/alex') && init?.method === 'PATCH')).toBe(true));
   });
+
+  it('reviews inherited all-reader access before creating an enabled Reader', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/journal-users' && !init?.method) return response({ users: [] });
+      if (url === '/api/admin/audience-groups') return response({ groups: [] });
+      if (url.endsWith('/prospective-access-impact')) return response({ impact: {
+        effect: 'gain',
+        collections: [{ id: 'book', title: 'Family Book' }],
+        cards: [{ id: 'story', title: 'Legacy Story' }],
+      } });
+      if (url === '/api/admin/journal-users' && init?.method === 'POST') return response({ docId: 'new-reader' }, 201);
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? 'GET'}`);
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<JournalUsersAdminPage />);
+
+    fireEvent.change(await screen.findByLabelText('Username'), { target: { value: 'new-reader' } });
+    fireEvent.change(screen.getByLabelText('Temporary password'), { target: { value: 'password-123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Review initial access' }));
+
+    expect(await screen.findByText("Review the new Reader's initial access")).toBeInTheDocument();
+    expect(screen.getByText(/immediately gain access to 1 Collection and 1 published Card/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Reader with reviewed access' }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
+      String(input) === '/api/admin/journal-users' && init?.method === 'POST')).toBe(true));
+  });
 });

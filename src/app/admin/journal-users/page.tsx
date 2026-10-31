@@ -5,7 +5,10 @@ import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { JournalUserPublic } from '@/lib/auth/journalUsersFirestore';
 import type { AudienceGroup } from '@/lib/types/audience';
 import type { AudienceGroupMembershipImpact } from '@/lib/services/audienceGroupImpactService';
-import type { ReaderAccountAccessImpact } from '@/lib/services/readerAccountImpactService';
+import type {
+  ProspectiveReaderAccessImpact,
+  ReaderAccountAccessImpact,
+} from '@/lib/services/readerAccountImpactService';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import styles from './journal-users.module.css';
 
@@ -38,6 +41,7 @@ export default function JournalUsersAdminPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
+  const [prospectiveAccessImpact, setProspectiveAccessImpact] = useState<ProspectiveReaderAccessImpact | null>(null);
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [passwordErrorById, setPasswordErrorById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
@@ -63,6 +67,7 @@ export default function JournalUsersAdminPage() {
       ])));
       setGroupImpacts({});
       setUserAccessImpacts({});
+      setProspectiveAccessImpact(null);
     } catch (e) {
       setListError(e instanceof Error ? e.message : 'Users could not be loaded. Try again.');
     } finally {
@@ -78,6 +83,13 @@ export default function JournalUsersAdminPage() {
     e.preventDefault();
     setCreateBusy(true);
     try {
+      if (!prospectiveAccessImpact) {
+        const impactResponse = await fetch('/api/admin/journal-users/prospective-access-impact');
+        const impactData = await impactResponse.json();
+        throwIfJsonApiFailed(impactResponse, impactData, 'New Reader access could not be calculated.');
+        setProspectiveAccessImpact(impactData.impact as ProspectiveReaderAccessImpact);
+        return;
+      }
       const res = await fetch('/api/admin/journal-users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -295,7 +307,10 @@ export default function JournalUsersAdminPage() {
                 id="ju-username"
                 className={styles.input}
                 value={newUsername}
-                onChange={e => setNewUsername(e.target.value)}
+                onChange={e => {
+                  setNewUsername(e.target.value);
+                  setProspectiveAccessImpact(null);
+                }}
                 autoComplete="off"
                 required
               />
@@ -307,7 +322,10 @@ export default function JournalUsersAdminPage() {
                 type="password"
                 className={styles.input}
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={e => {
+                  setNewPassword(e.target.value);
+                  setProspectiveAccessImpact(null);
+                }}
                 autoComplete="new-password"
                 minLength={8}
                 required
@@ -319,11 +337,26 @@ export default function JournalUsersAdminPage() {
                 id="ju-display"
                 className={styles.input}
                 value={newDisplayName}
-                onChange={e => setNewDisplayName(e.target.value)}
+                onChange={e => {
+                  setNewDisplayName(e.target.value);
+                  setProspectiveAccessImpact(null);
+                }}
               />
             </div>
+            {prospectiveAccessImpact ? (
+              <div className={styles.impactReview}>
+                <strong>Review the new Reader&apos;s initial access</strong>
+                <p>This enabled account will immediately gain access to {prospectiveAccessImpact.collections.length} Collection{prospectiveAccessImpact.collections.length === 1 ? '' : 's'} and {prospectiveAccessImpact.cards.length} published Card{prospectiveAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
+                {prospectiveAccessImpact.collections.length ? (
+                  <details><summary>Collections</summary><ul>{prospectiveAccessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
+                ) : null}
+                {prospectiveAccessImpact.cards.length ? (
+                  <details><summary>Published Cards</summary><ul>{prospectiveAccessImpact.cards.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
+                ) : null}
+              </div>
+            ) : null}
             <button type="submit" className={styles.button} disabled={createBusy}>
-              {createBusy ? 'Adding...' : 'Add'}
+              {createBusy ? 'Working...' : prospectiveAccessImpact ? 'Create Reader with reviewed access' : 'Review initial access'}
             </button>
           </div>
         </form>

@@ -754,7 +754,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ✅ **Complete**
 
 - **Admin** — Initial administrator setup.
-- **Readers** — Create individual reader accounts.
+- **Readers** — Create individual reader accounts only after reviewing the exact legacy and all-enabled-reader Card and Collection access the new enabled account will inherit immediately.
 - **Status** — List, enable, and disable accounts. Before a Reader status change is applied, show the exact currently published Cards and Reader-valid Collections whose access will be lost or restored through all-reader, individual, group, Feed, placement, and Collection-introduction routes.
 - **Passwords** — Set a new temporary password.
 - **Roles** — Enforce Reader and administrator boundaries.
