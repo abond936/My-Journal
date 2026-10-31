@@ -126,6 +126,10 @@ describe('GET /api/media fallback text search', () => {
     expect(res.status).toBe(200);
     expect(payload.media).toHaveLength(1);
     expect(payload.media[0].docId).toBe('media-1');
+    expect(payload.media[0].storageUrl).toBe(
+      '/api/reader/media/media-1?rendition=original'
+    );
+    expect(JSON.stringify(payload.media[0])).not.toContain('https://example.test/photo-1.jpg');
     expect(tagsQuery.select).toHaveBeenCalledWith('name');
   });
 

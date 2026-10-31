@@ -199,7 +199,13 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
   const isCollectionsMode = effectiveReaderMode === 'guided';
   const isTagMode = !isCollectionsMode;
   const effectiveBrowseTarget = isCollectionsMode ? 'cards' : browseTarget;
-  const isMediaBrowse = effectiveBrowseTarget === 'media';
+  const isMediaBrowse = isAdmin && effectiveBrowseTarget === 'media';
+
+  useEffect(() => {
+    if (session && !isAdmin && browseTarget === 'media') {
+      setBrowseTarget('cards');
+    }
+  }, [browseTarget, isAdmin, session, setBrowseTarget]);
   const collectionCardById = useMemo(
     () => new Map(collectionTreeCards.filter((card) => card.docId).map((card) => [card.docId!, card])),
     [collectionTreeCards]
@@ -574,15 +580,17 @@ export default function GlobalSidebar({ isOpen, onRequestClose }: GlobalSidebarP
                   >
                     Cards
                   </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={effectiveBrowseTarget === 'media'}
-                    className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'media' ? styles.browseTargetTabActive : ''}`}
-                    onClick={() => setBrowseTarget('media')}
-                  >
-                    Media
-                  </button>
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={effectiveBrowseTarget === 'media'}
+                      className={`${styles.browseTargetTab} ${effectiveBrowseTarget === 'media' ? styles.browseTargetTabActive : ''}`}
+                      onClick={() => setBrowseTarget('media')}
+                    >
+                      Media
+                    </button>
+                  ) : null}
                 </div>
                 {!isMediaBrowse ? (
                   <div className={`${styles.sectionControlRow} ${styles.headerTypeControls}`}>

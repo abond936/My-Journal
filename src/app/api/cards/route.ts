@@ -8,6 +8,7 @@ import {
   getParentCardsByChildId,
 } from '@/lib/services/cards/cardReadService';
 import { Card } from '@/lib/types/card';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import { PaginatedResult } from '@/lib/types/services';
 import { cardSchema } from '@/lib/types/card';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
@@ -34,6 +35,9 @@ import {
 } from '@/lib/utils/temporalValue';
 import { resolveStoredSubjectTagIds } from '@/lib/utils/storedSubjectTags';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
+import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
+import { validateAudienceSelectionReferences } from '@/lib/services/audienceGroupService';
 
 function cardHasSubjectInDimension(
   card: Pick<Card, 'subjectTagId' | 'subjectTagIds' | 'galleryImplicitSubjectTagIds' | 'who' | 'what' | 'when' | 'where'>,
@@ -143,6 +147,11 @@ export async function GET(request: Request) {
   }
   const session = auth.session;
   const isAdmin = isAdminSession(session);
+  const jsonCardList = async <T extends { items: Card[] }>(payload: T) => {
+    if (isAdmin) return NextResponse.json(payload);
+    const authorized = { ...payload, items: await filterCardsForAudience(session, payload.items) };
+    return NextResponse.json(protectCardListForReader(authorized));
+  };
 
   try {
     const { searchParams } = new URL(request.url);
@@ -301,6 +310,7 @@ export async function GET(request: Request) {
     const collectionId = searchParams.get('collectionId') || undefined;
     const collectionsOnly = searchParams.get('collectionsOnly') === 'true';
     const includeDescendants = searchParams.get('includeDescendants') === 'true';
+    const readerFeedOnly = !isAdmin && !collectionsOnly && !collectionId && !childrenIds_contains;
     const hydrationParam = searchParams.get('hydration');
     const hydrationMode: 'full' | 'cover-only' | 'reader-feed' =
       hydrationParam === 'cover-only'
@@ -336,7 +346,7 @@ export async function GET(request: Request) {
           hydrationMode,
           includeDescendants,
         });
-        return NextResponse.json({ items: collectionCards, hasMore: false });
+        return jsonCardList({ items: collectionCards, hasMore: false });
       }
 
       // Fetch a specific collection's children (paginated)
@@ -347,7 +357,7 @@ export async function GET(request: Request) {
           status,
           hydrationMode,
         });
-        return NextResponse.json(result);
+        return jsonCardList(result);
       }
 
       if (
@@ -371,8 +381,9 @@ export async function GET(request: Request) {
           limit,
           lastDocId,
           hydrationMode,
+          feedOnly: readerFeedOnly,
         });
-        return NextResponse.json(result);
+        return jsonCardList(result);
       }
 
       // Dedicated narrow parent lookup path (used by admin delete warning flow).
@@ -391,7 +402,7 @@ export async function GET(request: Request) {
           limit,
           hydrationMode,
         });
-        return NextResponse.json({
+        return jsonCardList({
           items,
           hasMore: items.length >= limit,
         } as PaginatedResult<Card>);
@@ -399,6 +410,7 @@ export async function GET(request: Request) {
 
       const applyPostFilters = (items: Card[]): Card[] => {
         return items.filter((card) => {
+          if (readerFeedOnly && !isCardIncludedInFeed(card)) return false;
           if (displayMode !== 'all' && (card.displayMode ?? 'navigate') !== displayMode) return false;
           if (!cardMatchesCodificationFilter(card, codification)) return false;
           if (childrenIds_contains && !(card.childrenIds || []).includes(childrenIds_contains)) return false;
@@ -429,6 +441,7 @@ export async function GET(request: Request) {
       };
 
       const needsSubjectScopedScan =
+        readerFeedOnly ||
         ((tagScope === 'subject' || subjectDimensions.size > 0) &&
           (Boolean(tags?.length) ||
             Object.keys(dimensionalTags).length > 0 ||
@@ -449,6 +462,7 @@ export async function GET(request: Request) {
       // Typesense list limits + 📐 Filtered population & stable ordering.
       const wantTypesense =
         isTypesenseConfigured() &&
+        !readerFeedOnly &&
         !hasTemporalFilter &&
         !hasDimensionPresentFilters &&
         !((tagScope === 'subject' || subjectDimensions.size > 0) &&
@@ -495,7 +509,7 @@ export async function GET(request: Request) {
           });
 
           if (searchResult.docIds.length === 0) {
-            return NextResponse.json({
+            return jsonCardList({
               items: [],
               hasMore: false,
               lastDocId: undefined,
@@ -509,7 +523,7 @@ export async function GET(request: Request) {
             items.length > 0 ? items[items.length - 1].docId : undefined;
           const hasMore = (pageIdx + 1) * limit < searchResult.totalFound;
 
-          return NextResponse.json({
+          return jsonCardList({
             items,
             lastDocId,
             hasMore,
@@ -559,7 +573,7 @@ export async function GET(request: Request) {
               : -1;
             const hasMoreWithinCurrentBatch =
               lastReturnedIndex >= 0 && lastReturnedIndex < batch.items.length - 1;
-            return NextResponse.json({
+            return jsonCardList({
               items: collected,
               lastDocId: lastReturnedDocId,
               hasMore: hasMoreWithinCurrentBatch || batch.hasMore,
@@ -571,7 +585,7 @@ export async function GET(request: Request) {
           if (!scanCursor) break;
         }
 
-        return NextResponse.json({
+        return jsonCardList({
           items: collected,
           lastDocId: lastReturnedDocId,
           hasMore: false,
@@ -598,7 +612,7 @@ export async function GET(request: Request) {
         ...(sortDir ? { sortDir } : {}),
       });
 
-      return NextResponse.json(result);
+      return jsonCardList(result);
     } catch (error) {
       console.error('Error in GET /api/cards:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -701,6 +715,18 @@ export async function POST(request: Request) {
         status: 400,
         retryable: false,
       });
+    }
+    if (validationResult.data.audience) {
+      try {
+        await validateAudienceSelectionReferences(validationResult.data.audience);
+      } catch (cause) {
+        return apiRouteError({
+          code: 'CARD_CREATE_AUDIENCE_INVALID',
+          message: cause instanceof Error ? cause.message : 'Choose a valid Card audience.',
+          status: 400,
+          retryable: false,
+        });
+      }
     }
     
     // The createCard service function will handle defaults and timestamps

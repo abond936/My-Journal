@@ -6,6 +6,7 @@ import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { TAG_SET_0_LABEL } from '@/lib/constants/tagSet0';
 import {
   DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES,
+  type ClassificationRequirements,
   type GalleryTagInheritanceToggles,
   type TagSet0Status,
 } from '@/lib/types/authorSettings';
@@ -19,6 +20,7 @@ type SettingsResponse = {
   settings?: {
     galleryTagInheritance: GalleryTagInheritanceToggles;
     galleryTagInheritanceConfigured?: boolean;
+    classificationRequirements: ClassificationRequirements;
   };
   reconciliation?: {
     candidateCount: number;
@@ -79,6 +81,10 @@ export default function AdminSettingsPage() {
     ...DEFAULT_GALLERY_TAG_INHERITANCE_TOGGLES,
   });
   const [inheritanceConfigured, setInheritanceConfigured] = useState(false);
+  const [savedClassificationRequirements, setSavedClassificationRequirements] =
+    useState<ClassificationRequirements>({ media: true, cards: true });
+  const [classificationRequirements, setClassificationRequirements] =
+    useState<ClassificationRequirements>({ media: true, cards: true });
   const [tagSet0, setTagSet0] = useState<TagSet0Status>({ installed: false, tagCount: 0 });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -93,8 +99,18 @@ export default function AdminSettingsPage() {
   const [backupRunning, setBackupRunning] = useState(false);
 
   const isDirty = useMemo(
-    () => !inheritanceConfigured || !togglesEqual(toggles, savedToggles),
-    [inheritanceConfigured, toggles, savedToggles]
+    () =>
+      !inheritanceConfigured ||
+      !togglesEqual(toggles, savedToggles) ||
+      classificationRequirements.media !== savedClassificationRequirements.media ||
+      classificationRequirements.cards !== savedClassificationRequirements.cards,
+    [
+      classificationRequirements,
+      inheritanceConfigured,
+      savedClassificationRequirements,
+      savedToggles,
+      toggles,
+    ]
   );
 
   const loadOperations = useCallback(async () => {
@@ -144,6 +160,8 @@ export default function AdminSettingsPage() {
           setSavedToggles(data.settings.galleryTagInheritance);
           setToggles(data.settings.galleryTagInheritance);
           setInheritanceConfigured(data.settings.galleryTagInheritanceConfigured === true);
+          setSavedClassificationRequirements(data.settings.classificationRequirements);
+          setClassificationRequirements(data.settings.classificationRequirements);
         }
       } catch (error) {
         if (!cancelled) {
@@ -165,7 +183,8 @@ export default function AdminSettingsPage() {
 
   const cancel = useCallback(() => {
     setToggles({ ...savedToggles });
-  }, [savedToggles]);
+    setClassificationRequirements({ ...savedClassificationRequirements });
+  }, [savedClassificationRequirements, savedToggles]);
 
   const save = useCallback(async () => {
     const newlyEnabled = DIMENSION_ORDER.filter(
@@ -180,12 +199,32 @@ export default function AdminSettingsPage() {
       });
       if (!confirmed) return;
     }
+    const newlyRequired = [
+      !savedClassificationRequirements.media && classificationRequirements.media
+        ? 'Media'
+        : null,
+      !savedClassificationRequirements.cards && classificationRequirements.cards
+        ? 'Stories and other Cards'
+        : null,
+    ].filter((label): label is string => Boolean(label));
+    if (newlyRequired.length > 0) {
+      const confirmed = await feedback.confirm({
+        title: 'Require classification?',
+        message: `${newlyRequired.join(' and ')} will need Who, What, When, and Where review. Existing records will not be changed automatically; blank dimensions will appear as review work, and required items must be completed before publication.`,
+        confirmLabel: 'Require classification',
+        cancelLabel: 'Cancel',
+      });
+      if (!confirmed) return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/admin/author-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ galleryTagInheritance: toggles }),
+        body: JSON.stringify({
+          galleryTagInheritance: toggles,
+          classificationRequirements,
+        }),
       });
       const data = (await res.json()) as SettingsResponse;
       if (!res.ok) {
@@ -195,6 +234,8 @@ export default function AdminSettingsPage() {
         setSavedToggles(data.settings.galleryTagInheritance);
         setToggles(data.settings.galleryTagInheritance);
         setInheritanceConfigured(data.settings.galleryTagInheritanceConfigured === true);
+        setSavedClassificationRequirements(data.settings.classificationRequirements);
+        setClassificationRequirements(data.settings.classificationRequirements);
       }
       if (data.reconciliationError) {
         feedback.showToast({
@@ -212,8 +253,8 @@ export default function AdminSettingsPage() {
         const count = data.reconciliation?.reconciledCardCount ?? 0;
         feedback.showSuccess(
           count
-            ? `Settings saved. Updated ${count} existing card${count === 1 ? '' : 's'} using Gallery inheritance.`
-            : 'Settings saved. No existing protected cards were changed.'
+            ? `Settings saved. Updated ${count} existing card${count === 1 ? '' : 's'} using Gallery inheritance. Classification requirements did not rewrite existing records.`
+            : 'Settings saved. Classification requirements now apply at publication; no existing Card or Media records were changed.'
         );
       }
     } catch (error) {
@@ -221,7 +262,13 @@ export default function AdminSettingsPage() {
     } finally {
       setSaving(false);
     }
-  }, [feedback, savedToggles, toggles]);
+  }, [
+    classificationRequirements,
+    feedback,
+    savedClassificationRequirements,
+    savedToggles,
+    toggles,
+  ]);
 
   const installTagSet0 = useCallback(async () => {
     setTagSetBusy(true);
@@ -441,6 +488,55 @@ export default function AdminSettingsPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className={styles.section} aria-labelledby="classification-heading">
+        <h2 id="classification-heading" className={styles.sectionTitle}>
+          Classification requirements
+        </h2>
+        <p className={styles.hint}>
+          Choose which archive objects require Who, What, When, and Where review. Blank remains the
+          visible value until you review a dimension. Unknown and Not applicable are explicit,
+          searchable decisions; they are never assigned automatically.
+        </p>
+        <ul className={styles.toggleList}>
+          <li>
+            <label className={styles.toggleRow}>
+              <input
+                type="checkbox"
+                checked={classificationRequirements.media}
+                disabled={saving}
+                onChange={(event) =>
+                  setClassificationRequirements((current) => ({
+                    ...current,
+                    media: event.target.checked,
+                  }))
+                }
+              />
+              <span>Require classification for Media</span>
+            </label>
+          </li>
+          <li>
+            <label className={styles.toggleRow}>
+              <input
+                type="checkbox"
+                checked={classificationRequirements.cards}
+                disabled={saving}
+                onChange={(event) =>
+                  setClassificationRequirements((current) => ({
+                    ...current,
+                    cards: event.target.checked,
+                  }))
+                }
+              />
+              <span>Require classification for Stories and other Cards</span>
+            </label>
+          </li>
+        </ul>
+        <p className={styles.hint}>
+          Draft work remains open. Required classification is enforced when a Card is published;
+          unreferenced Media remains visible as archive work without blocking unrelated Stories.
+        </p>
       </section>
 
       <section className={styles.section} aria-labelledby="operations-heading">

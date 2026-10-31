@@ -7,7 +7,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
 import { folderLabelFromSourcePath } from '@/lib/utils/reviewClusterHeuristics';
-import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
+import { protectMediaListForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 import { isMediaAssigned, mediaMatchesDimensions, mediaMatchesSearch, seekMediaByAssignment } from '@/lib/utils/mediaAssignmentSeek';
 import {
   ensureMediaCollection,
@@ -390,7 +390,7 @@ export async function GET(request: NextRequest) {
           tagSelectionMode
         )
       );
-      const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
+      const mediaWithUrls = protectMediaListForAuthenticatedSession(filteredMedia);
 
       return NextResponse.json({
         media: mediaWithUrls,
@@ -474,7 +474,7 @@ export async function GET(request: NextRequest) {
         cursor,
         predicate
       );
-      const mediaWithUrls = applyPublicStorageUrls(media);
+      const mediaWithUrls = protectMediaListForAuthenticatedSession(media);
       return NextResponse.json({
         media: mediaWithUrls,
         pendingTagReconciliation: await pendingTagReconciliationPromise,
@@ -503,7 +503,7 @@ export async function GET(request: NextRequest) {
         search
       );
 
-      const mediaWithUrls = applyPublicStorageUrls(media);
+      const mediaWithUrls = protectMediaListForAuthenticatedSession(media);
 
       return NextResponse.json({
         media: mediaWithUrls,
@@ -586,7 +586,7 @@ export async function GET(request: NextRequest) {
     const lastDocId = docs.length > 0 ? docs[docs.length - 1].id : null;
     const totalPages = typeof total === 'number' ? Math.max(1, Math.ceil(total / limit)) : null;
 
-    const mediaWithUrls = applyPublicStorageUrls(filteredMedia);
+    const mediaWithUrls = protectMediaListForAuthenticatedSession(filteredMedia);
 
     return NextResponse.json({
       media: mediaWithUrls,

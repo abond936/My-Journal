@@ -116,6 +116,19 @@ describe('buildCollectionPlacementMutationPlan', () => {
     }));
   });
 
+  it('locks placement changes while the Collection is Published', () => {
+    expect(() => buildCollectionPlacementMutationPlan({
+      collection: collection({ lifecycle: 'published' }),
+      currentPlacements: current,
+      proposedPlacements: proposedFrom(current),
+      existingCardIds: new Set(['card-a', 'card-b', 'story']),
+      expectedStructureRevision: 3,
+      now,
+    })).toThrow(expect.objectContaining<Partial<CollectionPlacementMutationError>>({
+      code: 'COLLECTION_PUBLISHED_LOCKED',
+    }));
+  });
+
   it('refuses a stale Studio revision', () => {
     expect(() => buildCollectionPlacementMutationPlan({
       collection: collection(),

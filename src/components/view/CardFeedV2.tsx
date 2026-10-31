@@ -248,8 +248,8 @@ export default function CardFeedV2({
             </p>
           ) : !isAdmin ? (
             <p className={styles.emptyFeedHint}>
-              Signed-in family members only see <strong>published</strong> cards. Drafts stay hidden
-              until the author publishes them.
+              Signed-in family members only see Cards that are <strong>published and included in the Feed</strong>.
+              Drafts and Collection-only Cards stay out of this view.
             </p>
           ) : (
             <p className={styles.emptyFeedHint}>

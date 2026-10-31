@@ -81,7 +81,7 @@ describe('CardDimensionalTagCommandBar', () => {
     expect(bob.compareDocumentPosition(alan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('shows an inherited Unreviewed dimension instead of an ordinary blank', () => {
+  it('shows an inherited unreviewed dimension as blank', () => {
     render(
       <CardDimensionalTagCommandBar
         card={{
@@ -96,10 +96,9 @@ describe('CardDimensionalTagCommandBar', () => {
       />
     );
 
-    expect(screen.getByText('Unreviewed')).toHaveAttribute(
-      'title',
-      'Who requires review because at least one Gallery item is blank.'
-    );
+    expect(
+      screen.getByTitle('Blank; Who requires review because at least one Gallery item is blank.')
+    ).toHaveTextContent('-');
   });
 
   it('adds and removes subjects without replacing the other selected subjects', async () => {

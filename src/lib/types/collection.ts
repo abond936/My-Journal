@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { audienceSelectionSchema } from './audience';
 
 export const collectionLifecycleSchema = z.enum(['draft', 'published']);
 export const collectionRecordStateSchema = z.enum(['shadow', 'active']);
@@ -10,6 +11,8 @@ export const collectionSchema = z.object({
   description: z.string().optional().nullable(),
   introductionCardId: z.string().min(1).optional().nullable(),
   lifecycle: collectionLifecycleSchema.default('draft'),
+  /** Collection-route audience. Missing legacy values allow all enabled readers. */
+  audience: audienceSelectionSchema.optional(),
   recordState: collectionRecordStateSchema.default('active'),
   structureRevision: z.number().int().nonnegative().default(0),
   authorityRevision: z.number().int().nonnegative().default(0),

@@ -3,6 +3,7 @@ import { apiRouteError, apiRouteSuccess, withApiRouteHandler } from '@/lib/api/r
 import { retryMediaReadiness } from '@/lib/services/images/imageImportService';
 import { MEDIA_READINESS_STAGE_NAMES } from '@/lib/utils/mediaReadiness';
 import type { MediaReadinessStageName } from '@/lib/types/photo';
+import { protectMediaForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           id,
           body.stages as MediaReadinessStageName[] | undefined
         );
-        return apiRouteSuccess({ media });
+        return apiRouteSuccess({ media: protectMediaForAuthenticatedSession(media) });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Retry failed';
         if (message === 'Media not found') {

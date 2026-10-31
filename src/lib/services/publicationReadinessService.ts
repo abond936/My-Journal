@@ -9,6 +9,8 @@ import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
 import type { Media } from '@/lib/types/photo';
 import { isDimensionReviewComplete } from '@/lib/services/cards/cardPublicationIntegrityService';
+import { getAuthorSettings } from '@/lib/services/authorSettingsService';
+import type { ClassificationRequirements } from '@/lib/types/authorSettings';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 
@@ -30,8 +32,17 @@ export type CollectionPublicationAttention = {
     failed: number;
     unassessed: number;
   };
-  audienceSelectionAvailable: false;
+  audienceSelectionState: 'legacy_all_enabled' | 'all_enabled' | 'selected' | 'none';
 };
+
+function audienceSelectionState(
+  collection: Collection
+): CollectionPublicationAttention['audienceSelectionState'] {
+  if (!collection.audience) return 'legacy_all_enabled';
+  if (collection.audience.allContacts) return 'all_enabled';
+  if (collection.audience.groupIds.length || collection.audience.contactIds.length) return 'selected';
+  return 'none';
+}
 
 function referencedMediaIds(cards: Card[]): string[] {
   const ids = new Set<string>();
@@ -46,8 +57,13 @@ function referencedMediaIds(cards: Card[]): string[] {
 export function evaluateCollectionPublicationAttention(args: {
   structure: CollectionStructureReadModel;
   media: Media[];
+  classificationRequirements?: ClassificationRequirements;
 }): CollectionPublicationAttention {
   const { collection, placements, cards } = args.structure;
+  const classificationRequirements = args.classificationRequirements ?? {
+    media: true,
+    cards: true,
+  };
   const cardsById = new Map(cards.flatMap((card) => card.docId ? [[card.docId, card]] : []));
   const requiredCardIds = new Set([
     ...(collection.introductionCardId ? [collection.introductionCardId] : []),
@@ -69,24 +85,30 @@ export function evaluateCollectionPublicationAttention(args: {
     requiredCards: requiredCardIds.size,
     missingRequiredCards: requiredCardIds.size - requiredCards.length,
     draftCards: requiredCards.filter((card) => card.status !== 'published').length,
-    cardsNeedingDimensionReview: requiredCards.filter((card) =>
-      DIMENSIONS.some((dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension]))
-    ).length,
-    cardsMissingMeaningfulWhat: requiredCards.filter((card) =>
-      !isDimensionReviewComplete(card.dimensionReview?.what) || (card.what?.length ?? 0) === 0
-    ).length,
+    cardsNeedingDimensionReview: classificationRequirements.cards
+      ? requiredCards.filter((card) =>
+          DIMENSIONS.some((dimension) => !isDimensionReviewComplete(card.dimensionReview?.[dimension]))
+        ).length
+      : 0,
+    cardsMissingMeaningfulWhat: classificationRequirements.cards
+      ? requiredCards.filter((card) =>
+          !isDimensionReviewComplete(card.dimensionReview?.what) || (card.what?.length ?? 0) === 0
+        ).length
+      : 0,
     referencedMedia: mediaIds.length,
     missingMedia: mediaIds.length - referencedMedia.length,
-    mediaNeedingDimensionReview: referencedMedia.filter((item) =>
-      DIMENSIONS.some((dimension) => !isDimensionReviewComplete(item.dimensionReview?.[dimension]))
-    ).length,
+    mediaNeedingDimensionReview: classificationRequirements.media
+      ? referencedMedia.filter((item) =>
+          DIMENSIONS.some((dimension) => !isDimensionReviewComplete(item.dimensionReview?.[dimension]))
+        ).length
+      : 0,
     mediaReadiness: {
       ready: referencedMedia.filter((item) => item.readiness?.overall === 'ready').length,
       pending: referencedMedia.filter((item) => item.readiness?.overall === 'pending').length,
       failed: referencedMedia.filter((item) => item.readiness?.overall === 'failed').length,
       unassessed: referencedMedia.filter((item) => !item.readiness).length,
     },
-    audienceSelectionAvailable: false,
+    audienceSelectionState: audienceSelectionState(collection),
   };
 }
 
@@ -108,20 +130,29 @@ async function loadMedia(
 
 export async function getCollectionPublicationAttention(
   collectionId: string,
-  firestore: Firestore = getAdminApp().firestore()
+  firestore: Firestore = getAdminApp().firestore(),
+  classificationRequirements: ClassificationRequirements = { media: true, cards: true }
 ): Promise<CollectionPublicationAttention | null> {
   const structure = await getActiveCollectionStructure(collectionId, firestore);
   if (!structure) return null;
   const media = await loadMedia(referencedMediaIds(structure.cards), firestore);
-  return evaluateCollectionPublicationAttention({ structure, media });
+  return evaluateCollectionPublicationAttention({ structure, media, classificationRequirements });
 }
 
 export async function listActiveCollectionPublicationAttention(
   firestore: Firestore = getAdminApp().firestore()
 ): Promise<CollectionPublicationAttention[]> {
   const collections = await listActiveCollections(firestore);
+  if (collections.length === 0) return [];
+  const settings = await getAuthorSettings(firestore);
   const attention = await Promise.all(
-    collections.map((collection) => getCollectionPublicationAttention(collection.docId, firestore))
+    collections.map((collection) =>
+      getCollectionPublicationAttention(
+        collection.docId,
+        firestore,
+        settings.classificationRequirements
+      )
+    )
   );
   return attention.filter((item): item is CollectionPublicationAttention => Boolean(item));
 }

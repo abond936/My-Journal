@@ -491,10 +491,10 @@ export default function CardDimensionalTagCommandBar({
                     </span>
                   ) : dim === 'when' && card.galleryTemporalRollupStatus === 'unreviewed' ? (
                     <span
-                      className={clsx(styles.chipEmpty, styles.chipUnreviewed)}
-                      title="Gallery dates conflict and require an explicit Card date."
+                      className={styles.chipEmpty}
+                      title="Blank; Gallery dates require review before a Card date is confirmed."
                     >
-                      Unreviewed
+                      -
                     </span>
                   ) : dim === 'when' && temporalValue ? (
                     <span
@@ -511,10 +511,10 @@ export default function CardDimensionalTagCommandBar({
                   ) : core[dim].length === 0 ? (
                     card.galleryTagRollupStatuses?.[dim] === 'unreviewed' ? (
                       <span
-                        className={clsx(styles.chipEmpty, styles.chipUnreviewed)}
-                        title={`${DIMENSION_LABEL[dim]} requires review because at least one Gallery item is blank.`}
+                        className={styles.chipEmpty}
+                        title={`Blank; ${DIMENSION_LABEL[dim]} requires review because at least one Gallery item is blank.`}
                       >
-                        Unreviewed
+                        -
                       </span>
                     ) : (
                       <span className={styles.chipEmpty}>-</span>

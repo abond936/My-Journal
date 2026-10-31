@@ -24,6 +24,8 @@ export enum ErrorCode {
   COLLECTION_PLACEMENT_REFERENCE = 'COLLECTION_PLACEMENT_REFERENCE',
   /** A draft Card failed the required integrity checks for publication. */
   CARD_PUBLICATION_INTEGRITY = 'CARD_PUBLICATION_INTEGRITY',
+  /** A draft Collection failed the required integrity checks for publication. */
+  COLLECTION_PUBLICATION_INTEGRITY = 'COLLECTION_PUBLICATION_INTEGRITY',
 }
 
 // Standard API error response interface
@@ -94,6 +96,7 @@ export function getStatusCodeForError(code: ErrorCode): number {
     case ErrorCode.CURATED_COLLECTION_CYCLE:
     case ErrorCode.COLLECTION_PLACEMENT_REFERENCE:
     case ErrorCode.CARD_PUBLICATION_INTEGRITY:
+    case ErrorCode.COLLECTION_PUBLICATION_INTEGRITY:
       return 409;
     case ErrorCode.EXTERNAL_SERVICE_ERROR:
     case ErrorCode.MEDIA_PROCESSING_ERROR:

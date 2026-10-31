@@ -10,13 +10,14 @@ import {
 } from './cardMediaHydrationService';
 import { getCardsByIds, type CardHydrationMode } from './cardReadService';
 import { matchesSelectedTags, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 
 const firestore = getAdminApp().firestore();
 const CARDS_COLLECTION = 'cards';
 
 type RandomFeedProjection = Pick<
   Card,
-  'docId' | 'status' | 'type' | 'filterTags' | 'who' | 'what' | 'when' | 'where' | 'tags'
+  'docId' | 'status' | 'type' | 'feedIncluded' | 'filterTags' | 'who' | 'what' | 'when' | 'where' | 'tags'
 >;
 
 function normalizeChildrenIds(childrenIds: unknown): string[] {
@@ -45,6 +46,7 @@ export async function getSeededRandomCards(options: {
   limit?: number;
   lastDocId?: string;
   hydrationMode?: CardHydrationMode;
+  feedOnly?: boolean;
 }): Promise<{ items: Card[]; lastDocId?: string; hasMore: boolean }> {
   const {
     seed,
@@ -59,6 +61,7 @@ export async function getSeededRandomCards(options: {
     limit = 10,
     lastDocId,
     hydrationMode = 'full',
+    feedOnly = false,
   } = options;
   const multiTypes = types && types.length > 1 ? Array.from(new Set(types)).slice(0, 10) : undefined;
   const singleType = multiTypes
@@ -74,11 +77,12 @@ export async function getSeededRandomCards(options: {
   else if (singleType) query = query.where('type', '==', singleType);
 
   const snapshot = await query
-    .select('status', 'type', 'filterTags', 'who', 'what', 'when', 'where', 'tags')
+    .select('status', 'type', 'feedIncluded', 'filterTags', 'who', 'what', 'when', 'where', 'tags')
     .get();
   const filteredIds = snapshot.docs
     .map((doc) => ({ docId: doc.id, ...(doc.data() as Partial<Card>) } as RandomFeedProjection))
     .filter((card) => {
+      if (feedOnly && !isCardIncludedInFeed(card)) return false;
       if (tags?.some((tag) => tag && !card.filterTags?.[tag])) return false;
       if (dimensionalTags?.who && !matchesSelectedTags(card.who, dimensionalTags.who, tagSelectionMode)) return false;
       if (dimensionalTags?.what && !matchesSelectedTags(card.what, dimensionalTags.what, tagSelectionMode)) return false;

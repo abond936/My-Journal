@@ -6,6 +6,7 @@ export const BROWSER_PREFERENCE_KEYS = {
   studioCardBankLocalFilters: 'myjournal:studio:card-bank-local-filters:v1',
   mediaAdminStoredFilters: 'myjournal:media-admin:stored-filters:v1',
   mediaAdminLocalFilters: 'myjournal:media-admin:local-filters:v1',
+  mobileAuthorDestination: 'myjournal:author:mobile-destination:v1',
 } as const;
 
 export function getBrowserPreferenceStorage(): BrowserPreferenceStorage | null {

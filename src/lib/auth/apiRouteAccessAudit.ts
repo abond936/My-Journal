@@ -87,7 +87,15 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
 
   { method: 'GET', path: '/api/admin/journal-users', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/journal-users', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/admin/journal-users/prospective-access-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only legacy and all-enabled access inherited by a new Reader' },
   { method: 'PATCH', path: '/api/admin/journal-users/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/journal-users/[id]/access-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only exact Reader Card and Collection access before account enable or disable' },
+  { method: 'GET', path: '/api/admin/audience-groups', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/audience-groups', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'PATCH', path: '/api/admin/audience-groups/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'DELETE', path: '/api/admin/audience-groups/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/audience-groups/[id]/impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only membership consequence across currently Reader-visible Collections and Cards' },
+  { method: 'POST', path: '/api/admin/cards/[id]/audience-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only proposed Card audience union across standalone and published Collection routes' },
 
   { method: 'GET', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/archive-identity', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -107,7 +115,10 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'PUT', path: '/api/admin/collections/[id]/structure', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revisioned placement graph replacement; inactive shadows are rejected' },
   { method: 'GET', path: '/api/admin/collections', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Lists active durable Collections only' },
   { method: 'GET', path: '/api/admin/collections/[id]/structure', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Loads an active placement graph; inactive shadows are hidden' },
-  { method: 'POST', path: '/api/admin/collections/[id]/authority', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revisioned reversible authority selector; first activation requires current shadow parity' },
+  { method: 'POST', path: '/api/admin/collections/[id]/authority', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revisioned reversible Draft-only authority selector; first activation requires current shadow parity' },
+  { method: 'PATCH', path: '/api/admin/collections/[id]/audience', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Updates the Collection Reader audience after validating group and Reader references' },
+  { method: 'POST', path: '/api/admin/collections/[id]/audience-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only proposed Collection audience impact across every placed Card and its other Reader routes' },
+  { method: 'PATCH', path: '/api/admin/collections/[id]/lifecycle', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Draft and Published Collection lifecycle owner with publication-integrity enforcement' },
 
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/tags/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -186,7 +197,15 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
 
   { id: 'admin-journal-users-get', method: 'GET', path: '/api/admin/journal-users', modulePath: '@/app/api/admin/journal-users/route', requestUrl: 'https://example.test/api/admin/journal-users' },
   { id: 'admin-journal-users-post', method: 'POST', path: '/api/admin/journal-users', modulePath: '@/app/api/admin/journal-users/route', requestUrl: 'https://example.test/api/admin/journal-users', body: { email: 'viewer@example.com', role: 'viewer' } },
+  { id: 'admin-journal-users-prospective-impact-get', method: 'GET', path: '/api/admin/journal-users/prospective-access-impact', modulePath: '@/app/api/admin/journal-users/prospective-access-impact/route', requestUrl: 'https://example.test/api/admin/journal-users/prospective-access-impact' },
   { id: 'admin-journal-users-patch', method: 'PATCH', path: '/api/admin/journal-users/[id]', modulePath: '@/app/api/admin/journal-users/[id]/route', requestUrl: 'https://example.test/api/admin/journal-users/user-1', params: Promise.resolve({ id: 'user-1' }), body: { disabled: true } },
+  { id: 'admin-journal-users-access-impact-post', method: 'POST', path: '/api/admin/journal-users/[id]/access-impact', modulePath: '@/app/api/admin/journal-users/[id]/access-impact/route', requestUrl: 'https://example.test/api/admin/journal-users/user-1/access-impact', params: Promise.resolve({ id: 'user-1' }), body: { disabled: true } },
+  { id: 'admin-audience-groups-get', method: 'GET', path: '/api/admin/audience-groups', modulePath: '@/app/api/admin/audience-groups/route', requestUrl: 'https://example.test/api/admin/audience-groups' },
+  { id: 'admin-audience-groups-post', method: 'POST', path: '/api/admin/audience-groups', modulePath: '@/app/api/admin/audience-groups/route', requestUrl: 'https://example.test/api/admin/audience-groups', body: { name: 'Family', memberContactIds: [] } },
+  { id: 'admin-audience-groups-patch', method: 'PATCH', path: '/api/admin/audience-groups/[id]', modulePath: '@/app/api/admin/audience-groups/[id]/route', requestUrl: 'https://example.test/api/admin/audience-groups/family', params: Promise.resolve({ id: 'family' }), body: { name: 'Family', memberContactIds: [] } },
+  { id: 'admin-audience-groups-delete', method: 'DELETE', path: '/api/admin/audience-groups/[id]', modulePath: '@/app/api/admin/audience-groups/[id]/route', requestUrl: 'https://example.test/api/admin/audience-groups/family', params: Promise.resolve({ id: 'family' }) },
+  { id: 'admin-audience-groups-impact-post', method: 'POST', path: '/api/admin/audience-groups/[id]/impact', modulePath: '@/app/api/admin/audience-groups/[id]/impact/route', requestUrl: 'https://example.test/api/admin/audience-groups/family/impact', params: Promise.resolve({ id: 'family' }), body: { memberContactIds: [] } },
+  { id: 'admin-card-audience-impact-post', method: 'POST', path: '/api/admin/cards/[id]/audience-impact', modulePath: '@/app/api/admin/cards/[id]/audience-impact/route', requestUrl: 'https://example.test/api/admin/cards/card-1/audience-impact', params: Promise.resolve({ id: 'card-1' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
 
   { id: 'admin-archive-identity-get', method: 'GET', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity' },
   { id: 'admin-archive-identity-post', method: 'POST', path: '/api/admin/archive-identity', modulePath: '@/app/api/admin/archive-identity/route', requestUrl: 'https://example.test/api/admin/archive-identity', body: { entity: 'person', data: { canonicalName: 'Test Person' } } },
@@ -207,6 +226,9 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-collections-get', method: 'GET', path: '/api/admin/collections', modulePath: '@/app/api/admin/collections/route', requestUrl: 'https://example.test/api/admin/collections' },
   { id: 'admin-collections-structure-get', method: 'GET', path: '/api/admin/collections/[id]/structure', modulePath: '@/app/api/admin/collections/[id]/structure/route', requestUrl: 'https://example.test/api/admin/collections/my-life/structure', params: Promise.resolve({ id: 'my-life' }) },
   { id: 'admin-collections-authority-post', method: 'POST', path: '/api/admin/collections/[id]/authority', modulePath: '@/app/api/admin/collections/[id]/authority/route', requestUrl: 'https://example.test/api/admin/collections/my-life/authority', params: Promise.resolve({ id: 'my-life' }), body: { desiredState: 'active', expectedStructureRevision: 0, expectedAuthorityRevision: 0, confirmCollectionId: 'my-life' } },
+  { id: 'admin-collections-audience-patch', method: 'PATCH', path: '/api/admin/collections/[id]/audience', modulePath: '@/app/api/admin/collections/[id]/audience/route', requestUrl: 'https://example.test/api/admin/collections/my-life/audience', params: Promise.resolve({ id: 'my-life' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
+  { id: 'admin-collections-audience-impact-post', method: 'POST', path: '/api/admin/collections/[id]/audience-impact', modulePath: '@/app/api/admin/collections/[id]/audience-impact/route', requestUrl: 'https://example.test/api/admin/collections/my-life/audience-impact', params: Promise.resolve({ id: 'my-life' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
+  { id: 'admin-collections-lifecycle-patch', method: 'PATCH', path: '/api/admin/collections/[id]/lifecycle', modulePath: '@/app/api/admin/collections/[id]/lifecycle/route', requestUrl: 'https://example.test/api/admin/collections/my-life/lifecycle', params: Promise.resolve({ id: 'my-life' }), body: { lifecycle: 'draft' } },
 
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
   { id: 'admin-media-tags-reconcile', method: 'POST', path: '/api/admin/media/tags/reconcile', modulePath: '@/app/api/admin/media/tags/reconcile/route', requestUrl: 'https://example.test/api/admin/media/tags/reconcile', body: {} },

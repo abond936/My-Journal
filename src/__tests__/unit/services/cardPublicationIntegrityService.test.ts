@@ -16,6 +16,7 @@ const completeReview = {
 const readyCard = {
   docId: 'card-1',
   status: 'draft',
+  audience: { allContacts: true, groupIds: [], contactIds: [] },
   what: ['what-family'],
   dimensionReview: completeReview,
 } as Card;
@@ -89,6 +90,80 @@ describe('cardPublicationIntegrityService', () => {
             { mediaId: 'media-review', status: 'pending' },
             { mediaId: 'media-failed', status: 'failed' },
           ],
+        },
+      ],
+    });
+  });
+
+  it('requires an explicit nonempty audience and a Reader destination', () => {
+    const result = evaluateCardPublicationIntegrity(
+      {
+        ...readyCard,
+        audience: { allContacts: false, groupIds: [], contactIds: [] },
+        feedIncluded: false,
+      },
+      new Map(),
+      { media: false, cards: false },
+      { hasActiveCollectionPlacement: false }
+    );
+    expect(result).toEqual({
+      ready: false,
+      issues: [
+        { code: 'audience-unconfirmed' },
+        { code: 'destination-missing' },
+      ],
+    });
+  });
+
+  it('accepts an active draft Collection placement as the destination', () => {
+    expect(evaluateCardPublicationIntegrity(
+      { ...readyCard, feedIncluded: false },
+      new Map(),
+      { media: false, cards: false },
+      { hasActiveCollectionPlacement: true }
+    )).toEqual({ ready: true, issues: [] });
+  });
+
+  it('allows unclassified Cards when Card classification is not required', () => {
+    const card = { ...readyCard, what: [], dimensionReview: undefined } as Card;
+
+    expect(
+      evaluateCardPublicationIntegrity(card, new Map(), { media: true, cards: false })
+    ).toEqual({ ready: true, issues: [] });
+  });
+
+  it('allows unreviewed referenced Media when Media classification is not required', () => {
+    const card = { ...readyCard, coverImageId: 'media-1' } as Card;
+    const mediaById = new Map<string, Media>([
+      ['media-1', { docId: 'media-1', readiness: { overall: 'ready' } } as Media],
+    ]);
+
+    expect(
+      evaluateCardPublicationIntegrity(card, mediaById, { media: false, cards: true })
+    ).toEqual({ ready: true, issues: [] });
+  });
+
+  it('always enforces Media existence and readiness', () => {
+    const card = {
+      ...readyCard,
+      what: [],
+      dimensionReview: undefined,
+      coverImageId: 'media-missing',
+      contentMedia: ['media-pending'],
+    } as Card;
+    const mediaById = new Map<string, Media>([
+      ['media-pending', { docId: 'media-pending', readiness: { overall: 'pending' } } as Media],
+    ]);
+
+    expect(
+      evaluateCardPublicationIntegrity(card, mediaById, { media: false, cards: false })
+    ).toEqual({
+      ready: false,
+      issues: [
+        { code: 'media-missing', mediaIds: ['media-missing'] },
+        {
+          code: 'media-readiness',
+          media: [{ mediaId: 'media-pending', status: 'pending' }],
         },
       ],
     });

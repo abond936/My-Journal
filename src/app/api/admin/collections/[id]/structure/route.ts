@@ -56,7 +56,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
   } catch (error) {
     if (error instanceof CollectionPlacementMutationError) {
-      const status = error.code === 'COLLECTION_REVISION_CONFLICT' || error.code === 'COLLECTION_NOT_ACTIVE'
+      const status = error.code === 'COLLECTION_REVISION_CONFLICT'
+        || error.code === 'COLLECTION_NOT_ACTIVE'
+        || error.code === 'COLLECTION_PUBLISHED_LOCKED'
         ? 409
         : 422;
       return errorResponse(error.code, error.message, status, error.details);

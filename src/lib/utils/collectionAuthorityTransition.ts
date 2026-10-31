@@ -5,6 +5,7 @@ import { validateCollectionPlacementGraph } from '@/lib/utils/collectionPlacemen
 
 export type CollectionAuthorityTransitionErrorCode =
   | 'COLLECTION_AUTHORITY_CONFLICT'
+  | 'COLLECTION_PUBLISHED_LOCKED'
   | 'COLLECTION_ACTIVATION_NOT_READY';
 
 export class CollectionAuthorityTransitionError extends Error {
@@ -85,6 +86,12 @@ export function buildCollectionAuthorityTransitionPlan(args: {
       patch: null,
       operation: null,
     };
+  }
+  if (collection.lifecycle === 'published') {
+    throw new CollectionAuthorityTransitionError(
+      'COLLECTION_PUBLISHED_LOCKED',
+      'Return the Collection to Draft before changing durable authority.'
+    );
   }
 
   let readiness: ReturnType<typeof evaluateCollectionShadowReadiness> | null = null;

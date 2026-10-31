@@ -358,6 +358,8 @@ export default function CollectionsAdminClient({
   embeddedTagsCollapsed = false,
   embeddedCollectionsCollapsed = false,
   embeddedCardsCollapsed = false,
+  embeddedRightSlotCollapsed = false,
+  embeddedStacked = false,
 }: {
   initialCollectionId?: string | null;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
@@ -372,6 +374,8 @@ export default function CollectionsAdminClient({
   embeddedTagsCollapsed?: boolean;
   embeddedCollectionsCollapsed?: boolean;
   embeddedCardsCollapsed?: boolean;
+  embeddedRightSlotCollapsed?: boolean;
+  embeddedStacked?: boolean;
 }) {
   const initialStudioCardBankSharedPrefsRef = useRef(readStoredStudioCardBankSharedFilterPreferences());
   const [cards, setCards] = useState<Card[]>([]);
@@ -413,12 +417,13 @@ export default function CollectionsAdminClient({
   const showCollectionsPane = !studioAttachBank || !embeddedCollectionsCollapsed;
   const showOrganizationPane = showTagsPane || showCollectionsPane;
   const showCardsPane = !(studioAttachBank && embeddedCardsCollapsed);
+  const showRightSlot = !embeddedRightSlotCollapsed;
   const rightSlotMinWidth = Math.max(MIN_MEDIA_COL, embeddedRightSlotMinWidth ?? MIN_MEDIA_COL);
   const treeDropZonesReadOnly = !curatedTreeDnd;
   /** Embedded Studio shares one drag runtime so cross-pane card and media drags can cross columns. */
   const needsDndContext = curatedTreeDnd;
   const layoutRef = useRef<HTMLDivElement | null>(null);
-  const [wideCenterLayout] = useState(true);
+  const wideCenterLayout = !embeddedStacked;
   const [wTree, setWTree] = useState(312);
   const [wUnparent, setWUnparent] = useState(296);
   const wTreeRef = useRef(wTree);
@@ -1444,8 +1449,9 @@ export default function CollectionsAdminClient({
       const columns = [
         ...(showTagsPane ? [`${STUDIO_TAGS_COL}px`] : []),
         ...(showCollectionsPane ? [`${STUDIO_COLLECTIONS_COL}px`] : []),
-        ...(showCardsPane ? [`${wUnparent}px`, `${COL_HANDLE}px`] : []),
-        `minmax(${rightSlotMinWidth}px, 1fr)`,
+        ...(showCardsPane ? [`${wUnparent}px`] : []),
+        ...(showCardsPane && showRightSlot ? [`${COL_HANDLE}px`] : []),
+        ...(showRightSlot ? [`minmax(${rightSlotMinWidth}px, 1fr)`] : []),
       ];
       return { gridTemplateColumns: columns.join(' ') };
     }
@@ -1465,6 +1471,7 @@ export default function CollectionsAdminClient({
     showCardsPane,
     showCollectionsPane,
     showOrganizationPane,
+    showRightSlot,
     showTagsPane,
     studioAttachBank,
     wTree,
@@ -1670,7 +1677,7 @@ export default function CollectionsAdminClient({
             </section>
             ) : null}
 
-            {wideCenterLayout && (studioAttachBank ? showCardsPane : (showOrganizationPane || showCardsPane)) ? (
+            {wideCenterLayout && showRightSlot && (studioAttachBank ? showCardsPane : (showOrganizationPane || showCardsPane)) ? (
               <div
                 className={styles.colResizeHandle}
                 role="separator"
@@ -1687,15 +1694,17 @@ export default function CollectionsAdminClient({
               />
             ) : null}
 
-            {typeof embeddedRightSlot === 'function' ? (
-              embeddedRightSlot({
-                refreshStructure: () => void load({ soft: true }),
-                upsertCard: upsertEmbeddedCard,
-                removeCard: removeEmbeddedCard,
-              })
-            ) : (
-              embeddedRightSlot
-            )}
+            {showRightSlot ? (
+              typeof embeddedRightSlot === 'function' ? (
+                embeddedRightSlot({
+                  refreshStructure: () => void load({ soft: true }),
+                  upsertCard: upsertEmbeddedCard,
+                  removeCard: removeEmbeddedCard,
+                })
+              ) : (
+                embeddedRightSlot
+              )
+            ) : null}
           </div>
   );
 

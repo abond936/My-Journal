@@ -39,7 +39,7 @@ const baseSummary: AuthorDashboardSummary = {
         missingMedia: 17,
         mediaNeedingDimensionReview: 201,
         mediaReadiness: { ready: 0, pending: 2, failed: 1, unassessed: 275 },
-        audienceSelectionAvailable: false,
+        audienceSelectionState: 'legacy_all_enabled',
       }],
     },
   },
@@ -49,6 +49,14 @@ describe('AuthorDashboard', () => {
   it('presents Collection publication work as attention without blocking drafts', () => {
     render(<AuthorDashboard summary={baseSummary} />);
 
+    expect(screen.getByRole('link', { name: 'Start a Story' })).toHaveAttribute(
+      'href',
+      '/admin/studio?new=1'
+    );
+    expect(screen.getByRole('link', { name: 'Continue in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio'
+    );
     expect(screen.getByRole('heading', { name: 'Needs attention' })).toBeInTheDocument();
     expect(screen.getByText(/Draft work can continue/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'My Life' })).toBeInTheDocument();
@@ -59,7 +67,15 @@ describe('AuthorDashboard', () => {
     expect(screen.getByText('87')).toBeInTheDocument();
     expect(screen.getByText('17')).toBeInTheDocument();
     expect(screen.getByText('278')).toBeInTheDocument();
-    expect(screen.getByText('Not yet available')).toBeInTheDocument();
+    expect(screen.getByText('All enabled readers (legacy default)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Collections in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio?destination=collections'
+    );
+    expect(screen.getByRole('link', { name: 'Open Media in Studio' })).toHaveAttribute(
+      'href',
+      '/admin/studio?destination=media'
+    );
   });
 
   it('degrades Collection attention independently', () => {

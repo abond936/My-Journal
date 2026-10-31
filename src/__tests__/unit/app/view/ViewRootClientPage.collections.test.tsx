@@ -6,6 +6,9 @@ import { useDurableCollectionReader } from '@/components/view/useDurableCollecti
 jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams('mode=guided&collection=my-life'),
 }));
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: { user: { id: 'viewer-1', role: 'viewer' } } }),
+}));
 jest.mock('@/components/providers/CardProvider', () => ({ useCardContext: jest.fn() }));
 jest.mock('@/components/view/useDurableCollectionReader', () => ({ useDurableCollectionReader: jest.fn() }));
 jest.mock('@/components/view/DurableCollectionFeed', () => ({

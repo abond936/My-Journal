@@ -49,6 +49,13 @@ jest.mock('@/lib/auth/authOptions', () => ({
   authOptions: {},
 }));
 
+jest.mock('@/lib/auth/audienceAccess', () => ({
+  canReadCardForAudience: jest.fn(async (_session, card) => card.status === 'published'),
+  filterCardsForAudience: jest.fn(async (_session, cards) =>
+    cards.filter((card: { status?: string }) => card.status === 'published')
+  ),
+}));
+
 jest.mock('@/lib/services/cards/cardReadService', () => ({
   getCardById: jest.fn(),
   getCardsByIds: jest.fn(),
@@ -208,6 +215,16 @@ describe('reader access boundary', () => {
     expect(mediaRes.status).toBe(401);
   });
 
+  it('does not expose the private Media archive to reader accounts', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { id: 'viewer-1', role: 'viewer' } } as never);
+
+    const res = await viewMedia(makeRequest('https://example.test/api/view/media'));
+    const payload = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(payload.message).toBe('The private Media archive is available only to the author.');
+  });
+
   it('passes the Reader Gallery hydration tier through the card list route', async () => {
     mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
     mockedGetCards.mockResolvedValue({ items: [], hasMore: false });
@@ -220,6 +237,39 @@ describe('reader access boundary', () => {
     expect(mockedGetCards).toHaveBeenCalledWith(
       expect.objectContaining({ hydrationMode: 'reader-feed' })
     );
+  });
+
+  it('removes permanent Media URLs and private archive fields from Reader card lists', async () => {
+    mockedGetServerSession.mockResolvedValue({ user: { role: 'viewer' } } as never);
+    mockedGetCards.mockResolvedValue({
+      items: [
+        {
+          docId: 'card-1',
+          title: 'Published story',
+          status: 'published',
+          content: '<figure data-media-id="media-1"><img src="https://firebasestorage.googleapis.com/public.jpg"></figure>',
+          coverImage: {
+            docId: 'media-1',
+            storageUrl: 'https://firebasestorage.googleapis.com/public.jpg',
+            storagePath: 'images/private-path.jpg',
+            sourcePath: 'private/source/path.jpg',
+            tags: ['private-tag'],
+          },
+        } as never,
+      ],
+      hasMore: false,
+    });
+
+    const response = await listCards(
+      makeRequest('https://example.test/api/cards?status=published&limit=10')
+    );
+    const payload = await response.json();
+
+    expect(payload.items[0].coverImage.storageUrl).toBe('/api/reader/media/media-1');
+    expect(payload.items[0].coverImage).not.toHaveProperty('storagePath');
+    expect(payload.items[0].coverImage).not.toHaveProperty('sourcePath');
+    expect(payload.items[0].coverImage).not.toHaveProperty('tags');
+    expect(JSON.stringify(payload)).not.toContain('firebasestorage.googleapis.com');
   });
 
   it('scans additional ordered card batches before paginating dimension-subject results', async () => {

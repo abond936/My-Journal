@@ -46,6 +46,9 @@ import {
 import { buildResolvedTagDimensionMap } from '@/lib/utils/tagDimensionResolve';
 import { DIMENSION_LABEL, DIMENSION_ORDER, type TagDimension } from '@/lib/utils/tagDisplay';
 import CardStoryAssist from '@/components/admin/studio/cards/CardStoryAssist';
+import AudienceSelector from '@/components/admin/audience/AudienceSelector';
+import type { AudienceSelection } from '@/lib/types/audience';
+import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -102,6 +105,37 @@ const CardForm: React.FC = () => {
   const [calloutFits, setCalloutFits] = useState(true);
 
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  const saveStandaloneAudience = useCallback(async (audience: AudienceSelection): Promise<boolean> => {
+    if (cardData.status === 'published' && cardData.docId) {
+      const confirmed = await feedback.confirm({
+        title: 'Change published Story audience?',
+        message: 'This changes who can read the published Story through its standalone or Feed route on their next request. Collection placement may separately grant access. No one will be notified.',
+        confirmLabel: 'Save audience',
+        cancelLabel: 'Keep current audience',
+      });
+      if (!confirmed) return false;
+    }
+    if (!cardData.docId) {
+      setField('audience', audience);
+      return true;
+    }
+    return persistFieldPatch({ audience });
+  }, [cardData.docId, cardData.status, feedback, persistFieldPatch, setField]);
+
+  const getCombinedAudienceImpact = useCallback(async (audience: AudienceSelection): Promise<CardAudienceImpact> => {
+    if (!cardData.docId) {
+      throw new Error('Save the Story before calculating Collection routes.');
+    }
+    const response = await fetch(`/api/admin/cards/${encodeURIComponent(cardData.docId)}/audience-impact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...audience, feedIncluded: cardData.feedIncluded !== false }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.impact) throw new Error(data.message || 'Combined audience could not be calculated.');
+    return data.impact as CardAudienceImpact;
+  }, [cardData.docId, cardData.feedIncluded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -227,6 +261,41 @@ const CardForm: React.FC = () => {
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     persistStatusChange(e.target.value as Card['status']);
   }, [persistStatusChange]);
+  const handleFeedIncludedChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const feedIncluded = e.target.checked;
+    if ((lastSavedState.cardData.feedIncluded !== false) === feedIncluded) return;
+    if (cardData.status === 'published' && cardData.docId) {
+      try {
+        const response = await fetch(`/api/admin/cards/${encodeURIComponent(cardData.docId)}/audience-impact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...(cardData.audience ?? { allContacts: true, groupIds: [], contactIds: [] }),
+            feedIncluded,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.impact) throw new Error(data.message || 'Feed access impact could not be calculated.');
+        const impact = data.impact as CardAudienceImpact;
+        const list = (readers: CardAudienceImpact['effectiveReaders']) => readers.length
+          ? readers.map((reader) => reader.displayName).join(', ')
+          : 'none';
+        const confirmed = await feedback.confirm({
+          title: feedIncluded ? 'Add published Story to Reader Feed?' : 'Remove published Story from Reader Feed?',
+          message: `Readers gaining access: ${list(impact.gainingReaders)}. Readers losing access: ${list(impact.losingReaders)}. Effective readers after this change: ${list(impact.effectiveReaders)}. Collection routes remain independent. No one will be notified.`,
+          confirmLabel: feedIncluded ? 'Include in Feed' : 'Remove from Feed',
+          cancelLabel: 'Keep current placement',
+        });
+        if (!confirmed) return;
+      } catch (error) {
+        feedback.showError(error instanceof Error ? error.message : 'Feed access impact could not be calculated.', 'Placement not changed');
+        return;
+      }
+    }
+    setField('feedIncluded', feedIncluded);
+    const saved = await persistFieldPatch({ feedIncluded });
+    if (!saved) setField('feedIncluded', lastSavedState.cardData.feedIncluded !== false);
+  }, [cardData.audience, cardData.docId, cardData.status, feedback, lastSavedState.cardData.feedIncluded, persistFieldPatch, setField]);
   const handleTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const nextType = e.target.value as Card['type'];
@@ -891,6 +960,12 @@ const CardForm: React.FC = () => {
     </div>
   );
 
+  const publishedEditNotice = cardData.status === 'published' ? (
+    <p className={styles.publishedEditNotice} role="note">
+      This Card is published. Saved changes may be visible to readers. Return it to Draft first if you want to take it offline while editing.
+    </p>
+  ) : null;
+
   const storyAssistSection = (
     <CardStoryAssist
       title={cardData.title || ''}
@@ -945,6 +1020,16 @@ const CardForm: React.FC = () => {
           filterTagIds={cardData.tags ?? []}
         />
       )}
+      <AudienceSelector
+        value={cardData.audience}
+        scopeLabel="Standalone Story"
+        consequence={cardData.feedIncluded === false
+          ? 'Standalone Feed access is currently off. This audience is retained for use if Feed inclusion is restored; Collection audiences remain separate.'
+          : 'Controls the standalone and Feed route. A Collection placement may separately grant access to this Story.'}
+        disabled={isSaving}
+        onSave={saveStandaloneAudience}
+        getCombinedImpact={cardData.docId ? getCombinedAudienceImpact : undefined}
+      />
       {studioShellForm && !studioShellDnd ? (
         <DndContext
           sensors={localShellFormSensors}
@@ -1031,6 +1116,7 @@ const CardForm: React.FC = () => {
                     </>
                   )}
                 </div>
+                {publishedEditNotice}
                 <div className={styles.statusSection}>
                   {studioShellForm ? studioStatusToggle : (
                     <div className={styles.selectGroup}>
@@ -1046,6 +1132,17 @@ const CardForm: React.FC = () => {
                       </select>
                     </div>
                   )}
+                  <div className={styles.selectGroup}>
+                    <span className={styles.selectLabel}>Placement</span>
+                    <label className={styles.excerptToggle}>
+                      <input
+                        type="checkbox"
+                        checked={cardData.feedIncluded !== false}
+                        onChange={handleFeedIncludedChange}
+                      />
+                      <span className={styles.excerptToggleLabel}>Include in Reader Feed</span>
+                    </label>
+                  </div>
                   <div className={styles.selectGroup}>
                     <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                     <select
@@ -1268,6 +1365,7 @@ const CardForm: React.FC = () => {
                 </>
               )}
             </div>
+            {publishedEditNotice}
             <div className={styles.statusSection}>
               {studioShellForm ? studioStatusToggle : (
                 <div className={styles.selectGroup}>
@@ -1283,6 +1381,17 @@ const CardForm: React.FC = () => {
                   </select>
                 </div>
               )}
+              <div className={styles.selectGroup}>
+                <span className={styles.selectLabel}>Placement</span>
+                <label className={styles.excerptToggle}>
+                  <input
+                    type="checkbox"
+                    checked={cardData.feedIncluded !== false}
+                    onChange={handleFeedIncludedChange}
+                  />
+                  <span className={styles.excerptToggleLabel}>Include in Reader Feed</span>
+                </label>
+              </div>
               <div className={styles.selectGroup}>
                 <label htmlFor="type-select" className={styles.selectLabel}>Type</label>
                 <select

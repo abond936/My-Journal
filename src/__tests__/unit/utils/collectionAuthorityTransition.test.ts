@@ -97,6 +97,28 @@ describe('Collection authority transition planner', () => {
     expect(plan.operation).toMatchObject({ initialActivation: false, previousState: 'active', nextState: 'shadow' });
   });
 
+  it('requires Draft before changing established durable authority', () => {
+    const { collection, placements } = fixture();
+    const active = {
+      ...collection,
+      lifecycle: 'published',
+      recordState: 'active',
+      authorityRevision: 1,
+      authorityEstablishedAt: 100,
+    } as Collection;
+    expect(() => buildCollectionAuthorityTransitionPlan({
+      collection: active,
+      placements,
+      sourceCards: [],
+      desiredState: 'shadow',
+      expectedStructureRevision: 0,
+      expectedAuthorityRevision: 1,
+      now: 200,
+    })).toThrow(expect.objectContaining<Partial<CollectionAuthorityTransitionError>>({
+      code: 'COLLECTION_PUBLISHED_LOCKED',
+    }));
+  });
+
   it('allows a validated durable graph to resume authority after rollback without requiring legacy parity', () => {
     const { cards, collection, placements } = fixture();
     const established = { ...collection, authorityRevision: 2, authorityEstablishedAt: 100 } as Collection;

@@ -90,6 +90,10 @@
 .sourceHint {
   margin: 0;
   padding: 0.5rem 1rem 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   color: var(--admin-support-hint-color);
   font-family: var(--admin-support-hint-font-family);
   font-size: var(--admin-support-hint-font-size);
@@ -97,6 +101,11 @@
   line-height: var(--admin-support-hint-line-height);
   border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
   background-color: var(--admin-window-background-color);
+}
+
+.sourceHint p {
+  flex: 1 1 18rem;
+  margin: 0;
 }
 
 .content {

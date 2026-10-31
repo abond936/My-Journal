@@ -3,6 +3,7 @@ import { mediaSchema, Media } from './photo';
 import { galleryTagInheritanceTogglesSchema } from './authorSettings';
 import { temporalValueSchema } from './temporal';
 import { dimensionReviewMapSchema } from './dimensionReview';
+import { audienceSelectionSchema } from './audience';
 
 const galleryTagRollupStatusSchema = z.enum(['empty', 'reviewed', 'unreviewed']);
 export const galleryTagRollupStatusesSchema = z.object({
@@ -55,6 +56,10 @@ export const cardSchema = z.object({
   // Card type: drives feed/view rendering. Any type may have childrenIds for structural collections.
   type: z.enum(['story', 'qa', 'quote', 'callout', 'gallery']).default('story'),
   status: z.enum(['draft', 'published']).default('draft'),
+  /** Independent Reader Feed placement. Missing legacy values remain included for compatibility. */
+  feedIncluded: z.boolean().optional(),
+  /** Standalone Card/Feed audience. Missing legacy values allow all enabled readers. */
+  audience: audienceSelectionSchema.optional(),
   displayMode: z.enum(['inline', 'navigate', 'static']).default('navigate'),
 
   // For Q&A cards, the source question-bank prompt. New QA cards must be created from Questions.

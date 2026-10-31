@@ -19,6 +19,10 @@
   --studio-tag-chip-text-color: var(--admin-chrome-text-color);
 }
 
+.pageMobile {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
 :global(html[data-theme='light']) .page {
   --studio-pane-background: color-mix(in srgb, var(--layout-background1-color) 78%, var(--layout-background2-color) 22%);
   --studio-pane-background-muted: color-mix(in srgb, var(--layout-background1-color) 62%, var(--layout-background2-color) 38%);
@@ -50,6 +54,33 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: var(--spacing-xs);
+}
+
+.studioTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.mobileHeaderButton {
+  min-height: 40px;
+  padding: 0.45rem 0.75rem;
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-support-control-strong-background-color);
+  color: var(--admin-support-control-strong-text-color);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.mobileHeaderButton:hover,
+.mobileHeaderButton:focus-visible {
+  background: var(--admin-support-control-strong-hover-background-color);
 }
 
 /* Studio page chrome: fixed height in the flex column (not a second document scroller). */
@@ -536,6 +567,53 @@
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+.studioMediaCardRowMobile {
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobileDestinationNav {
+  position: fixed;
+  z-index: 90;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: calc(60px + env(safe-area-inset-bottom));
+  padding: 4px 4px env(safe-area-inset-bottom);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
+  background: color-mix(in srgb, var(--admin-window-background-color) 96%, transparent);
+  box-shadow: 0 -8px 24px color-mix(in srgb, black 16%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.mobileDestinationButton {
+  min-width: 0;
+  min-height: 52px;
+  padding: 0.35rem 0.15rem;
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-chrome-meta-color);
+  font-family: var(--admin-chrome-text-font-family);
+  font-size: clamp(0.68rem, 2.8vw, var(--font-size-sm));
+  font-weight: var(--admin-chrome-text-font-weight);
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.mobileDestinationButton:hover,
+.mobileDestinationButton:focus-visible {
+  color: var(--admin-chrome-text-color);
+  background: var(--admin-support-control-hover-background-color);
+}
+
+.mobileDestinationButtonActive {
+  color: var(--admin-chrome-active-control-text-color);
+  background: var(--admin-chrome-active-control-background-color);
 }
 
 /* Media + resize handle + fixed-width card edit (wide Studio only) */

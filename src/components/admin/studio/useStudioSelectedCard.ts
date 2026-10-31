@@ -121,6 +121,21 @@ export function useStudioSelectedCard({
     return true;
   }, [selectCard, selectedCardId]);
 
+  const confirmComposeLeave = useCallback(async () => {
+    return !composeLeaveGuardRef.current || await composeLeaveGuardRef.current();
+  }, []);
+
+  const requestClearSelectedCard = useCallback(async () => {
+    if (!(await confirmComposeLeave())) return false;
+    setSelectedCardId(null);
+    setSelectedPreview(null);
+    setSelectedDetail(null);
+    setCardError(null);
+    setCardLoading(false);
+    setSelectedLoadState('idle');
+    return true;
+  }, [confirmComposeLeave]);
+
   const loadSelectedCard = useCallback(async (cardId: string, options?: { quiet?: boolean }) => {
     if (!options?.quiet) setCardLoading(true);
     setCardError(null);
@@ -297,6 +312,8 @@ export function useStudioSelectedCard({
     setCardLoading,
     selectCard,
     requestSelectCard,
+    confirmComposeLeave,
+    requestClearSelectedCard,
     registerComposeLeaveGuard,
     getKnownCardPreview,
     loadSelectedCard,

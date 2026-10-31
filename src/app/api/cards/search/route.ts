@@ -6,12 +6,15 @@ import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { searchCardsFiltered } from '@/lib/services/typesenseService';
 import { isInputCapFailure, parseListPageLimit } from '@/lib/api/inputCaps';
 import { isAdminSession } from '@/lib/auth/readerAccess';
+import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import {
   apiRouteError,
   apiRouteListLimitError,
   apiRouteSuccess,
   withApiRouteHandler,
 } from '@/lib/api/routeEnvelope';
+import { protectCardListForReader } from '@/lib/utils/readerMediaDelivery';
+import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +50,7 @@ export async function GET(request: Request) {
       const limit = limitResult.value;
       const lastDocId = searchParams.get('lastDocId') || undefined;
       const status = isAdminSession(session) ? 'all' : 'published';
+      const readerFeedOnly = !isAdminSession(session);
 
       let result: PaginatedResult<Card>;
       let searchMode: CardSearchResult['searchMode'] = 'title-prefix';
@@ -68,7 +72,8 @@ export async function GET(request: Request) {
           if (searchResult.docIds.length === 0) {
             result = { items: [], hasMore: false, lastDocId: undefined };
           } else {
-            const items = await getCardsByIds(searchResult.docIds);
+            const rawItems = await getCardsByIds(searchResult.docIds);
+            const items = readerFeedOnly ? rawItems.filter(isCardIncludedInFeed) : rawItems;
             result = {
               items,
               lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
@@ -99,7 +104,21 @@ export async function GET(request: Request) {
         });
       }
 
-      return apiRouteSuccess<CardSearchResult>({ ...result, searchMode, degraded });
+      if (readerFeedOnly) {
+        const items = result.items.filter(isCardIncludedInFeed);
+        result = {
+          ...result,
+          items,
+          lastDocId: items.length > 0 ? items[items.length - 1].docId : undefined,
+        };
+      }
+      const payload: CardSearchResult = { ...result, searchMode, degraded };
+      const authorizedPayload = readerFeedOnly
+        ? { ...payload, items: await filterCardsForAudience(session, payload.items) }
+        : payload;
+      return apiRouteSuccess<CardSearchResult>(
+        readerFeedOnly ? protectCardListForReader(authorizedPayload) : authorizedPayload
+      );
     }
   );
 }

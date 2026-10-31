@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/authOptions';
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
 import type { Media } from '@/lib/types/photo';
+import { protectMediaForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
 const MAX_SOURCE_PATHS_PER_REQUEST = 100;
 
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
             results.push({
               sourcePath,
               mediaId: r.mediaId,
-              media: r.media,
+              media: protectMediaForAuthenticatedSession(r.media),
               ...(r.skipped ? { skipped: true } : {}),
             });
             if (importRouteDebug) {
@@ -247,7 +248,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       mediaId,
-      media,
+      media: protectMediaForAuthenticatedSession(media),
       ...(skipped ? { skipped: true } : {}),
       ...(metadataReadIssues.length > 0 ? { metadataReadIssues } : {}),
     });

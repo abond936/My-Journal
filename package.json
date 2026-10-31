@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "test": "jest",
     "test:integrity": "jest src/__tests__/integrity",
-    "test:integrity:emulator:run": "jest --config jest.emulator.config.js src/__tests__/integrity/emulator.integrity.test.ts src/__tests__/integrity/emulator.curated-tree-updateCard.test.ts --runInBand",
+    "test:integrity:emulator:run": "jest --config jest.emulator.config.js src/__tests__/integrity/emulator.integrity.test.ts src/__tests__/integrity/emulator.curated-tree-updateCard.test.ts src/__tests__/integrity/emulator.collection-lifecycle.test.ts --runInBand",
     "test:integrity:emulator": "npx --yes firebase-tools@13 emulators:exec --project demo-my-journal-integrity --only firestore \"npm run test:integrity:emulator:run\"",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

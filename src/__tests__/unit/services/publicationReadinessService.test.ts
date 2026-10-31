@@ -91,8 +91,27 @@ describe('publicationReadinessService', () => {
       missingMedia: 1,
       mediaNeedingDimensionReview: 1,
       mediaReadiness: { ready: 1, pending: 0, failed: 0, unassessed: 1 },
-      audienceSelectionAvailable: false,
+      audienceSelectionState: 'legacy_all_enabled',
     });
+  });
+
+  it.each([
+    [{ allContacts: true, groupIds: [], contactIds: [] }, 'all_enabled'],
+    [{ allContacts: false, groupIds: ['family'], contactIds: [] }, 'selected'],
+    [{ allContacts: false, groupIds: [], contactIds: [] }, 'none'],
+  ] as const)('reports the authored Collection audience state for %j', (audience, expected) => {
+    const result = evaluateCollectionPublicationAttention({
+      structure: {
+        collection: {
+          docId: 'collection-1', title: 'Family Stories', lifecycle: 'draft', recordState: 'active',
+          structureRevision: 0, authorityRevision: 0, order: 0, createdAt: 1, updatedAt: 1, audience,
+        },
+        placements: [],
+        cards: [],
+      },
+      media: [],
+    });
+    expect(result.audienceSelectionState).toBe(expected);
   });
 
   it('counts Unknown and Not applicable as completed dimensional review', () => {
@@ -136,5 +155,45 @@ describe('publicationReadinessService', () => {
 
     expect(result.cardsNeedingDimensionReview).toBe(0);
     expect(result.cardsMissingMeaningfulWhat).toBe(0);
+  });
+
+  it('does not report optional classification as required Collection attention', () => {
+    const result = evaluateCollectionPublicationAttention({
+      structure: {
+        collection: {
+          docId: 'collection-1',
+          title: 'Family Stories',
+          lifecycle: 'draft',
+          recordState: 'active',
+          structureRevision: 0,
+          authorityRevision: 0,
+          order: 0,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+        placements: [{
+          docId: 'placement-a',
+          collectionId: 'collection-1',
+          cardId: 'card-a',
+          role: 'card',
+          order: 0,
+          createdAt: 1,
+          updatedAt: 1,
+        }],
+        cards: [{
+          docId: 'card-a',
+          title: 'Unclassified story',
+          status: 'draft',
+          what: [],
+          coverImageId: 'media-a',
+        }],
+      } as never,
+      media: [{ docId: 'media-a', readiness: { overall: 'ready' } }] as never,
+      classificationRequirements: { media: false, cards: false },
+    });
+
+    expect(result.cardsNeedingDimensionReview).toBe(0);
+    expect(result.cardsMissingMeaningfulWhat).toBe(0);
+    expect(result.mediaNeedingDimensionReview).toBe(0);
   });
 });

@@ -43,7 +43,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   } catch (error) {
     if (error instanceof CollectionAuthorityTransitionError) {
-      const status = error.code === 'COLLECTION_AUTHORITY_CONFLICT' ? 409 : 422;
+      const status = error.code === 'COLLECTION_AUTHORITY_CONFLICT'
+        || error.code === 'COLLECTION_PUBLISHED_LOCKED'
+        ? 409
+        : 422;
       return NextResponse.json({
         ok: false,
         code: error.code,

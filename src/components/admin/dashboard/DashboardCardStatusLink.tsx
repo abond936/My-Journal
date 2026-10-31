@@ -27,7 +27,7 @@ export default function DashboardCardStatusLink({
       search: '',
       statusFilter: status,
     });
-    router.push('/admin/studio');
+    router.push('/admin/studio?destination=cards');
   };
 
   return (

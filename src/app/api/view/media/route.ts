@@ -4,7 +4,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { isTypesenseConfigured } from '@/lib/config/typesense';
 import { Media } from '@/lib/types/photo';
 import { PaginatedResult } from '@/lib/types/services';
-import { applyPublicStorageUrls } from '@/lib/utils/storageUrl';
+import { protectMediaListForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 import { mediaMatchesSearch } from '@/lib/utils/mediaAssignmentSeek';
 import {
   ensureMediaCollection,
@@ -17,7 +17,7 @@ import {
 } from '@/lib/utils/tagUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
-import { isAuthenticatedSession } from '@/lib/auth/readerAccess';
+import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess';
 import { matchesSelectedTags, readTagSelectionMode, type TagSelectionMode } from '@/lib/utils/tagSelectionMode';
 
 type ExactDimensionalTagIdMap = Partial<Record<'who' | 'what' | 'when' | 'where', string[]>>;
@@ -144,7 +144,7 @@ async function seekMediaWithPredicates(
   }
 
   return {
-    items: applyPublicStorageUrls(matched),
+    items: protectMediaListForAuthenticatedSession(matched),
     hasMore,
     lastDocId,
   };
@@ -170,6 +170,9 @@ export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!isAuthenticatedSession(session)) {
     return errorResponse('Authentication required.', 401);
+  }
+  if (!isAdminSession(session)) {
+    return errorResponse('The private Media archive is available only to the author.', 403);
   }
 
   try {
@@ -206,7 +209,9 @@ export async function GET(request: NextRequest) {
         dimensionalTags,
         tagSelectionMode,
       });
-      const items = applyPublicStorageUrls(await fetchMediaByIdsInOrder(firestore, result.docIds));
+      const items = protectMediaListForAuthenticatedSession(
+        await fetchMediaByIdsInOrder(firestore, result.docIds)
+      );
       const filteredItems = items.filter((row) => mediaMatchesDimensionalTags(row, dimensionalTags, tagScope, tagSelectionMode));
       return NextResponse.json({
         items: filteredItems,

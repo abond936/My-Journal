@@ -86,6 +86,9 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     await clearCollection(db, 'cards');
     await clearCollection(db, 'media');
     await clearCollection(db, 'tags');
+    await clearCollection(db, 'collections');
+    await clearCollection(db, 'collection_placements');
+    await clearCollection(db, 'app_settings');
   });
 
   afterAll(async () => {
@@ -236,6 +239,50 @@ describeIfEmulator('Curated tree updateCard (Firestore emulator)', () => {
     const { updateCard } = await getCardService();
     await expect(updateCard('lonely-parent', { childrenIds: ['no-such-card'] })).rejects.toMatchObject({
       code: ErrorCode.CURATED_COLLECTION_CHILD_NOT_FOUND,
+    });
+  });
+
+  it('blocks broad-save publication until the audience is explicitly confirmed', async () => {
+    const db = getFirestore(app);
+    await db.collection('app_settings').doc('author').set({
+      classificationRequirements: { media: false, cards: false },
+    });
+    await db.collection('cards').doc('draft-no-audience').set(
+      minimalCard('draft-no-audience', { status: 'draft' })
+    );
+
+    const { updateCard } = await getCardService();
+    await expect(updateCard('draft-no-audience', { status: 'published' })).rejects.toMatchObject({
+      code: ErrorCode.CARD_PUBLICATION_INTEGRITY,
+      details: { issues: expect.arrayContaining([{ code: 'audience-unconfirmed' }]) },
+    });
+  });
+
+  it('accepts an active draft Collection placement as the broad-save destination', async () => {
+    const db = getFirestore(app);
+    await db.collection('app_settings').doc('author').set({
+      classificationRequirements: { media: false, cards: false },
+    });
+    await db.collection('cards').doc('draft-in-collection').set(
+      minimalCard('draft-in-collection', {
+        status: 'draft',
+        feedIncluded: false,
+        audience: { allContacts: true, groupIds: [], contactIds: [] },
+      })
+    );
+    await db.collection('collections').doc('collection-draft').set({
+      title: 'Draft Collection',
+      recordState: 'active',
+      lifecycle: 'draft',
+    });
+    await db.collection('collection_placements').doc('placement-1').set({
+      collectionId: 'collection-draft',
+      cardId: 'draft-in-collection',
+    });
+
+    const { updateCard } = await getCardService();
+    await expect(updateCard('draft-in-collection', { status: 'published' })).resolves.toMatchObject({
+      status: 'published',
     });
   });
 });
