@@ -1294,6 +1294,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
+### Nineteenth implementation slice — Restore mobile Author entry
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make the approved mobile Author Home and sequential Studio reachable instead of covering every narrow `/admin` route with the legacy desktop-only dialog.
+
+**Includes** — A route-aware Administration viewport gate that permits only Author Home and Studio at phone width; retention of the desktop-only boundary for Users, Settings, Theme, development, maintenance, and preview routes; removal of those unavailable destinations from mobile primary navigation; and a truthful desktop-only Settings note on mobile Author Home.
+
+**Excludes** — Making archive-scale administration mobile; changing the mobile destination model; redesigning Author Home or Compose; adding destination-specific touch workflows; changing Reader behavior; production data mutation; deployment; and publication of any Card or Collection.
+
+**Contracts** — Mobile capability is granted to exact approved surfaces, not to the `/admin` namespace as a whole. Theme retains its independent desktop gate even when opened over a mobile-capable Author route. Desktop behavior and navigation remain unchanged. Unavailable mobile destinations are absent or identified before selection rather than leading to a surprise blocker.
+
+**Completion evidence** — Production inspection first reproduced the global `Admin only available on desktop` dialog on Author Home, Cards, and Start a Story at phone width and traced it to the shared Administration gate. Four focused gate, navigation, Theme-overlay, and Author Home suites pass thirteen tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. Authenticated local browser rendering could not run without Firebase service credentials and was not replaced with fabricated credentials. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

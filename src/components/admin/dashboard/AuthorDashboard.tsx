@@ -187,7 +187,13 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
               <h2 id="operations-heading">Archive operations</h2>
               <p>Check background work that is active or needs attention.</p>
             </div>
-            <Link className={styles.secondaryAction} href="/admin/settings">Open Settings</Link>
+            <Link
+              className={`${styles.secondaryAction} ${styles.desktopOnlyAction}`}
+              href="/admin/settings"
+            >
+              Open Settings
+            </Link>
+            <span className={styles.mobileOnlyNote}>Settings are available on desktop.</span>
           </div>
           {summary.operations.status === 'ready' ? (
             <div className={styles.metrics}>

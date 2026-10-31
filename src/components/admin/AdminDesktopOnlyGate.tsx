@@ -1,16 +1,25 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ADMIN_VIEWPORT_MIN_WIDTH_PX } from '@/lib/constants/adminViewport';
 import styles from './AdminDesktopOnlyGate.module.css';
 
 interface AdminDesktopOnlyGateProps {
   children: React.ReactNode;
+  allowMobileAuthorPaths?: boolean;
 }
 
-export default function AdminDesktopOnlyGate({ children }: AdminDesktopOnlyGateProps) {
+export function isMobileAuthorPath(pathname: string | null): boolean {
+  return pathname === '/admin' || pathname === '/admin/studio';
+}
+
+export default function AdminDesktopOnlyGate({
+  children,
+  allowMobileAuthorPaths = false,
+}: AdminDesktopOnlyGateProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -25,7 +34,9 @@ export default function AdminDesktopOnlyGate({ children }: AdminDesktopOnlyGateP
     return <>{children}</>;
   }
 
-  if (!isDesktop) {
+  const mobileAuthorPathAllowed = allowMobileAuthorPaths && isMobileAuthorPath(pathname);
+
+  if (!isDesktop && !mobileAuthorPathAllowed) {
     return (
       <div
         className={styles.backdrop}

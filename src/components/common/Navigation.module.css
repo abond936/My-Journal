@@ -247,6 +247,10 @@
 }
 
 @media (max-width: 768px) {
+  .desktopAdminLink {
+    display: none;
+  }
+
   .navContainer {
     padding: var(--spacing-xs) var(--spacing-md);
     margin-left: 0 !important;
