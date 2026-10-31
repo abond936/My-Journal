@@ -8,6 +8,7 @@ import { validateCollectionPlacementGraph } from '@/lib/utils/collectionPlacemen
 
 export type CollectionPlacementMutationErrorCode =
   | 'COLLECTION_NOT_ACTIVE'
+  | 'COLLECTION_PUBLISHED_LOCKED'
   | 'COLLECTION_REVISION_CONFLICT'
   | 'COLLECTION_STRUCTURE_INVALID'
   | 'COLLECTION_MUTATION_TOO_LARGE';
@@ -110,6 +111,12 @@ export function buildCollectionPlacementMutationPlan(args: {
     throw new CollectionPlacementMutationError(
       'COLLECTION_NOT_ACTIVE',
       'The Collection placement graph is not active for Studio authoring.'
+    );
+  }
+  if (collection.lifecycle === 'published') {
+    throw new CollectionPlacementMutationError(
+      'COLLECTION_PUBLISHED_LOCKED',
+      'Return the Collection to Draft before changing its structure.'
     );
   }
   const currentRevision = collection.structureRevision ?? 0;

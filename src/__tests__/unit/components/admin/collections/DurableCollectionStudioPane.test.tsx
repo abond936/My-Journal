@@ -123,7 +123,7 @@ describe('DurableCollectionStudioPane', () => {
         expect.objectContaining({ docId: 'second', order: 10 }),
       ],
     });
-    expect(screen.getByText('Revision 4')).toBeInTheDocument();
+    expect(screen.getByText(/Revision 4/)).toBeInTheDocument();
   });
 
   it('reparents a placement through role-compatible parent choices without changing Card identity', async () => {
@@ -208,7 +208,7 @@ describe('DurableCollectionStudioPane', () => {
       }),
     ]));
     expect(screen.getByRole('button', { name: 'Found Story' })).toBeInTheDocument();
-    expect(screen.getByText('Revision 4')).toBeInTheDocument();
+    expect(screen.getByText(/Revision 4/)).toBeInTheDocument();
   });
 
   it('removes only a leaf placement and preserves its canonical Card', async () => {
@@ -288,5 +288,63 @@ describe('DurableCollectionStudioPane', () => {
       '/api/admin/collections/my-life/audience-impact',
       expect.objectContaining({ method: 'POST' })
     );
+  });
+
+  it('locks structural controls while a Collection is Published', async () => {
+    const publishedCollection = { ...activeCollection, lifecycle: 'published' as const };
+    global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [publishedCollection] });
+      if (url === '/api/admin/journal-users') return response({ users: [] });
+      if (url === '/api/admin/audience-groups') return response({ groups: [] });
+      if (url.endsWith('/audience-impact') && init?.method === 'POST') {
+        return response({ impact: { basis: 'current_after_save', proposedRouteReaders: [], cards: [], missingCardIds: [] } });
+      }
+      return response({
+        ok: true,
+        collection: publishedCollection,
+        placements: [
+          { docId: 'story', collectionId: 'my-life', cardId: 'story-card', role: 'card', order: 10, createdAt: 1, updatedAt: 1 },
+        ],
+        cards: [{ docId: 'story-card', title: 'A Story', status: 'published' }],
+      });
+    }) as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    expect(await screen.findByRole('button', { name: 'Return to Draft' })).toBeInTheDocument();
+    expect(screen.getByText(/Published structure is locked/)).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Find a Card to add' })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: 'Role for A Story' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove A Story from Collection' })).toBeDisabled();
+  });
+
+  it('publishes through the confirmed lifecycle action and updates the local Collection state', async () => {
+    const confirm = jest.fn(() => true);
+    Object.defineProperty(window, 'confirm', { configurable: true, value: confirm });
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [activeCollection] });
+      if (url === '/api/admin/journal-users') return response({ users: [] });
+      if (url === '/api/admin/audience-groups') return response({ groups: [] });
+      if (url.endsWith('/audience-impact') && init?.method === 'POST') {
+        return response({ impact: { basis: 'if_published_and_reader_valid', proposedRouteReaders: [], cards: [], missingCardIds: [] } });
+      }
+      if (url.endsWith('/lifecycle') && init?.method === 'PATCH') {
+        return response({
+          ok: true,
+          collection: { ...activeCollection, lifecycle: 'published', updatedAt: 2 },
+        });
+      }
+      return response({ ok: true, collection: activeCollection, placements: [], cards: [] });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Publish Collection' }));
+    expect(await screen.findByText('Collection published to its confirmed audience.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Return to Draft' })).toBeInTheDocument();
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Publishing makes this Collection'));
+    const lifecycleCall = fetchMock.mock.calls.find(([input]) => String(input).endsWith('/lifecycle'));
+    expect(JSON.parse(String(lifecycleCall?.[1]?.body))).toEqual({ lifecycle: 'published' });
   });
 });

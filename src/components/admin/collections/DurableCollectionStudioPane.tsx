@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Card } from '@/lib/types/card';
 import type {
   Collection,
+  CollectionLifecycle,
   CollectionPlacement,
   CollectionPlacementRole,
   CollectionPlacementStructureInput,
@@ -52,6 +53,7 @@ export default function DurableCollectionStudioPane({
   const [cardSearch, setCardSearch] = useState('');
   const [cardSearchResults, setCardSearchResults] = useState<Card[]>([]);
   const [searchingCards, setSearchingCards] = useState(false);
+  const structureLocked = structure?.collection.lifecycle === 'published';
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +130,10 @@ export default function DurableCollectionStudioPane({
     nextCards: Card[] = structure?.cards ?? []
   ): Promise<boolean> => {
     if (!structure || saving) return false;
+    if (structure.collection.lifecycle === 'published') {
+      setError('Return the Collection to Draft before changing its structure.');
+      return false;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -158,6 +164,40 @@ export default function DurableCollectionStudioPane({
       setSaving(false);
     }
   }, [loadStructure, saving, structure]);
+
+  const updateLifecycle = useCallback(async (lifecycle: CollectionLifecycle) => {
+    if (!structure || saving) return;
+    const verb = lifecycle === 'published' ? 'publish' : 'return to Draft';
+    const consequence = lifecycle === 'published'
+      ? 'Publishing makes this Collection and its placed Cards available to the confirmed Collection audience.'
+      : 'Returning to Draft removes this Collection route from Reader access; Cards may remain available through Feed or other Collections.';
+    if (!window.confirm(`${consequence}\n\nContinue to ${verb} ${structure.collection.title}?`)) return;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/admin/collections/${encodeURIComponent(structure.collection.docId)}/lifecycle`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lifecycle }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Collection lifecycle could not be saved.');
+      const collection = data.collection as Collection;
+      setStructure((current) => current ? { ...current, collection } : current);
+      setCollections((current) => current.map((item) => item.docId === collection.docId ? collection : item));
+      setMessage(lifecycle === 'published'
+        ? 'Collection published to its confirmed audience.'
+        : 'Collection returned to Draft. Its structure can now be edited privately.');
+    } catch (lifecycleError) {
+      setError(lifecycleError instanceof Error ? lifecycleError.message : 'Collection lifecycle could not be saved.');
+    } finally {
+      setSaving(false);
+    }
+  }, [saving, structure]);
 
   const saveAudience = useCallback(async (audience: AudienceSelection): Promise<boolean> => {
     if (!structure || saving) return false;
@@ -338,7 +378,7 @@ export default function DurableCollectionStudioPane({
         <select
           aria-label={`Role for ${card?.title || 'Untitled Card'}`}
           value={placement.role}
-          disabled={saving}
+          disabled={structureLocked || saving}
           onChange={(event) => changeRole(placement.docId, event.target.value as CollectionPlacementRole)}
         >
           {roles.map((role) => <option key={role} value={role}>{role}</option>)}
@@ -346,7 +386,7 @@ export default function DurableCollectionStudioPane({
         <select
           aria-label={`Parent for ${card?.title || 'Untitled Card'}`}
           value={placement.parentPlacementId ?? ''}
-          disabled={saving || placement.role === 'part'}
+          disabled={structureLocked || saving || placement.role === 'part'}
           onChange={(event) => changeParent(placement.docId, event.target.value || null)}
         >
           <option value="">Collection level</option>
@@ -356,11 +396,11 @@ export default function DurableCollectionStudioPane({
             </option>
           ))}
         </select>
-        <button type="button" disabled={saving || siblingIndex <= 0} onClick={() => movePlacement(placement.docId, -1)} aria-label={`Move ${card?.title || 'Card'} up`}>↑</button>
-        <button type="button" disabled={saving || siblingIndex < 0 || siblingIndex >= siblings.length - 1} onClick={() => movePlacement(placement.docId, 1)} aria-label={`Move ${card?.title || 'Card'} down`}>↓</button>
+        <button type="button" disabled={structureLocked || saving || siblingIndex <= 0} onClick={() => movePlacement(placement.docId, -1)} aria-label={`Move ${card?.title || 'Card'} up`}>↑</button>
+        <button type="button" disabled={structureLocked || saving || siblingIndex < 0 || siblingIndex >= siblings.length - 1} onClick={() => movePlacement(placement.docId, 1)} aria-label={`Move ${card?.title || 'Card'} down`}>↓</button>
         <button
           type="button"
-          disabled={saving || children.length > 0}
+          disabled={structureLocked || saving || children.length > 0}
           onClick={() => removeLeafPlacement(placement)}
           aria-label={`Remove ${card?.title || 'Card'} from Collection`}
           title={children.length ? 'Move or remove child placements first.' : 'Remove this placement; the Card is preserved.'}
@@ -392,10 +432,24 @@ export default function DurableCollectionStudioPane({
       {structure ? (
         <div className={styles.heading}>
           <strong>{structure.collection.title}</strong>
-          <span>Revision {structure.collection.structureRevision}</span>
+          <div className={styles.headingActions}>
+            <span>{structure.collection.lifecycle === 'published' ? 'Published' : 'Draft'} · Revision {structure.collection.structureRevision}</span>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void updateLifecycle(
+                structure.collection.lifecycle === 'published' ? 'draft' : 'published'
+              )}
+            >
+              {structure.collection.lifecycle === 'published' ? 'Return to Draft' : 'Publish Collection'}
+            </button>
+          </div>
         </div>
       ) : null}
       <p className={styles.note}>Placement-native Studio: Cards remain canonical while this Collection owns role, parent, and order.</p>
+      {structureLocked ? (
+        <p className={styles.note}>Published structure is locked. Return the Collection to Draft before adding, removing, moving, or changing placement roles.</p>
+      ) : null}
       {structure ? (
         <AudienceSelector
           value={structure.collection.audience}
@@ -412,6 +466,7 @@ export default function DurableCollectionStudioPane({
           aria-label="Find a Card to add"
           placeholder="Find a Card to add..."
           value={cardSearch}
+          disabled={structureLocked}
           onChange={(event) => setCardSearch(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -420,7 +475,7 @@ export default function DurableCollectionStudioPane({
             }
           }}
         />
-        <button type="button" disabled={searchingCards || !cardSearch.trim()} onClick={() => void searchCards()}>
+        <button type="button" disabled={structureLocked || searchingCards || !cardSearch.trim()} onClick={() => void searchCards()}>
           {searchingCards ? 'Searching...' : 'Search'}
         </button>
       </div>
@@ -429,7 +484,7 @@ export default function DurableCollectionStudioPane({
           {cardSearchResults.map((card) => (
             <li key={card.docId}>
               <span>{card.title || 'Untitled Card'}</span>
-              <button type="button" disabled={saving} onClick={() => void addCard(card)}>
+              <button type="button" disabled={structureLocked || saving} onClick={() => void addCard(card)}>
                 Add
               </button>
             </li>
