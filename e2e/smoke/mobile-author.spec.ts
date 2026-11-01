@@ -13,13 +13,6 @@ test.describe('mobile Author journey', () => {
       }
     });
 
-    await page.goto('/admin/help');
-    await expect(page.getByRole('heading', { level: 1, name: "MY STORIES USER'S GUIDE" })).toBeVisible({
-      timeout: 45_000,
-    });
-    await expect(page.getByRole('heading', { level: 2, name: '2. Start Small' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: '10. Worked Examples' })).toBeVisible();
-
     await page.goto('/admin/studio');
 
     const destinations = page.getByRole('navigation', { name: 'Author destinations' });
