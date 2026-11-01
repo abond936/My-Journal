@@ -1438,6 +1438,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
 
+### Twenty-eighth implementation slice — Promote local Collection structure
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected PR verification pending
+
+**Outcome** — Let an author turn one useful Part, Chapter, or Section into a separate Collection without duplicating Cards or creating a live structural dependency between the two works.
+
+**Includes** — A Make Collection action beside structural placements; an author-entered target title; the selected structural Card as the new Collection introduction; copied descendant order and arrangement with new placement identities; canonical Card reuse; the minimum legal role rebasing when a promoted Chapter's Sections become Collection-level Chapters; one atomic create-only transaction; source-revision conflict detection; title-conflict detection; a recoverable operation record; and automatic opening of the new private draft Collection.
+
+**Excludes** — Copying Card content or Media; changing or deleting the source placement; synchronizing later edits; inferring audience, Feed inclusion, or publication; promoting an ordinary Card placement; Book edition export; production mutation; merge; and deployment.
+
+**Contracts** — Promotion reads one complete active source graph but writes only a new Collection, new local placement records for the selected descendants, and one operation record. The selected structural Card becomes the introduction rather than appearing twice as both introduction and immediate placement. Part children already legal at Collection level retain their roles. Chapter children that were Sections become top-level Chapters because Section cannot exist at Collection level; their Card children remain unchanged. Section children become top-level Cards. Empty structural placements may become introduction-only draft Collections. Source publication does not block the copy because promotion does not mutate the source, but a stale structure revision fails closed.
+
+**Completion evidence** — Five focused promotion-plan, transaction-owner, administrator-route, Studio, and access-contract suites pass 201 tests. The plan proves Part, Chapter, and empty-structure cases, excludes neighboring branches, preserves Card IDs and order, and rejects stale source revisions. The complete runnable Jest gate passes 235 suites and 1,269 tests, with four suites and 29 tests skipped by their declared environment gates. Production typecheck, touched-code lint, the 59-page optimized build, and diff checks pass; protected PR verification remains pending. No production request, content record, audience, lifecycle, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

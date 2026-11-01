@@ -330,6 +330,45 @@ describe('DurableCollectionStudioPane', () => {
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/api/cards/story-card'))).toBe(false);
   });
 
+  it('creates an independent draft Collection from a structural placement', async () => {
+    Object.defineProperty(window, 'prompt', { configurable: true, value: jest.fn(() => 'Childhood') });
+    const promotedCollection = {
+      ...activeCollection, docId: 'childhood', title: 'Childhood', structureRevision: 0, order: 20,
+    };
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [activeCollection] });
+      if (url.endsWith('/promote') && init?.method === 'POST') {
+        return response({ ok: true, collection: promotedCollection, placementCount: 2, operationId: 'promote-childhood' });
+      }
+      if (url.includes('/childhood/structure')) {
+        return response({ ok: true, collection: promotedCollection, placements: [], cards: [] });
+      }
+      return response({
+        ok: true,
+        collection: activeCollection,
+        placements: [
+          { docId: 'part', collectionId: 'my-life', cardId: 'part-card', role: 'part', order: 10, createdAt: 1, updatedAt: 1 },
+        ],
+        cards: [{ docId: 'part-card', title: 'Childhood' }],
+      });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Create Collection from Childhood' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/collections/my-life/promote',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    const promoteCall = fetchMock.mock.calls.find(([input]) => String(input).endsWith('/promote'));
+    expect(JSON.parse(String(promoteCall?.[1]?.body))).toEqual({
+      sourcePlacementId: 'part', expectedStructureRevision: 3, title: 'Childhood',
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/admin/collections/childhood/structure'));
+  });
+
   it('shows placement-wide audience impact before the Collection audience is saved', async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
