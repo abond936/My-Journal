@@ -258,6 +258,8 @@ After import, confirm that the files appear, inspect processing failures, and us
 
 **Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
 
+After selecting Media in the Library, choose **Create card** to begin a new Gallery Card or **Add to existing card** to search for a Card and append the selection to its Gallery. Media already in the chosen Gallery is not duplicated. Adding Media to a published Card changes what its readers can see immediately under the current publication policy, so the chooser identifies that consequence before the update.
+
 ## 5. Tag Effectively
 
 Settings offers four archive standards: require neither Media nor Cards to have complete Who, What, When, and Where review; require Media only; require Cards only; or require both. These are author-selected standards, not different products.
