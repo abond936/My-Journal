@@ -42,6 +42,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const { showBack, backHref } = useReaderBackTarget(pathname, returnTo);
   const isThemeAdminRoute = (pathname?.startsWith('/admin/theme-admin') ?? false) || isThemeAdminOpen;
   const isStudioRoute = Boolean(pathname?.startsWith('/admin/studio'));
+  const isGuideRoute = Boolean(pathname?.startsWith('/admin/help'));
   const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
   const isArchiveSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
   const isAccountRoute = pathname === '/account' || pathname === '/settings';
@@ -148,6 +149,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 className={`${styles.navLink} ${isStudioRoute ? styles.active : ''}`}
               >
                 Studio
+              </Link>
+              <Link
+                href="/admin/help"
+                className={`${styles.navLink} ${isGuideRoute ? styles.active : ''}`}
+              >
+                Guide
               </Link>
               <Link
                 href="/admin/journal-users"

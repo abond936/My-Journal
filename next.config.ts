@@ -7,6 +7,9 @@ loadEnvConfig(path.resolve(__dirname));
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(__dirname),
+  outputFileTracingIncludes: {
+    '/admin/help': ['./docs/07-Users-Guide.md'],
+  },
   // Large legacy lint surface; run `npm run lint` locally. Re-enable after cleanup.
   eslint: {
     ignoreDuringBuilds: true,

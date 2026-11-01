@@ -11,7 +11,7 @@ interface AdminDesktopOnlyGateProps {
 }
 
 export function isMobileAuthorPath(pathname: string | null): boolean {
-  return pathname === '/admin' || pathname === '/admin/studio';
+  return pathname === '/admin' || pathname === '/admin/studio' || pathname === '/admin/help';
 }
 
 export default function AdminDesktopOnlyGate({

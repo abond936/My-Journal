@@ -1555,10 +1555,11 @@ The former stabilization objective and its controlling execution order are compl
 Prioritize individually only after Release Candidate and the relevant comprehension work:
 
 1. **Reader package choice** — Per-reader Journal/Editorial selection and persistence.
-2. **Help** — Product guidance beyond essential contextual copy. `07-Users-Guide.md` now covers the complete initial author method: product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and contrasting phone-first and scanned-archive examples. In-app delivery remains deferred and requires its own Definition Gate.
-3. **Editorial controls** — Deliberate long-form presentation controls where approved.
-4. **Media duplicates** — Evidence recovery and confirmed same-asset reconciliation; likely-match review remains low priority unless archive pain proves otherwise.
-5. **Search and taxonomy extensions** — Include/exclude filtering, useful aggregation, and advanced keyboard/drag behavior.
+2. **Editorial controls** — Deliberate long-form presentation controls where approved.
+3. **Media duplicates** — Evidence recovery and confirmed same-asset reconciliation; likely-match review remains low priority unless archive pain proves otherwise.
+4. **Search and taxonomy extensions** — Include/exclude filtering, useful aggregation, and advanced keyboard/drag behavior.
+
+**Verified slice — In-app Author Guide delivery** — The administrator menu exposes one Guide destination on phone and desktop. `/admin/help` remains inside the existing administrator authorization boundary and renders `07-Users-Guide.md` directly as the single content source; it adds no guide editing, search, onboarding state, Reader help, or competing documentation copy. Focused navigation and mobile-route tests, touched-code lint, production typecheck, the optimized build, and build-trace readback pass. The protected hosted mobile Author probe includes the guide's beginning, Start Small chapter, worked examples, and read-only request behavior before continuing through the existing Author journey; hosted passage remains a release check rather than local evidence.
 
 **Authoring adjustment inventory — Deferred**
 

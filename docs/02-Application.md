@@ -108,18 +108,15 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Header** — Reader identity, appearance control, menu, and sign-out.
 - **Admin entry** — Authorized access to administrative surfaces.
-- **Hierarchy** — Ordered Home, Reader, role-authorized Studio, Users, Settings, Theme, contextual Light/Dark action, Account, and sign-out destinations without development landing-page variants.
+- **Hierarchy** — Ordered Home, Reader, role-authorized Studio, Guide, Users, Settings, Theme, contextual Light/Dark action, Account, and sign-out destinations without development landing-page variants.
 - **History** — Native mobile browser edge navigation is not intercepted by the closed Reader sidebar.
 - **Return** — Reader detail preserves safe feed, search, query, card-focus, and scroll context with direct-entry fallback.
 - **Appearance** — The quick account-backed action offers Light with a sun when Dark is active and Dark with a moon when Light is active; Account retains the personal placeholder.
+- **Help** — The administrator menu opens the canonical User's Guide as a read-only phone-and-desktop surface. The guide covers product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and worked phone-first and scanned-archive examples.
 
 ⭕1 **Planned**
 
 - **Reader/Author switch** — Give the author-administrator a persistent, clear way to move between Reader and Author after role-aware entry; readers never receive the Author destination.
-
-⭕2 **Future**
-
-- **Help** — Deliver product guidance beyond essential contextual copy through an in-app surface. The support User's Guide now covers product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and worked phone-first and scanned-archive examples. In-app delivery remains incomplete.
 
 ### Left Navigation
 
