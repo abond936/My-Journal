@@ -24,6 +24,7 @@ export default async function AccountPage() {
         username: account.username,
         displayName: account.displayName,
         role: account.role,
+        accessKind: account.accessKind,
       }}
     />
   );

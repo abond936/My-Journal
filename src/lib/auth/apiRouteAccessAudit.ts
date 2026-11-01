@@ -32,6 +32,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
 
   { method: 'GET', path: '/api/account/preferences', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Current account only' },
   { method: 'PATCH', path: '/api/account/preferences', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Current account only' },
+  { method: 'POST', path: '/api/account/convert-guest', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Current guest recipient only' },
 
   { method: 'GET', path: '/api/cards', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
   { method: 'POST', path: '/api/cards', access: 'admin-only', anonymousStatus: 403, viewer: 403 },

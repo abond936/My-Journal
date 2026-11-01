@@ -361,7 +361,7 @@ Review with the intended reader in mind:
 
 Test representative phone and desktop reading. Reader access includes only authorized published Cards and Collections plus the Media those surfaces reference. It does not expose the author's private Media bank.
 
-Publishing and delivery are not the same action. The author can authorize password accounts, guest recipients, groups, and individuals. In User Management, review the access a new guest will inherit, create the guest, and manually send the private invitation link. The link works once and expires after seven days; use **New invitation link** if it must be replaced. Automated email distribution, password recovery, and conversion from guest access to a password account remain future capabilities.
+Publishing and delivery are not the same action. The author can authorize password accounts, guest recipients, groups, and individuals. In User Management, review the access a new guest will inherit, create the guest, and manually send the private invitation link. The link works once and expires after seven days; use **New invitation link** if it must be replaced. After signing in, a guest can open Account, create a password on that same recipient identity, and then sign in with the existing email and new password. Automated email distribution and password recovery remain future capabilities.
 
 **Default:** Preview first, publish to the smallest truthful audience, and then read the result from that audience's route.
 

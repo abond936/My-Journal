@@ -75,8 +75,8 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 ## Tag Workflow and Identity
 
-**Definition:** Reopened — integrated mutation contract approved
-**Execution:** Partial — ordinary workflows verified; hierarchy-wide reconciliation incomplete
+**Definition:** Ready for the current governed vocabulary and identity boundary
+**Execution:** Verified for the current boundary; import-provenance consolidation, compatibility retirement, and face assistance remain separately gated
 
 **Outcome** — The author can reliably find, filter, assign, edit, and normalize a hierarchical vocabulary without stale presentation, lost assignments, silent reinterpretation, or routine repair scripts. Who preserves stable identities, author-controlled branches, nested names, and optional family-tree facts without making perspective-relative roles assignment truth.
 
@@ -88,17 +88,17 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 **Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; nested names preserve specificity; parent/partner facts support a family tree without rewriting authored truth; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
 
-**Current state** — The archive contains 651 tags, 1,281 Cards, 3,503 Media records, and 270 Questions. Shared modal ownership, lookup, scoped filters, assignment, subjects, Any/All filtering, hierarchy display, child creation, governed rename/reparent/remove/merge, and Card completeness filtering are implemented. Canonical Who tags own identity; optional compatibility profiles and parent/partner controls use the same IDs without becoming a second visible People system. The integrated mutation owner reconciles paths, assignments, subjects, projections, completeness, counts, and both search indexes. The author-reviewed cleanup restored nine named people to Friends and removed nine obsolete role/group nodes after strict reconciliation and full reference verification.
+**Current state** — The archive contains 651 tags, 1,281 Cards, 3,503 Media records, and 270 Questions. Shared modal ownership, lookup, scoped filters, assignment, subjects, Any/All filtering, hierarchy display, child creation, governed rename/reparent/remove/merge/split, and Card completeness filtering are implemented. Canonical Who tags own identity; optional compatibility profiles and parent/partner controls use the same IDs without becoming a second visible People system. The integrated mutation owners reconcile paths, assignments, subjects, projections, completeness, counts, Gallery inheritance, and both search indexes. Merge requires a reviewed same-dimension target; split starts with an empty author partition and preserves the source, unselected records, and child Tags. The author-reviewed cleanup restored nine named people to Friends and removed nine obsolete role/group nodes after strict reconciliation and full reference verification.
 
-**Gaps / slices** — Identity merge/split and import-variant consolidation remain undefined. Compatibility-profile retirement remains gated by zero-live-reference proof. Face assistance remains later work and requires recoverable identity correction first.
+**Gaps / slices** — None inside the current governed vocabulary and identity boundary. Import-variant consolidation remains outside this completed boundary until its source-keyword provenance and mapping-decision Definition Gate is approved. Compatibility-profile retirement remains gated by zero-live-reference proof. Face assistance remains a deferred capability with separate privacy, provider, retention, and confirmation decisions.
 
 **Dependencies** — Valid administrator access, paired backup capability, Firestore and Typesense access, current tag/card/media/question catalogs, and browser verification.
 
 **Risks** — Incorrect identity merges, lost historical names, perspective errors, count drift, stale search projections, partial migration, and unintended Reader-filter changes.
 
-**Decisions needed** — None for the completed hierarchy mutation and vocabulary-cleanup slice. Merge/split product behavior requires a later bounded decision.
+**Decisions needed** — None inside the completed boundary. Import consolidation, compatibility retirement, and face assistance retain their separately documented gates and are not implied by completion here.
 
-**Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
+**Completion evidence** — Automated model, hierarchy, rename, reparent, remove, merge, split, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; and the verified author-partitioned split operation recorded in the fifty-first implementation slice. Completion applies to the current boundary and does not activate the separately gated extensions.
 
 ---
 
@@ -1880,6 +1880,24 @@ The former stabilization objective and its controlling execution order are compl
 **Verification gate** — Prove batch-operation creation and final counts, skipped-file accounting, absence of invented single-file progress, dashboard aggregate and recent-operation reads, exact Author Home link, mobile destination routing, replacement of unrelated Media filters, independent dashboard degradation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
 
 **Completion evidence** — Five focused route, read-model, Author Home, Studio, and Media suites pass 47 tests. The complete runnable Jest gate passes 251 suites and 1,365 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. The build used the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Media record, import operation, account, or Storage object changed.
+
+### Fifty-third implementation slice — Guest-to-password-account conversion
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Let an invited Reader continue with an ordinary password without creating another recipient identity or changing authored access.
+
+**Includes** — An authenticated guest-only Account form; password and confirmation validation; one current-account-only endpoint; password hashing; atomic conversion of the same `journal_users` record from guest to account; revocation of every still-open invitation for that recipient; sign-out after success; and subsequent sign-in with the existing email and new password.
+
+**Excludes** — Password recovery; public registration; username changes; account merging; administrator-driven conversion; email delivery; identity-to-Who linkage; audience mutation; production data mutation; merge; and deployment.
+
+**Contracts** — The recipient document ID remains stable, so individual and group audiences retain their existing meaning. Only the signed-in guest may convert that record. Disabled guests and existing password accounts fail closed. Redeemed invitation history remains evidence; only unused links are revoked. The password hash is never returned.
+
+**Verification gate** — Prove stable recipient ID and email, password hashing, unused-invite revocation, redeemed-invite preservation, non-guest rejection, current-session route ownership, invalid-password rejection, Account presentation, success sign-out, production typecheck, lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused service, route, and Account-surface suites pass seven tests. The complete runnable Jest gate passes 253 suites and 1,371 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 66-page build pass. The build uses the checked-in Theme fallback when cloud credentials are unavailable. No production request, recipient, invite, password, audience, or content record changed.
 
 ### 1. Release Candidate
 

@@ -662,19 +662,13 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - A linked prompt cannot be deleted.
 - Unlinking removes the relationship and converts the answer to a draft Story.
 
-⭕1 **Planned**
-
-- **Independent Cards** — Inserting a prompt copies its text and any selected classification into the Card's authoring context without a continuing content dependency. Later prompt edits or deletion do not alter existing Cards.
-- **Existing-content migration** — Preserve every existing Question Card, its authored content, Media, tags, and Collection placement. Existing Question records seed an author-reviewed prompt-curation queue; organization and deduplication may change the Prompt Library but never merge or rewrite Cards that answered those questions.
-- **Guidance instead of templates** — Organized Prompt Categories and Topics provide the guided path. Collection templates are not required by the active architecture; Collections, Chapters, Sections, and Cards remain flexibly authored.
-
-📋 **Planned contracts**
+📋 **Current contracts**
 
 - Every authored response is saved immediately in the open draft Card; no separate response or working-material entity is introduced.
 - Prompt hierarchy guides memory retrieval but does not create or determine Collection, Part, Chapter, Section, or Card boundaries.
 - A primary question and its follow-ups are optional guidance rather than required fields or publication completeness criteria.
 - Intentional reader-facing Question Cards remain a Card type. Guided prompts are private authoring aids unless the author deliberately retains their text in the Card.
-- Migration must validate preserved Card content and copied Prompt Library candidates before retiring any legacy Question link or record.
+- Existing Question Cards retain their content, Media, tags, placement, and stable linked identity. Prompt organization and exact-duplicate consolidation never merge or rewrite the Cards that answered those questions.
 
 ### Studio Media
 
@@ -776,18 +770,18 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Private Media delivery** — Author- and Reader-facing permanent object URLs are replaced with authenticated application delivery. Author responses retain authorized archive metadata; Reader responses contain only display data for Media actually referenced by accessible published content. Production Storage denies direct client reads; deployment readback proves anonymous stored-object denial and successful authenticated Author and Reader byte delivery.
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
 - **Guest recipients** — The local release candidate lets the author create an enabled guest recipient only after reviewing the same exact legacy and all-enabled access inherited by a new Reader. It returns one private, seven-day, single-use link for manual delivery; replacement revokes older unused links. Redemption creates the ordinary Reader session for that stable recipient ID, so existing individual and group audiences apply without copying Cards, Collections, Media, or audience data. Disabling the recipient revokes the session on its next server request.
+- **Guest-account conversion** — A signed-in guest may establish a password on that same stable recipient record. The existing email becomes the sign-in username, current audiences remain attached to the same ID, unused invitation links are revoked, and the guest signs in again as an ordinary password account. Conversion never copies or rewrites Cards, Collections, Media, groups, or audience selections.
 - **Shared Media Collections** — The author can select up to 250 existing Media items in Studio Media, create or add them to a bounded private photo-set draft, choose an explicit Reader audience, and publish that set without changing the Media items' Card uses or exposing any other archive Media. Reader Home lists only published sets authorized for the signed-in Reader, and their Media bytes use the same authenticated delivery boundary as Story Media. Published set content and audience are locked until the author returns the set to Draft. Reader-account, group-membership, group-deletion, and Media-deletion consequence paths include these sets.
 - **Manual Reader links** — Published Cards, durable Collections, and Shared Media Collections expose a direct Reader-link action in their authoring owner. Copying a link performs no access mutation and explicitly states that only an already-authorized reader can open it; the author chooses how and to whom the link is delivered.
 
 ⭕1 **Planned**
 
-- **Guest-account conversion** — Let a guest later establish a fuller password account without changing the stable recipient ID or authored audience decisions.
 - **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
 - **Automated distribution** — Build on manual Reader links with an explicit selection of already-authorized recipients, delivery status, and optional notification transport. Making content available to a large audience does not imply notifying everyone after every change, and distribution never grants access implicitly.
 
 ⭕2 **Future**
 
-- **Recovery** — Password setup and recovery for password accounts and optional guest-account conversion.
+- **Recovery** — Password recovery for password accounts.
 
 📋 **Contracts**
 
