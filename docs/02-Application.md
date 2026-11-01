@@ -458,14 +458,17 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Shared model** — Mobile and desktop edit the same Card and Media relationships. Unsupported content is preserved rather than flattened, discarded, or hidden behind an unsafe editor choice.
 - **Bounded stewardship** — Desktop remains primary for archive-scale import, contact-sheet comparison, bulk classification, taxonomy restructuring, identity merge or split, relationship-graph inspection, Collection restructuring, backup, and recovery.
 
+✅ **Complete**
+
+- **Entry, editing, and recovery** — Start a Story, open or resume a draft, edit the same complete Card used on desktop, use device typing or dictation, save with truthful local state, recover saved work, preview, and leave without publishing.
+- **Media intake and composition** — Select device images into the canonical Media bank from the Story workflow or choose existing Media; make or change the cover, add, order, caption, frame, or remove Gallery Media, and preserve canonical Media when a Story reference is removed.
+- **Placement** — Place one durable Story Card in one or more Collection, Part, Chapter, or Section contexts without copying it; choose sibling order; remove a placement without deleting the Story; publish to Feed independently; and create a lightweight draft Collection or title-only structural destination through the existing owners.
+- **Preview and publication** — Preview the Reader presentation, review integrity and effective audience, publish deliberately, understand that edits to a still-published Story may become reader-visible immediately, and deliberately return it to Draft before private editing when needed. Private working revisions, republish history, and restore remain Future.
+
 ⭕1 **Planned**
 
-- **Entry, editing, and recovery** — Start a Story, open or resume a draft, edit desktop-created Stories safely, use typing or device dictation, autosave with truthful state, recover interrupted work, preview, and leave without publishing.
 - **Voice capture** — Record speech as canonical audio Media, transcribe it into the open draft Card, preserve the untouched recording, and let the author deliberately include the original telling or a separate final narration in Reader and Book output.
-- **Media intake and composition** — Capture from the camera or select from the device library or Files; import into the canonical Media bank from the Story workflow; continue while processing runs; select existing Media; and use explicit touch actions to make a cover, add or reorder Gallery items, insert or move body Media, replace, or remove a Story reference without deleting the Media item.
-- **Contextual classification** — Review Who, What, When, and Where; accept, correct, or reject machine proposals; search existing truth before adding it; create a missing identity with only enough relationship or distinguishing context to make it safe; and use Known, approximate, Unknown, or Not applicable resolutions without inventing certainty.
-- **Placement** — Place one durable Story Card in one or more Collection, Part, Chapter, or Section contexts without copying it; choose order; remove a placement without deleting the Story; or deliberately publish to Feed without Collection placement. Lightweight destination creation may collect a title and optional description while structural reorganization remains desktop-primary.
-- **Preview and publication** — Preview the actual Reader result, review integrity and effective audience, publish deliberately, understand that edits to a still-published Story may become reader-visible immediately, and deliberately return it to Draft before private editing when needed. Private working revisions, republish history, and restore remain Future.
+- **Assisted contextual classification** — Build on delivered Who, What, When, and Where review, exact taxonomy search, governed creation, and explicit blank, Unknown, or Not applicable resolution with restrained machine proposals and a safer minimal-identity creation flow. Proposals remain provisional until accepted, corrected, or rejected.
 
 📋 **Contracts**
 
@@ -528,11 +531,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Migration evidence** — The read-only vocabulary manifest covers all 138 Who tags, 10 compatibility profiles, 1,281 Cards, 3,503 Media records, and 270 Questions. It proves no ID remapping, assignment rewrite, count repair, or search reindex is required for the approved nested-name clusters.
 - **Management** — Direct dimension navigation, compact labeled actions, explicit rename and child creation, and keyboard-safe editing without weakening drag targets. Parent rows place the solid-triangle expand/collapse control before the dedicated drag handle and expose their Reader expanded/collapsed state beside it; each dimension provides Expand all and Collapse all; Studio collapse state persists locally; and a collapsed nesting target expands after a short drag hover. The dedicated drag handle owns a stable, non-shifting drag presentation: a row's upper edge places before, its narrow center nests, and its lower edge places after, with visual target and invalid-state feedback rather than surface instructions. Edge placement adopts the target row's parent when necessary, so any tag can move directly between desired siblings in one gesture. The drag overlay stays above the pointer instead of covering the destination. Reorder commits every affected sibling atomically. Reparenting is dimension-safe and cycle-checked across the prospective subtree before optimistic display; a rejected server move reloads authoritative tags rather than leaving the editable tree unusable.
 - **Governed rename and reparent** — Rename and same-dimension reparent preserve stable direct assignments and reconcile descendant paths, Card and Media dimensional/filter projections, Card and Media subject ancestry, Question subject ancestry, Media completeness flags, hierarchical published-Card and Media counts, and both search indexes. Each operation records durable stage and failure evidence and is idempotent so the same request can safely resume reconciliation after a partial failure.
+- **Governed merge** — Merge requires a same-dimension surviving Tag, previews exact affected Card, Media, Question, child, and completeness consequences, blocks self, descendant, and cross-dimension targets, then reconciles assignments, subjects, paths, counts, completeness, and search before deleting the source Tag.
 
 ⭕1 **Planned**
 
-- **Merge/split** — Define and implement recoverable identity correction without silently changing assignments.
-- **Import consolidation** — Let the author keep imported name variants nested under one aggregate Who tag or preview and consolidate selected variants into a corrected tag without losing assignments, subjects, counts, provenance, or search truth.
+- **Split** — Define and implement recoverable identity separation through an explicit author-selected partition of affected assignments and subjects; never guess which records should move to the new identity.
+- **Import consolidation** — Build on governed merge by preserving imported-name provenance and letting the author preview selected variant consolidation into a corrected Tag without losing assignments, subjects, counts, provenance, or search truth.
 - **Family organization** — Who remains an author-controlled hierarchy. Stable people may live beneath meaningful branches such as Family or Friends; historical married, maiden, and imported names may remain nested beneath their canonical person. A future family-tree view uses the same stable identities and parent/partner facts without converting relationship words into assignable tags or changing authored stories for each viewer.
 
 ⭕2 **Future**
@@ -705,11 +709,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Consistency** — Cards and Media share narrow search and empty-state recovery, consistent selection wording, and authoritative deletion-consequence disclosure where their bank operations overlap.
 - **Derivatives** — Canonical sources produce orientation-correct Studio and Reader renditions with truthful readiness, retry, and surface-specific delivery across Administration and Reader.
 - **Author-confirmed replacement core** — Selecting an edited file for an existing Media item opens a current-versus-proposed comparison before any mutation. The author must confirm that both represent the same underlying item; exact bytes already owned by another Media item fail as a duplicate conflict. A confirmed replacement preserves the canonical Media ID, caption, confirmed tags and subjects, dimensional review, and every Card relationship while refreshing source-byte identity, filename, format, dimensions, size, Studio/Reader renditions, readiness, and search projection. The new source becomes authoritative only after it is durable, incomplete downstream processing remains visible and retryable, and the prior source is retained until the replacement reaches Ready.
+- **Presentation framing** — Cover and Gallery crop focus can be adjusted nondestructively for the Card presentation. Gallery overrides belong to that Gallery slot and otherwise inherit the canonical Media focal point; neither path rewrites source bytes.
 
 ⭕1 **Planned**
 
 - **Replacement metadata conflict review** — Extract useful embedded replacement metadata as source evidence and show material conflicts with confirmed date, place, identity, or other classification for author review without silently rewriting confirmed truth.
-- **Presentation adjustment** — Provide nondestructive crop or framing and rotation where a Story presents Media. These adjustments belong to that presentation and do not rewrite the canonical source file.
+- **Presentation rotation** — Add nondestructive rotation where a Story presents Media. Rotation belongs to that Card presentation and does not rewrite the canonical source file.
 
 ⭕2 **Future**
 

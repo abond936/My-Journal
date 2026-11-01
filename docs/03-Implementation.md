@@ -1659,6 +1659,18 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused component coverage passes two Card-first and legacy-compatibility cases. The complete runnable Jest gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, account, or Storage object changed.
 
+### Fortieth implementation slice — Canon capability-status reconciliation
+
+**Definition:** Complete
+
+**Outcome** — Keep the implementation backlog focused on genuine missing capability rather than rebuilding already-delivered mobile Story, Tag, and Media-presentation behavior.
+
+**Reconciliation** — The five-step mobile Story flow already owns Card entry and resumption, complete shared editing, device-image intake, existing-Media composition, exact durable Collection placement and order, Reader preview, audience and destination controls, and publication through the existing integrity owner. Governed Tag merge already owns exact impact review, target validation, assignment and subject consolidation, child movement, projection/count/completeness/search reconciliation, and source deletion. Cover and Gallery crop focus already persists as nondestructive presentation truth, including Gallery-slot override and canonical-Media fallback.
+
+**Remaining gaps** — Canon now leaves mobile voice/narration and assisted contextual classification, explicit author-partitioned Tag split and provenance-aware import consolidation, and per-presentation rotation as Planned. This status correction adds no new runtime behavior and does not represent those gaps as delivered.
+
+**Evidence** — The corresponding implementation slices, shared mutation owners, schemas, UI controls, and focused tests remain in the integrated branch. The immediately preceding full gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped; lint, production typecheck, diff checks, and the optimized 64-page build pass. No production request or data mutation occurred.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
