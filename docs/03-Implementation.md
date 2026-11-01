@@ -1100,6 +1100,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Five focused suites pass 19 tests across the durable Collection pane, embedded Collections workspace, selection synchronization, Author Home, and saved Studio pane layout. Touched-code lint, non-incremental production typecheck, and the full production build pass. The build's unauthenticated static-theme reads use the existing checked-in fallback as designed. No Collection, Card, Media, filter, lifecycle, audience, sharing, or distribution record changed.
 
+### Ninth implementation follow-up — Exact Collection exception review
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Turn Collection-level attention counts into human-reviewable work without adding automatic repair, broad mutation, or misleading global Studio filters.
+
+**Includes** — One read-only per-Collection review route; exact draft, Card-review, meaningful-What, missing-Card, missing-Media, Media-review, and Media-readiness queues derived from the existing readiness owner; direct Card-to-Compose links; exact Media-to-Tags-and-Subjects review and Media-to-editor handoffs on phone and desktop; referring-Card links for absent Media records; bounded scrollable lists; and focused service, component, dashboard, and mobile-Studio verification.
+
+**Excludes** — Automatic approval or repair; bulk mutation; publication; Card, Media, Collection, audience, or lifecycle writes; a new Task store; inferred completion percentages; and claims that one item belongs to only one queue.
+
+**Contracts** — The selected archive classification requirements determine which dimensional-review queues exist. Missing references remain evidence until the author resolves them in the owning Card or Collection surface. Exact Media-review handoff opens the existing Tags and Subjects modal; readiness handoff loads the requested record through the existing administrator route and opens the existing editor. Neither changes saved global Media filters. The review route is administrator-only through the existing Admin layout and performs reads only.
+
+**Completion evidence** — Focused readiness-service, review-component, Author Home, Media, and mobile Studio suites pass. The complete runnable Jest gate passes 233 suites and 1,261 tests, with four suites and 29 tests skipped by declared environment gates. Production typecheck, touched-code lint, diff checks, and the optimized build pass. No production readback or mutation is claimed in this local checkpoint.
+
 ### Tenth implementation slice — Card publication-integrity core
 
 **Definition:** Ready
