@@ -1571,6 +1571,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused Media coverage passes twenty-one tests, including explicit target choice, published-target warning, duplicate suppression, and preservation of existing Gallery slot details. Touched-code lint, production typecheck, diff checks, the complete runnable Jest gate, and the optimized production build pass. No production request, content record, or Storage object changed.
 
+### Thirty-fifth implementation slice — Canon macro integration
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Compose the eight independently verified post-baseline macro slices into one non-deployed application state so their interactions, navigation, Canon classifications, and combined build can be assessed as a product rather than as disconnected feature branches.
+
+**Includes** — Exact Needs Attention queues; the structured Prompt Library foundation; author-confirmed Media replacement; the persistent Reader/Author switch; independent Collection structure promotion; Shared Media Collections; mobile Media device intake; explicit Media assignment to an existing Card; explicit merge-conflict reconciliation; one combined Media action bar retaining Create Card, Add to existing Card, and Share photos; administrator navigation retaining Author switching and Photo Sharing; and correction of stale Canon claims about mobile Author entry, Prompt delivery, publication audience/destination enforcement, and Collection lifecycle enforcement.
+
+**Excludes** — Merge to protected `main`; deployment; production data mutation; automatic legacy Prompt migration; private published-Card working revisions; automatic notifications; Book export; external photo-library synchronization; and subjective author acceptance.
+
+**Contracts** — Integration does not silently choose one feature over another when their source branches touched the same surface. Each action retains its distinct domain meaning and authoritative mutation owner. Canon describes the combined delivered state and keeps remaining work narrowly classified as Planned, Future, parked, or human acceptance. Production remains unchanged until a separately authorized protected merge and release.
+
+**Completion evidence** — The complete combined runnable Jest gate passes 240 suites and 1,311 tests, with four suites and 31 tests skipped by their declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings. Production typecheck, diff checks, and the optimized 63-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. Focused combined Media and Navigation coverage passes 28 tests before the complete gate. No production request, content record, account, audience, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
