@@ -1,0 +1,95 @@
+.page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.guide {
+  width: min(100%, 48rem);
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-md);
+  background: var(--layout-background2-color);
+  box-shadow: var(--shadow-sm);
+  line-height: 1.65;
+}
+
+.guide h1,
+.guide h2,
+.guide h3 {
+  color: var(--text1-color);
+  line-height: 1.2;
+}
+
+.guide h1 {
+  margin: 0 0 var(--spacing-lg);
+  font-size: var(--font-size-2xl);
+}
+
+.guide h2 {
+  margin: var(--spacing-2xl) 0 var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width-thin) solid var(--border1-color);
+  font-size: var(--font-size-xl);
+}
+
+.guide h3 {
+  margin: var(--spacing-lg) 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+}
+
+.guide p,
+.guide ul,
+.guide ol {
+  margin: 0 0 var(--spacing-md);
+}
+
+.guide ul,
+.guide ol {
+  padding-left: var(--spacing-xl);
+}
+
+.guide li + li {
+  margin-top: var(--spacing-xs);
+}
+
+.guide strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.guide code {
+  padding: 0.1em 0.3em;
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background1-color);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.guide hr {
+  margin: var(--spacing-xl) 0;
+  border: 0;
+  border-top: var(--border-width-thin) solid var(--border1-color);
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--spacing-sm);
+  }
+
+  .guide {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+  }
+
+  .guide h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  .guide h2 {
+    font-size: var(--font-size-lg);
+  }
+}

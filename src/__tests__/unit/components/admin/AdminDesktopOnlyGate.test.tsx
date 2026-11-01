@@ -24,7 +24,7 @@ describe('AdminDesktopOnlyGate', () => {
     setViewport(false);
   });
 
-  it.each(['/admin', '/admin/studio'])(
+  it.each(['/admin', '/admin/studio', '/admin/help'])(
     'allows the approved mobile Author surface at %s',
     (pathname) => {
       mockedUsePathname.mockReturnValue(pathname);
