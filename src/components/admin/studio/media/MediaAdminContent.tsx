@@ -58,6 +58,8 @@ export type MediaAdminContentProps = {
   studioSourceDraggable?: boolean;
   /** Opens the existing Tags and Subjects review for one exact Media record. */
   initialReviewMediaId?: string | null;
+  /** Replaces the current Media filters with one exact Tag population from the Tags destination. */
+  tagInspectionRequest?: { tagId: string; requestKey: number } | null;
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
@@ -206,7 +208,12 @@ export function filterSelectedCardMedia(
 }
 
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
-  const { embedded = false, studioSourceDraggable = false, initialReviewMediaId = null } = props;
+  const {
+    embedded = false,
+    studioSourceDraggable = false,
+    initialReviewMediaId = null,
+    tagInspectionRequest = null,
+  } = props;
   const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
   const initialFetchRequestedRef = useRef(false);
   const router = useRouter();
@@ -263,6 +270,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [mediaPopulation, setMediaPopulation] = useState<MediaPopulation>('bank');
   const libraryFilterContextRef = useRef<MediaFilterContextSnapshot | null>(null);
   const selectedCardFilterCardIdRef = useRef<string | null>(null);
+  const appliedTagInspectionRef = useRef<string | null>(null);
   const showOnlyAssigned = mediaPopulation === 'this_card';
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
@@ -321,6 +329,39 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     },
     [applyFilterContext]
   );
+
+  useEffect(() => {
+    if (!tagInspectionRequest?.tagId || allTags.length === 0) return;
+    const requestSignature = `${tagInspectionRequest.requestKey}:${tagInspectionRequest.tagId}`;
+    if (appliedTagInspectionRef.current === requestSignature) return;
+    const dimensionalQuery = groupSelectedTagIdsByDimension(
+      [tagInspectionRequest.tagId],
+      allTags
+    );
+    if (Object.keys(dimensionalQuery).length === 0) return;
+    appliedTagInspectionRef.current = requestSignature;
+    setMediaPopulation('bank');
+    selectNone();
+    applyFilterContext(
+      {
+        filters: {
+          ...DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+          subjectDimensions: [],
+          dimensionPresence: {},
+        },
+        dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+        dimensionalQueryOverlay: dimensionalQuery,
+        clientSort: 'none',
+      },
+      true
+    );
+  }, [
+    allTags,
+    applyFilterContext,
+    selectNone,
+    tagInspectionRequest?.requestKey,
+    tagInspectionRequest?.tagId,
+  ]);
 
   useEffect(() => {
     writeStoredMediaAdminLocalFilterPreferences({

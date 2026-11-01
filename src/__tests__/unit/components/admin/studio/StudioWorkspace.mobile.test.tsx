@@ -100,6 +100,8 @@ jest.mock('@/components/admin/collections/CollectionsAdminClient', () => ({
     embeddedCollectionsCollapsed?: boolean;
     embeddedCardsCollapsed?: boolean;
     embeddedRightSlotCollapsed?: boolean;
+    onInspectTagCards?: (tag: { docId: string; name: string; dimension: 'who' }) => void;
+    onInspectTagMedia?: (tag: { docId: string; name: string; dimension: 'who' }) => void;
     embeddedUnparentedReplacement?: (context: Record<string, unknown>) => React.ReactNode;
     embeddedRightSlot?: React.ReactNode | ((context: Record<string, unknown>) => React.ReactNode);
   }) => {
@@ -110,7 +112,22 @@ jest.mock('@/components/admin/collections/CollectionsAdminClient', () => ({
     };
     return (
       <div data-testid="collections-shell">
-        {!props.embeddedTagsCollapsed ? <div data-testid="tags-pane" /> : null}
+        {!props.embeddedTagsCollapsed ? (
+          <div data-testid="tags-pane">
+            <button
+              type="button"
+              onClick={() => props.onInspectTagCards?.({ docId: 'family', name: 'Family', dimension: 'who' })}
+            >
+              Inspect Family Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onInspectTagMedia?.({ docId: 'family', name: 'Family', dimension: 'who' })}
+            >
+              Inspect Family Media
+            </button>
+          </div>
+        ) : null}
         {!props.embeddedCollectionsCollapsed ? <div data-testid="collections-pane" /> : null}
         {!props.embeddedCardsCollapsed ? props.embeddedUnparentedReplacement?.(context) : null}
         {!props.embeddedRightSlotCollapsed
@@ -208,6 +225,19 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(screen.getByTestId('media-pane')).toBeInTheDocument();
     expect(screen.queryByTestId('cards-pane')).not.toBeInTheDocument();
     expect(mockRouterReplace).toHaveBeenCalledWith('/admin/studio?destination=media');
+  });
+
+  it('moves from a Tag to its exact Card population', async () => {
+    mockSearchParams = new URLSearchParams('destination=tags');
+    render(<StudioWorkspace />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect Family Cards' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Cards' })).toBeInTheDocument());
+    expect(mockRequestClearSelectedCard).toHaveBeenCalled();
+    expect(mockRouterReplace).toHaveBeenCalledWith(
+      '/admin/studio?destination=cards&inspectTag=family&inspectTarget=cards'
+    );
   });
 
   it('opens a direct durable Collection handoff in the Collections destination', () => {

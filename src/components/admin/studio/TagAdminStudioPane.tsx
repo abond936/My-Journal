@@ -18,9 +18,13 @@ import studioStyles from './StudioWorkspace.module.css';
 export default function TagAdminStudioPane({
   embeddedColumn = false,
   highlightTagIds,
+  onInspectCards,
+  onInspectMedia,
 }: {
   embeddedColumn?: boolean;
   highlightTagIds?: string[];
+  onInspectCards?: (tag: Tag) => void;
+  onInspectMedia?: (tag: Tag) => void;
 }) {
   const [relationshipTag, setRelationshipTag] = useState<Tag | null>(null);
   const [mergeTag, setMergeTag] = useState<Tag | null>(null);
@@ -80,6 +84,8 @@ export default function TagAdminStudioPane({
             onDeleteTag={handleDeleteTag}
             onEditRelationships={setRelationshipTag}
             onMergeTag={setMergeTag}
+            onInspectCards={onInspectCards}
+            onInspectMedia={onInspectMedia}
           />
         </div>
       )}

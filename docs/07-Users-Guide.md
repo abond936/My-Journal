@@ -276,6 +276,8 @@ Work from broad shared truth toward exceptions:
 4. Add subjects only where emphasis helps.
 5. Use Incomplete and dimensional review filters to find the remaining decisions.
 
+In the Tags destination, the **Cards** and **Media** counts beside a Tag open that exact matching population. The handoff clears unrelated filters so the result is understandable: use Cards to inspect how the Tag participates in authored meaning, or Media to inspect the underlying archive truth. Opening a population does not change any assignment.
+
 **Rule:** Never use Unknown or N/A merely to clear a queue. Use them only when they truthfully describe what the author knows.
 
 ## 6. Turn Media Into Stories

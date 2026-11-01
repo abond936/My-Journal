@@ -12,6 +12,7 @@ const useStudioShellOptionalMock = jest.fn();
 const uploadImageFileToMediaBankMock = jest.fn();
 const feedbackShowSuccessMock = jest.fn();
 const feedbackShowErrorMock = jest.fn();
+let tagContextTags: Array<{ docId: string; name: string; dimension: 'who' | 'what' | 'when' | 'where' }> = [];
 
 jest.mock('@/lib/preferences/adminFilters', () => {
   const actual = jest.requireActual('@/lib/preferences/adminFilters');
@@ -34,7 +35,7 @@ jest.mock('@/components/providers/MediaProvider', () => ({
 }));
 
 jest.mock('@/components/providers/TagProvider', () => ({
-  useTag: () => ({ tags: [] }),
+  useTag: () => ({ tags: tagContextTags }),
 }));
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
@@ -174,6 +175,7 @@ describe('MediaAdminContent', () => {
     uploadImageFileToMediaBankMock.mockReset();
     useMediaMock.mockReturnValue(baseMediaContext);
     useStudioShellOptionalMock.mockReturnValue(null);
+    tagContextTags = [];
     const { readStoredMediaAdminLocalFilterPreferences } = jest.requireMock(
       '@/lib/preferences/adminFilters'
     ) as {
@@ -182,6 +184,36 @@ describe('MediaAdminContent', () => {
     readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
       DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
     );
+  });
+
+  it('replaces existing filters with the exact Tag population requested by Studio', async () => {
+    tagContextTags = [{ docId: 'family', name: 'Family', dimension: 'who' }];
+    const fetchMedia = jest.fn();
+    const setDimensionalQueryOverlay = jest.fn();
+    const selectNone = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      fetchMedia,
+      setDimensionalQueryOverlay,
+      selectNone,
+    });
+
+    render(
+      <MediaAdminContent
+        embedded
+        tagInspectionRequest={{ tagId: 'family', requestKey: 1 }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(setDimensionalQueryOverlay).toHaveBeenCalledWith({ who: ['family'] });
+      expect(selectNone).toHaveBeenCalled();
+      expect(fetchMedia).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ search: '', assignment: 'all', codification: 'all' }),
+        { who: ['family'] }
+      );
+    });
   });
 
   it('adds selected device photos to the Media bank and selects the successful imports', async () => {

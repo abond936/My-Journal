@@ -25,6 +25,7 @@ import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract'
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -83,6 +84,15 @@ export default function StudioWorkspace() {
     return trimmed ? trimmed : null;
   }, [searchParams]);
   const requestedMediaHandoffId = requestedMediaReviewId ?? requestedMediaId;
+  const requestedInspectionTagId = useMemo(() => {
+    const raw = searchParams.get('inspectTag');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedInspectionTarget = useMemo(() => {
+    const raw = searchParams.get('inspectTarget');
+    return raw === 'cards' || raw === 'media' ? raw : null;
+  }, [searchParams]);
   const newCardRequested = useMemo(() => {
     const raw = searchParams.get('new');
     if (!raw) return false;
@@ -99,6 +109,20 @@ export default function StudioWorkspace() {
     if (requestedMediaHandoffId) return 'media';
     return explicitDestination ?? 'cards';
   });
+  const tagInspectionSequenceRef = useRef(0);
+  const [tagInspectionRequest, setTagInspectionRequest] = useState<{
+    tagId: string;
+    target: 'cards' | 'media';
+    requestKey: number;
+  } | null>(() => (
+    requestedInspectionTagId && requestedInspectionTarget
+      ? {
+          tagId: requestedInspectionTagId,
+          target: requestedInspectionTarget,
+          requestKey: tagInspectionSequenceRef.current,
+        }
+      : null
+  ));
   const mobileDestinationHydratedRef = useRef(false);
   const {
     wideLayout,
@@ -266,9 +290,12 @@ export default function StudioWorkspace() {
       if (!canLeave) return;
     }
     setMobileDestination(destination);
+    setTagInspectionRequest(null);
     writeStoredMobileAuthorDestination(destination);
     replaceStudioQuery((params) => {
       params.set('destination', destination);
+      params.delete('inspectTag');
+      params.delete('inspectTarget');
       params.delete('collection');
       if (destination !== 'media') params.delete('media');
       if (destination !== 'media') params.delete('mediaReview');
@@ -330,6 +357,34 @@ export default function StudioWorkspace() {
       params.delete('mediaReview');
     });
   }, [replaceStudioQuery, requestClearSelectedCard]);
+
+  const inspectTagMatches = useCallback(async (tag: Tag, target: 'cards' | 'media') => {
+    if (!tag.docId) return;
+    if (target === 'cards') {
+      const cleared = await requestClearSelectedCard();
+      if (!cleared) return;
+    }
+    const requestKey = tagInspectionSequenceRef.current + 1;
+    tagInspectionSequenceRef.current = requestKey;
+    setTagInspectionRequest({ tagId: tag.docId, target, requestKey });
+    setPaneVisibility((current) => target === 'cards'
+      ? { ...current, cardsCollapsed: false }
+      : { ...current, mediaCollapsed: false });
+    if (!wideLayout) {
+      setMobileDestination(target);
+      writeStoredMobileAuthorDestination(target);
+    }
+    replaceStudioQuery((params) => {
+      params.set('destination', target);
+      params.set('inspectTag', tag.docId!);
+      params.set('inspectTarget', target);
+      params.delete('card');
+      params.delete('new');
+      params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
+    });
+  }, [replaceStudioQuery, requestClearSelectedCard, setPaneVisibility, wideLayout]);
   useEffect(() => {
     const handleMediaTagReconciliation = (event: Event) => {
       const detail = (event as CustomEvent<{ affectedCardIds?: string[] }>).detail;
@@ -797,10 +852,15 @@ export default function StudioWorkspace() {
               embeddedRightSlotCollapsed={!wideLayout && mobilePresentation.rightSlotCollapsed}
               embeddedStacked={!wideLayout}
               embeddedRightSlotMinWidth={wideLayout ? embeddedRightSlotMinWidth : undefined}
+              onInspectTagCards={(tag) => void inspectTagMatches(tag, 'cards')}
+              onInspectTagMedia={(tag) => void inspectTagMatches(tag, 'media')}
               embeddedUnparentedReplacement={(ctx) => (
                   <StudioTreeCandidateCardBank
                     {...ctx}
                     autoSelectFirstCard={wideLayout && !newCardRequested}
+                    tagInspectionRequest={tagInspectionRequest?.target === 'cards'
+                      ? tagInspectionRequest
+                      : null}
                     registerCatalogRemove={(fn) => {
                       cardsBankRemoveRef.current = fn;
                     }}
@@ -881,6 +941,9 @@ export default function StudioWorkspace() {
                                 embedded
                                 studioSourceDraggable
                                 initialReviewMediaId={requestedMediaReviewId}
+                                tagInspectionRequest={tagInspectionRequest?.target === 'media'
+                                  ? tagInspectionRequest
+                                  : null}
                               />
                             </div>
                           </div>

@@ -1623,6 +1623,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The focused mobile Studio suite passes all eight destination, direct-handoff, leave-guard, persistent-navigation, route-retention, Compose-remount, and queued-insertion cases. The complete runnable Jest gate passes 241 suites and 1,318 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Question, account, or Storage object changed.
 
+### Thirty-eighth implementation slice — Tag-to-content inspection
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Let an author move from one governed Who, What, When, or Where term to the Cards or Media it actually classifies without manual filter reconstruction or a new search index.
+
+**Includes** — Explicit Card and Media counts as actions in the embedded Studio Tags destination; one exact Tag handoff; replacement of unrelated Card or Media filters; hierarchical Card matching through the existing projected Tag path; dimensional Media matching through the existing query owner; desktop pane opening; sequential mobile destination switching; safe selected-Card clearing before Card-list inspection; durable route context; disabled zero-count actions; and focused row, Card-bank, Media, and mobile-workspace coverage.
+
+**Excludes** — Changing a Tag assignment merely by opening results; a new search store; freeform machine search; Tag merge, split, or reparent changes; automatic correction; Collection-scoped filtering; production data mutation; merge; deployment; and subjective workflow acceptance.
+
+**Contracts** — The Tag remains canonical truth and the destination reuses the existing Card and Media filter owners. A handoff replaces filters rather than silently intersecting with stale criteria, so the visible population has one understandable cause. Counts remain read-only evidence until the author chooses an item and uses its normal mutation owner. The standalone archive-scale Tag administrator retains its compact counts and existing behavior.
+
+**Verification gate** — Prove explicit accessible actions, exact Tag propagation, stale-filter replacement, desktop and mobile owning-surface routing, zero mutation on inspection, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused suites pass 47 tests across accessible Tag actions, exact Card filtering, exact Media filtering, and mobile Tags-to-Cards routing. The complete runnable Jest gate passes 241 suites and 1,322 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, Tag, filter record, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

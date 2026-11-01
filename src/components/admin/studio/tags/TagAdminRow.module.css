@@ -101,6 +101,39 @@
   opacity: 0.8;
 }
 
+.matchActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-xs);
+  vertical-align: middle;
+}
+
+.matchAction {
+  border: 0;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--admin-support-meta-color);
+  cursor: pointer;
+  padding: var(--border-width-thin) var(--spacing-xs);
+  font-family: var(--admin-support-meta-font-family);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--admin-support-meta-font-weight);
+  line-height: var(--admin-support-meta-line-height);
+}
+
+.matchAction:hover,
+.matchAction:focus-visible {
+  background: var(--admin-chrome-control-hover-background-color);
+  color: var(--text1-color);
+  outline: none;
+}
+
+.matchAction:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .editInput {
   width: 100%;
   font-size: var(--font-size-base);
