@@ -213,6 +213,88 @@ describe('DurableCollectionStudioPane', () => {
     expect(screen.getByText(/Revision 4/)).toBeInTheDocument();
   });
 
+  it('creates a title-only Part Card and places it at Collection level', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [activeCollection] });
+      if (url === '/api/cards' && init?.method === 'POST') {
+        return response({
+          docId: 'new-part-card', title: 'The Early Years', type: 'story', status: 'draft',
+          content: '', displayMode: 'navigate', createdAt: 2, updatedAt: 2, dimensionReview: {},
+        });
+      }
+      if (init?.method === 'PUT') {
+        return response({ ok: true, changed: true, structureRevision: 4, operationId: 'op-part' });
+      }
+      return response({ ok: true, collection: activeCollection, placements: [], cards: [] });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Part' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Part title' }), {
+      target: { value: 'The Early Years' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Part' }));
+
+    expect(await screen.findByText('Part The Early Years created in the Collection.')).toBeInTheDocument();
+    const postCall = fetchMock.mock.calls.find(([input, init]) => String(input) === '/api/cards' && init?.method === 'POST');
+    expect(JSON.parse(String(postCall?.[1]?.body))).toEqual({
+      title: 'The Early Years', type: 'story', status: 'draft', feedIncluded: false,
+      content: '', displayMode: 'navigate',
+    });
+    const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+    expect(JSON.parse(String(putCall?.[1]?.body)).placements).toEqual([
+      expect.objectContaining({ cardId: 'new-part-card', parentPlacementId: null, role: 'part', order: 10 }),
+    ]);
+    expect(screen.getByRole('button', { name: 'The Early Years' })).toBeInTheDocument();
+  });
+
+  it('creates a Section only beneath an existing Chapter', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/admin/collections') return response({ ok: true, collections: [activeCollection] });
+      if (url === '/api/cards' && init?.method === 'POST') {
+        return response({
+          docId: 'new-section-card', title: 'School Days', type: 'story', status: 'draft',
+          content: '', displayMode: 'navigate', createdAt: 2, updatedAt: 2, dimensionReview: {},
+        });
+      }
+      if (init?.method === 'PUT') {
+        return response({ ok: true, changed: true, structureRevision: 4, operationId: 'op-section' });
+      }
+      return response({
+        ok: true,
+        collection: activeCollection,
+        placements: [
+          { docId: 'part', collectionId: 'my-life', cardId: 'part-card', role: 'part', order: 10, createdAt: 1, updatedAt: 1 },
+          { docId: 'chapter', collectionId: 'my-life', cardId: 'chapter-card', parentPlacementId: 'part', role: 'chapter', order: 10, createdAt: 1, updatedAt: 1 },
+        ],
+        cards: [
+          { docId: 'part-card', title: 'Childhood' },
+          { docId: 'chapter-card', title: 'Growing Up' },
+        ],
+      });
+    });
+    global.fetch = fetchMock as typeof fetch;
+    render(<DurableCollectionStudioPane onAvailabilityChange={jest.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Section' }));
+    expect(screen.getByRole('combobox', { name: 'Section parent' })).toHaveValue('chapter');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Section title' }), {
+      target: { value: 'School Days' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Section' }));
+
+    expect(await screen.findByText('Section School Days created in the Collection.')).toBeInTheDocument();
+    const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+    expect(JSON.parse(String(putCall?.[1]?.body)).placements).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        cardId: 'new-section-card', parentPlacementId: 'chapter', role: 'section', order: 10,
+      }),
+    ]));
+  });
+
   it('removes only a leaf placement and preserves its canonical Card', async () => {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -315,6 +397,9 @@ describe('DurableCollectionStudioPane', () => {
 
     expect(await screen.findByRole('button', { name: 'Return to Draft' })).toBeInTheDocument();
     expect(screen.getByText(/Published structure is locked/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Part' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add Chapter' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add Section' })).toBeDisabled();
     expect(screen.getByRole('searchbox', { name: 'Find a Card to add' })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: 'Role for A Story' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Remove A Story from Collection' })).toBeDisabled();

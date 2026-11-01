@@ -24,6 +24,13 @@ type StructureResponse = {
 };
 
 const roles: CollectionPlacementRole[] = ['part', 'chapter', 'section', 'card'];
+type StructuralRole = Exclude<CollectionPlacementRole, 'card'>;
+
+const structuralRoleLabels: Record<StructuralRole, string> = {
+  part: 'Part',
+  chapter: 'Chapter',
+  section: 'Section',
+};
 
 function structureInput(placement: CollectionPlacement): CollectionPlacementStructureInput {
   return {
@@ -54,7 +61,12 @@ export default function DurableCollectionStudioPane({
   const [cardSearch, setCardSearch] = useState('');
   const [cardSearchResults, setCardSearchResults] = useState<Card[]>([]);
   const [searchingCards, setSearchingCards] = useState(false);
+  const [structuralRole, setStructuralRole] = useState<StructuralRole | null>(null);
+  const [structuralTitle, setStructuralTitle] = useState('');
+  const [structuralParentId, setStructuralParentId] = useState('');
+  const [creatingStructuralPlacement, setCreatingStructuralPlacement] = useState(false);
   const structureLocked = structure?.collection.lifecycle === 'published';
+  const busy = saving || creatingStructuralPlacement;
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +136,14 @@ export default function DurableCollectionStudioPane({
     groups.forEach((children) => children.sort((a, b) => a.order - b.order || a.docId.localeCompare(b.docId)));
     return groups;
   }, [structure?.placements]);
+  const partPlacements = useMemo(
+    () => (structure?.placements ?? []).filter((placement) => placement.role === 'part'),
+    [structure?.placements]
+  );
+  const chapterPlacements = useMemo(
+    () => (structure?.placements ?? []).filter((placement) => placement.role === 'chapter'),
+    [structure?.placements]
+  );
 
   const savePlacements = useCallback(async (
     nextPlacements: CollectionPlacement[],
@@ -290,6 +310,87 @@ export default function DurableCollectionStudioPane({
     }
   }, [cardsById, savePlacements, structure]);
 
+  const beginStructuralPlacement = useCallback((role: StructuralRole) => {
+    setStructuralRole(role);
+    setStructuralTitle('');
+    setStructuralParentId(role === 'section' ? (chapterPlacements[0]?.docId ?? '') : '');
+    setError(null);
+    setMessage(null);
+  }, [chapterPlacements]);
+
+  const createStructuralPlacement = useCallback(async () => {
+    if (!structure || !structuralRole || creatingStructuralPlacement) return;
+    const title = structuralTitle.trim();
+    if (!title) {
+      setError(`${structuralRoleLabels[structuralRole]} title is required.`);
+      return;
+    }
+    const parentPlacementId = structuralRole === 'part' ? null : structuralParentId || null;
+    if (structuralRole === 'section' && !parentPlacementId) {
+      setError('Choose the Chapter that will contain this Section.');
+      return;
+    }
+
+    setCreatingStructuralPlacement(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          type: 'story',
+          status: 'draft',
+          feedIncluded: false,
+          content: '',
+          displayMode: 'navigate',
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || `${structuralRoleLabels[structuralRole]} Card could not be created.`);
+      }
+      const createdCard = data as Card;
+      if (!createdCard.docId) {
+        throw new Error(`${structuralRoleLabels[structuralRole]} Card was created without an identifier.`);
+      }
+
+      const siblingOrders = structure.placements
+        .filter((placement) => (placement.parentPlacementId ?? null) === parentPlacementId)
+        .map((placement) => placement.order);
+      const now = Date.now();
+      const nextPlacement: CollectionPlacement = {
+        docId: `pl-${structure.collection.docId}-${globalThis.crypto?.randomUUID?.() ?? `${now}-${Math.random().toString(36).slice(2)}`}`,
+        collectionId: structure.collection.docId,
+        cardId: createdCard.docId,
+        parentPlacementId,
+        role: structuralRole,
+        order: siblingOrders.length ? Math.max(...siblingOrders) + 10 : 10,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const saved = await savePlacements(
+        [...structure.placements, nextPlacement],
+        `${structuralRoleLabels[structuralRole]} ${title} created in the Collection.`,
+        [...structure.cards, createdCard]
+      );
+      if (!saved) {
+        setError(`Draft Card ${title} was created, but the Collection changed before it could be placed. Find it in Cards and add it again.`);
+        return;
+      }
+      setStructuralRole(null);
+      setStructuralTitle('');
+      setStructuralParentId('');
+    } catch (createError) {
+      setError(createError instanceof Error
+        ? createError.message
+        : `${structuralRoleLabels[structuralRole]} could not be created.`);
+    } finally {
+      setCreatingStructuralPlacement(false);
+    }
+  }, [creatingStructuralPlacement, savePlacements, structuralParentId, structuralRole, structuralTitle, structure]);
+
   const movePlacement = useCallback((placementId: string, direction: -1 | 1) => {
     if (!structure) return;
     const current = structure.placements.find((placement) => placement.docId === placementId);
@@ -379,7 +480,7 @@ export default function DurableCollectionStudioPane({
         <select
           aria-label={`Role for ${card?.title || 'Untitled Card'}`}
           value={placement.role}
-          disabled={structureLocked || saving}
+          disabled={structureLocked || busy}
           onChange={(event) => changeRole(placement.docId, event.target.value as CollectionPlacementRole)}
         >
           {roles.map((role) => <option key={role} value={role}>{role}</option>)}
@@ -387,7 +488,7 @@ export default function DurableCollectionStudioPane({
         <select
           aria-label={`Parent for ${card?.title || 'Untitled Card'}`}
           value={placement.parentPlacementId ?? ''}
-          disabled={structureLocked || saving || placement.role === 'part'}
+          disabled={structureLocked || busy || placement.role === 'part'}
           onChange={(event) => changeParent(placement.docId, event.target.value || null)}
         >
           <option value="">Collection level</option>
@@ -397,11 +498,11 @@ export default function DurableCollectionStudioPane({
             </option>
           ))}
         </select>
-        <button type="button" disabled={structureLocked || saving || siblingIndex <= 0} onClick={() => movePlacement(placement.docId, -1)} aria-label={`Move ${card?.title || 'Card'} up`}>↑</button>
-        <button type="button" disabled={structureLocked || saving || siblingIndex < 0 || siblingIndex >= siblings.length - 1} onClick={() => movePlacement(placement.docId, 1)} aria-label={`Move ${card?.title || 'Card'} down`}>↓</button>
+        <button type="button" disabled={structureLocked || busy || siblingIndex <= 0} onClick={() => movePlacement(placement.docId, -1)} aria-label={`Move ${card?.title || 'Card'} up`}>↑</button>
+        <button type="button" disabled={structureLocked || busy || siblingIndex < 0 || siblingIndex >= siblings.length - 1} onClick={() => movePlacement(placement.docId, 1)} aria-label={`Move ${card?.title || 'Card'} down`}>↓</button>
         <button
           type="button"
-          disabled={structureLocked || saving || children.length > 0}
+          disabled={structureLocked || busy || children.length > 0}
           onClick={() => removeLeafPlacement(placement)}
           aria-label={`Remove ${card?.title || 'Card'} from Collection`}
           title={children.length ? 'Move or remove child placements first.' : 'Remove this placement; the Card is preserved.'}
@@ -445,7 +546,7 @@ export default function DurableCollectionStudioPane({
             <span>{structure.collection.lifecycle === 'published' ? 'Published' : 'Draft'} · Revision {structure.collection.structureRevision}</span>
             <button
               type="button"
-              disabled={saving}
+              disabled={busy}
               onClick={() => void updateLifecycle(
                 structure.collection.lifecycle === 'published' ? 'draft' : 'published'
               )}
@@ -462,11 +563,87 @@ export default function DurableCollectionStudioPane({
         <p className={styles.note}>Published structure is locked. Return the Collection to Draft before adding, removing, moving, or changing placement roles.</p>
       ) : null}
       {structure ? (
+        <div className={styles.structuralActions} aria-label="Add Collection structure">
+          <span className={styles.note}>Create a title-only destination now; add introductory Story content whenever it is useful.</span>
+          <div className={styles.structuralButtons}>
+            <button type="button" disabled={structureLocked || busy} onClick={() => beginStructuralPlacement('part')}>Add Part</button>
+            <button type="button" disabled={structureLocked || busy} onClick={() => beginStructuralPlacement('chapter')}>Add Chapter</button>
+            <button
+              type="button"
+              disabled={structureLocked || busy || chapterPlacements.length === 0}
+              title={chapterPlacements.length ? undefined : 'Add a Chapter before adding a Section.'}
+              onClick={() => beginStructuralPlacement('section')}
+            >
+              Add Section
+            </button>
+          </div>
+          {structuralRole ? (
+            <div className={styles.structuralForm}>
+              <input
+                type="text"
+                aria-label={`${structuralRoleLabels[structuralRole]} title`}
+                placeholder={`${structuralRoleLabels[structuralRole]} title`}
+                value={structuralTitle}
+                disabled={creatingStructuralPlacement}
+                onChange={(event) => setStructuralTitle(event.target.value)}
+              />
+              {structuralRole === 'chapter' ? (
+                <select
+                  aria-label="Chapter parent"
+                  value={structuralParentId}
+                  disabled={creatingStructuralPlacement}
+                  onChange={(event) => setStructuralParentId(event.target.value)}
+                >
+                  <option value="">Collection level</option>
+                  {partPlacements.map((placement) => (
+                    <option key={placement.docId} value={placement.docId}>
+                      {cardsById.get(placement.cardId)?.title || 'Untitled Part'}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {structuralRole === 'section' ? (
+                <select
+                  aria-label="Section parent"
+                  value={structuralParentId}
+                  disabled={creatingStructuralPlacement}
+                  onChange={(event) => setStructuralParentId(event.target.value)}
+                >
+                  {chapterPlacements.map((placement) => (
+                    <option key={placement.docId} value={placement.docId}>
+                      {cardsById.get(placement.cardId)?.title || 'Untitled Chapter'}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <button
+                type="button"
+                disabled={creatingStructuralPlacement || !structuralTitle.trim() || (structuralRole === 'section' && !structuralParentId)}
+                onClick={() => void createStructuralPlacement()}
+              >
+                {creatingStructuralPlacement ? 'Creating...' : `Create ${structuralRoleLabels[structuralRole]}`}
+              </button>
+              <button
+                type="button"
+                disabled={creatingStructuralPlacement}
+                onClick={() => {
+                  setStructuralRole(null);
+                  setStructuralTitle('');
+                  setStructuralParentId('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      {structure ? (
         <AudienceSelector
           value={structure.collection.audience}
           scopeLabel="Collection"
           consequence="Every published Story placed here is available to this audience through the Collection. A Story may also be available through its standalone route or another Collection."
-          disabled={saving}
+          disabled={busy}
           onSave={saveAudience}
           getCollectionImpact={getCollectionAudienceImpact}
         />
@@ -477,7 +654,7 @@ export default function DurableCollectionStudioPane({
           aria-label="Find a Card to add"
           placeholder="Find a Card to add..."
           value={cardSearch}
-          disabled={structureLocked}
+          disabled={structureLocked || busy}
           onChange={(event) => setCardSearch(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -486,7 +663,7 @@ export default function DurableCollectionStudioPane({
             }
           }}
         />
-        <button type="button" disabled={structureLocked || searchingCards || !cardSearch.trim()} onClick={() => void searchCards()}>
+        <button type="button" disabled={structureLocked || busy || searchingCards || !cardSearch.trim()} onClick={() => void searchCards()}>
           {searchingCards ? 'Searching...' : 'Search'}
         </button>
       </div> : null}
@@ -495,7 +672,7 @@ export default function DurableCollectionStudioPane({
           {cardSearchResults.map((card) => (
             <li key={card.docId}>
               <span>{card.title || 'Untitled Card'}</span>
-              <button type="button" disabled={structureLocked || saving} onClick={() => void addCard(card)}>
+              <button type="button" disabled={structureLocked || busy} onClick={() => void addCard(card)}>
                 Add
               </button>
             </li>
