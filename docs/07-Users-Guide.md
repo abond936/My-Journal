@@ -306,6 +306,8 @@ Use Parts for the broadest divisions, Chapters for substantial movements within 
 
 Structure can be created before every Story is written. Add Part, Chapter, or Section creates a title-only draft Story at the chosen structural location; open that same Card later to add introductory content. Removing a placement does not delete the Card.
 
+When one Part, Chapter, or Section deserves to become its own reading work, choose **Make Collection** beside it and name the new Collection. The structural Card becomes the new Collection introduction, its descendants are arranged under it with new local placements, and every Story still points to the same canonical Card. The source Collection is unchanged, and later reordering in either Collection does not alter the other.
+
 Collection publication is separate from Card publication. A Collection must have an explicit audience, valid structure, and no missing or draft required Cards. Published structure is locked until the Collection deliberately returns to Draft.
 
 **Rule:** Do not publish `My Life` or another large Collection merely to see what it looks like. Use Preview while readiness work remains unfinished.
