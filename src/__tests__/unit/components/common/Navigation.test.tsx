@@ -24,6 +24,7 @@ describe('Navigation hierarchy', () => {
   beforeEach(() => {
     mockedPathname.mockReturnValue('/view');
     window.history.replaceState({}, '', '/view');
+    window.sessionStorage.clear();
   });
 
   it('orders the administrator menu and removes development destinations', () => {
@@ -33,9 +34,10 @@ describe('Navigation hierarchy', () => {
 
     const labels = screen.getAllByRole('link').map((link) => link.textContent?.trim()).filter(Boolean);
     expect(labels).toEqual([
-      'Home', 'Reader', 'Studio', 'Guide', 'Users', 'Settings', 'Theme', 'Account',
+      'Author', 'Author Home', 'Reader', 'Studio', 'Guide', 'Users', 'Settings', 'Theme', 'Account',
     ]);
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/admin');
+    expect(screen.getByRole('link', { name: 'Author Home' })).toHaveAttribute('href', '/admin');
+    expect(screen.getByRole('link', { name: 'Switch to Author' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('button', { name: 'Light' })).toBeInTheDocument();
     expect(screen.queryByText('Landing Page 1')).toBeNull();
   });
@@ -51,6 +53,32 @@ describe('Navigation hierarchy', () => {
     expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Studio' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Settings' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Switch to Author|Switch to Reader/ })).toBeNull();
+  });
+
+  it('switches administrators between their last safe Reader and Author locations', async () => {
+    mockedSession.mockReturnValue({ data: { user: { role: 'admin' } } } as never);
+    window.sessionStorage.setItem('myStories:lastAuthorSurfacePath', '/admin/studio?card=card-1');
+    mockedPathname.mockReturnValue('/view/card-2');
+    window.history.replaceState({}, '', '/view/card-2?returnTo=%2Fview%3Fmode%3Dfreeform');
+    const { rerender } = render(<Navigation />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Switch to Author' })).toHaveAttribute(
+        'href',
+        '/admin/studio?card=card-1'
+      );
+    });
+
+    mockedPathname.mockReturnValue('/admin/studio');
+    window.history.replaceState({}, '', '/admin/studio?destination=media');
+    rerender(<Navigation />);
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Switch to Reader' })).toHaveAttribute(
+        'href',
+        '/view/card-2?returnTo=%2Fview%3Fmode%3Dfreeform'
+      );
+    });
   });
 
   it('uses a safe contextual return and rejects external return input', async () => {
