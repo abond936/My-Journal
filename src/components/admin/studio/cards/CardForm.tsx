@@ -53,6 +53,7 @@ import MobileStoryFlowNav, { type MobileStoryStep } from '@/components/admin/stu
 import StoryCollectionPlacementControl from '@/components/admin/studio/cards/StoryCollectionPlacementControl';
 import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
 import CardTextTagSuggestions from '@/components/admin/studio/cards/CardTextTagSuggestions';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -473,6 +474,9 @@ const CardForm: React.FC = () => {
   }, [cardData.galleryTagInheritanceOverrides, feedback, persistFieldPatch, setField]);
 
   const handleCoverImageChange = useCallback((newCoverImage: Media | null, newPosition?: string) => {
+    if ((newCoverImage?.docId ?? null) !== (cardData.coverImageId ?? null)) {
+      setField('coverImageRotation', 0);
+    }
     if (newCoverImage && newPosition !== undefined) {
       const parts = newPosition.trim().split(/\s+/);
       const xPercent = parseFloat(parts[0] ?? '50') || 50;
@@ -485,22 +489,25 @@ const CardForm: React.FC = () => {
     } else {
       updateCoverImage(newCoverImage);
     }
-  }, [updateCoverImage]);
+  }, [cardData.coverImageId, setField, updateCoverImage]);
 
   const handleCoverImageCommit = useCallback(async (newCoverImage: Media | null, newPosition?: string) => {
     if (!newCoverImage) {
       await persistFieldPatch({
         coverImageId: null,
+        coverImageRotation: 0,
       });
       return;
     }
     const focalPoint = objectPositionToFocalPoint(newCoverImage, newPosition);
 
+    const changingImage = newCoverImage.docId !== cardData.coverImageId;
     await persistFieldPatch({
       coverImageId: newCoverImage.docId,
       coverImageFocalPoint: focalPoint,
+      ...(changingImage ? { coverImageRotation: 0 as const } : {}),
     });
-  }, [persistFieldPatch]);
+  }, [cardData.coverImageId, persistFieldPatch]);
 
   const handleCoverImageModeChange = useCallback((mode: 'fill' | 'fit') => {
     setField('coverImageMode', mode);
@@ -510,6 +517,15 @@ const CardForm: React.FC = () => {
     if (lastSavedState.cardData.coverImageMode === mode) return;
     await persistFieldPatch({ coverImageMode: mode });
   }, [lastSavedState.cardData.coverImageMode, persistFieldPatch]);
+
+  const handleCoverImageRotationChange = useCallback((rotation: MediaPresentationRotation) => {
+    setField('coverImageRotation', rotation);
+  }, [setField]);
+
+  const handleCoverImageRotationCommit = useCallback(async (rotation: MediaPresentationRotation) => {
+    if ((lastSavedState.cardData.coverImageRotation ?? 0) === rotation) return;
+    await persistFieldPatch({ coverImageRotation: rotation });
+  }, [lastSavedState.cardData.coverImageRotation, persistFieldPatch]);
 
   const handleGalleryUpdate = useCallback((newGallery: HydratedGalleryMediaItem[]) => {
     setField('galleryMedia', newGallery);
@@ -1245,10 +1261,13 @@ const CardForm: React.FC = () => {
                       ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
                       : '50% 50%'
                   }
+                  rotation={cardData.coverImageRotation ?? 0}
                   onChange={handleCoverImageChange}
                   onCommit={handleCoverImageCommit}
                   onCoverModeChange={handleCoverImageModeChange}
                   onCoverModeCommit={handleCoverImageModeCommit}
+                  onRotationChange={handleCoverImageRotationChange}
+                  onRotationCommit={handleCoverImageRotationCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -1581,10 +1600,13 @@ const CardForm: React.FC = () => {
                       ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
                       : '50% 50%'
                   }
+                  rotation={cardData.coverImageRotation ?? 0}
                   onChange={handleCoverImageChange}
                   onCommit={handleCoverImageCommit}
                   onCoverModeChange={handleCoverImageModeChange}
                   onCoverModeCommit={handleCoverImageModeCommit}
+                  onRotationChange={handleCoverImageRotationChange}
+                  onRotationCommit={handleCoverImageRotationCommit}
                   isSaving={isSaving}
                   showSavingOverlay={false}
                   error={errors.coverImage}
@@ -1604,10 +1626,13 @@ const CardForm: React.FC = () => {
                     ? `${(cardData.coverImageFocalPoint.x / (cardData.coverImage?.width || 1)) * 100}% ${(cardData.coverImageFocalPoint.y / (cardData.coverImage?.height || 1)) * 100}%`
                     : '50% 50%'
                 }
+                rotation={cardData.coverImageRotation ?? 0}
                 onChange={handleCoverImageChange}
                 onCommit={handleCoverImageCommit}
                 onCoverModeChange={handleCoverImageModeChange}
                 onCoverModeCommit={handleCoverImageModeCommit}
+                onRotationChange={handleCoverImageRotationChange}
+                onRotationCommit={handleCoverImageRotationCommit}
                 isSaving={isSaving}
                 showSavingOverlay={false}
                 error={errors.coverImage}

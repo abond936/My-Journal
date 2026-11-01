@@ -437,7 +437,7 @@ describe('CardForm', () => {
     await userEvent.click(screen.getByTestId('mock-cover-clear'));
 
     await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalledWith({ coverImageId: null });
+      expect(mockOnSave).toHaveBeenCalledWith({ coverImageId: null, coverImageRotation: 0 });
     });
   });
 });

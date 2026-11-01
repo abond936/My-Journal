@@ -1707,6 +1707,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused utility and component coverage passes three cases, and the existing Card form regression passes thirteen cases. The complete runnable Jest gate passes 245 suites and 1,330 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Tag, Media, review state, account, or Storage object changed.
 
+### Forty-third implementation slice — Card-local Media presentation rotation
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author correct the orientation of a Cover or one Gallery presentation without replacing or rewriting canonical Media.
+
+**Includes** — A four-value `0 | 90 | 180 | 270` Card presentation contract; left and right quarter-turn controls for Cover and Gallery editing; narrow authoritative persistence through the existing Cover and Gallery owners; Reader, lightbox, Collection-introduction, Compose-preview, and Studio-tile rendering; duplication preservation; and rotation cleanup when a cover relationship is removed.
+
+**Excludes** — Source-byte mutation; canonical Media rotation; arbitrary-angle editing; automatic orientation inference; embedded body-Media rotation; production data mutation; merge; and deployment.
+
+**Contracts** — Cover rotation belongs to the Card. Gallery rotation belongs to that Card's Gallery slot. The same Media item may therefore have different orientations in different Stories without changing archive truth or another Card.
+
+**Verification gate** — Prove quarter-turn normalization and wrapping, no source-Media field, rotation persistence after dehydrating Gallery slots, explicit author controls, narrow Cover routing, removal cleanup, Reader and Studio rendering, duplication preservation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Eight focused suites pass 68 cases across rotation math, persistence hygiene, Cover routing, Card form, Cover and Gallery author controls, Reader Gallery, and Reader Card rendering. The complete runnable Jest gate passes 247 suites and 1,336 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

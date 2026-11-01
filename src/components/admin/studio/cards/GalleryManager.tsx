@@ -253,6 +253,7 @@ export default function GalleryManager({
                         width={240}
                         height={180}
                         sizes="(max-width: 768px) 50vw, 240px"
+                        presentationRotation={item.rotation ?? 0}
                         style={{
                           objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
                         }}

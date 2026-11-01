@@ -225,6 +225,22 @@ describe('CoverPhotoContainer', () => {
     expect(onCoverModeCommit).toHaveBeenCalledWith('fill');
   });
 
+  it('rotates only the Card cover presentation and commits the selected turn', async () => {
+    const onRotationChange = jest.fn();
+    const onRotationCommit = jest.fn();
+    renderWithProps({
+      coverImage: mockMedia,
+      rotation: 90,
+      onRotationChange,
+      onRotationCommit,
+    });
+
+    expect(screen.getByAltText('test.jpg')).toHaveStyle({ transform: 'rotate(90deg)' });
+    await userEvent.click(screen.getByRole('button', { name: 'Rotate cover right' }));
+    expect(onRotationChange).toHaveBeenCalledWith(180);
+    expect(onRotationCommit).toHaveBeenCalledWith(180);
+  });
+
   it('handles image removal', async () => {
     renderWithProps({ coverImage: mockMedia });
 

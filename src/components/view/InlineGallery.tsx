@@ -238,6 +238,7 @@ export default function InlineGallery({
                       width={300}
                       height={200}
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 96vw, 94vw"
+                      presentationRotation={item.rotation ?? 0}
                       style={{
                         objectFit: 'cover',
                         objectPosition: getEffectiveGalleryObjectPosition(item, item.media),
@@ -314,6 +315,7 @@ export default function InlineGallery({
                         width={1600}
                         height={1200}
                         sizes="100vw"
+                        presentationRotation={item.rotation ?? 0}
                         style={{ objectFit: 'contain', objectPosition: 'center' }}
                         priority={index === activeIndex}
                       />

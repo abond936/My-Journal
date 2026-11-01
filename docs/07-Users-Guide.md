@@ -258,6 +258,8 @@ After import, confirm that the files appear, inspect processing failures, and us
 
 If a scan or photo is corrected in another editor, open that existing Media item and choose **Replace image** instead of importing the edited file as a new item. Compare the current and proposed images, check their filenames, dimensions, and sizes, and confirm replacement only when they are the same underlying photo or scan. Replacement keeps the Media caption, tags, review decisions, and Story relationships. A different photo belongs as a new Media item; an exact file already owned by another item belongs in duplicate review. If the source is accepted but a rendition or search stage fails, the replacement remains visible as processing work that can be retried.
 
+When an image only needs to face the right way in one Story, rotate the Cover or that Gallery image in Compose instead of replacing the Media item. These quarter-turn controls belong to the Card presentation and do not alter the source image or its appearance in other Stories.
+
 **Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
 
 After selecting Media in the Library, choose **Create card** to begin a new Gallery Card or **Add to existing card** to search for a Card and append the selection to its Gallery. Media already in the chosen Gallery is not duplicated. Adding Media to a published Card changes what its readers can see immediately under the current publication policy, so the chooser identifies that consequence before the update.

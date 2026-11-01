@@ -120,6 +120,7 @@ export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
         ? { caption: item.caption ?? '' }
         : {}),
       ...(trimmed ? { objectPosition: trimmed } : {}),
+      ...(item.rotation ? { rotation: item.rotation } : {}),
     };
   });
 
@@ -133,6 +134,7 @@ export function transformToCardUpdate(hydratedCard: Card): CardUpdate {
     childrenIds: hydratedCard.childrenIds,
     coverImageId: hydratedCard.coverImageId,
     coverImageMode: hydratedCard.coverImageMode,
+    coverImageRotation: hydratedCard.coverImageRotation,
     coverImageFocalPoint: hydratedCard.coverImageFocalPoint,
     galleryMedia: skinnyGalleryMedia,
     contentMedia,

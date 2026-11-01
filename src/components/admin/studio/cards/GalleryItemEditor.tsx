@@ -6,6 +6,8 @@ import type { HydratedGalleryMediaItem } from '@/lib/types/card';
 import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './GalleryItemEditor.module.css';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
+import { normalizeMediaPresentationRotation, turnMediaPresentation } from '@/lib/types/mediaPresentation';
 
 export default function GalleryItemEditor({
   item,
@@ -22,6 +24,7 @@ export default function GalleryItemEditor({
   const [verticalPosition, setVerticalPosition] = useState(50);
   const [hasFocalOverride, setHasFocalOverride] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rotation, setRotation] = useState<MediaPresentationRotation>(0);
 
   useEffect(() => {
     const inherited = parseObjectPositionToPercents(item.media?.objectPosition);
@@ -36,6 +39,7 @@ export default function GalleryItemEditor({
       setHorizontalPosition(inherited.horizontal);
       setVerticalPosition(inherited.vertical);
     }
+    setRotation(normalizeMediaPresentationRotation(item.rotation));
   }, [item]);
 
   const objectPosition = `${horizontalPosition}% ${verticalPosition}%`;
@@ -56,6 +60,8 @@ export default function GalleryItemEditor({
       } else {
         delete nextItem.objectPosition;
       }
+      if (rotation) nextItem.rotation = rotation;
+      else delete nextItem.rotation;
       await onSave(nextItem);
     } finally {
       setSaving(false);
@@ -73,6 +79,7 @@ export default function GalleryItemEditor({
             height={380}
             className={styles.previewImage}
             sizes="(max-width: 900px) 90vw, 520px"
+            presentationRotation={rotation}
             style={{ objectFit: 'cover', objectPosition }}
             priority={false}
           />
@@ -80,9 +87,9 @@ export default function GalleryItemEditor({
       ) : null}
 
       <div className={styles.intentCard}>
-        <div className={styles.intentTitle}>Gallery crop override</div>
+        <div className={styles.intentTitle}>Gallery framing</div>
         <p className={styles.intentBody}>
-          Use the image&apos;s Studio Media focal point by default. Adjusting these sliders creates a crop override for this image in this gallery only.
+          Use the image&apos;s Studio Media focal point by default. Crop and rotation changes apply to this image in this Card gallery only; source bytes remain unchanged.
         </p>
         <p className={styles.intentBody}>
           Captions stay outside this modal: change the media default in Studio Media or use the inline gallery caption field for a card-only exception.
@@ -90,6 +97,30 @@ export default function GalleryItemEditor({
       </div>
 
       <div className={styles.sliderCard}>
+        <div className={styles.sliderRow}>
+          <div className={styles.sliderHeader}>
+            <span>Rotation</span>
+            <span className={styles.sliderValue}>{rotation}°</span>
+          </div>
+          <div className={styles.actions} aria-label="Gallery image rotation">
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setRotation((current) => turnMediaPresentation(current, 'left'))}
+              disabled={saving}
+            >
+              Rotate left
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setRotation((current) => turnMediaPresentation(current, 'right'))}
+              disabled={saving}
+            >
+              Rotate right
+            </button>
+          </div>
+        </div>
         <div className={styles.sliderRow}>
           <div className={styles.sliderHeader}>
             <label htmlFor="gallery-focal-h">Horizontal</label>

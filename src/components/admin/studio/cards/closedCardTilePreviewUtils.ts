@@ -5,6 +5,7 @@ import {
   getObjectPositionFromFocalPoint,
 } from '@/lib/utils/objectPositionUtils';
 import { SQUARE_FEED_TILE_COVER_BAND_ASPECT } from '@/lib/reader/readerFeedPresentation';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
 
 export function previewImage(card: Card): Card['coverImage'] {
   const studioCard = card as Card & Partial<StudioCatalogCard>;
@@ -37,6 +38,14 @@ export function getPreviewObjectPosition(card: Card, preview: Card['coverImage']
     SQUARE_FEED_TILE_COVER_BAND_ASPECT,
     400
   );
+}
+
+export function getPreviewRotation(card: Card, preview: Card['coverImage']): MediaPresentationRotation {
+  if (!preview) return 0;
+  if (card.coverImage?.docId && preview.docId === card.coverImage.docId) {
+    return card.coverImageRotation ?? 0;
+  }
+  return card.galleryMedia?.find((item) => item.mediaId === preview.docId)?.rotation ?? 0;
 }
 
 export function shouldRenderUtilityPreviewInCover(card: Card, preview: Card['coverImage']): boolean {

@@ -421,6 +421,7 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         await docRef.update({
           coverImageId: FieldValue.delete(),
           coverImageFocalPoint: FieldValue.delete(),
+          coverImageRotation: FieldValue.delete(),
           coverImage: FieldValue.delete(),
         });
       }

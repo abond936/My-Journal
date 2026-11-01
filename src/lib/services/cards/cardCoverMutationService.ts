@@ -14,7 +14,7 @@ const MEDIA_COLLECTION = 'media';
 
 export async function updateCardCover(
   cardId: string,
-  updates: Partial<Pick<Card, 'coverImageId' | 'coverImageFocalPoint' | 'coverImageMode'>>
+  updates: Partial<Pick<Card, 'coverImageId' | 'coverImageFocalPoint' | 'coverImageMode' | 'coverImageRotation'>>
 ): Promise<Card> {
   const docRef = firestore.collection(CARDS_COLLECTION).doc(cardId);
   const preSnap = await docRef.get();
@@ -30,7 +30,10 @@ export async function updateCardCover(
   const nextMode = modeProvided ? updates.coverImageMode ?? 'fill' : previousMode;
   const focalProvided = Object.prototype.hasOwnProperty.call(updates, 'coverImageFocalPoint');
   const focalPoint = updates.coverImageFocalPoint;
+  const rotationProvided = Object.prototype.hasOwnProperty.call(updates, 'coverImageRotation');
+  const nextRotation = updates.coverImageRotation ?? 0;
   if ((!idProvided || previousId === nextId) && (!modeProvided || previousMode === nextMode) &&
+      (!rotationProvided || (existing.coverImageRotation ?? 0) === nextRotation) &&
       (!focalProvided || (existing.coverImageFocalPoint?.x === focalPoint?.x && existing.coverImageFocalPoint?.y === focalPoint?.y))) {
     const unchanged = await getCardById(cardId);
     if (!unchanged) throw new Error(`Failed to fetch card with ID ${cardId}`);
@@ -54,6 +57,7 @@ export async function updateCardCover(
       };
       if (idProvided) payload.coverImageId = clearing ? FieldValue.delete() : nextId;
       if (modeProvided) payload.coverImageMode = nextMode;
+      if (rotationProvided) payload.coverImageRotation = nextRotation;
       if (focalProvided && focalPoint && nextId) payload.coverImageFocalPoint = focalPoint;
       else if (clearing || (changed && !focalProvided)) payload.coverImageFocalPoint = FieldValue.delete();
       transaction.update(docRef, payload);

@@ -149,6 +149,7 @@ export function buildMediaReferenceRemovalUpdate(
   if (card.coverImageId === mediaId) {
     cardUpdate.coverImageId = FieldValue.delete();
     cardUpdate.coverImageFocalPoint = FieldValue.delete();
+    cardUpdate.coverImageRotation = FieldValue.delete();
     cardUpdate.coverImage = FieldValue.delete();
     nextCoverId = null;
   }

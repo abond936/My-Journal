@@ -710,12 +710,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Consistency** — Cards and Media share narrow search and empty-state recovery, consistent selection wording, and authoritative deletion-consequence disclosure where their bank operations overlap.
 - **Derivatives** — Canonical sources produce orientation-correct Studio and Reader renditions with truthful readiness, retry, and surface-specific delivery across Administration and Reader.
 - **Author-confirmed replacement core** — Selecting an edited file for an existing Media item opens a current-versus-proposed comparison before any mutation. The author must confirm that both represent the same underlying item; exact bytes already owned by another Media item fail as a duplicate conflict. A confirmed replacement preserves the canonical Media ID, caption, confirmed tags and subjects, dimensional review, and every Card relationship while refreshing source-byte identity, filename, format, dimensions, size, Studio/Reader renditions, readiness, and search projection. The new source becomes authoritative only after it is durable, incomplete downstream processing remains visible and retryable, and the prior source is retained until the replacement reaches Ready.
-- **Presentation framing** — Cover and Gallery crop focus can be adjusted nondestructively for the Card presentation. Gallery overrides belong to that Gallery slot and otherwise inherit the canonical Media focal point; neither path rewrites source bytes.
+- **Presentation framing and rotation** — Cover and Gallery crop focus can be adjusted nondestructively for the Card presentation. Covers and individual Gallery slots can also turn left or right in quarter turns. Gallery overrides belong to that Gallery slot and otherwise inherit the canonical Media focal point; no framing or rotation path rewrites source bytes.
 
 ⭕1 **Planned**
 
 - **Replacement metadata conflict review** — Extract useful embedded replacement metadata as source evidence and show material conflicts with confirmed date, place, identity, or other classification for author review without silently rewriting confirmed truth.
-- **Presentation rotation** — Add nondestructive rotation where a Story presents Media. Rotation belongs to that Card presentation and does not rewrite the canonical source file.
 
 ⭕2 **Future**
 

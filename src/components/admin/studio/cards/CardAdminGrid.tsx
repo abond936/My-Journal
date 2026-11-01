@@ -18,6 +18,7 @@ import AdminClosedCardTileShell from '@/components/admin/studio/cards/AdminClose
 import {
   getPreviewObjectFit,
   getPreviewObjectPosition,
+  getPreviewRotation,
   previewImage,
   shouldRenderUtilityPreviewInCover,
 } from '@/components/admin/studio/cards/closedCardTilePreviewUtils';
@@ -234,6 +235,7 @@ function CardAdminGridPlainCell({
   const preview = previewImage(card);
   const previewObjectFit = getPreviewObjectFit(card, preview);
   const previewObjectPosition = getPreviewObjectPosition(card, preview);
+  const previewRotation = getPreviewRotation(card, preview);
   const renderUtilityPreview = shouldRenderUtilityPreviewInCover(card, preview);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
@@ -320,6 +322,7 @@ function CardAdminGridPlainCell({
           preview={preview}
           previewObjectFit={previewObjectFit}
           previewObjectPosition={previewObjectPosition}
+          previewRotation={previewRotation}
           renderUtilityPreview={renderUtilityPreview}
           pendingFocus={pendingFocus}
           overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta, () => onEdit(card.docId))}
@@ -450,6 +453,7 @@ function CardAdminGridStudioCell({
   const preview = previewImage(card);
   const previewObjectFit = getPreviewObjectFit(card, preview);
   const previewObjectPosition = getPreviewObjectPosition(card, preview);
+  const previewRotation = getPreviewRotation(card, preview);
   const renderUtilityPreview = shouldRenderUtilityPreviewInCover(card, preview);
   const thumbnailTooltip = useMemo(
     () => buildCardThumbnailTooltip(card, allTags),
@@ -553,6 +557,7 @@ function CardAdminGridStudioCell({
           preview={preview}
           previewObjectFit={previewObjectFit}
           previewObjectPosition={previewObjectPosition}
+          previewRotation={previewRotation}
           renderUtilityPreview={renderUtilityPreview}
           pendingFocus={pendingFocus}
           overlayCoverBottom={renderCardOverlayBottom(card, secondaryMeta, () => onEdit(card.docId))}
