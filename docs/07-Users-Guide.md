@@ -256,6 +256,8 @@ Before a large import, preserve the best source file available and correct trust
 
 After import, confirm that the files appear, inspect processing failures, and use Batch, Folder, Metadata, or Day grouping when it helps review the new population. A pending or failed rendition is a processing condition, not permission to delete the source.
 
+If a scan or photo is corrected in another editor, open that existing Media item and choose **Replace image** instead of importing the edited file as a new item. Compare the current and proposed images, check their filenames, dimensions, and sizes, and confirm replacement only when they are the same underlying photo or scan. Replacement keeps the Media caption, tags, review decisions, and Story relationships. A different photo belongs as a new Media item; an exact file already owned by another item belongs in duplicate review. If the source is accepted but a rendition or search stage fails, the replacement remains visible as processing work that can be retried.
+
 **Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
 
 ## 5. Tag Effectively

@@ -699,10 +699,11 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Readiness** — New imports durably report source, metadata, Studio rendition, Reader rendition, and search-index state; pending and failed work is visible without adding chrome to healthy media, and retry preserves the canonical asset.
 - **Consistency** — Cards and Media share narrow search and empty-state recovery, consistent selection wording, and authoritative deletion-consequence disclosure where their bank operations overlap.
 - **Derivatives** — Canonical sources produce orientation-correct Studio and Reader renditions with truthful readiness, retry, and surface-specific delivery across Administration and Reader.
+- **Author-confirmed replacement core** — Selecting an edited file for an existing Media item opens a current-versus-proposed comparison before any mutation. The author must confirm that both represent the same underlying item; exact bytes already owned by another Media item fail as a duplicate conflict. A confirmed replacement preserves the canonical Media ID, caption, confirmed tags and subjects, dimensional review, and every Card relationship while refreshing source-byte identity, filename, format, dimensions, size, Studio/Reader renditions, readiness, and search projection. The new source becomes authoritative only after it is durable, incomplete downstream processing remains visible and retryable, and the prior source is retained until the replacement reaches Ready.
 
 ⭕1 **Planned**
 
-- **Replacement contract verification** — Verify and, where necessary, complete the existing replace-in-place path so the author selects the edited replacement for an existing Media item, compares the current and proposed images, confirms that they represent the same underlying item, and receives clear disagreement or processing feedback without retagging or rebuilding Story relationships.
+- **Replacement metadata conflict review** — Extract useful embedded replacement metadata as source evidence and show material conflicts with confirmed date, place, identity, or other classification for author review without silently rewriting confirmed truth.
 - **Presentation adjustment** — Provide nondestructive crop or framing and rotation where a Story presents Media. These adjustments belong to that presentation and do not rewrite the canonical source file.
 
 ⭕2 **Future**

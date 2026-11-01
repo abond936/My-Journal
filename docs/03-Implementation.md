@@ -1472,6 +1472,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Legacy Question records normalize as unorganized primary prompts while structured follow-ups persist only beneath a primary in the same Category and Topic. The service blocks invalid parents, independent primary moves or conversion while dependents exist, and primary deletion with dependents. Prompt insertion is isolated through the Studio imperative registry and copies ordinary editable headings into the open Card without a live library dependency. Four focused schema, editor, and handoff suites pass 187 tests; the declared Firestore emulator integrity suite passes six tests. The complete runnable Jest gate passes 232 suites and 1,262 tests, with four suites and 31 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
 
+### Twenty-ninth implementation slice — Author-confirmed Media replacement core
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author return an externally edited version of one existing photo or scan to its canonical Media identity without rebuilding its classification or Story relationships and without turning My Stories into an image editor or version-management product.
+
+**Includes** — Current-versus-proposed visual comparison; filename, dimension, and size evidence; explicit same-underlying-item confirmation in both UI and server contract; exact-byte duplicate conflict; versioned durable source upload before authority changes; canonical ID, caption, tag, subject, dimensional-review, and Card-reference preservation; refreshed source identity and technical facts; truthful Studio rendition, Reader rendition, and search readiness; retryable processing feedback; and prior-source retention until the replacement becomes Ready.
+
+**Excludes** — Built-in source editing; AI enhancement; external-editor launch or synchronization; general Media version browsing; automatic identity decisions from filenames, dimensions, size, or visual similarity; silent replacement-metadata assignment to confirmed truth; automatic duplicate reconciliation; production data mutation; merge; and deployment.
+
+**Contracts** — File selection alone performs no mutation. The author, not machine evidence, confirms same-item identity. A different item is imported separately; exact bytes owned by another canonical item are rejected for duplicate review. The replacement source becomes authoritative only after its bytes are durable. Failed or pending downstream work remains explicit and retryable, and the prior source is not removed until source, metadata, both renditions, and search are Ready. Existing Card references continue to use the same Media ID, so replacing bytes neither republishes Cards nor changes audience, placement, or authored classification.
+
+**Verification gate** — Prove the no-write comparison boundary, required server confirmation, duplicate conflict, preserved Media and Card truth, durable source-path switch, readiness stages, failed-stage feedback, administrator authorization, production typecheck, touched-code lint, diff checks, the declared Firestore emulator integrity gate, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The component comparison proves selecting a replacement performs no request, displays both images and their file facts, submits the file only with explicit same-item confirmation, and retains visible warning feedback when downstream processing is incomplete. Route coverage proves administrator-only access, image validation, required confirmation, canonical-ID use, missing-target handling, invalid-target handling, exact-byte duplicate conflict, and Ready success. The Firestore emulator replacement path preserves caption, tags, subjects, dimensional review, Card back-references, cover/Gallery/body references, and canonical Media ID while switching source-byte identity and the durable versioned source path; the complete declared emulator gate passes three suites and 25 tests. The complete runnable Jest gate passes 233 suites and 1,262 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized 59-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, record, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
