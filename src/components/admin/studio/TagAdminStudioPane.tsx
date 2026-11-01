@@ -4,6 +4,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { TagAdminList } from '@/components/admin/studio/tags/TagAdminList';
 import { WhoRelationshipModal } from '@/components/admin/studio/tags/WhoRelationshipModal';
 import { TagMergeModal } from '@/components/admin/studio/tags/TagMergeModal';
+import { TagSplitModal } from '@/components/admin/studio/tags/TagSplitModal';
 import { useTagManagement } from '@/components/admin/studio/tags/useTagManagement';
 import { useTag } from '@/components/providers/TagProvider';
 import type { Tag } from '@/lib/types/tag';
@@ -28,6 +29,7 @@ export default function TagAdminStudioPane({
 }) {
   const [relationshipTag, setRelationshipTag] = useState<Tag | null>(null);
   const [mergeTag, setMergeTag] = useState<Tag | null>(null);
+  const [splitTag, setSplitTag] = useState<Tag | null>(null);
   const { tags } = useTag();
   const {
     tagTree,
@@ -38,6 +40,7 @@ export default function TagAdminStudioPane({
     handleUpdateTag,
     handleDeleteTag,
     handleMergeTag,
+    refreshTags,
     handleReorder,
     handleReparent,
   } = useTagManagement();
@@ -84,6 +87,7 @@ export default function TagAdminStudioPane({
             onDeleteTag={handleDeleteTag}
             onEditRelationships={setRelationshipTag}
             onMergeTag={setMergeTag}
+            onSplitTag={setSplitTag}
             onInspectCards={onInspectCards}
             onInspectMedia={onInspectMedia}
           />
@@ -101,6 +105,11 @@ export default function TagAdminStudioPane({
         tags={tags}
         onClose={() => setMergeTag(null)}
         onMerge={handleMergeTag}
+      />
+      <TagSplitModal
+        source={splitTag}
+        onClose={() => setSplitTag(null)}
+        onComplete={async () => { await refreshTags(); }}
       />
     </div>
   );

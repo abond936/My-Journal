@@ -76,6 +76,7 @@ describe('authorDashboardService', () => {
       media_tag_reconciliation_operations: [0, 1, 2],
       card_bulk_tag_operations: [0, 3, 4],
       tag_mutation_operations: [0, 5, 6],
+      tag_split_operations: [0, 7, 8],
     };
     const select = jest.fn();
     const collection = jest.fn((name: string) => {
@@ -119,7 +120,7 @@ describe('authorDashboardService', () => {
     });
     expect(summary.operations).toEqual({
       status: 'ready',
-      data: { attention: 21, active: 9, failed: 12 },
+      data: { attention: 36, active: 16, failed: 20 },
     });
     expect(summary.collections).toEqual({
       status: 'ready',

@@ -280,6 +280,8 @@ Work from broad shared truth toward exceptions:
 
 In the Tags destination, the **Cards** and **Media** counts beside a Tag open that exact matching population. The handoff clears unrelated filters so the result is understandable: use Cards to inspect how the Tag participates in authored meaning, or Media to inspect the underlying archive truth. Opening a population does not change any assignment.
 
+Use **Split into…** only when one existing Tag actually combines two identities or meanings. Name the new sibling, then select the exact Cards, Media, and Prompts that belong to it. Nothing is selected automatically. The original Tag, every unselected record, and its child Tags remain in place. If reconciliation is interrupted, reopen Split and retry the preserved reviewed operation; the app resumes the same target instead of creating another Tag.
+
 **Rule:** Never use Unknown or N/A merely to clear a queue. Use them only when they truthfully describe what the author knows.
 
 ## 6. Turn Media Into Stories

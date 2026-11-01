@@ -1845,6 +1845,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Two focused duplicate-review and Prompt-pane suites pass seven cases. The isolated Firestore emulator Question-integrity suite passes eight cases, including survivor preservation, duplicate deletion, follow-up reassignment, and unchanged linked Card identity. The administrator-route inventory proves anonymous and Reader rejection. The complete runnable Jest gate passes 250 suites and 1,358 tests, with four suites and 35 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Prompt, Question Card, account, or Storage object changed.
 
+### Fifty-first implementation slice — Author-partitioned Tag split
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Separate a conflated Tag into two stable sibling identities without guessing which authored or archival records belong to the new identity.
+
+**Includes** — Exact direct-assignment and subject-use review across Cards, Media, and Prompts; an empty-by-default author partition; one explicitly named same-dimension sibling; preservation of the source and its unselected records; child-Tag nonmovement; replacement of both selected direct assignment and selected subject use; existing Card, Media, and Prompt mutation owners; counts, dimensional and subject projections, completeness, Gallery inheritance, and search reconciliation; bounded selection; administrator-only access; one durable operation record; idempotent retry; and reopening recovery for a running or failed operation.
+
+**Excludes** — Machine-inferred partitioning; automatic selection; child-Tag partitioning; splitting inherited-only matches; cross-dimension movement; deleting or renaming the source; merging; imported-keyword provenance; production data mutation; merge; and deployment.
+
+**Contracts** — A split begins with no selected records. The target is a sibling in the source dimension. The source remains canonical for every unselected record and direct child. A reviewed operation binds the source, target name, and exact selected record IDs; retries with a different payload fail closed. Target creation and operation creation are atomic. A partial reconciliation exposes the same operation on the next review and resumes the existing target rather than creating a duplicate.
+
+**Verification gate** — Prove empty initial selection, exact submitted partition, source preservation, unselected-record preservation, selected Card/Media/Prompt assignment and subject replacement, same target on retry, visible reopen recovery, child nonmovement, stale-record rejection, administrator authorization, production typecheck, touched-code and full lint, diff checks, optimized build, the isolated Firestore emulator path, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The focused modal test proves no inferred partition and an exact author-selected request. The administrator-route inventory proves anonymous and Reader rejection. The isolated Firestore emulator test proves selected Card, Media, and Prompt movement, unselected-record, source, and child preservation, durable operation completion, same-target retry, and reopened failed-operation recovery. Failed and running split operations participate in the existing Author Home durable-operation count. The complete runnable Jest gate passes 251 suites and 1,363 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Tag, assignment, subject, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

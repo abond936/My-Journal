@@ -61,6 +61,8 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'PATCH', path: '/api/tags/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'DELETE', path: '/api/tags/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/tags/[id]/reparent', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'GET', path: '/api/tags/[id]/split', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/tags/[id]/split', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/tags/reorder', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
 
   { method: 'GET', path: '/api/media', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -179,6 +181,8 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'tags-id-patch', method: 'PATCH', path: '/api/tags/[id]', modulePath: '@/app/api/tags/[id]/route', requestUrl: 'https://example.test/api/tags/tag-1', params: Promise.resolve({ id: 'tag-1' }), body: { name: 'Renamed' } },
   { id: 'tags-id-delete', method: 'DELETE', path: '/api/tags/[id]', modulePath: '@/app/api/tags/[id]/route', requestUrl: 'https://example.test/api/tags/tag-1', params: Promise.resolve({ id: 'tag-1' }) },
   { id: 'tags-id-reparent', method: 'POST', path: '/api/tags/[id]/reparent', modulePath: '@/app/api/tags/[id]/reparent/route', requestUrl: 'https://example.test/api/tags/tag-1/reparent', params: Promise.resolve({ id: 'tag-1' }), body: { newParentId: 'tag-2' } },
+  { id: 'tags-id-split-get', method: 'GET', path: '/api/tags/[id]/split', modulePath: '@/app/api/tags/[id]/split/route', requestUrl: 'https://example.test/api/tags/tag-1/split', params: Promise.resolve({ id: 'tag-1' }) },
+  { id: 'tags-id-split-post', method: 'POST', path: '/api/tags/[id]/split', modulePath: '@/app/api/tags/[id]/split/route', requestUrl: 'https://example.test/api/tags/tag-1/split', params: Promise.resolve({ id: 'tag-1' }), body: { operationId: 'split-1', newName: 'New identity', selection: { cardIds: ['card-1'], mediaIds: [], questionIds: [] } } },
   { id: 'tags-reorder', method: 'POST', path: '/api/tags/reorder', modulePath: '@/app/api/tags/reorder/route', requestUrl: 'https://example.test/api/tags/reorder', body: { activeId: 'tag-1', overId: 'tag-2', placement: 'before' } },
 
   { id: 'media-get', method: 'GET', path: '/api/media', modulePath: '@/app/api/media/route', requestUrl: 'https://example.test/api/media' },

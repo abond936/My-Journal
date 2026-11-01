@@ -48,6 +48,7 @@ const OPERATION_COLLECTIONS = [
   'media_tag_reconciliation_operations',
   'card_bulk_tag_operations',
   'tag_mutation_operations',
+  'tag_split_operations',
 ] as const;
 
 type CountableQuery = {

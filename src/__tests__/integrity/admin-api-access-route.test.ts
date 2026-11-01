@@ -216,6 +216,12 @@ jest.mock('@/lib/services/questionService', () => ({
   unlinkCardFromQuestion: jest.fn(),
 }));
 
+jest.mock('@/lib/services/tagSplitService', () => ({
+  TagSplitConflictError: class TagSplitConflictError extends Error {},
+  getTagSplitReview: jest.fn(),
+  splitTagAssignments: jest.fn(),
+}));
+
 jest.mock('@/lib/scripts/firebase/cleanup-media-collection', () => ({
   cleanupMediaCollection: jest.fn(),
 }));
