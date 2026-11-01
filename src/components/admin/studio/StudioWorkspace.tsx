@@ -72,6 +72,17 @@ export default function StudioWorkspace() {
     const trimmed = raw?.trim();
     return trimmed ? trimmed : null;
   }, [searchParams]);
+  const requestedMediaId = useMemo(() => {
+    const raw = searchParams.get('media');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedMediaReviewId = useMemo(() => {
+    const raw = searchParams.get('mediaReview');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedMediaHandoffId = requestedMediaReviewId ?? requestedMediaId;
   const newCardRequested = useMemo(() => {
     const raw = searchParams.get('new');
     if (!raw) return false;
@@ -84,6 +95,7 @@ export default function StudioWorkspace() {
   const [mobileDestination, setMobileDestination] = useState<MobileAuthorDestination>(() => {
     if (requestedCardId || newCardRequested) return 'cards';
     if (requestedCollectionId) return 'collections';
+    if (requestedMediaHandoffId) return 'media';
     return parseMobileAuthorDestination(searchParams.get('destination')) ?? 'cards';
   });
   const mobileDestinationHydratedRef = useRef(false);
@@ -106,6 +118,14 @@ export default function StudioWorkspace() {
         : current
     ));
   }, [requestedCollectionId, setPaneVisibility]);
+  useEffect(() => {
+    if (!requestedMediaHandoffId) return;
+    setPaneVisibility((current) => (
+      current.mediaCollapsed
+        ? { ...current, mediaCollapsed: false }
+        : current
+    ));
+  }, [requestedMediaHandoffId, setPaneVisibility]);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
@@ -198,15 +218,18 @@ export default function StudioWorkspace() {
       ? 'cards'
       : requestedCollectionId
         ? 'collections'
-        : explicitDestination ?? readStoredMobileAuthorDestination();
+        : requestedMediaHandoffId
+          ? 'media'
+          : explicitDestination ?? readStoredMobileAuthorDestination();
     setMobileDestination(initialDestination);
-  }, [newCardRequested, requestedCardId, requestedCollectionId, searchParams, wideLayout]);
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   useEffect(() => {
     if (wideLayout) return;
     if (requestedCardId || newCardRequested) setMobileDestination('cards');
     else if (requestedCollectionId) setMobileDestination('collections');
-  }, [newCardRequested, requestedCardId, requestedCollectionId, wideLayout]);
+    else if (requestedMediaHandoffId) setMobileDestination('media');
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, wideLayout]);
 
   const replaceStudioQuery = useCallback((update: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -226,6 +249,8 @@ export default function StudioWorkspace() {
     replaceStudioQuery((params) => {
       params.set('destination', destination);
       params.delete('collection');
+      if (destination !== 'media') params.delete('media');
+      if (destination !== 'media') params.delete('mediaReview');
       if (destination !== 'cards') {
         params.delete('card');
         params.delete('new');
@@ -246,6 +271,8 @@ export default function StudioWorkspace() {
       params.set('card', cardId);
       params.delete('new');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
     return true;
   }, [replaceStudioQuery, requestSelectCard, wideLayout]);
@@ -260,6 +287,8 @@ export default function StudioWorkspace() {
       params.delete('card');
       params.delete('new');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
   }, [replaceStudioQuery, requestClearSelectedCard]);
 
@@ -273,6 +302,8 @@ export default function StudioWorkspace() {
       params.set('new', '1');
       params.delete('card');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
   }, [replaceStudioQuery, requestClearSelectedCard]);
   useEffect(() => {
@@ -307,6 +338,22 @@ export default function StudioWorkspace() {
     },
     [resolveBankMediaById]
   );
+  const directMediaRequestRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestedMediaId || directMediaRequestRef.current === requestedMediaId) return;
+    directMediaRequestRef.current = requestedMediaId;
+    void (async () => {
+      const item = await loadMediaById(requestedMediaId);
+      if (!item) {
+        setActionError('The requested Media record is unavailable.');
+        return;
+      }
+      setMobileDestination('media');
+      setCardMediaItems([item]);
+      setSelectedCardMediaId(item.docId);
+      setCardMediaEditorOpen(true);
+    })();
+  }, [loadMediaById, requestedMediaId]);
   const openSelectedCardMediaEditor = useCallback(async (mediaId?: string | null) => {
     const card = selectedDetailRef.current ?? selectedPreviewRef.current;
     const assignedIds = collectAssignedMediaIds(card);
@@ -802,7 +849,11 @@ export default function StudioWorkspace() {
                         {showMediaPane ? (
                           <div className={styles.studioMediaBankColumn}>
                             <div className={styles.studioMediaBankFill}>
-                              <MediaAdminContent embedded studioSourceDraggable />
+                              <MediaAdminContent
+                                embedded
+                                studioSourceDraggable
+                                initialReviewMediaId={requestedMediaReviewId}
+                              />
                             </div>
                           </div>
                         ) : null}

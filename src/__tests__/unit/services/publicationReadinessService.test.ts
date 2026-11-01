@@ -1,4 +1,7 @@
-import { evaluateCollectionPublicationAttention } from '@/lib/services/publicationReadinessService';
+import {
+  evaluateCollectionPublicationAttention,
+  evaluateCollectionPublicationAttentionDetails,
+} from '@/lib/services/publicationReadinessService';
 
 const completeReview = {
   who: { reviewed: true },
@@ -195,5 +198,52 @@ describe('publicationReadinessService', () => {
     expect(result.cardsNeedingDimensionReview).toBe(0);
     expect(result.cardsMissingMeaningfulWhat).toBe(0);
     expect(result.mediaNeedingDimensionReview).toBe(0);
+  });
+
+  it('produces exact read-only exception queues with owning Card and Media references', () => {
+    const details = evaluateCollectionPublicationAttentionDetails({
+      structure: {
+        collection: {
+          docId: 'collection-1', title: 'Family Stories', lifecycle: 'draft', recordState: 'active',
+          introductionCardId: 'card-missing', structureRevision: 0, authorityRevision: 0,
+          order: 0, createdAt: 1, updatedAt: 1,
+        },
+        placements: [{
+          docId: 'placement-a', collectionId: 'collection-1', cardId: 'card-a', role: 'card',
+          order: 0, createdAt: 1, updatedAt: 1,
+        }],
+        cards: [{
+          docId: 'card-a', title: 'A day at the beach', status: 'draft', what: [],
+          coverImageId: 'media-a', contentMedia: ['media-missing'],
+          dimensionReview: { who: { reviewed: true } },
+        }],
+      } as never,
+      media: [{
+        docId: 'media-a', filename: 'beach.jpg',
+        dimensionReview: { who: { reviewed: true } },
+        readiness: { overall: 'failed' },
+      }] as never,
+    });
+
+    expect(details.missingRequiredCardIds).toEqual(['card-missing']);
+    expect(details.draftCards).toEqual([expect.objectContaining({ cardId: 'card-a' })]);
+    expect(details.cardsNeedingDimensionReview[0]).toEqual(expect.objectContaining({
+      cardId: 'card-a',
+      incompleteDimensions: ['what', 'when', 'where'],
+    }));
+    expect(details.cardsMissingMeaningfulWhat).toHaveLength(1);
+    expect(details.missingMedia).toEqual([{
+      mediaId: 'media-missing',
+      referencedByCards: [{ cardId: 'card-a', title: 'A day at the beach' }],
+    }]);
+    expect(details.mediaNeedingDimensionReview[0]).toEqual(expect.objectContaining({
+      mediaId: 'media-a',
+      label: 'beach.jpg',
+      incompleteDimensions: ['what', 'when', 'where'],
+    }));
+    expect(details.mediaReadinessAttention[0]).toEqual(expect.objectContaining({
+      mediaId: 'media-a',
+      readiness: 'failed',
+    }));
   });
 });

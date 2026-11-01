@@ -55,6 +55,8 @@ export type MediaAdminContentProps = {
   embedded?: boolean;
   /** When embedded in Studio, rows register as drag sources for cover/gallery. */
   studioSourceDraggable?: boolean;
+  /** Opens the existing Tags and Subjects review for one exact Media record. */
+  initialReviewMediaId?: string | null;
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
@@ -185,7 +187,7 @@ export function filterSelectedCardMedia(
 }
 
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
-  const { embedded = false, studioSourceDraggable = false } = props;
+  const { embedded = false, studioSourceDraggable = false, initialReviewMediaId = null } = props;
   const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
   const initialFetchRequestedRef = useRef(false);
   const router = useRouter();
@@ -334,6 +336,12 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setTagEditorMediaIds([mediaId]);
     setBulkTagModalOpen(true);
   }, [setBulkTagModalOpen, setSelectedMediaIds]);
+  const initialReviewMediaIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialReviewMediaId || initialReviewMediaIdRef.current === initialReviewMediaId) return;
+    initialReviewMediaIdRef.current = initialReviewMediaId;
+    handleOpenMediaTags(initialReviewMediaId);
+  }, [handleOpenMediaTags, initialReviewMediaId]);
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const {

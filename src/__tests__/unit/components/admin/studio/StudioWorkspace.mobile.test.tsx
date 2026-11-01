@@ -139,12 +139,15 @@ jest.mock('@/components/admin/studio/StudioQuestionsPane', () => ({
 
 jest.mock('@/components/admin/studio/media/MediaAdminContent', () => ({
   __esModule: true,
-  default: () => <div data-testid="media-pane" />,
+  default: ({ initialReviewMediaId }: { initialReviewMediaId?: string | null }) => (
+    <div data-testid="media-pane" data-review-media-id={initialReviewMediaId ?? undefined} />
+  ),
 }));
 
 jest.mock('@/components/admin/studio/media/MediaEditModal', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ isOpen, selectedMediaId }: { isOpen: boolean; selectedMediaId: string | null }) =>
+    isOpen ? <div data-testid="media-editor">{selectedMediaId}</div> : null,
 }));
 
 describe('StudioWorkspace mobile destinations', () => {
@@ -191,6 +194,33 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(screen.getByRole('heading', { name: 'Collections' })).toBeInTheDocument();
     expect(screen.getByTestId('collections-pane')).toBeInTheDocument();
     expect(screen.queryByTestId('cards-pane')).not.toBeInTheDocument();
+  });
+
+  it('opens an exact Media handoff in the Media destination and editor', async () => {
+    mockSearchParams = new URLSearchParams('destination=media&media=media-1');
+    const fetchMock = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ media: { docId: 'media-1', filename: 'beach.jpg' } }),
+    } as Response);
+    Object.defineProperty(global, 'fetch', { value: fetchMock, writable: true, configurable: true });
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(await screen.findByTestId('media-editor')).toHaveTextContent('media-1');
+    expect(fetchMock).toHaveBeenCalledWith('/api/images/media-1', expect.objectContaining({
+      cache: 'no-store',
+    }));
+    delete (global as typeof globalThis & { fetch?: typeof fetch }).fetch;
+  });
+
+  it('opens an exact Media classification handoff in the review surface', () => {
+    mockSearchParams = new URLSearchParams('destination=media&mediaReview=media-2');
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(screen.getByTestId('media-pane')).toHaveAttribute('data-review-media-id', 'media-2');
   });
 
   it('keeps a dirty Compose surface in place when the leave guard declines', async () => {
