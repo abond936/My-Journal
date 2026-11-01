@@ -93,10 +93,11 @@ export default function StudioWorkspace() {
     [newCardRequested, requestedCardId]
   );
   const [mobileDestination, setMobileDestination] = useState<MobileAuthorDestination>(() => {
-    if (requestedCardId || newCardRequested) return 'cards';
+    const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
+    if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') return 'cards';
     if (requestedCollectionId) return 'collections';
     if (requestedMediaHandoffId) return 'media';
-    return parseMobileAuthorDestination(searchParams.get('destination')) ?? 'cards';
+    return explicitDestination ?? 'cards';
   });
   const mobileDestinationHydratedRef = useRef(false);
   const {
@@ -149,17 +150,15 @@ export default function StudioWorkspace() {
   const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
   const studioImperatives = useMemo(() => createStudioShellImperativeRegistry(), []);
+  const pendingPromptTextRef = useRef<string[]>([]);
   const registerBodyMediaInsert = useCallback((handler: ((media: Media) => void) | null) => {
     studioImperatives.register('bodyMediaInsert', handler);
   }, [studioImperatives]);
   const registerPromptTextInsert = useCallback((handler: ((prompt: string) => void) | null) => {
     studioImperatives.register('promptTextInsert', handler);
-  }, [studioImperatives]);
-  const insertPromptText = useCallback((prompt: string) => {
-    const handler = studioImperatives.get('promptTextInsert');
-    if (!handler) return false;
-    handler(prompt);
-    return true;
+    if (!handler || pendingPromptTextRef.current.length === 0) return;
+    const pendingPrompts = pendingPromptTextRef.current.splice(0);
+    pendingPrompts.forEach(prompt => handler(prompt));
   }, [studioImperatives]);
   const bodyMediaInsertRef = studioImperatives.bodyMediaInsertRef;
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
@@ -206,15 +205,6 @@ export default function StudioWorkspace() {
     }),
     [mobileCardEditorOpen, mobileDestination]
   );
-  const mobileStoryComposerOpen = Boolean(
-    !wideLayout
-    && mobilePresentation.cardsStage === 'compose'
-    && (
-      newCardRequested
-      || activeCardViewModel.card?.type === 'story'
-      || selectedPreview?.type === 'story'
-    )
-  );
   const effectivePaneVisibility = wideLayout
     ? paneVisibility
     : mobilePresentation.paneVisibility;
@@ -223,7 +213,7 @@ export default function StudioWorkspace() {
     if (wideLayout || mobileDestinationHydratedRef.current) return;
     mobileDestinationHydratedRef.current = true;
     const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
-    const initialDestination = requestedCardId || newCardRequested
+    const initialDestination = (requestedCardId || newCardRequested) && explicitDestination !== 'prompts'
       ? 'cards'
       : requestedCollectionId
         ? 'collections'
@@ -235,10 +225,11 @@ export default function StudioWorkspace() {
 
   useEffect(() => {
     if (wideLayout) return;
-    if (requestedCardId || newCardRequested) setMobileDestination('cards');
+    const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
+    if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') setMobileDestination('cards');
     else if (requestedCollectionId) setMobileDestination('collections');
     else if (requestedMediaHandoffId) setMobileDestination('media');
-  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, wideLayout]);
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   const replaceStudioQuery = useCallback((update: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -246,6 +237,27 @@ export default function StudioWorkspace() {
     const query = params.toString();
     router.replace(query ? `/admin/studio?${query}` : '/admin/studio');
   }, [router, searchParams]);
+
+  const insertPromptText = useCallback((prompt: string) => {
+    const handler = studioImperatives.get('promptTextInsert');
+    if (handler) {
+      handler(prompt);
+      return true;
+    }
+    if (wideLayout || !selectedCardId) return false;
+    pendingPromptTextRef.current.push(prompt);
+    setMobileDestination('cards');
+    writeStoredMobileAuthorDestination('cards');
+    replaceStudioQuery((params) => {
+      params.set('destination', 'cards');
+      params.set('card', selectedCardId);
+      params.delete('new');
+      params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
+    });
+    return true;
+  }, [replaceStudioQuery, selectedCardId, studioImperatives, wideLayout]);
 
   const selectMobileDestination = useCallback(async (destination: MobileAuthorDestination) => {
     if (destination === mobileDestination) return;
@@ -260,12 +272,15 @@ export default function StudioWorkspace() {
       params.delete('collection');
       if (destination !== 'media') params.delete('media');
       if (destination !== 'media') params.delete('mediaReview');
-      if (destination !== 'cards') {
+      if (destination !== 'cards' && destination !== 'prompts') {
         params.delete('card');
+        params.delete('new');
+      } else if (destination === 'prompts') {
+        if (selectedCardId) params.set('card', selectedCardId);
         params.delete('new');
       }
     });
-  }, [confirmComposeLeave, mobileCardEditorOpen, mobileDestination, replaceStudioQuery]);
+  }, [confirmComposeLeave, mobileCardEditorOpen, mobileDestination, replaceStudioQuery, selectedCardId]);
 
   const openCardInWorkspace = useCallback(async (
     cardId: string,
@@ -877,7 +892,7 @@ export default function StudioWorkspace() {
             />
           </div>
         </div>
-        {!wideLayout && !mobileStoryComposerOpen ? (
+        {!wideLayout ? (
           <nav className={styles.mobileDestinationNav} aria-label="Author destinations">
             {MOBILE_AUTHOR_DESTINATIONS.map((destination) => (
               <button

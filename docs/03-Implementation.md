@@ -1605,6 +1605,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Pure ordering coverage proves primary-with-follow-up presentation and sibling-scope isolation. Schema and exhaustive administrator-route coverage prove strict move input and access boundaries. The isolated Firestore emulator passes all seven Question-answer integrity cases, including atomic primary and follow-up movement with persisted readback. The complete runnable Jest gate passes 241 suites and 1,316 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, Media, account, or Storage object changed.
 
+### Thirty-seventh implementation slice — Mobile Card-first Prompt handoff
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Let a phone author use the sequential Prompts destination as guidance for the existing selected Card without losing Card identity, bypassing unsaved-work protection, or creating a competing answer layer.
+
+**Includes** — Persistent five-destination navigation while an existing Story is in Compose; the existing asynchronous leave guard before Cards unmounts; selected-Card identity retained in the Prompts route and across refresh; queued one-prompt or whole-Topic insertion; automatic return to the same Cards Compose destination; insertion only after the rich-text owner remounts; and focused route, guard, remount, and insertion coverage.
+
+**Excludes** — Prompt insertion into a not-yet-created Card; silent saving or discarding; background Card writes while Compose is absent; a response entity; cross-device draft synchronization; changing desktop simultaneous-pane behavior; editing-only prompt blocks; production data mutation; merge; and deployment.
+
+**Contracts** — An existing selected Card is required. Dirty Compose state must resolve through the same leave decision used by every other mobile destination. The route carries Card identity but prompt text remains session-scoped until the same Compose owner remounts. Queued text is inserted as ordinary editable Card content and has no continuing Prompt Library dependency. If no Card or insertion owner exists, the action fails truthfully instead of creating data elsewhere.
+
+**Verification gate** — Prove persistent mobile destinations, declined-leave containment, selected-Card route retention, Prompts-to-Compose return, post-remount text insertion, unchanged desktop behavior, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The focused mobile Studio suite passes all eight destination, direct-handoff, leave-guard, persistent-navigation, route-retention, Compose-remount, and queued-insertion cases. The complete runnable Jest gate passes 241 suites and 1,318 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Question, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

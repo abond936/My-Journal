@@ -8,6 +8,7 @@ let mockSelectedCardId: string | null = null;
 let mockSelectedCardType: 'story' | 'callout' = 'story';
 const mockConfirmComposeLeave = jest.fn<Promise<boolean>, []>();
 const mockRequestClearSelectedCard = jest.fn<Promise<boolean>, []>();
+const mockInsertedPrompts: string[] = [];
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockRouterReplace }),
@@ -127,15 +128,36 @@ jest.mock('@/components/admin/studio/StudioTreeCandidateCardBank', () => ({
   default: () => <div data-testid="cards-pane" />,
 }));
 
-jest.mock('@/components/admin/studio/StudioCardEditPane', () => ({
-  __esModule: true,
-  default: () => <div data-testid="compose-pane" />,
-}));
+jest.mock('@/components/admin/studio/StudioCardEditPane', () => {
+  function MockStudioCardEditPane() {
+    const ReactActual = jest.requireActual<typeof import('react')>('react');
+    const { useStudioShell } = jest.requireActual<typeof import('@/components/admin/studio/StudioShellContext')>(
+      '@/components/admin/studio/StudioShellContext'
+    );
+    const { registerPromptTextInsert } = useStudioShell();
+    ReactActual.useEffect(() => {
+      registerPromptTextInsert((prompt: string) => mockInsertedPrompts.push(prompt));
+      return () => registerPromptTextInsert(null);
+    }, [registerPromptTextInsert]);
+    return <div data-testid="compose-pane" />;
+  }
+  return { __esModule: true, default: MockStudioCardEditPane };
+});
 
-jest.mock('@/components/admin/studio/StudioQuestionsPane', () => ({
-  __esModule: true,
-  default: () => <div data-testid="prompts-pane" />,
-}));
+jest.mock('@/components/admin/studio/StudioQuestionsPane', () => {
+  function MockStudioQuestionsPane() {
+    const { useStudioShell } = jest.requireActual<typeof import('@/components/admin/studio/StudioShellContext')>(
+      '@/components/admin/studio/StudioShellContext'
+    );
+    const { insertPromptText } = useStudioShell();
+    return (
+      <div data-testid="prompts-pane">
+        <button type="button" onClick={() => insertPromptText('What do you remember?')}>Add test prompt</button>
+      </div>
+    );
+  }
+  return { __esModule: true, default: MockStudioQuestionsPane };
+});
 
 jest.mock('@/components/admin/studio/media/MediaAdminContent', () => ({
   __esModule: true,
@@ -158,6 +180,7 @@ describe('StudioWorkspace mobile destinations', () => {
     mockSelectedCardType = 'story';
     mockConfirmComposeLeave.mockResolvedValue(true);
     mockRequestClearSelectedCard.mockResolvedValue(true);
+    mockInsertedPrompts.length = 0;
     window.localStorage.clear();
   });
 
@@ -239,19 +262,34 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 
-  it('gives mobile Story Compose the full screen and keeps Back to Cards as the guarded exit', async () => {
+  it('keeps mobile Story Compose focused while retaining the persistent destination navigation', async () => {
     mockSelectedCardId = 'story-1';
     mockRequestClearSelectedCard.mockResolvedValue(false);
     render(<StudioWorkspace />);
 
     expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to Cards' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Author destinations' })).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Author destinations' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to Cards' }));
 
     await waitFor(() => expect(mockRequestClearSelectedCard).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('returns a selected mobile Card from Prompts and inserts queued guidance after Compose remounts', async () => {
+    mockSelectedCardId = 'story-1';
+    render(<StudioWorkspace />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Prompts' }));
+    await waitFor(() => expect(screen.getByTestId('prompts-pane')).toBeInTheDocument());
+    expect(mockRouterReplace).toHaveBeenCalledWith('/admin/studio?destination=prompts&card=story-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add test prompt' }));
+
+    await waitFor(() => expect(screen.getByTestId('compose-pane')).toBeInTheDocument());
+    expect(mockInsertedPrompts).toEqual(['What do you remember?']);
+    expect(mockRouterReplace).toHaveBeenLastCalledWith('/admin/studio?destination=cards&card=story-1');
   });
 });
