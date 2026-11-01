@@ -1,5 +1,11 @@
 import type { Question } from '@/lib/types/question';
 
+export const PROMPT_NEEDS_ORGANIZATION_FILTER = '__needs_prompt_organization__';
+
+export function promptNeedsOrganization(question: Question): boolean {
+  return !question.category || !question.topic;
+}
+
 function compareWithinPromptGroup(a: Question, b: Question): number {
   return a.promptOrder - b.promptOrder ||
     a.prompt.localeCompare(b.prompt) ||

@@ -16,7 +16,12 @@ import type { PromptLibraryKind, Question, UpdateQuestionInput } from '@/lib/typ
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { groupSelectedTagIdsByDimension } from '@/lib/utils/tagUtils';
 import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
-import { getPromptOrderSiblings, orderPromptLibraryQuestions } from '@/lib/utils/promptLibrary';
+import {
+  getPromptOrderSiblings,
+  orderPromptLibraryQuestions,
+  PROMPT_NEEDS_ORGANIZATION_FILTER,
+  promptNeedsOrganization,
+} from '@/lib/utils/promptLibrary';
 import styles from './StudioWorkspace.module.css';
 
 type QuestionsResponse = { questions?: Question[]; message?: string; error?: string };
@@ -309,7 +314,10 @@ export default function StudioQuestionsPane() {
   );
   const topicOptions = useMemo(
     () => Array.from(new Set(questions
-      .filter((question) => !selectedCategory || question.category === selectedCategory)
+      .filter((question) =>
+        !selectedCategory ||
+        (selectedCategory !== PROMPT_NEEDS_ORGANIZATION_FILTER && question.category === selectedCategory)
+      )
       .map((question) => question.topic)
       .filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [questions, selectedCategory]
@@ -322,7 +330,12 @@ export default function StudioQuestionsPane() {
       const included = isIncluded(question);
       if (includedFilter === 'included' && !included) return false;
       if (includedFilter === 'notIncluded' && included) return false;
-      if (selectedCategory && question.category !== selectedCategory) return false;
+      if (selectedCategory === PROMPT_NEEDS_ORGANIZATION_FILTER && !promptNeedsOrganization(question)) return false;
+      if (
+        selectedCategory &&
+        selectedCategory !== PROMPT_NEEDS_ORGANIZATION_FILTER &&
+        question.category !== selectedCategory
+      ) return false;
       if (selectedTopic && question.topic !== selectedTopic) return false;
       if (q && !question.prompt_lowercase.includes(q)) return false;
       if (!tagMatchesSelection(question, selectedTagId, selectedDescendantIds, includeChildren)) return false;
@@ -834,6 +847,9 @@ export default function StudioQuestionsPane() {
             aria-label="Prompt category filter"
           >
             <option value="">All categories</option>
+            <option value={PROMPT_NEEDS_ORGANIZATION_FILTER}>
+              Needs organization ({questions.filter(promptNeedsOrganization).length})
+            </option>
             {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
           </select>
           <select
@@ -841,6 +857,7 @@ export default function StudioQuestionsPane() {
             value={selectedTopic}
             onChange={(event) => setSelectedTopic(event.target.value)}
             aria-label="Prompt topic filter"
+            disabled={selectedCategory === PROMPT_NEEDS_ORGANIZATION_FILTER}
           >
             <option value="">All topics</option>
             {topicOptions.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
