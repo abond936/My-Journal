@@ -20,11 +20,15 @@ import {
   StudioShellProvider,
   type StudioShellContextValue,
 } from '@/components/admin/studio/StudioShellContext';
-import { createStudioShellImperativeRegistry } from '@/components/admin/studio/studioShellImperativeRegistry';
+import {
+  createStudioShellImperativeRegistry,
+} from '@/components/admin/studio/studioShellImperativeRegistry';
+import type { PromptInsertRequest } from '@/components/authoring/CardFormSurfaceContext';
 import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
 import type { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { fetchAdminCardSnapshot } from '@/lib/utils/fetchAdminCardSnapshot';
 import { deriveCuratedMutationPlan, normalizeCuratedChildIds } from '@/lib/utils/curatedCollectionTree';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
@@ -72,6 +76,31 @@ export default function StudioWorkspace() {
     const trimmed = raw?.trim();
     return trimmed ? trimmed : null;
   }, [searchParams]);
+  const requestedMediaId = useMemo(() => {
+    const raw = searchParams.get('media');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedMediaReviewId = useMemo(() => {
+    const raw = searchParams.get('mediaReview');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedMediaHandoffId = requestedMediaReviewId ?? requestedMediaId;
+  const requestedMediaBatchId = useMemo(() => {
+    const raw = searchParams.get('mediaBatch');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedInspectionTagId = useMemo(() => {
+    const raw = searchParams.get('inspectTag');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
+  const requestedInspectionTarget = useMemo(() => {
+    const raw = searchParams.get('inspectTarget');
+    return raw === 'cards' || raw === 'media' ? raw : null;
+  }, [searchParams]);
   const newCardRequested = useMemo(() => {
     const raw = searchParams.get('new');
     if (!raw) return false;
@@ -82,10 +111,26 @@ export default function StudioWorkspace() {
     [newCardRequested, requestedCardId]
   );
   const [mobileDestination, setMobileDestination] = useState<MobileAuthorDestination>(() => {
-    if (requestedCardId || newCardRequested) return 'cards';
+    const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
+    if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') return 'cards';
     if (requestedCollectionId) return 'collections';
-    return parseMobileAuthorDestination(searchParams.get('destination')) ?? 'cards';
+    if (requestedMediaHandoffId || requestedMediaBatchId) return 'media';
+    return explicitDestination ?? 'cards';
   });
+  const tagInspectionSequenceRef = useRef(0);
+  const [tagInspectionRequest, setTagInspectionRequest] = useState<{
+    tagId: string;
+    target: 'cards' | 'media';
+    requestKey: number;
+  } | null>(() => (
+    requestedInspectionTagId && requestedInspectionTarget
+      ? {
+          tagId: requestedInspectionTagId,
+          target: requestedInspectionTarget,
+          requestKey: tagInspectionSequenceRef.current,
+        }
+      : null
+  ));
   const mobileDestinationHydratedRef = useRef(false);
   const {
     wideLayout,
@@ -106,6 +151,14 @@ export default function StudioWorkspace() {
         : current
     ));
   }, [requestedCollectionId, setPaneVisibility]);
+  useEffect(() => {
+    if (!requestedMediaHandoffId && !requestedMediaBatchId) return;
+    setPaneVisibility((current) => (
+      current.mediaCollapsed
+        ? { ...current, mediaCollapsed: false }
+        : current
+    ));
+  }, [requestedMediaBatchId, requestedMediaHandoffId, setPaneVisibility]);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
@@ -129,8 +182,15 @@ export default function StudioWorkspace() {
   const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
   const studioImperatives = useMemo(() => createStudioShellImperativeRegistry(), []);
+  const pendingPromptTextRef = useRef<PromptInsertRequest[]>([]);
   const registerBodyMediaInsert = useCallback((handler: ((media: Media) => void) | null) => {
     studioImperatives.register('bodyMediaInsert', handler);
+  }, [studioImperatives]);
+  const registerPromptTextInsert = useCallback((handler: ((request: PromptInsertRequest) => void) | null) => {
+    studioImperatives.register('promptTextInsert', handler);
+    if (!handler || pendingPromptTextRef.current.length === 0) return;
+    const pendingPrompts = pendingPromptTextRef.current.splice(0);
+    pendingPrompts.forEach(request => handler(request));
   }, [studioImperatives]);
   const bodyMediaInsertRef = studioImperatives.bodyMediaInsertRef;
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
@@ -177,15 +237,6 @@ export default function StudioWorkspace() {
     }),
     [mobileCardEditorOpen, mobileDestination]
   );
-  const mobileStoryComposerOpen = Boolean(
-    !wideLayout
-    && mobilePresentation.cardsStage === 'compose'
-    && (
-      newCardRequested
-      || activeCardViewModel.card?.type === 'story'
-      || selectedPreview?.type === 'story'
-    )
-  );
   const effectivePaneVisibility = wideLayout
     ? paneVisibility
     : mobilePresentation.paneVisibility;
@@ -194,19 +245,23 @@ export default function StudioWorkspace() {
     if (wideLayout || mobileDestinationHydratedRef.current) return;
     mobileDestinationHydratedRef.current = true;
     const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
-    const initialDestination = requestedCardId || newCardRequested
+    const initialDestination = (requestedCardId || newCardRequested) && explicitDestination !== 'prompts'
       ? 'cards'
       : requestedCollectionId
         ? 'collections'
-        : explicitDestination ?? readStoredMobileAuthorDestination();
+        : requestedMediaHandoffId || requestedMediaBatchId
+          ? 'media'
+          : explicitDestination ?? readStoredMobileAuthorDestination();
     setMobileDestination(initialDestination);
-  }, [newCardRequested, requestedCardId, requestedCollectionId, searchParams, wideLayout]);
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaBatchId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   useEffect(() => {
     if (wideLayout) return;
-    if (requestedCardId || newCardRequested) setMobileDestination('cards');
+    const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
+    if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') setMobileDestination('cards');
     else if (requestedCollectionId) setMobileDestination('collections');
-  }, [newCardRequested, requestedCardId, requestedCollectionId, wideLayout]);
+    else if (requestedMediaHandoffId || requestedMediaBatchId) setMobileDestination('media');
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaBatchId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   const replaceStudioQuery = useCallback((update: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -215,6 +270,27 @@ export default function StudioWorkspace() {
     router.replace(query ? `/admin/studio?${query}` : '/admin/studio');
   }, [router, searchParams]);
 
+  const insertPromptText = useCallback((request: PromptInsertRequest) => {
+    const handler = studioImperatives.get('promptTextInsert');
+    if (handler) {
+      handler(request);
+      return true;
+    }
+    if (wideLayout || !selectedCardId) return false;
+    pendingPromptTextRef.current.push(request);
+    setMobileDestination('cards');
+    writeStoredMobileAuthorDestination('cards');
+    replaceStudioQuery((params) => {
+      params.set('destination', 'cards');
+      params.set('card', selectedCardId);
+      params.delete('new');
+      params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
+    });
+    return true;
+  }, [replaceStudioQuery, selectedCardId, studioImperatives, wideLayout]);
+
   const selectMobileDestination = useCallback(async (destination: MobileAuthorDestination) => {
     if (destination === mobileDestination) return;
     if (mobileDestination === 'cards' && mobileCardEditorOpen) {
@@ -222,16 +298,24 @@ export default function StudioWorkspace() {
       if (!canLeave) return;
     }
     setMobileDestination(destination);
+    setTagInspectionRequest(null);
     writeStoredMobileAuthorDestination(destination);
     replaceStudioQuery((params) => {
       params.set('destination', destination);
+      params.delete('inspectTag');
+      params.delete('inspectTarget');
       params.delete('collection');
-      if (destination !== 'cards') {
+      if (destination !== 'media') params.delete('media');
+      if (destination !== 'media') params.delete('mediaReview');
+      if (destination !== 'cards' && destination !== 'prompts') {
         params.delete('card');
+        params.delete('new');
+      } else if (destination === 'prompts') {
+        if (selectedCardId) params.set('card', selectedCardId);
         params.delete('new');
       }
     });
-  }, [confirmComposeLeave, mobileCardEditorOpen, mobileDestination, replaceStudioQuery]);
+  }, [confirmComposeLeave, mobileCardEditorOpen, mobileDestination, replaceStudioQuery, selectedCardId]);
 
   const openCardInWorkspace = useCallback(async (
     cardId: string,
@@ -246,6 +330,8 @@ export default function StudioWorkspace() {
       params.set('card', cardId);
       params.delete('new');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
     return true;
   }, [replaceStudioQuery, requestSelectCard, wideLayout]);
@@ -260,6 +346,8 @@ export default function StudioWorkspace() {
       params.delete('card');
       params.delete('new');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
   }, [replaceStudioQuery, requestClearSelectedCard]);
 
@@ -273,8 +361,38 @@ export default function StudioWorkspace() {
       params.set('new', '1');
       params.delete('card');
       params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
     });
   }, [replaceStudioQuery, requestClearSelectedCard]);
+
+  const inspectTagMatches = useCallback(async (tag: Tag, target: 'cards' | 'media') => {
+    if (!tag.docId) return;
+    if (target === 'cards') {
+      const cleared = await requestClearSelectedCard();
+      if (!cleared) return;
+    }
+    const requestKey = tagInspectionSequenceRef.current + 1;
+    tagInspectionSequenceRef.current = requestKey;
+    setTagInspectionRequest({ tagId: tag.docId, target, requestKey });
+    setPaneVisibility((current) => target === 'cards'
+      ? { ...current, cardsCollapsed: false }
+      : { ...current, mediaCollapsed: false });
+    if (!wideLayout) {
+      setMobileDestination(target);
+      writeStoredMobileAuthorDestination(target);
+    }
+    replaceStudioQuery((params) => {
+      params.set('destination', target);
+      params.set('inspectTag', tag.docId!);
+      params.set('inspectTarget', target);
+      params.delete('card');
+      params.delete('new');
+      params.delete('collection');
+      params.delete('media');
+      params.delete('mediaReview');
+    });
+  }, [replaceStudioQuery, requestClearSelectedCard, setPaneVisibility, wideLayout]);
   useEffect(() => {
     const handleMediaTagReconciliation = (event: Event) => {
       const detail = (event as CustomEvent<{ affectedCardIds?: string[] }>).detail;
@@ -307,6 +425,22 @@ export default function StudioWorkspace() {
     },
     [resolveBankMediaById]
   );
+  const directMediaRequestRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestedMediaId || directMediaRequestRef.current === requestedMediaId) return;
+    directMediaRequestRef.current = requestedMediaId;
+    void (async () => {
+      const item = await loadMediaById(requestedMediaId);
+      if (!item) {
+        setActionError('The requested Media record is unavailable.');
+        return;
+      }
+      setMobileDestination('media');
+      setCardMediaItems([item]);
+      setSelectedCardMediaId(item.docId);
+      setCardMediaEditorOpen(true);
+    })();
+  }, [loadMediaById, requestedMediaId]);
   const openSelectedCardMediaEditor = useCallback(async (mediaId?: string | null) => {
     const card = selectedDetailRef.current ?? selectedPreviewRef.current;
     const assignedIds = collectAssignedMediaIds(card);
@@ -572,6 +706,8 @@ export default function StudioWorkspace() {
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
+      insertPromptText,
+      registerPromptTextInsert,
       bodyMediaInsertRef,
       registerStoryPileMembershipChanged,
     }),
@@ -606,6 +742,8 @@ export default function StudioWorkspace() {
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
+      insertPromptText,
+      registerPromptTextInsert,
       bodyMediaInsertRef,
       registerStoryPileMembershipChanged,
     ]
@@ -722,10 +860,15 @@ export default function StudioWorkspace() {
               embeddedRightSlotCollapsed={!wideLayout && mobilePresentation.rightSlotCollapsed}
               embeddedStacked={!wideLayout}
               embeddedRightSlotMinWidth={wideLayout ? embeddedRightSlotMinWidth : undefined}
+              onInspectTagCards={(tag) => void inspectTagMatches(tag, 'cards')}
+              onInspectTagMedia={(tag) => void inspectTagMatches(tag, 'media')}
               embeddedUnparentedReplacement={(ctx) => (
                   <StudioTreeCandidateCardBank
                     {...ctx}
                     autoSelectFirstCard={wideLayout && !newCardRequested}
+                    tagInspectionRequest={tagInspectionRequest?.target === 'cards'
+                      ? tagInspectionRequest
+                      : null}
                     registerCatalogRemove={(fn) => {
                       cardsBankRemoveRef.current = fn;
                     }}
@@ -802,7 +945,15 @@ export default function StudioWorkspace() {
                         {showMediaPane ? (
                           <div className={styles.studioMediaBankColumn}>
                             <div className={styles.studioMediaBankFill}>
-                              <MediaAdminContent embedded studioSourceDraggable />
+                              <MediaAdminContent
+                                embedded
+                                studioSourceDraggable
+                                initialReviewMediaId={requestedMediaReviewId}
+                                initialImportBatchId={requestedMediaBatchId}
+                                tagInspectionRequest={tagInspectionRequest?.target === 'media'
+                                  ? tagInspectionRequest
+                                  : null}
+                              />
                             </div>
                           </div>
                         ) : null}
@@ -813,7 +964,7 @@ export default function StudioWorkspace() {
             />
           </div>
         </div>
-        {!wideLayout && !mobileStoryComposerOpen ? (
+        {!wideLayout ? (
           <nav className={styles.mobileDestinationNav} aria-label="Author destinations">
             {MOBILE_AUTHOR_DESTINATIONS.map((destination) => (
               <button

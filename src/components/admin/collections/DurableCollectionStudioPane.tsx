@@ -12,6 +12,7 @@ import type {
 import type { AudienceSelection } from '@/lib/types/audience';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import CreateCollectionControl from '@/components/admin/collections/CreateCollectionControl';
+import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
 import type { CollectionAudienceImpact } from '@/lib/services/audienceImpactService';
 import styles from './DurableCollectionStudioPane.module.css';
 
@@ -65,8 +66,9 @@ export default function DurableCollectionStudioPane({
   const [structuralTitle, setStructuralTitle] = useState('');
   const [structuralParentId, setStructuralParentId] = useState('');
   const [creatingStructuralPlacement, setCreatingStructuralPlacement] = useState(false);
+  const [promotingPlacementId, setPromotingPlacementId] = useState<string | null>(null);
   const structureLocked = structure?.collection.lifecycle === 'published';
-  const busy = saving || creatingStructuralPlacement;
+  const busy = saving || creatingStructuralPlacement || Boolean(promotingPlacementId);
 
   useEffect(() => {
     let cancelled = false;
@@ -462,6 +464,44 @@ export default function DurableCollectionStudioPane({
     void savePlacements(next, `Removed ${card?.title || 'Untitled Card'} from this Collection.`);
   }, [cardsById, childrenByParent, savePlacements, structure]);
 
+  const promotePlacement = useCallback(async (placement: CollectionPlacement) => {
+    if (!structure || placement.role === 'card' || promotingPlacementId) return;
+    const card = cardsById.get(placement.cardId);
+    const suggestedTitle = card?.title?.trim() || 'New Collection';
+    const title = window.prompt(
+      'Create a private draft Collection from this structure. The same Cards will be referenced; later structural changes will be independent.',
+      suggestedTitle
+    )?.trim();
+    if (!title) return;
+    setPromotingPlacementId(placement.docId);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/admin/collections/${encodeURIComponent(structure.collection.docId)}/promote`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourcePlacementId: placement.docId,
+            expectedStructureRevision: structure.collection.structureRevision,
+            title,
+          }),
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'The new Collection could not be created.');
+      const collection = data.collection as Collection;
+      setCollections((current) => [...current, collection]);
+      setSelectedCollectionId(collection.docId);
+      setMessage(`${collection.title} created as a private draft with ${data.placementCount ?? 0} copied placements.`);
+    } catch (promotionError) {
+      setError(promotionError instanceof Error ? promotionError.message : 'The new Collection could not be created.');
+    } finally {
+      setPromotingPlacementId(null);
+    }
+  }, [cardsById, promotingPlacementId, structure]);
+
   const renderPlacement = (placement: CollectionPlacement) => {
     const card = cardsById.get(placement.cardId);
     const children = childrenByParent.get(placement.docId) ?? [];
@@ -500,6 +540,17 @@ export default function DurableCollectionStudioPane({
         </select>
         <button type="button" disabled={structureLocked || busy || siblingIndex <= 0} onClick={() => movePlacement(placement.docId, -1)} aria-label={`Move ${card?.title || 'Card'} up`}>↑</button>
         <button type="button" disabled={structureLocked || busy || siblingIndex < 0 || siblingIndex >= siblings.length - 1} onClick={() => movePlacement(placement.docId, 1)} aria-label={`Move ${card?.title || 'Card'} down`}>↓</button>
+        {placement.role !== 'card' ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void promotePlacement(placement)}
+            aria-label={`Create Collection from ${card?.title || placement.role}`}
+            title="Create a new private draft Collection from this local structure."
+          >
+            {promotingPlacementId === placement.docId ? 'Creating...' : 'Make Collection'}
+          </button>
+        ) : null}
         <button
           type="button"
           disabled={structureLocked || busy || children.length > 0}
@@ -553,6 +604,12 @@ export default function DurableCollectionStudioPane({
             >
               {structure.collection.lifecycle === 'published' ? 'Return to Draft' : 'Publish Collection'}
             </button>
+            {structure.collection.lifecycle === 'published' ? (
+              <CopyReaderLinkButton
+                path={`/view?mode=guided&collection=${encodeURIComponent(structure.collection.docId)}`}
+                label="Copy Reader link"
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

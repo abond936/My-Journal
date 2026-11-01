@@ -1,6 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
+import {
+  startMediaImportOperation,
+  updateMediaImportOperation,
+} from '@/lib/services/mediaImportOperationService';
 
 jest.mock('next/server', () => {
   const NextResponse = {
@@ -24,6 +28,12 @@ jest.mock('@/lib/auth/authOptions', () => ({
 
 jest.mock('@/lib/services/images/imageImportService', () => ({
   importFromLocalDrive: jest.fn(),
+}));
+
+jest.mock('@/lib/services/mediaImportOperationService', () => ({
+  startMediaImportOperation: jest.fn(),
+  updateMediaImportOperation: jest.fn(),
+  failMediaImportOperation: jest.fn(),
 }));
 
 function getMockedGetServerSession(): jest.Mock {
@@ -92,6 +102,13 @@ describe('local import route duplicate policy', () => {
     expect(payload.results[0]?.media.storageUrl).toBe(
       '/api/reader/media/media-existing-1?rendition=original'
     );
+    expect(startMediaImportOperation).toHaveBeenCalledWith(expect.any(String), 1);
+    expect(updateMediaImportOperation).toHaveBeenLastCalledWith(
+      expect.any(String),
+      1,
+      { processed: 1, succeeded: 0, skipped: 1, failed: 0 },
+      true
+    );
   });
 
   it('always enables sourcePath duplicate skipping for single-file imports and returns skipped=true', async () => {
@@ -136,5 +153,7 @@ describe('local import route duplicate policy', () => {
     expect(payload.media.storageUrl).toBe(
       '/api/reader/media/media-existing-2?rendition=original'
     );
+    expect(startMediaImportOperation).not.toHaveBeenCalled();
+    expect(updateMediaImportOperation).not.toHaveBeenCalled();
   });
 });

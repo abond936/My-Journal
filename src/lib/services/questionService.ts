@@ -5,12 +5,14 @@ import { cardSchema } from '@/lib/types/card';
 import { syncCardToTypesense } from '@/lib/services/typesenseService';
 import {
   CreateQuestionInput,
+  PromptLibraryMoveDirection,
   Question,
   UpdateQuestionInput,
   createQuestionSchema,
   updateQuestionSchema,
 } from '@/lib/types/question';
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { exactQuestionDuplicateGroupForSurvivor } from '@/lib/utils/questionDuplicateReview';
 
 const COLLECTION = 'questions';
 
@@ -18,6 +20,13 @@ export class QuestionAnswerConflictError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'QuestionAnswerConflictError';
+  }
+}
+
+export class QuestionDuplicateConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuestionDuplicateConflictError';
   }
 }
 
@@ -35,6 +44,10 @@ function sanitizeTags(raw: string[] | undefined): string[] {
 function sanitizeTagIds(raw: string[] | undefined): string[] {
   if (!raw) return [];
   return Array.from(new Set(raw.map(t => t.trim()).filter(Boolean))).slice(0, 50);
+}
+
+function sanitizeLibraryLabel(raw: string | undefined): string {
+  return raw?.trim() ?? '';
 }
 
 async function assertQuestionTagsAreDimensional(tagIds: string[]): Promise<void> {
@@ -66,9 +79,44 @@ function toQuestion(docId: string, data: FirebaseFirestore.DocumentData): Questi
     tags: Array.isArray(data.tags) ? data.tags : [],
     usedByCardIds: Array.isArray(data.usedByCardIds) ? data.usedByCardIds : [],
     usageCount: typeof data.usageCount === 'number' ? data.usageCount : 0,
+    category: typeof data.category === 'string' ? data.category.trim() : '',
+    topic: typeof data.topic === 'string' ? data.topic.trim() : '',
+    promptKind: data.promptKind === 'followup' ? 'followup' : 'primary',
+    parentQuestionId: typeof data.parentQuestionId === 'string' ? data.parentQuestionId : null,
+    promptOrder: typeof data.promptOrder === 'number' && data.promptOrder >= 0 ? Math.floor(data.promptOrder) : 0,
     createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
     updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : Date.now(),
   };
+}
+
+async function assertPromptLibraryPlacement(input: {
+  questionId?: string;
+  category: string;
+  topic: string;
+  promptKind: Question['promptKind'];
+  parentQuestionId: string | null;
+}): Promise<void> {
+  if (input.promptKind === 'primary') {
+    if (input.parentQuestionId) throw new Error('A primary prompt cannot have a parent question');
+    return;
+  }
+  if (!input.parentQuestionId) throw new Error('A follow-up prompt requires a primary question');
+  if (input.parentQuestionId === input.questionId) throw new Error('A prompt cannot follow itself');
+  const parent = await getQuestionById(input.parentQuestionId);
+  if (!parent) throw new Error('The selected primary question was not found');
+  if (parent.promptKind !== 'primary') throw new Error('A follow-up prompt must belong to a primary question');
+  if (parent.category !== input.category || parent.topic !== input.topic) {
+    throw new Error('A follow-up prompt must use the same Category and Topic as its primary question');
+  }
+}
+
+async function hasFollowups(questionId: string): Promise<boolean> {
+  const snap = await db()
+    .collection(COLLECTION)
+    .where('parentQuestionId', '==', questionId)
+    .limit(1)
+    .get();
+  return !snap.empty;
 }
 
 export async function listQuestions(): Promise<Question[]> {
@@ -81,6 +129,10 @@ export async function createQuestion(input: CreateQuestionInput): Promise<Questi
   const now = Date.now();
   const prompt = parsed.prompt.trim();
   const tagIds = sanitizeTagIds(parsed.tagIds);
+  const category = sanitizeLibraryLabel(parsed.category);
+  const topic = sanitizeLibraryLabel(parsed.topic);
+  const parentQuestionId = parsed.promptKind === 'followup' ? parsed.parentQuestionId : null;
+  await assertPromptLibraryPlacement({ category, topic, promptKind: parsed.promptKind, parentQuestionId });
   await assertQuestionTagsAreDimensional(tagIds);
   const allTags = await getAllTags();
   const subjectState = await resolveSubjectTagState({
@@ -100,6 +152,11 @@ export async function createQuestion(input: CreateQuestionInput): Promise<Questi
     tags: sanitizeTags(parsed.tags),
     usedByCardIds: [],
     usageCount: 0,
+    category,
+    topic,
+    promptKind: parsed.promptKind,
+    parentQuestionId,
+    promptOrder: parsed.promptOrder,
     createdAt: now,
     updatedAt: now,
   };
@@ -133,6 +190,34 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
   if (parsed.tags !== undefined) {
     updatePayload.tags = sanitizeTags(parsed.tags);
   }
+  if (
+    parsed.category !== undefined ||
+    parsed.topic !== undefined ||
+    parsed.promptKind !== undefined ||
+    parsed.parentQuestionId !== undefined ||
+    parsed.promptOrder !== undefined
+  ) {
+    const existing = toQuestion(snap.id, snap.data() ?? {});
+    const category = sanitizeLibraryLabel(parsed.category ?? existing.category);
+    const topic = sanitizeLibraryLabel(parsed.topic ?? existing.topic);
+    const promptKind = parsed.promptKind ?? existing.promptKind;
+    const parentQuestionId = promptKind === 'followup'
+      ? (parsed.parentQuestionId !== undefined ? parsed.parentQuestionId : existing.parentQuestionId)
+      : null;
+    if (
+      existing.promptKind === 'primary' &&
+      await hasFollowups(questionId) &&
+      (promptKind !== 'primary' || category !== existing.category || topic !== existing.topic)
+    ) {
+      throw new Error('Move or reassign this primary question’s follow-ups before changing its Category, Topic, or kind');
+    }
+    await assertPromptLibraryPlacement({ questionId, category, topic, promptKind, parentQuestionId });
+    updatePayload.category = category;
+    updatePayload.topic = topic;
+    updatePayload.promptKind = promptKind;
+    updatePayload.parentQuestionId = parentQuestionId;
+    updatePayload.promptOrder = parsed.promptOrder ?? existing.promptOrder;
+  }
   if (parsed.tagIds !== undefined) {
     const tagIds = sanitizeTagIds(parsed.tagIds);
     await assertQuestionTagsAreDimensional(tagIds);
@@ -160,7 +245,50 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
   return toQuestion(fresh.id, fresh.data() ?? {});
 }
 
+export async function reorderQuestion(
+  questionId: string,
+  direction: PromptLibraryMoveDirection
+): Promise<Question[]> {
+  const database = db();
+  const collectionRef = database.collection(COLLECTION);
+  return database.runTransaction(async tx => {
+    const snap = await tx.get(collectionRef);
+    const questions = snap.docs.map(doc => toQuestion(doc.id, doc.data()));
+    const target = questions.find(question => question.docId === questionId);
+    if (!target) throw new Error('Question not found');
+
+    const siblings = questions
+      .filter(question =>
+        question.category === target.category &&
+        question.topic === target.topic &&
+        question.promptKind === target.promptKind &&
+        (target.promptKind === 'primary' || question.parentQuestionId === target.parentQuestionId)
+      )
+      .sort((a, b) =>
+        a.promptOrder - b.promptOrder ||
+        a.prompt.localeCompare(b.prompt) ||
+        a.docId.localeCompare(b.docId)
+      );
+    const currentIndex = siblings.findIndex(question => question.docId === questionId);
+    const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= siblings.length) return siblings;
+
+    [siblings[currentIndex], siblings[nextIndex]] = [siblings[nextIndex], siblings[currentIndex]];
+    const now = Date.now();
+    siblings.forEach((question, index) => {
+      if (question.promptOrder === index) return;
+      tx.update(collectionRef.doc(question.docId), { promptOrder: index, updatedAt: now });
+      question.promptOrder = index;
+      question.updatedAt = now;
+    });
+    return siblings;
+  });
+}
+
 export async function deleteQuestion(questionId: string): Promise<void> {
+  if (await hasFollowups(questionId)) {
+    throw new QuestionAnswerConflictError('Cannot delete a primary question that still has follow-up prompts');
+  }
   const ref = db().collection(COLLECTION).doc(questionId);
   await db().runTransaction(async tx => {
     const snap = await tx.get(ref);
@@ -171,6 +299,87 @@ export async function deleteQuestion(questionId: string): Promise<void> {
     }
     tx.delete(ref);
   });
+}
+
+export async function consolidateExactQuestionDuplicates(survivorId: string): Promise<Question> {
+  const questions = await listQuestions();
+  const group = exactQuestionDuplicateGroupForSurvivor(questions, survivorId);
+  if (!group) throw new QuestionDuplicateConflictError('No exact duplicate prompts remain for this question');
+  if (!group.canConsolidate) {
+    throw new QuestionDuplicateConflictError(group.blockedReason ?? 'This duplicate group cannot be consolidated safely');
+  }
+  const survivor = group.questions.find((question) => question.docId === survivorId);
+  if (!survivor) throw new Error('Question not found');
+  const linkedOwner = group.questions.find((question) => question.usedByCardIds.length > 0);
+  if (linkedOwner && linkedOwner.docId !== survivorId) {
+    throw new QuestionDuplicateConflictError('Keep the prompt that owns the existing Question Card');
+  }
+
+  const duplicateIds = new Set(group.questions.map((question) => question.docId));
+  const followups = survivor.promptKind === 'primary'
+    ? questions.filter((question) =>
+        question.promptKind === 'followup' &&
+        Boolean(question.parentQuestionId) &&
+        duplicateIds.has(question.parentQuestionId!)
+      )
+    : [];
+  if (group.questions.length + followups.length > 400) {
+    throw new QuestionDuplicateConflictError('This duplicate group is too large for one safe consolidation');
+  }
+
+  const tagIds = sanitizeTagIds(group.questions.flatMap((question) => question.tagIds));
+  await assertQuestionTagsAreDimensional(tagIds);
+  const allTags = await getAllTags();
+  const subjectState = await resolveSubjectTagState({
+    assignedTagIds: tagIds,
+    requestedSubjectTagIds: group.questions.flatMap((question) => question.subjectTagIds),
+    subjectTagIdsProvided: true,
+    subjectTagIdProvided: false,
+    allTags,
+  });
+  const legacyTags = sanitizeTags(group.questions.flatMap((question) => question.tags));
+  const expectedUpdatedAt = new Map(group.questions.map((question) => [question.docId, question.updatedAt]));
+  const database = db();
+  const collection = database.collection(COLLECTION);
+  const now = Date.now();
+
+  await database.runTransaction(async (tx) => {
+    const memberSnapshots: FirebaseFirestore.DocumentSnapshot[] = [];
+    for (const question of group.questions) {
+      memberSnapshots.push(await tx.get(collection.doc(question.docId)));
+    }
+    for (const snapshot of memberSnapshots) {
+      if (!snapshot.exists) throw new QuestionDuplicateConflictError('The duplicate group changed; review it again');
+      const current = toQuestion(snapshot.id, snapshot.data() ?? {});
+      if (current.updatedAt !== expectedUpdatedAt.get(current.docId)) {
+        throw new QuestionDuplicateConflictError('The duplicate group changed; review it again');
+      }
+    }
+    tx.update(collection.doc(survivorId), {
+      tagIds,
+      subjectTagId: subjectState.subjectTagId,
+      subjectTagIds: subjectState.subjectTagIds,
+      subjectFilterTags: subjectState.subjectFilterTags,
+      tags: legacyTags,
+      updatedAt: now,
+    });
+    for (const question of group.questions) {
+      if (question.docId !== survivorId) tx.delete(collection.doc(question.docId));
+    }
+    for (const followup of followups) {
+      if (duplicateIds.has(followup.docId)) continue;
+      tx.update(collection.doc(followup.docId), {
+        parentQuestionId: survivorId,
+        category: survivor.category,
+        topic: survivor.topic,
+        updatedAt: now,
+      });
+    }
+  });
+
+  const result = await getQuestionById(survivorId);
+  if (!result) throw new Error('Question not found after consolidation');
+  return result;
 }
 
 export async function linkCardToQuestion(questionId: string, cardId: string): Promise<Question> {

@@ -6,6 +6,7 @@ import {
   Pencil,
   Plus,
   GitMerge,
+  Split,
   Trash2,
   Users,
 } from 'lucide-react';
@@ -27,6 +28,9 @@ interface TagAdminRowProps {
   highlighted?: boolean;
   onEditRelationships?: (tag: Tag) => void;
   onMergeTag?: (tag: Tag) => void;
+  onSplitTag?: (tag: Tag) => void;
+  onInspectCards?: (tag: Tag) => void;
+  onInspectMedia?: (tag: Tag) => void;
   dragHandle?: React.ReactNode;
 }
 
@@ -41,6 +45,9 @@ export function TagAdminRow({
   highlighted = false,
   onEditRelationships,
   onMergeTag,
+  onSplitTag,
+  onInspectCards,
+  onInspectMedia,
   dragHandle,
 }: TagAdminRowProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -149,13 +156,40 @@ export function TagAdminRow({
               data-dimension={tag.dimension || 'none'}
             >
               {tag.name}
-              <span
-                className={styles.cardCount}
-                title={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
-                aria-label={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
-              >
-                ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
-              </span>
+              {onInspectCards || onInspectMedia ? (
+                <span className={styles.matchActions} aria-label={`Matches for ${tag.name}`}>
+                  {onInspectCards ? (
+                    <button
+                      type="button"
+                      className={styles.matchAction}
+                      onClick={() => onInspectCards(tag)}
+                      disabled={(tag.cardCount ?? 0) === 0}
+                      aria-label={`View ${tag.cardCount ?? 0} Cards matching ${tag.name}`}
+                    >
+                      Cards {tag.cardCount ?? 0}
+                    </button>
+                  ) : null}
+                  {onInspectMedia ? (
+                    <button
+                      type="button"
+                      className={styles.matchAction}
+                      onClick={() => onInspectMedia(tag)}
+                      disabled={(tag.mediaCount ?? 0) === 0}
+                      aria-label={`View ${tag.mediaCount ?? 0} Media matching ${tag.name}`}
+                    >
+                      Media {tag.mediaCount ?? 0}
+                    </button>
+                  ) : null}
+                </span>
+              ) : (
+                <span
+                  className={styles.cardCount}
+                  title={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
+                  aria-label={`${tag.cardCount ?? 0} cards, ${tag.mediaCount ?? 0} media items`}
+                >
+                  ({tag.cardCount ?? 0}/{tag.mediaCount ?? 0})
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -197,6 +231,11 @@ export function TagAdminRow({
               {onMergeTag && (
                 <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onMergeTag(tag); }}>
                   <GitMerge size={14} aria-hidden="true" /> Merge into…
+                </button>
+              )}
+              {onSplitTag && (
+                <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); onSplitTag(tag); }}>
+                  <Split size={14} aria-hidden="true" /> Split into…
                 </button>
               )}
               <button

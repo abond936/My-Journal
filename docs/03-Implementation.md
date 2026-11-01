@@ -75,8 +75,8 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 ## Tag Workflow and Identity
 
-**Definition:** Reopened — integrated mutation contract approved
-**Execution:** Partial — ordinary workflows verified; hierarchy-wide reconciliation incomplete
+**Definition:** Ready for the current governed vocabulary and identity boundary
+**Execution:** Verified for the current boundary; import-provenance consolidation, compatibility retirement, and face assistance remain separately gated
 
 **Outcome** — The author can reliably find, filter, assign, edit, and normalize a hierarchical vocabulary without stale presentation, lost assignments, silent reinterpretation, or routine repair scripts. Who preserves stable identities, author-controlled branches, nested names, and optional family-tree facts without making perspective-relative roles assignment truth.
 
@@ -88,17 +88,17 @@ Completion reports use: **Outcome · Contracts · Tests · Browser · Data/Opera
 
 **Contracts** — Firestore remains authoritative; `parentId` owns hierarchy; projections reconcile to it; each named Who subject has one stable identity; nested names preserve specificity; parent/partner facts support a family tree without rewriting authored truth; existing assignments remain authoritative until reviewed; ambiguous conversions remain unresolved; bulk work is bounded and recoverable.
 
-**Current state** — The archive contains 651 tags, 1,281 Cards, 3,503 Media records, and 270 Questions. Shared modal ownership, lookup, scoped filters, assignment, subjects, Any/All filtering, hierarchy display, child creation, governed rename/reparent/remove/merge, and Card completeness filtering are implemented. Canonical Who tags own identity; optional compatibility profiles and parent/partner controls use the same IDs without becoming a second visible People system. The integrated mutation owner reconciles paths, assignments, subjects, projections, completeness, counts, and both search indexes. The author-reviewed cleanup restored nine named people to Friends and removed nine obsolete role/group nodes after strict reconciliation and full reference verification.
+**Current state** — The archive contains 651 tags, 1,281 Cards, 3,503 Media records, and 270 Questions. Shared modal ownership, lookup, scoped filters, assignment, subjects, Any/All filtering, hierarchy display, child creation, governed rename/reparent/remove/merge/split, and Card completeness filtering are implemented. Canonical Who tags own identity; optional compatibility profiles and parent/partner controls use the same IDs without becoming a second visible People system. The integrated mutation owners reconcile paths, assignments, subjects, projections, completeness, counts, Gallery inheritance, and both search indexes. Merge requires a reviewed same-dimension target; split starts with an empty author partition and preserves the source, unselected records, and child Tags. The author-reviewed cleanup restored nine named people to Friends and removed nine obsolete role/group nodes after strict reconciliation and full reference verification.
 
-**Gaps / slices** — Identity merge/split and import-variant consolidation remain undefined. Compatibility-profile retirement remains gated by zero-live-reference proof. Face assistance remains later work and requires recoverable identity correction first.
+**Gaps / slices** — None inside the current governed vocabulary and identity boundary. Import-variant consolidation remains outside this completed boundary until its source-keyword provenance and mapping-decision Definition Gate is approved. Compatibility-profile retirement remains gated by zero-live-reference proof. Face assistance remains a deferred capability with separate privacy, provider, retention, and confirmation decisions.
 
 **Dependencies** — Valid administrator access, paired backup capability, Firestore and Typesense access, current tag/card/media/question catalogs, and browser verification.
 
 **Risks** — Incorrect identity merges, lost historical names, perspective errors, count drift, stale search projections, partial migration, and unintended Reader-filter changes.
 
-**Decisions needed** — None for the completed hierarchy mutation and vocabulary-cleanup slice. Merge/split product behavior requires a later bounded decision.
+**Decisions needed** — None inside the completed boundary. Import consolidation, compatibility retirement, and face assistance retain their separately documented gates and are not implied by completion here.
 
-**Completion evidence** — Automated model, hierarchy, mutation, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; canon reconciliation.
+**Completion evidence** — Automated model, hierarchy, rename, reparent, remove, merge, split, filter, and projection tests; browser verification of tag editing and Reader/Studio filtering; zero unexplained path, derived-field, count, and search discrepancies; backup, dry-run, manifest, bounded apply, audit, and rollback proof; reviewed identity migrations; and the verified author-partitioned split operation recorded in the fifty-first implementation slice. Completion applies to the current boundary and does not activate the separately gated extensions.
 
 ---
 
@@ -1100,6 +1100,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Five focused suites pass 19 tests across the durable Collection pane, embedded Collections workspace, selection synchronization, Author Home, and saved Studio pane layout. Touched-code lint, non-incremental production typecheck, and the full production build pass. The build's unauthenticated static-theme reads use the existing checked-in fallback as designed. No Collection, Card, Media, filter, lifecycle, audience, sharing, or distribution record changed.
 
+### Ninth implementation follow-up — Exact Collection exception review
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Turn Collection-level attention counts into human-reviewable work without adding automatic repair, broad mutation, or misleading global Studio filters.
+
+**Includes** — One read-only per-Collection review route; exact draft, Card-review, meaningful-What, missing-Card, missing-Media, Media-review, and Media-readiness queues derived from the existing readiness owner; direct Card-to-Compose links; exact Media-to-Tags-and-Subjects review and Media-to-editor handoffs on phone and desktop; referring-Card links for absent Media records; bounded scrollable lists; and focused service, component, dashboard, and mobile-Studio verification.
+
+**Excludes** — Automatic approval or repair; bulk mutation; publication; Card, Media, Collection, audience, or lifecycle writes; a new Task store; inferred completion percentages; and claims that one item belongs to only one queue.
+
+**Contracts** — The selected archive classification requirements determine which dimensional-review queues exist. Missing references remain evidence until the author resolves them in the owning Card or Collection surface. Exact Media-review handoff opens the existing Tags and Subjects modal; readiness handoff loads the requested record through the existing administrator route and opens the existing editor. Neither changes saved global Media filters. The review route is administrator-only through the existing Admin layout and performs reads only.
+
+**Completion evidence** — Focused readiness-service, review-component, Author Home, Media, and mobile Studio suites pass. The complete runnable Jest gate passes 233 suites and 1,261 tests, with four suites and 29 tests skipped by declared environment gates. Production typecheck, touched-code lint, diff checks, and the optimized build pass. No production readback or mutation is claimed in this local checkpoint.
+
 ### Tenth implementation slice — Card publication-integrity core
 
 **Definition:** Ready
@@ -1437,6 +1453,451 @@ The former stabilization objective and its controlling execution order are compl
 **Contracts** — Hosted acceptance remains read-only. Opening an unsaved Story and changing its client-side workflow panel are navigation and presentation checks, not content creation. Phone coverage supplements rather than weakens the desktop administrator, Reader, access-boundary, Collection-preview, and guided-Reader checks.
 
 **Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
+
+### Twenty-eighth implementation slice — Structured Prompt Library foundation
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make reusable writing guidance exist as an additive structured library and let it contribute directly to the Card the author is already writing, without creating a second answer store or rewriting existing Question Cards.
+
+**Includes** — Additive Category, Topic, Primary Question, Follow-up Question, parent, and order fields on existing Question records; legacy compatibility as unorganized primary prompts; same-Category-and-Topic parent validation; dependent-follow-up protection; Category and Topic filtering; creation and editing of library placement; copy of one prompt or a filtered Topic into the currently open Compose body; ordinary editable heading insertion; and focused schema, editor, imperative-handoff, and Firestore-integrity coverage.
+
+**Excludes** — Automatic migration or reorganization of existing questions; mutation of existing Question Cards; a separate response or interview entity; automatic Card creation from library browsing; mobile cross-destination insertion while Compose is unmounted; custom editing-only Prompt nodes; publication-time conversion or removal of such nodes; Question-Card title proposal; AI prompt generation; production data mutation; merge; and deployment.
+
+**Contracts** — Existing Question records, links, tags, Cards, Media, and Collection placements remain authoritative and unchanged until the author edits them. A follow-up references one primary question in the same Category and Topic. A primary with follow-ups cannot be deleted, converted, or moved independently. Copying guidance into a Card creates ordinary Card content with no live link back to the library. An open Card is required; browsing Prompts alone creates no Card or authored response. Legacy create/open Question Card behavior remains available during the additive transition.
+
+**Verification gate** — Prove legacy-schema normalization, structured follow-up persistence and invalid-parent rejection, primary deletion protection, imperative handoff isolation, rich-text insertion, existing Question-answer integrity, administrator route authorization, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Legacy Question records normalize as unorganized primary prompts while structured follow-ups persist only beneath a primary in the same Category and Topic. The service blocks invalid parents, independent primary moves or conversion while dependents exist, and primary deletion with dependents. Prompt insertion is isolated through the Studio imperative registry and copies ordinary editable headings into the open Card without a live library dependency. Four focused schema, editor, and handoff suites pass 187 tests; the declared Firestore emulator integrity suite passes six tests. The complete runnable Jest gate passes 232 suites and 1,262 tests, with four suites and 31 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
+
+### Twenty-ninth implementation slice — Author-confirmed Media replacement core
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author return an externally edited version of one existing photo or scan to its canonical Media identity without rebuilding its classification or Story relationships and without turning My Stories into an image editor or version-management product.
+
+**Includes** — Current-versus-proposed visual comparison; filename, dimension, and size evidence; explicit same-underlying-item confirmation in both UI and server contract; exact-byte duplicate conflict; versioned durable source upload before authority changes; canonical ID, caption, tag, subject, dimensional-review, and Card-reference preservation; refreshed source identity and technical facts; truthful Studio rendition, Reader rendition, and search readiness; retryable processing feedback; and prior-source retention until the replacement becomes Ready.
+
+**Excludes** — Built-in source editing; AI enhancement; external-editor launch or synchronization; general Media version browsing; automatic identity decisions from filenames, dimensions, size, or visual similarity; silent replacement-metadata assignment to confirmed truth; automatic duplicate reconciliation; production data mutation; merge; and deployment.
+
+**Contracts** — File selection alone performs no mutation. The author, not machine evidence, confirms same-item identity. A different item is imported separately; exact bytes owned by another canonical item are rejected for duplicate review. The replacement source becomes authoritative only after its bytes are durable. Failed or pending downstream work remains explicit and retryable, and the prior source is not removed until source, metadata, both renditions, and search are Ready. Existing Card references continue to use the same Media ID, so replacing bytes neither republishes Cards nor changes audience, placement, or authored classification.
+
+**Verification gate** — Prove the no-write comparison boundary, required server confirmation, duplicate conflict, preserved Media and Card truth, durable source-path switch, readiness stages, failed-stage feedback, administrator authorization, production typecheck, touched-code lint, diff checks, the declared Firestore emulator integrity gate, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The component comparison proves selecting a replacement performs no mutation, displays both images and their file facts, submits the replacement only with explicit same-item confirmation, and retains visible warning feedback when downstream processing is incomplete. Route coverage proves administrator-only access, image validation, required confirmation, canonical-ID use, missing-target handling, invalid-target handling, exact-byte duplicate conflict, and Ready success. The Firestore emulator replacement path preserves caption, tags, subjects, dimensional review, Card back-references, cover/Gallery/body references, and canonical Media ID while switching source-byte identity and the durable versioned source path; the complete declared emulator gate passes three suites and 25 tests. The complete runnable Jest gate passes 233 suites and 1,262 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized 59-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, record, or Storage object changed.
+
+### Thirtieth implementation slice — Persistent Reader/Author switch
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let the author move deliberately between enjoying the archive as a reader and stewarding it as an author without searching a hidden menu or losing the useful place on either side.
+
+**Includes** — One compact labelled header action visible to administrators on Reader, Author, and neutral authenticated surfaces; context-sensitive Reader or Author destination; explicit Author Home menu wording; session-scoped last safe Reader and Author locations; Reader Home and Author Home fallbacks; same-origin and surface-bound path validation; phone and desktop presentation; and focused navigation and safety coverage.
+
+**Excludes** — New authorization roles; reader access to Administration; cross-device position synchronization; durable navigation-history records; automatic content mutation; Reader-filter redesign; Author Home redesign; production data mutation; merge; and deployment.
+
+**Contracts** — The switch grants no permission and appears only for an authenticated administrator. Reader-only accounts never receive an Author destination. Remembered locations must be internal and belong to the requested Reader or Author surface; protocol-relative, external, malformed, cross-surface, and neutral paths fall back safely. Switching changes application context but does not change Cards, Media, Collections, filters, audience, publication, or account truth.
+
+**Verification gate** — Prove role-based visibility, explicit Author Home wording, both switch directions, safe context retention, unsafe and cross-surface rejection, defaults, keyboard focus, phone-width fit, existing menu hierarchy, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused Navigation coverage proves the administrator-only switch, explicit Author Home wording, both directions, preservation of query-bearing Reader and Author locations, viewer exclusion, and the existing menu hierarchy. The isolated path contract rejects external, protocol-relative, cross-surface, and neutral destinations and supplies `/view` and `/admin` defaults. The switch uses the existing header control roles, a visible focus treatment, compact phone typography and target height, and does not add a sixth mobile Studio destination. Seven focused tests pass. The complete runnable Jest gate passes 233 suites and 1,262 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized 59-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. Authenticated candidate-browser rendering was not available locally and is not claimed. No production request, record, account, navigation preference, or content object changed.
+### Thirty-first implementation slice — Promote local Collection structure
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected PR verification pending
+
+**Outcome** — Let an author turn one useful Part, Chapter, or Section into a separate Collection without duplicating Cards or creating a live structural dependency between the two works.
+
+**Includes** — A Make Collection action beside structural placements; an author-entered target title; the selected structural Card as the new Collection introduction; copied descendant order and arrangement with new placement identities; canonical Card reuse; the minimum legal role rebasing when a promoted Chapter's Sections become Collection-level Chapters; one atomic create-only transaction; source-revision conflict detection; title-conflict detection; a recoverable operation record; and automatic opening of the new private draft Collection.
+
+**Excludes** — Copying Card content or Media; changing or deleting the source placement; synchronizing later edits; inferring audience, Feed inclusion, or publication; promoting an ordinary Card placement; Book edition export; production mutation; merge; and deployment.
+
+**Contracts** — Promotion reads one complete active source graph but writes only a new Collection, new local placement records for the selected descendants, and one operation record. The selected structural Card becomes the introduction rather than appearing twice as both introduction and immediate placement. Part children already legal at Collection level retain their roles. Chapter children that were Sections become top-level Chapters because Section cannot exist at Collection level; their Card children remain unchanged. Section children become top-level Cards. Empty structural placements may become introduction-only draft Collections. Source publication does not block the copy because promotion does not mutate the source, but a stale structure revision fails closed.
+
+**Completion evidence** — Five focused promotion-plan, transaction-owner, administrator-route, Studio, and access-contract suites pass 201 tests. The plan proves Part, Chapter, and empty-structure cases, excludes neighboring branches, preserves Card IDs and order, and rejects stale source revisions. The complete runnable Jest gate passes 235 suites and 1,269 tests, with four suites and 29 tests skipped by their declared environment gates. Production typecheck, touched-code lint, the 59-page optimized build, and diff checks pass; protected PR verification remains pending. No production request, content record, audience, lifecycle, or Storage object changed.
+
+### Thirty-second implementation slice — Shared Media Collections
+
+**Definition:** Ready
+
+**Execution:** Verified locally and through the protected PR gate
+
+**Outcome** — Let an author share a deliberately bounded photo set with selected readers without publishing the raw Media archive or forcing those photos into a Story.
+
+**Includes** — A durable Shared Media Collection with title, description, ordered unique Media membership, explicit audience, Draft/Published lifecycle, and revision; selection-based creation or addition from Studio Media; a desktop Photo Sharing owner for audience, lifecycle, details, removal, and protected preview; a Reader Home photo-collection path; audience-filtered list and detail APIs; display-only Reader Media payloads; authenticated byte delivery; exact account and group consequence integration; group- and Media-deletion safeguards; and publication checks for audience, nonempty membership, existing Media, and protected delivery readiness.
+
+**Excludes** — Raw archive browsing for readers; a global per-Media sharing flag; Media duplication; Story or Collection mutation; tagging requirements for a shared set; automatic distribution or notifications; possession-based public links; mobile archive administration; production data mutation; merge; and deployment.
+
+**Contracts** — The archive remains private by default. A Shared Media Collection is its own publication object and grants access only to its explicitly listed Media through its own audience. The same canonical Media item may participate in multiple Cards, Collections, and Shared Media Collections without copying the Media record. Drafts are private. Publication requires at least one deliverable Media item and an explicit nonempty audience. Published title, description, membership, and audience remain locked until the set returns to Draft. Reader responses omit source paths, Storage URLs, tags, and private archive metadata. Deleting a referenced Media item or audience group fails closed until the author removes that reference.
+
+**Completion evidence** — Focused service, Reader-route, Media-authorization, audience-impact, account-impact, Reader Home, navigation, and administrator-boundary suites pass. The complete runnable Jest gate passes 234 suites and 1,278 tests, with four suites and 29 tests skipped by their declared environment gates. The optimized production build compiles 63 routes/pages and validates types. No production request, content record, account, audience, or Storage object changed.
+
+### Thirty-third implementation slice — Mobile Media device intake
+
+**Definition:** Ready
+
+**Execution:** Verified locally and through the protected PR gate
+
+**Outcome** — Let a phone-first author bring selected device images into the private Media bank from the focused Media destination, without requiring a folder import or beginning a Story first.
+
+**Includes** — A visible Add from device action; the browser or operating-system image chooser; multi-image selection; sequential use of the existing authoritative browser-upload owner; immediate provider registration; successful imports selected for the next classification or Card action; retention of successes when another file fails; exact failed filenames; a bounded busy state; and a distinct Import folder action for the existing desktop-oriented workflow.
+
+**Excludes** — Whole-device synchronization; direct dependence on Apple Photos or Google Photos references; background import; automatic classification; publication; adding the selection to an existing Card; video; replacement of Story-specific device intake; and production content or Storage mutation during verification.
+
+**Contracts** — Device intake copies only the files the author selects into the canonical private Media bank. Import does not publish, classify, review, or share Media. A partial failure preserves and selects every successful import. The chooser does not force camera capture, allowing the device to offer its available camera, photo-library, and Files sources. Desktop and mobile use the same Media identity and upload owner.
+
+**Completion evidence** — Focused Media coverage passes twenty-one tests, including complete and partial-failure device imports. Touched-code lint, production typecheck from a clean generated-type state, diff checks, the complete runnable Jest gate, and the optimized production build pass. No production request, content record, or Storage object changed.
+
+### Thirty-fourth implementation slice — Explicit Media assignment to an existing Card
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Complete the missing Media-destination cross-object action so an author can deliberately add the current selection to an existing Card without relying on desktop drag-and-drop or creating another Card.
+
+**Includes** — A visible Add to existing Card action for selected Media; a bounded recent-Card list; title search; one explicit target; Card type and lifecycle context; a published-target visibility warning; full target hydration immediately before mutation; duplicate-safe Gallery append; preservation of existing slot caption, framing, stack identity, and order; sequential order for additions; the existing Gallery-only API path and transactional Gallery owner; selection clearing after success; and refresh of the open target Card.
+
+**Excludes** — Hidden assignment to the currently open Card; body-Media insertion; cover replacement; creating a Card; changing Card type, status, audience, Feed inclusion, or Collection placement; private working revisions; bulk assignment to several Cards; and production content mutation during verification.
+
+**Contracts** — Target choice is explicit. The mutation uses the same Gallery membership owner as ordinary Card editing, so referenced Media validation, reverse references, inherited Media signals, search projection, and Gallery tag inheritance remain authoritative. Existing Gallery membership is never duplicated. Under the current practical publication policy, a Gallery mutation on a published Card is immediately reader-visible; the chooser states that consequence rather than implying a private revision.
+
+**Completion evidence** — Focused Media coverage passes twenty-one tests, including explicit target choice, published-target warning, duplicate suppression, and preservation of existing Gallery slot details. Touched-code lint, production typecheck, diff checks, the complete runnable Jest gate, and the optimized production build pass. No production request, content record, or Storage object changed.
+
+### Thirty-fifth implementation slice — Canon macro integration
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Compose the eight independently verified post-baseline macro slices into one non-deployed application state so their interactions, navigation, Canon classifications, and combined build can be assessed as a product rather than as disconnected feature branches.
+
+**Includes** — Exact Needs Attention queues; the structured Prompt Library foundation; author-confirmed Media replacement; the persistent Reader/Author switch; independent Collection structure promotion; Shared Media Collections; mobile Media device intake; explicit Media assignment to an existing Card; explicit merge-conflict reconciliation; one combined Media action bar retaining Create Card, Add to existing Card, and Share photos; administrator navigation retaining Author switching and Photo Sharing; and correction of stale Canon claims about mobile Author entry, Prompt delivery, publication audience/destination enforcement, and Collection lifecycle enforcement.
+
+**Excludes** — Merge to protected `main`; deployment; production data mutation; automatic legacy Prompt migration; private published-Card working revisions; automatic notifications; Book export; external photo-library synchronization; and subjective author acceptance.
+
+**Contracts** — Integration does not silently choose one feature over another when their source branches touched the same surface. Each action retains its distinct domain meaning and authoritative mutation owner. Canon describes the combined delivered state and keeps remaining work narrowly classified as Planned, Future, parked, or human acceptance. Production remains unchanged until a separately authorized protected merge and release.
+
+**Completion evidence** — The complete combined runnable Jest gate passes 240 suites and 1,311 tests, with four suites and 31 tests skipped by their declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings. Production typecheck, diff checks, and the optimized 63-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. Focused combined Media and Navigation coverage passes 28 tests before the complete gate. No production request, content record, account, audience, or Storage object changed.
+
+### Thirty-sixth implementation slice — Prompt Library ordering and curation queue
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Turn the delivered Prompt Library order field into an author-controlled capability, present the approved Category → Topic → Primary Question → Follow-up Questions hierarchy truthfully, and give legacy prompts an explicit manual organization queue.
+
+**Includes** — Primary questions displayed with their own follow-ups; deterministic fallback ordering for legacy zero-order records; explicit up and down actions; primary ordering scoped to one Category and Topic; follow-up ordering scoped to one primary; an explicit `Needs organization` filter for any missing Category or Topic; manual curation through the existing editor; one administrator-only reorder route; atomic normalization and movement of the affected sibling set; immediate visible reconciliation; and authorization, schema, pure-order, curation-queue, production-type, and Firestore-transaction coverage.
+
+**Excludes** — Automatic legacy-bank migration or deduplication; automatic Category or Topic assignment; changing prompt text, tags, answer links, Cards, Media, or Collection placement merely by opening the queue; dragging; cross-Topic moves; moving a follow-up to another primary; editing-only prompt blocks; publication-time block resolution; production data mutation; merge; and deployment.
+
+**Contracts** — Ordering is explicit and never inferred from question text or existing Card structure. Moving a primary cannot reorder another Topic. Moving a follow-up cannot reorder another primary's follow-ups. The transaction reads current Question truth, writes only changed sibling order values, and either commits the bounded move together or leaves the library unchanged. Card copies remain ordinary independent Card content.
+
+**Verification gate** — Prove hierarchical ordering, sibling-scope isolation, strict move-direction validation, administrator-only access, atomic persisted order, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Pure ordering coverage proves primary-with-follow-up presentation and sibling-scope isolation. Schema and exhaustive administrator-route coverage prove strict move input and access boundaries. The isolated Firestore emulator passes all seven Question-answer integrity cases, including atomic primary and follow-up movement with persisted readback. The complete runnable Jest gate passes 241 suites and 1,316 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, Media, account, or Storage object changed.
+
+### Thirty-seventh implementation slice — Mobile Card-first Prompt handoff
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Let a phone author use the sequential Prompts destination as guidance for the existing selected Card without losing Card identity, bypassing unsaved-work protection, or creating a competing answer layer.
+
+**Includes** — Persistent five-destination navigation while an existing Story is in Compose; the existing asynchronous leave guard before Cards unmounts; selected-Card identity retained in the Prompts route and across refresh; queued one-prompt or whole-Topic insertion; automatic return to the same Cards Compose destination; insertion only after the rich-text owner remounts; and focused route, guard, remount, and insertion coverage.
+
+**Excludes** — Prompt insertion into a not-yet-created Card; silent saving or discarding; background Card writes while Compose is absent; a response entity; cross-device draft synchronization; changing desktop simultaneous-pane behavior; editing-only prompt blocks; production data mutation; merge; and deployment.
+
+**Contracts** — An existing selected Card is required. Dirty Compose state must resolve through the same leave decision used by every other mobile destination. The route carries Card identity but prompt text remains session-scoped until the same Compose owner remounts. Queued text is inserted as ordinary editable Card content and has no continuing Prompt Library dependency. If no Card or insertion owner exists, the action fails truthfully instead of creating data elsewhere.
+
+**Verification gate** — Prove persistent mobile destinations, declined-leave containment, selected-Card route retention, Prompts-to-Compose return, post-remount text insertion, unchanged desktop behavior, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The focused mobile Studio suite passes all eight destination, direct-handoff, leave-guard, persistent-navigation, route-retention, Compose-remount, and queued-insertion cases. The complete runnable Jest gate passes 241 suites and 1,318 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Question, account, or Storage object changed.
+
+### Thirty-eighth implementation slice — Tag-to-content inspection
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Let an author move from one governed Who, What, When, or Where term to the Cards or Media it actually classifies without manual filter reconstruction or a new search index.
+
+**Includes** — Explicit Card and Media counts as actions in the embedded Studio Tags destination; one exact Tag handoff; replacement of unrelated Card or Media filters; hierarchical Card matching through the existing projected Tag path; dimensional Media matching through the existing query owner; desktop pane opening; sequential mobile destination switching; safe selected-Card clearing before Card-list inspection; durable route context; disabled zero-count actions; and focused row, Card-bank, Media, and mobile-workspace coverage.
+
+**Excludes** — Changing a Tag assignment merely by opening results; a new search store; freeform machine search; Tag merge, split, or reparent changes; automatic correction; Collection-scoped filtering; production data mutation; merge; deployment; and subjective workflow acceptance.
+
+**Contracts** — The Tag remains canonical truth and the destination reuses the existing Card and Media filter owners. A handoff replaces filters rather than silently intersecting with stale criteria, so the visible population has one understandable cause. Counts remain read-only evidence until the author chooses an item and uses its normal mutation owner. The standalone archive-scale Tag administrator retains its compact counts and existing behavior.
+
+**Verification gate** — Prove explicit accessible actions, exact Tag propagation, stale-filter replacement, desktop and mobile owning-surface routing, zero mutation on inspection, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused suites pass 47 tests across accessible Tag actions, exact Card filtering, exact Media filtering, and mobile Tags-to-Cards routing. The complete runnable Jest gate passes 241 suites and 1,322 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, Tag, filter record, account, or Storage object changed.
+
+### Thirty-ninth implementation slice — Card-first Prompt entry
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Remove the remaining competing new-authorship entrance from the Prompt Library while preserving every existing linked Question Card and the ordinary copy-to-Card workflow.
+
+**Includes** — An unlinked Prompt with no selected Card offers Start a Card through the ordinary Cards new-Card route; an open Card retains Add prompt; an existing linked Question Card retains its direct Compose handoff; the library no longer calls the create-linked-Question route for ordinary new writing; and focused route, no-mutation, and compatibility coverage.
+
+**Excludes** — Deleting the compatibility API; rewriting or unlinking existing Question Cards; automatically saving a new Card; carrying unsaved Prompt text into a record that does not yet exist; prompt blocks; duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Cards own new authored work. Prompts supply optional guidance and never create a parallel response object from an unlinked library row. Existing linked answers remain reachable and retain their current Card identity, content, Media, classification, and placement. Starting a Card changes only the route to the existing unsaved Card workflow and creates no record until the author saves.
+
+**Verification gate** — Prove that unlinked Prompts route to the ordinary new-Card flow without calling the create-linked-Question service, existing linked Question Cards still open, copy-to-open-Card behavior remains intact, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused component coverage passes two Card-first and legacy-compatibility cases. The complete runnable Jest gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, account, or Storage object changed.
+
+### Fortieth implementation slice — Canon capability-status reconciliation
+
+**Definition:** Complete
+
+**Outcome** — Keep the implementation backlog focused on genuine missing capability rather than rebuilding already-delivered mobile Story, Tag, and Media-presentation behavior.
+
+**Reconciliation** — The five-step mobile Story flow already owns Card entry and resumption, complete shared editing, device-image intake, existing-Media composition, exact durable Collection placement and order, Reader preview, audience and destination controls, and publication through the existing integrity owner. Governed Tag merge already owns exact impact review, target validation, assignment and subject consolidation, child movement, projection/count/completeness/search reconciliation, and source deletion. Cover and Gallery crop focus already persists as nondestructive presentation truth, including Gallery-slot override and canonical-Media fallback.
+
+**Remaining gaps at this checkpoint** — This reconciliation left mobile voice/narration and assisted contextual classification, explicit author-partitioned Tag split and provenance-aware import consolidation, and per-presentation rotation as Planned. The later forty-third slice completes per-presentation Cover and Gallery rotation. This status correction itself added no runtime behavior and did not represent the other gaps as delivered.
+
+**Evidence** — The corresponding implementation slices, shared mutation owners, schemas, UI controls, and focused tests remain in the integrated branch. The immediately preceding full gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped; lint, production typecheck, diff checks, and the optimized 64-page build pass. No production request or data mutation occurred.
+
+### Forty-first implementation slice — Manual Reader-link distribution
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author move a published Story, durable Collection, or bounded photo collection from availability to deliberate manual delivery without weakening audience authorization or adding an external notification dependency.
+
+**Includes** — A shared internal-link copier; published Card link from Compose; published durable Collection link from the Collections owner; published Shared Media Collection link from Photo Sharing; same-origin path validation; success copy that says existing access is still required; and actionable clipboard-failure recovery.
+
+**Excludes** — Granting access, changing audiences, publishing content, recipient selection or delivery tracking, email or text integration, public or tokenized content links, production data mutation, merge, and deployment.
+
+**Contracts** — Publishing controls availability; audience controls authorization; copying a Reader link controls neither. The copied route is an ordinary authenticated Reader destination and remains subject to the existing complete Card, Collection, Shared Media Collection, account, and Media-delivery policies.
+
+**Verification gate** — Prove same-origin construction and external-path rejection, clipboard success and failure truth, focused Card/Collection/photo-set regressions, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused suites pass 23 tests, and the direct link-control plus durable Collection regression passes sixteen tests after removing an unnecessary provider dependency exposed by the first full run. The complete runnable Jest gate passes 243 suites and 1,327 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Collection, Shared Media Collection, audience, account, delivery record, or Storage object changed.
+
+### Forty-second implementation slice — Author-reviewed Card-word Tag suggestions
+
+**Definition:** Ready
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Give phone and desktop authors a restrained classification starting point from the Story they are already writing, without assigning Tags automatically or creating uncontrolled vocabulary.
+
+**Includes** — An author-invoked Card Details action; exact whole-phrase matching of current title, subtitle, and rich-text words to existing Tags; hierarchy-aware labels; bounded results per Who, What, When, and Where dimension; visible title-versus-story-text evidence; selected-Tag exclusion; one-at-a-time explicit Add; and ordinary authoritative Card Tag persistence.
+
+**Excludes** — Background inference; semantic or visual AI; automatic assignment, subject selection, review completion, Tag creation, identity creation, Media classification, content rewriting, production data mutation during verification, merge, and deployment.
+
+**Contracts** — A textual name match is a proposal, not proof. Suggestions use only existing governed Tag IDs and do not make the Card complete, reviewed, or publishable by themselves. The author sees the proposed Tag path and evidence source before choosing Add, and may ignore every result.
+
+**Verification gate** — Prove exact phrase rather than substring matching, title/body evidence, selected-Tag exclusion, no work before author invocation, no assignment before explicit Add, current-editor text use, ordinary persistence, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused utility and component coverage passes three cases, and the existing Card form regression passes thirteen cases. The complete runnable Jest gate passes 245 suites and 1,330 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Tag, Media, review state, account, or Storage object changed.
+
+### Forty-third implementation slice — Card-local Media presentation rotation
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author correct the orientation of a Cover or one Gallery presentation without replacing or rewriting canonical Media.
+
+**Includes** — A four-value `0 | 90 | 180 | 270` Card presentation contract; left and right quarter-turn controls for Cover and Gallery editing; narrow authoritative persistence through the existing Cover and Gallery owners; Reader, lightbox, Collection-introduction, Compose-preview, and Studio-tile rendering; duplication preservation; and rotation cleanup when a cover relationship is removed.
+
+**Excludes** — Source-byte mutation; canonical Media rotation; arbitrary-angle editing; automatic orientation inference; embedded body-Media rotation; production data mutation; merge; and deployment.
+
+**Contracts** — Cover rotation belongs to the Card. Gallery rotation belongs to that Card's Gallery slot. The same Media item may therefore have different orientations in different Stories without changing archive truth or another Card.
+
+**Verification gate** — Prove quarter-turn normalization and wrapping, no source-Media field, rotation persistence after dehydrating Gallery slots, explicit author controls, narrow Cover routing, removal cleanup, Reader and Studio rendering, duplication preservation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Eight focused suites pass 68 cases across rotation math, persistence hygiene, Cover routing, Card form, Cover and Gallery author controls, Reader Gallery, and Reader Card rendering. The complete runnable Jest gate passes 247 suites and 1,336 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, account, or Storage object changed.
+
+### Forty-fourth implementation slice — Card-local Cover framing integrity
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Enforce the Canon's separation between one Card's Cover presentation and the canonical Media item's reusable default framing.
+
+**Includes** — New-Card creation, narrow Cover mutation, and broad Card mutation; persistence of `coverImageFocalPoint` on the Card only; continued Card-to-Media reference maintenance; preservation of canonical Media `objectPosition`; and emulator-backed coverage across all three mutation paths.
+
+**Excludes** — Migration of historical Media focal positions; source-byte changes; Gallery-slot framing changes; automatic crop inference; production data mutation; merge; and deployment.
+
+**Contracts** — Media `objectPosition` remains the reusable archive default and fallback for a Card that has no explicit Cover focal point. Once an author frames a Cover, the Card owns that focal point. A Cover edit must not change another Card, a Gallery presentation, the Media bank, or canonical Media search truth.
+
+**Completion evidence** — The complete declared Firestore emulator gate passes three suites and 26 tests, including one case that creates a Card with explicit Cover framing and then changes it through both narrow and broad Card owners while proving the canonical Media `objectPosition` remains unchanged. The complete runnable Jest gate passes 247 suites and 1,337 tests, with four suites and 33 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. The first sandboxed build attempt encountered a generated-directory Windows `EPERM`; the identical build passed outside that filesystem restriction. No production request, Card, Media, account, or Storage object changed.
+
+### Forty-fifth implementation slice — Compose field-role guidance
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Help an author understand where each kind of Story information belongs without adding explanatory clutter to the authoring form.
+
+**Includes** — In-app Author Guide guidance for Type, title, subtitle, excerpt, Story text, Cover, Gallery, captions, Who/What/When/Where, audience, Feed and Collection placement, and copied Prompt guidance.
+
+**Excludes** — Inline Compose definitions; new fields; editorial rewriting; historical-context generation; Quote authoring; production data mutation; merge; and deployment.
+
+**Contracts** — Help explains field purpose without turning optional fields into requirements. Audience controls access; placement controls where authorized readers encounter the Card. Media captions state image-specific truth; Card narrative owns broader meaning. Prompt text becomes ordinary editable Card content after insertion.
+
+**Completion evidence** — The Author Guide is the existing in-app `/admin/help` source and now contains one concise field-role section. The Canon moves only Guidance to Complete; Editorial, Context, and Quote remain Planned. Documentation diff checks and the surrounding integration gate apply. No application data or runtime mutation occurred.
+
+### Forty-sixth implementation slice — Flexible Prompt copy scope
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author choose one prompt, one primary-question group, or a whole Topic as writing guidance for the open Card.
+
+**Includes** — A separate primary-group action when follow-ups exist; deterministic primary-then-follow-up order through the shared Prompt Library ordering contract; the existing desktop insertion owner; the existing mobile queued insertion and return to the selected Card; ordinary editable heading insertion; and focused Card-first compatibility coverage.
+
+**Excludes** — Selecting an arbitrary subset inside the group before insertion; automatic Card creation or boundary decisions; persistent prompt-block nodes; Question-Card title proposal; legacy duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Copying a group creates no relationship between the Card and Prompt Library. The author may retain, rewrite, answer, or remove any inserted heading and explicitly starts another Card when useful. Existing linked Question Cards retain their compatibility handoff.
+
+**Completion evidence** — The focused Card-first Prompt suite passes three cases: ordinary Card entry without a linked answer, legacy linked-Question compatibility, and ordered primary-plus-follow-up insertion. The complete runnable Jest gate passes 247 suites and 1,337 tests, with four suites and 33 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
+
+### Forty-seventh implementation slice — Editing-only Prompt publication blocks
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Preserve copied Prompt guidance inside the open draft Card while ensuring unfinished authoring instructions never become reader-visible published content.
+
+**Includes** — An additive Prompt-aware heading attribute in the Card's existing TipTap HTML; visibly distinct Compose presentation; exact per-prompt Keep as reader heading and Remove prompt actions; preservation of authored text beneath a removed prompt; omission from Reader and Compose-preview rendering while unresolved; exact unresolved count in the publication result; and fail-closed enforcement in create-as-published, status-only, and broad Card publication owners.
+
+**Excludes** — A separate answer or working-material record; retroactive conversion of older plain headings; automatic interpretation of author text; arbitrary prompt-subset selection before insertion; Question-Card title proposal; legacy Prompt duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Draft saving remains permissive. A copied Prompt is an editing block until the author explicitly keeps or removes it. Keeping clears only the editing marker and retains an ordinary heading. Removing deletes only the Prompt heading, never the paragraphs beneath it. Reader surfaces never render unresolved guidance, and publication is impossible while any block remains.
+
+**Verification gate** — Prove marker persistence, older-heading compatibility, exact counting, reader omission with answer retention, individual Keep and Remove behavior, structured publication feedback, all three publication mutation owners, touched-code lint, production typecheck, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused utility, publication, editor, and static-Reader suites pass 19 cases. The complete declared Firestore emulator gate passes three suites and 27 tests, including fail-closed create-as-published, status-only, and broad mutation paths. The complete runnable Jest gate passes 248 suites and 1,343 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
+
+### Forty-eighth implementation slice — Replacement metadata conflict review
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let the author see useful evidence and material conflicts carried by a proposed replacement before confirming it, without allowing machine metadata to overwrite confirmed archive truth.
+
+**Includes** — Administrator-only read-only review of the proposed file; bounded extraction of embedded caption, original date, GPS coordinates, and keywords; exact keyword matching to the governed Tag library; parent/child taxonomy compatibility; material comparison with reviewed Who, What, When, and Where values, structured date, and confirmed caption; explicit visual conflict presentation beside the current-versus-proposed image comparison; metadata-reader failure disclosure; and an exact statement that no evidence is applied automatically.
+
+**Excludes** — Automatic Tag, date, caption, subject, or review-state mutation; reverse geocoding; face identification; machine identity confirmation; treating an absent keyword as a contradiction; visual-similarity decisions; a new durable evidence record; source-library synchronization; production data mutation; merge; and deployment.
+
+**Contracts** — Selecting a file may upload its bytes to the authenticated application only for transient metadata inspection, but performs no Firestore or durable Storage write. Temporary bytes are removed after inspection. Recognized evidence is compared only with already-reviewed truth; related taxonomy ancestors and descendants are compatible rather than contradictory. GPS remains coordinates because the application has no authoritative coordinate-to-Where mapping. Metadata-reader failure leaves the author-controlled visual same-item confirmation available. Confirmed replacement continues to preserve all authored classification.
+
+**Verification gate** — Prove administrator-only review, no replacement call during inspection, date/caption/classification conflict detection, taxonomy compatibility, Unknown-resolution conflict, GPS evidence-only presentation, failure disclosure, temporary-file cleanup by construction, focused UI and route behavior, production typecheck, touched-code and full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Three focused route, comparison, and UI suites pass 16 cases. The complete runnable Jest gate passes 249 suites and 1,349 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Media record, Tag, Card, or Storage object changed.
+
+### Forty-ninth implementation slice — Question Card Prompt presentation
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Use the selected primary question as a useful proposed title for an untitled Question Card while keeping follow-ups as private authoring guidance and preserving author control over existing titles.
+
+**Includes** — A typed primary/follow-up insertion contract across Prompt Library, Studio imperative routing, mobile handoff, and Compose; first-primary title proposal only when the open Card is a Question Card and its title is blank; preservation of an existing title; editing-only body insertion for follow-ups and later primaries; unchanged body insertion for Story and other Card types; and focused desktop/mobile routing and CardForm coverage.
+
+**Excludes** — Automatic Card creation; overwriting an authored title; linking the Card back to the Prompt record; copying Prompt classification; automatic title persistence outside the existing draft Card lifecycle; resolving body Prompt blocks; legacy Question Card rewriting; production data mutation; merge; and deployment.
+
+**Contracts** — Prompt role travels with copied text but is not stored as a continuing library relationship. A proposed title is ordinary editable Card title state as soon as it enters Compose. Only the first primary may fill a blank Question Card title. An existing title always wins, and the incoming primary remains available as body guidance rather than being discarded. Every body insertion uses the same editing-only Prompt marker and publication gate.
+
+**Verification gate** — Prove primary/follow-up role routing, empty Question title proposal, existing-title preservation, follow-up body insertion, Story Card compatibility, mobile pending-handoff preservation, production typecheck, touched-code and full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Three focused CardForm, Prompt-pane, and mobile-workspace suites pass 28 cases. The complete runnable Jest gate passes 249 suites and 1,352 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
+
+### Fiftieth implementation slice — Exact Prompt duplicate consolidation
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Let the author remove genuinely duplicate legacy Prompt records without guessing at similar wording, losing classification, or merging and rewriting the Question Cards that answered them.
+
+**Includes** — Normalized exact-text grouping separated by primary versus follow-up role; parent-specific follow-up grouping; an Exact duplicates queue; author-selected survivor; explicit confirmation; union of governed Tag and Subject assignments onto the survivor; primary follow-up reassignment to the survivor's Category and Topic; stale-group rejection; bounded group size; and a hard block when different duplicates own different Question Cards.
+
+**Excludes** — Fuzzy or semantic duplicate detection; automatic survivor choice; consolidation across different follow-up parents; Card merge, deletion, relinking, or content rewrite; automatic organization of unrelated prompts; production data mutation; merge; and deployment.
+
+**Contracts** — Similar wording is not identity. A linked Prompt must be the survivor. If more than one distinct linked Question Card appears in a group, the group remains unresolved because preserving both Cards takes precedence over Prompt cleanup. Consolidation changes only Prompt-library records and follow-up parent placement; the existing linked Card's stable question ID is unchanged. Concurrent Prompt changes invalidate the reviewed group and require another review.
+
+**Verification gate** — Prove exact normalization, near-duplicate exclusion, follow-up-parent isolation, multiple-linked-Card blocking, author-selected survivor routing, classification preservation, follow-up reassignment, Card non-mutation, stale-group rejection, administrator authorization, production typecheck, touched-code and full lint, diff checks, optimized build, the Firestore emulator transaction, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Two focused duplicate-review and Prompt-pane suites pass seven cases. The isolated Firestore emulator Question-integrity suite passes eight cases, including survivor preservation, duplicate deletion, follow-up reassignment, and unchanged linked Card identity. The administrator-route inventory proves anonymous and Reader rejection. The complete runnable Jest gate passes 250 suites and 1,358 tests, with four suites and 35 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Prompt, Question Card, account, or Storage object changed.
+
+### Fifty-first implementation slice — Author-partitioned Tag split
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Separate a conflated Tag into two stable sibling identities without guessing which authored or archival records belong to the new identity.
+
+**Includes** — Exact direct-assignment and subject-use review across Cards, Media, and Prompts; an empty-by-default author partition; one explicitly named same-dimension sibling; preservation of the source and its unselected records; child-Tag nonmovement; replacement of both selected direct assignment and selected subject use; existing Card, Media, and Prompt mutation owners; counts, dimensional and subject projections, completeness, Gallery inheritance, and search reconciliation; bounded selection; administrator-only access; one durable operation record; idempotent retry; and reopening recovery for a running or failed operation.
+
+**Excludes** — Machine-inferred partitioning; automatic selection; child-Tag partitioning; splitting inherited-only matches; cross-dimension movement; deleting or renaming the source; merging; imported-keyword provenance; production data mutation; merge; and deployment.
+
+**Contracts** — A split begins with no selected records. The target is a sibling in the source dimension. The source remains canonical for every unselected record and direct child. A reviewed operation binds the source, target name, and exact selected record IDs; retries with a different payload fail closed. Target creation and operation creation are atomic. A partial reconciliation exposes the same operation on the next review and resumes the existing target rather than creating a duplicate.
+
+**Verification gate** — Prove empty initial selection, exact submitted partition, source preservation, unselected-record preservation, selected Card/Media/Prompt assignment and subject replacement, same target on retry, visible reopen recovery, child nonmovement, stale-record rejection, administrator authorization, production typecheck, touched-code and full lint, diff checks, optimized build, the isolated Firestore emulator path, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — The focused modal test proves no inferred partition and an exact author-selected request. The administrator-route inventory proves anonymous and Reader rejection. The isolated Firestore emulator test proves selected Card, Media, and Prompt movement, unselected-record, source, and child preservation, durable operation completion, same-target retry, and reopened failed-operation recovery. Failed and running split operations participate in the existing Author Home durable-operation count. The complete runnable Jest gate passes 251 suites and 1,363 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Tag, assignment, subject, account, or Storage object changed.
+
+### Fifty-second implementation slice — Truthful bounded import progress
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Show useful import progress and recovery context only where the application owns an exact bounded import population.
+
+**Includes** — One durable operation per desktop local-folder batch; requested, processed, imported, already-present, and failed counts; running, completed, completed-with-errors, and failed states; count updates after each server chunk; inclusion in Author Home's active and failed operation summary; the five most recent batches on Author Home; and an exact batch handoff that replaces unrelated Media filters with that batch.
+
+**Excludes** — Fabricated archive-wide completion; progress for device, single-file, paste, script, or external-library intake that lacks the same authoritative batch operation; a generic Task entity; background queueing; resumable upload transport; production data mutation; merge; and deployment.
+
+**Contracts** — The operation denominator is the exact request received by the existing server batch owner. Already-present files are processed and reported separately from newly imported files. Partial completion remains visible rather than becoming a false success. The operation is supporting evidence over canonical Media records, not a competing Media or progress store. Opening a recent batch uses the existing server-backed `importBatchId` filter and therefore reproduces the population being summarized.
+
+**Verification gate** — Prove batch-operation creation and final counts, skipped-file accounting, absence of invented single-file progress, dashboard aggregate and recent-operation reads, exact Author Home link, mobile destination routing, replacement of unrelated Media filters, independent dashboard degradation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Five focused route, read-model, Author Home, Studio, and Media suites pass 47 tests. The complete runnable Jest gate passes 251 suites and 1,365 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. The build used the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Media record, import operation, account, or Storage object changed.
+
+### Fifty-third implementation slice — Guest-to-password-account conversion
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Let an invited Reader continue with an ordinary password without creating another recipient identity or changing authored access.
+
+**Includes** — An authenticated guest-only Account form; password and confirmation validation; one current-account-only endpoint; password hashing; atomic conversion of the same `journal_users` record from guest to account; revocation of every still-open invitation for that recipient; sign-out after success; and subsequent sign-in with the existing email and new password.
+
+**Excludes** — Password recovery; public registration; username changes; account merging; administrator-driven conversion; email delivery; identity-to-Who linkage; audience mutation; production data mutation; merge; and deployment.
+
+**Contracts** — The recipient document ID remains stable, so individual and group audiences retain their existing meaning. Only the signed-in guest may convert that record. Disabled guests and existing password accounts fail closed. Redeemed invitation history remains evidence; only unused links are revoked. The password hash is never returned.
+
+**Verification gate** — Prove stable recipient ID and email, password hashing, unused-invite revocation, redeemed-invite preservation, non-guest rejection, current-session route ownership, invalid-password rejection, Account presentation, success sign-out, production typecheck, lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused service, route, and Account-surface suites pass seven tests. The complete runnable Jest gate passes 253 suites and 1,371 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 66-page build pass. The build uses the checked-in Theme fallback when cloud credentials are unavailable. No production request, recipient, invite, password, audience, or content record changed.
 
 ### 1. Release Candidate
 

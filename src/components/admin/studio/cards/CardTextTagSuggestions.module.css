@@ -1,0 +1,48 @@
+.root {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.suggestButton {
+  justify-self: start;
+}
+
+.results,
+.dimensionGroup {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.results > p,
+.empty {
+  margin: 0;
+  color: var(--admin-support-hint-color);
+  font-size: var(--font-size-xs);
+}
+
+.dimensionGroup ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dimensionGroup li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.dimensionGroup span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dimensionGroup small {
+  color: var(--admin-support-hint-color);
+}

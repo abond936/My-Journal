@@ -4,6 +4,7 @@ import { galleryTagInheritanceTogglesSchema } from './authorSettings';
 import { temporalValueSchema } from './temporal';
 import { dimensionReviewMapSchema } from './dimensionReview';
 import { audienceSelectionSchema } from './audience';
+import { mediaPresentationRotationSchema } from './mediaPresentation';
 
 const galleryTagRollupStatusSchema = z.enum(['empty', 'reviewed', 'unreviewed']);
 export const galleryTagRollupStatusesSchema = z.object({
@@ -22,6 +23,8 @@ const galleryMediaItemSchema = z.object({
   caption: z.string().optional(),
   order: z.number(),
   objectPosition: z.string().optional(),
+  /** Nondestructive rotation for this Card Gallery slot only. */
+  rotation: mediaPresentationRotationSchema.optional(),
   media: mediaSchema.optional(),
   /** When set, this gallery slot represents a collapsed media stack (hero + alternates). */
   stackId: z.string().optional(),
@@ -68,6 +71,8 @@ export const cardSchema = z.object({
   // Cover image reference with position information
   coverImageId: z.string().nullable().optional(),
   coverImageMode: z.enum(['fill', 'fit']).default('fill').optional(),
+  /** Nondestructive rotation for this Card cover presentation only. */
+  coverImageRotation: mediaPresentationRotationSchema.optional(),
   coverImageFocalPoint: z.object({
     x: z.number(),
     y: z.number(),

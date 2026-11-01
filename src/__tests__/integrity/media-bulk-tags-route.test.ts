@@ -283,6 +283,23 @@ describe('DELETE /api/images/[id]', () => {
       code: 'MEDIA_DELETE_BLOCKED_REFERENCES',
     });
   });
+
+  it('returns the same fail-closed response while a Shared Media Collection uses the Media', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedDeleteMediaWithCardCleanup.mockRejectedValueOnce(
+      new Error('Cannot delete media media-1; Shared Media Collection references remain: family-photos')
+    );
+
+    const req = {} as NextRequest;
+    const res = await DELETE(req, { params: Promise.resolve({ id: 'media-1' }) });
+    const payload = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(payload).toMatchObject({
+      message: 'Cannot delete media asset because references still exist.',
+      code: 'MEDIA_DELETE_BLOCKED_REFERENCES',
+    });
+  });
 });
 
 describe('PATCH /api/images/[id]', () => {

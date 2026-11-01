@@ -5,6 +5,7 @@ import type { Media } from '@/lib/types/photo';
 import type { ClassificationRequirements } from '@/lib/types/authorSettings';
 import { getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationService';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
+import { countUnresolvedPromptBlocks } from '@/lib/utils/cardPromptBlocks';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
 type Dimension = (typeof DIMENSIONS)[number];
@@ -14,6 +15,7 @@ export type CardPublicationIntegrityIssue =
   | { code: 'destination-missing' }
   | { code: 'card-dimension-review'; dimensions: Dimension[] }
   | { code: 'card-meaningful-what' }
+  | { code: 'prompt-blocks'; count: number }
   | { code: 'media-missing'; mediaIds: string[] }
   | {
       code: 'media-dimension-review';
@@ -56,6 +58,10 @@ export function evaluateCardPublicationIntegrity(
   }
   if (!isCardIncludedInFeed(card) && !context.hasActiveCollectionPlacement) {
     issues.push({ code: 'destination-missing' });
+  }
+  const promptBlockCount = countUnresolvedPromptBlocks(card.content);
+  if (promptBlockCount > 0) {
+    issues.push({ code: 'prompt-blocks', count: promptBlockCount });
   }
   if (requirements.cards) {
     const cardDimensions = DIMENSIONS.filter(
@@ -127,6 +133,15 @@ function publicationBlockMessage(issues: CardPublicationIntegrityIssue[]): strin
   if (cardReview) clauses.push(`review Card ${cardReview.dimensions.join(', ')}`);
   if (issues.some((issue) => issue.code === 'card-meaningful-what')) {
     clauses.push('confirm at least one meaningful What');
+  }
+  const promptBlocks = issues.find(
+    (issue): issue is Extract<CardPublicationIntegrityIssue, { code: 'prompt-blocks' }> =>
+      issue.code === 'prompt-blocks'
+  );
+  if (promptBlocks) {
+    clauses.push(
+      `keep or remove ${promptBlocks.count} writing prompt${promptBlocks.count === 1 ? '' : 's'}`
+    );
   }
   const missing = issues.find(
     (issue): issue is Extract<CardPublicationIntegrityIssue, { code: 'media-missing' }> =>

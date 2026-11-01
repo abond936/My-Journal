@@ -316,6 +316,7 @@ export function useTagManagement() {
     handleUpdateTag: updateTag,
     handleDeleteTag,
     handleMergeTag,
+    refreshTags: mutate,
     handleReorder,
     handleReparent,
   };

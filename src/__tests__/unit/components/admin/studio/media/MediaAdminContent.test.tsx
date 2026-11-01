@@ -2,12 +2,17 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MediaAdminContent, {
+  appendSelectedMediaToGallery,
   filterSelectedCardMedia,
 } from '@/components/admin/studio/media/MediaAdminContent';
 import { DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES } from '@/lib/preferences/adminFilters';
 
 const useMediaMock = jest.fn();
 const useStudioShellOptionalMock = jest.fn();
+const uploadImageFileToMediaBankMock = jest.fn();
+const feedbackShowSuccessMock = jest.fn();
+const feedbackShowErrorMock = jest.fn();
+let tagContextTags: Array<{ docId: string; name: string; dimension: 'who' | 'what' | 'when' | 'where' }> = [];
 
 jest.mock('@/lib/preferences/adminFilters', () => {
   const actual = jest.requireActual('@/lib/preferences/adminFilters');
@@ -30,14 +35,18 @@ jest.mock('@/components/providers/MediaProvider', () => ({
 }));
 
 jest.mock('@/components/providers/TagProvider', () => ({
-  useTag: () => ({ tags: [] }),
+  useTag: () => ({ tags: tagContextTags }),
 }));
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
-    showSuccess: jest.fn(),
-    showError: jest.fn(),
+    showSuccess: feedbackShowSuccessMock,
+    showError: feedbackShowErrorMock,
   }),
+}));
+
+jest.mock('@/lib/utils/uploadImageFileToMediaBank', () => ({
+  uploadImageFileToMediaBank: (...args: unknown[]) => uploadImageFileToMediaBankMock(...args),
 }));
 
 jest.mock('@/components/admin/studio/media/useMediaStacks', () => ({
@@ -62,7 +71,8 @@ jest.mock('@/components/admin/studio/media/MediaAdminGrid', () => ({
 
 jest.mock('@/components/admin/studio/media/BulkEditMediaTagsModal', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ isOpen, mediaIds }: { isOpen: boolean; mediaIds: string[] }) =>
+    isOpen ? <div data-testid="media-tags-modal">{mediaIds.join(',')}</div> : null,
 }));
 
 jest.mock('@/components/admin/studio/media/MediaLocalImportDialog', () => ({
@@ -75,10 +85,12 @@ jest.mock('@/components/admin/studio/cards/EditModal', () => ({
   default: ({
     isOpen,
     children,
+    footer,
   }: {
     isOpen?: boolean;
     children?: React.ReactNode;
-  }) => (isOpen ? <div>{children}</div> : null),
+    footer?: React.ReactNode;
+  }) => (isOpen ? <div>{children}{footer}</div> : null),
 }));
 
 jest.mock('@/components/admin/studio/cards/MacroTagSelector', () => ({
@@ -150,6 +162,7 @@ const baseMediaContext = {
   setDimensionalQueryOverlay: jest.fn(),
   setTransientDimensionalQueryOverlay: jest.fn(),
   resolveMediaById: jest.fn(),
+  registerCreatedMedia: jest.fn(),
 };
 
 describe('MediaAdminContent', () => {
@@ -159,8 +172,10 @@ describe('MediaAdminContent', () => {
     jest.clearAllMocks();
     global.fetch = fetchMock;
     fetchMock.mockReset();
+    uploadImageFileToMediaBankMock.mockReset();
     useMediaMock.mockReturnValue(baseMediaContext);
     useStudioShellOptionalMock.mockReturnValue(null);
+    tagContextTags = [];
     const { readStoredMediaAdminLocalFilterPreferences } = jest.requireMock(
       '@/lib/preferences/adminFilters'
     ) as {
@@ -169,6 +184,181 @@ describe('MediaAdminContent', () => {
     readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
       DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
     );
+  });
+
+  it('replaces existing filters with the exact Tag population requested by Studio', async () => {
+    tagContextTags = [{ docId: 'family', name: 'Family', dimension: 'who' }];
+    const fetchMedia = jest.fn();
+    const setDimensionalQueryOverlay = jest.fn();
+    const selectNone = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      fetchMedia,
+      setDimensionalQueryOverlay,
+      selectNone,
+    });
+
+    render(
+      <MediaAdminContent
+        embedded
+        tagInspectionRequest={{ tagId: 'family', requestKey: 1 }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(setDimensionalQueryOverlay).toHaveBeenCalledWith({ who: ['family'] });
+      expect(selectNone).toHaveBeenCalled();
+      expect(fetchMedia).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ search: '', assignment: 'all', codification: 'all' }),
+        { who: ['family'] }
+      );
+    });
+  });
+
+  it('replaces existing filters with the exact import batch requested by Author Home', async () => {
+    const fetchMedia = jest.fn();
+    const selectNone = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      fetchMedia,
+      selectNone,
+    });
+
+    render(<MediaAdminContent embedded initialImportBatchId="batch-1" />);
+
+    await waitFor(() => {
+      expect(selectNone).toHaveBeenCalled();
+      expect(fetchMedia).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ importBatchId: 'batch-1', search: '', assignment: 'all' }),
+        {}
+      );
+    });
+  });
+
+  it('adds selected device photos to the Media bank and selects the successful imports', async () => {
+    const setSelectedMediaIds = jest.fn();
+    const registerCreatedMedia = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      setSelectedMediaIds,
+      registerCreatedMedia,
+    });
+    uploadImageFileToMediaBankMock
+      .mockResolvedValueOnce({ docId: 'media-1', filename: 'one.jpg' })
+      .mockResolvedValueOnce({ docId: 'media-2', filename: 'two.jpg' });
+    render(<MediaAdminContent embedded />);
+
+    const input = screen.getByTestId('media-device-input');
+    const files = [
+      new File(['one'], 'one.jpg', { type: 'image/jpeg' }),
+      new File(['two'], 'two.jpg', { type: 'image/jpeg' }),
+    ];
+    fireEvent.change(input, { target: { files } });
+
+    await waitFor(() => expect(registerCreatedMedia).toHaveBeenCalledTimes(2));
+    expect(setSelectedMediaIds).toHaveBeenCalledWith(['media-1', 'media-2']);
+    expect(feedbackShowSuccessMock).toHaveBeenCalledWith(
+      '2 photos added to Media and selected.',
+      'Device import complete'
+    );
+  });
+
+  it('keeps successful device imports selected and reports individual failures', async () => {
+    const setSelectedMediaIds = jest.fn();
+    useMediaMock.mockReturnValue({ ...baseMediaContext, setSelectedMediaIds });
+    uploadImageFileToMediaBankMock
+      .mockResolvedValueOnce({ docId: 'media-1', filename: 'one.jpg' })
+      .mockRejectedValueOnce(new Error('Upload failed'));
+    render(<MediaAdminContent embedded />);
+
+    fireEvent.change(screen.getByTestId('media-device-input'), { target: { files: [
+      new File(['one'], 'one.jpg', { type: 'image/jpeg' }),
+      new File(['bad'], 'bad.jpg', { type: 'image/jpeg' }),
+    ] } });
+
+    await waitFor(() => expect(feedbackShowErrorMock).toHaveBeenCalledWith(
+      '1 photo could not be added: bad.jpg',
+      'Some photos were not added'
+    ));
+    expect(setSelectedMediaIds).toHaveBeenCalledWith(['media-1']);
+  });
+
+  it('appends only new media while preserving Gallery slot details and order', () => {
+    expect(appendSelectedMediaToGallery(
+      [{
+        mediaId: 'media-1',
+        order: 7,
+        caption: 'Keep this caption',
+        media: { docId: 'media-1', filename: 'one.jpg' },
+      }],
+      [
+        { mediaId: 'media-1', order: 0 },
+        { mediaId: 'media-2', order: 1, stackId: 'stack-1' },
+      ]
+    )).toEqual({
+      galleryMedia: [
+        { mediaId: 'media-1', order: 0, caption: 'Keep this caption' },
+        { mediaId: 'media-2', order: 1, stackId: 'stack-1' },
+      ],
+      addedCount: 1,
+    });
+  });
+
+  it('adds selected media to an explicitly chosen existing Card without duplicating membership', async () => {
+    const setSelectedMediaIds = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      media: [
+        { docId: 'media-1', filename: 'one.jpg' },
+        { docId: 'media-2', filename: 'two.jpg' },
+      ],
+      selectedMediaIds: ['media-1', 'media-2'],
+      setSelectedMediaIds,
+    });
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ docId: 'card-1', title: 'Published Story', type: 'story', status: 'published' }],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          docId: 'card-1',
+          title: 'Published Story',
+          type: 'story',
+          status: 'published',
+          galleryMedia: [{
+            mediaId: 'media-1',
+            order: 0,
+            caption: 'Existing caption',
+            media: { docId: 'media-1', filename: 'one.jpg' },
+          }],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ docId: 'card-1' }) } as Response);
+
+    render(<MediaAdminContent />);
+    await userEvent.click(screen.getByRole('button', { name: 'Add to existing card' }));
+    await userEvent.click(await screen.findByRole('radio', { name: /Published Story/ }));
+
+    expect(screen.getByText(/updates what its readers can see immediately/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to Gallery' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const patchCall = fetchMock.mock.calls[2];
+    expect(patchCall[0]).toBe('/api/cards/card-1');
+    expect(patchCall[1]).toMatchObject({ method: 'PATCH' });
+    expect(JSON.parse(String((patchCall[1] as RequestInit).body))).toEqual({
+      galleryMedia: [
+        { mediaId: 'media-1', order: 0, caption: 'Existing caption' },
+        { mediaId: 'media-2', order: 1 },
+      ],
+    });
+    expect(setSelectedMediaIds).toHaveBeenCalledWith([]);
   });
 
   it('uses the simplified assignment and exact-match filters without a separate match workspace', () => {
@@ -182,6 +372,13 @@ describe('MediaAdminContent', () => {
     expect(screen.getByRole('option', { name: 'No Matches' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Browse' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Exact matches' })).not.toBeInTheDocument();
+  });
+
+  it('opens the existing classification editor for an exact Media handoff', async () => {
+    render(<MediaAdminContent embedded initialReviewMediaId="media-1" />);
+
+    expect(await screen.findByTestId('media-tags-modal')).toHaveTextContent('media-1');
+    expect(baseMediaContext.setSelectedMediaIds).toHaveBeenCalledWith(['media-1']);
   });
 
   it('does not start the embedded media fetch before Studio has an active card context', () => {

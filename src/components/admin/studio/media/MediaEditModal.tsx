@@ -6,6 +6,7 @@ import EditModal from '@/components/admin/studio/cards/EditModal';
 import JournalImage from '@/components/common/JournalImage';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Media } from '@/lib/types/photo';
+import type { ReplacementMetadataReview } from '@/lib/utils/replacementMetadataReview';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './MediaEditModal.module.css';
@@ -20,6 +21,22 @@ type CurrentCardContext = {
   cardTitle: string;
   roles: string[];
 };
+
+type ReplacementCandidate = {
+  file: File;
+  previewUrl: string;
+  width: number | null;
+  height: number | null;
+  metadataReview: ReplacementMetadataReview | null;
+  metadataReviewing: boolean;
+  metadataReviewError: string | null;
+};
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function MediaEditModal({
   isOpen,
@@ -61,6 +78,7 @@ export default function MediaEditModal({
   const [focalV, setFocalV] = useState(50);
   const [saving, setSaving] = useState(false);
   const [replacing, setReplacing] = useState(false);
+  const [replacementCandidate, setReplacementCandidate] = useState<ReplacementCandidate | null>(null);
   const [relatedCards, setRelatedCards] = useState<RelatedCardSummary[]>([]);
   const [loadingRelatedCards, setLoadingRelatedCards] = useState(false);
 
@@ -71,6 +89,17 @@ export default function MediaEditModal({
     setFocalH(horizontal);
     setFocalV(vertical);
   }, [selectedMedia]);
+
+  useEffect(() => {
+    setReplacementCandidate(null);
+  }, [selectedMedia?.docId]);
+
+  useEffect(() => {
+    const previewUrl = replacementCandidate?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [replacementCandidate?.previewUrl]);
 
   useEffect(() => {
     if (!isOpen || !selectedMedia) return;
@@ -157,32 +186,100 @@ export default function MediaEditModal({
     }
   };
 
-  const handleReplaceFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMedia) return;
+    const previewUrl = URL.createObjectURL(file);
+    setReplacementCandidate({
+      file,
+      previewUrl,
+      width: null,
+      height: null,
+      metadataReview: null,
+      metadataReviewing: true,
+      metadataReviewError: null,
+    });
+    const image = new window.Image();
+    image.onload = () => {
+      setReplacementCandidate((current) => current?.previewUrl === previewUrl
+        ? { ...current, width: image.naturalWidth, height: image.naturalHeight }
+        : current);
+    };
+    image.src = previewUrl;
+    event.target.value = '';
+    void (async () => {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`/api/images/${selectedMedia.docId}/replace`, {
+          method: 'PUT',
+          body: formData,
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          message?: string;
+          review?: ReplacementMetadataReview;
+        };
+        if (!response.ok || !data.review) {
+          throw new Error(data.message || 'Embedded metadata could not be reviewed.');
+        }
+        setReplacementCandidate((current) => current?.previewUrl === previewUrl
+          ? {
+              ...current,
+              metadataReview: data.review!,
+              metadataReviewing: false,
+              metadataReviewError: null,
+            }
+          : current);
+      } catch (error) {
+        setReplacementCandidate((current) => current?.previewUrl === previewUrl
+          ? {
+              ...current,
+              metadataReviewing: false,
+              metadataReviewError: error instanceof Error
+                ? error.message
+                : 'Embedded metadata could not be reviewed.',
+            }
+          : current);
+      }
+    })();
+  };
+
+  const handleConfirmReplacement = async () => {
+    if (!replacementCandidate || !selectedMedia) return;
     setReplacing(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', replacementCandidate.file);
+      formData.append('sameUnderlyingMedia', 'true');
       const response = await fetch(`/api/images/${selectedMedia.docId}/replace`, {
         method: 'POST',
         body: formData,
       });
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        media?: Media;
+        processingComplete?: boolean;
+      };
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         throw new Error(typeof data.message === 'string' ? data.message : 'Failed to replace image');
       }
-      const refreshed = await fetch(`/api/images/${selectedMedia.docId}`, {
-        cache: 'no-store',
-        credentials: 'same-origin',
-      });
-      const refreshedData = (await refreshed.json().catch(() => ({}))) as { media?: Media };
-      if (refreshed.ok && refreshedData.media) {
+      if (data.media) {
         setLocalOverrides((current) => ({
           ...current,
-          [selectedMedia.docId]: refreshedData.media!,
+          [selectedMedia.docId]: data.media!,
         }));
-        onMediaUpdated?.(refreshedData.media);
+        onMediaUpdated?.(data.media);
+      }
+      setReplacementCandidate(null);
+      if (data.processingComplete === false) {
+        feedback.showToast({
+          title: 'Image replaced; processing needs attention',
+          message: data.message || 'The new source is durable, but a rendition or search stage needs retry.',
+          tone: 'warning',
+          persistent: true,
+        });
+      } else {
+        feedback.showSuccess('The image was replaced without changing its caption, tags, or Story relationships.');
       }
     } catch (error) {
       feedback.showError(
@@ -191,7 +288,6 @@ export default function MediaEditModal({
       );
     } finally {
       setReplacing(false);
-      event.target.value = '';
     }
   };
 
@@ -350,6 +446,133 @@ export default function MediaEditModal({
                   <div className={styles.emptyState}>This image is not assigned to any cards.</div>
                 )}
               </div>
+
+              {replacementCandidate ? (
+                <section className={styles.replacementReview} aria-label="Review image replacement">
+                  <div className={styles.replacementHeading}>
+                    <div>
+                      <div className={styles.fieldLabel}>Confirm this is the same underlying item</div>
+                      <p className={styles.hint}>
+                        Replacement keeps this Media ID, caption, tags, review decisions, and every Story relationship.
+                        Choose Cancel if this is a different photo or scan.
+                      </p>
+                    </div>
+                  </div>
+                  <div className={styles.replacementComparison}>
+                    <div className={styles.replacementSide}>
+                      <span className={styles.replacementLabel}>Current</span>
+                      <div className={styles.replacementPreviewFrame}>
+                        <JournalImage
+                          src={getDisplayUrl(selectedMedia)}
+                          alt={`Current ${selectedMedia.caption || selectedMedia.filename}`}
+                          fill
+                          className={styles.replacementPreviewImage}
+                          sizes="(max-width: 860px) 100vw, 320px"
+                        />
+                      </div>
+                      <span className={styles.replacementFacts}>
+                        {selectedMedia.filename} · {selectedMedia.width}×{selectedMedia.height} · {formatBytes(selectedMedia.size)}
+                      </span>
+                    </div>
+                    <div className={styles.replacementSide}>
+                      <span className={styles.replacementLabel}>Proposed replacement</span>
+                      <div className={styles.replacementPreviewFrame}>
+                        <JournalImage
+                          src={replacementCandidate.previewUrl}
+                          alt={`Proposed replacement ${replacementCandidate.file.name}`}
+                          fill
+                          className={styles.replacementPreviewImage}
+                          sizes="(max-width: 860px) 100vw, 320px"
+                        />
+                      </div>
+                      <span className={styles.replacementFacts}>
+                        {replacementCandidate.file.name}
+                        {replacementCandidate.width && replacementCandidate.height
+                          ? ` · ${replacementCandidate.width}×${replacementCandidate.height}`
+                          : ''}
+                        {' · '}{formatBytes(replacementCandidate.file.size)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.metadataReview} aria-label="Replacement metadata review">
+                    <div className={styles.replacementLabel}>Embedded metadata evidence</div>
+                    {replacementCandidate.metadataReviewing ? (
+                      <p className={styles.hint}>Reviewing the proposed file&apos;s embedded metadata…</p>
+                    ) : replacementCandidate.metadataReviewError ? (
+                      <p className={styles.metadataReadIssue}>
+                        Metadata review was unavailable: {replacementCandidate.metadataReviewError}
+                        {' '}You can still confirm the replacement from the visual comparison.
+                      </p>
+                    ) : replacementCandidate.metadataReview ? (
+                      <>
+                        {replacementCandidate.metadataReview.conflicts.length > 0 ? (
+                          <div className={styles.metadataConflicts}>
+                            <strong>Review before replacing</strong>
+                            {replacementCandidate.metadataReview.conflicts.map((conflict, index) => (
+                              <div key={`${conflict.field}-${index}`} className={styles.metadataConflict}>
+                                <span>{conflict.label}</span>
+                                <span>Confirmed: {conflict.confirmedValue}</span>
+                                <span>Replacement file: {conflict.replacementEvidence}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className={styles.hint}>No material conflict with confirmed Media truth was found.</p>
+                        )}
+                        <div className={styles.metadataEvidenceList}>
+                          {replacementCandidate.metadataReview.evidence.capturedAt ? (
+                            <span>Date: {replacementCandidate.metadataReview.evidence.capturedAt.raw}</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.gps ? (
+                            <span>
+                              GPS: {replacementCandidate.metadataReview.evidence.gps.latitude.toFixed(5)},{' '}
+                              {replacementCandidate.metadataReview.evidence.gps.longitude.toFixed(5)}
+                              {' '}(evidence only; no place is inferred)
+                            </span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.caption ? (
+                            <span>Caption: {replacementCandidate.metadataReview.evidence.caption}</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.keywords.length > 0 ? (
+                            <span>Keywords: {replacementCandidate.metadataReview.evidence.keywords.join(', ')}</span>
+                          ) : null}
+                          {!replacementCandidate.metadataReview.evidence.capturedAt &&
+                          !replacementCandidate.metadataReview.evidence.gps &&
+                          !replacementCandidate.metadataReview.evidence.caption &&
+                          replacementCandidate.metadataReview.evidence.keywords.length === 0 ? (
+                            <span>No useful embedded date, GPS, caption, or keyword evidence was found.</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.readIssue ? (
+                            <span>Metadata reader note: {replacementCandidate.metadataReview.readIssue}</span>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
+                    <p className={styles.hint}>
+                      This evidence is not applied automatically. Replacement preserves the confirmed caption,
+                      date, tags, subjects, and review decisions.
+                    </p>
+                  </div>
+                  <div className={styles.replacementActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setReplacementCandidate(null)}
+                      disabled={replacing || replacementCandidate.metadataReviewing}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void handleConfirmReplacement()}
+                      disabled={replacing || replacementCandidate.metadataReviewing}
+                    >
+                      {replacing ? 'Replacing...' : 'Yes, replace this Media item'}
+                    </button>
+                  </div>
+                </section>
+              ) : null}
 
               <div className={styles.actions}>
                 <div className={styles.actionsLeft}>

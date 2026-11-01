@@ -25,4 +25,16 @@ describe('studioShellImperativeRegistry', () => {
 
     expect(handler).toHaveBeenCalledWith(media);
   });
+
+  it('registers copied Prompt Library insertion independently', () => {
+    const registry = createStudioShellImperativeRegistry();
+    const handler = jest.fn();
+    registry.register('promptTextInsert', handler);
+
+    registry.get('promptTextInsert')?.('What do you remember most?');
+
+    expect(handler).toHaveBeenCalledWith('What do you remember most?');
+    registry.register('promptTextInsert', null);
+    expect(registry.get('promptTextInsert')).toBeNull();
+  });
 });

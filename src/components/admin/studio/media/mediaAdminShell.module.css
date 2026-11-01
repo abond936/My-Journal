@@ -48,6 +48,7 @@
 
 .studioHeaderActions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--spacing-xs);
@@ -851,6 +852,12 @@
     padding: var(--spacing-md);
   }
 
+  .studioHeaderActions {
+    width: 100%;
+    justify-content: flex-start;
+    align-self: stretch;
+  }
+
   .bulkActions {
     flex-direction: column;
     align-items: stretch;
@@ -900,6 +907,75 @@
   margin-top: var(--spacing-lg);
   display: flex;
   justify-content: flex-end;
+}
+
+.cardChoiceSearch {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cardChoiceSearchRow {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.cardChoiceSearchInput {
+  min-width: 0;
+  flex: 1;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm);
+  background: var(--layout-background1-color);
+  color: var(--text1-color);
+}
+
+.cardChoiceList {
+  display: grid;
+  gap: var(--spacing-xs);
+  max-height: 20rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 0;
+}
+
+.cardChoiceRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  min-height: 44px;
+  padding: var(--spacing-sm);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+}
+
+.cardChoiceRow span {
+  display: grid;
+  gap: 2px;
+}
+
+.cardChoiceRow small {
+  color: var(--text2-color);
+  text-transform: capitalize;
+}
+
+.cardChoiceWarning {
+  margin: var(--spacing-md) 0 0;
+  color: var(--admin-state-warning-text-color);
 }
 
 .studioMediaSearchControl[data-active='true'] .studioMediaSearchInput {

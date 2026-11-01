@@ -8,6 +8,7 @@ import { getStudioDisplayUrl } from '@/lib/utils/photoUtils';
 import type { Card } from '@/lib/types/card';
 import type { Tag } from '@/lib/types/tag';
 import styles from './AdminClosedCardTileShell.module.css';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
 
 export type AdminClosedCardTileShellProps = {
   card: Card;
@@ -15,6 +16,7 @@ export type AdminClosedCardTileShellProps = {
   preview: Card['coverImage'];
   previewObjectFit: 'cover' | 'contain';
   previewObjectPosition: string;
+  previewRotation?: MediaPresentationRotation;
   renderUtilityPreview: boolean;
   pendingFocus: boolean;
   overlayCoverBottom?: React.ReactNode;
@@ -30,6 +32,7 @@ export default function AdminClosedCardTileShell({
   preview,
   previewObjectFit,
   previewObjectPosition,
+  previewRotation = 0,
   renderUtilityPreview,
   pendingFocus,
   overlayCoverBottom,
@@ -57,6 +60,7 @@ export default function AdminClosedCardTileShell({
             className={styles.closedTileCoverImage}
             style={{ objectFit: previewObjectFit, objectPosition: previewObjectPosition }}
             sizes={imageSizes}
+            presentationRotation={previewRotation}
           />
         ) : (
           <div className={styles.noCover}>No cover</div>

@@ -120,7 +120,15 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
                             {item.title}
                           </Link>
                         </h3>
-                        <span className={styles.lifecycle}>{item.lifecycle}</span>
+                        <div className={styles.collectionAttentionActions}>
+                          <Link
+                            className={styles.collectionReviewLink}
+                            href={`/admin/collections/${encodeURIComponent(item.collectionId)}/attention`}
+                          >
+                            Review exact items
+                          </Link>
+                          <span className={styles.lifecycle}>{item.lifecycle}</span>
+                        </div>
                       </div>
                       <dl className={styles.reviewList}>
                         <div>
@@ -258,6 +266,33 @@ export default function AuthorDashboard({ summary }: AuthorDashboardProps) {
           ) : (
             <p className={styles.unavailable} role="status">Operation summary is temporarily unavailable.</p>
           )}
+        </section>
+
+        <section className={styles.section} aria-labelledby="imports-heading">
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 id="imports-heading">Recent imports</h2>
+              <p>Truthful progress for bounded desktop Media batches.</p>
+            </div>
+            <Link className={styles.secondaryAction} href="/admin/studio?destination=media">Open Media</Link>
+          </div>
+          {summary.imports.status === 'ready' ? (
+            summary.imports.data.items.length ? (
+              <div className={styles.collectionAttentionList}>
+                {summary.imports.data.items.map((item) => (
+                  <Link
+                    key={item.importBatchId}
+                    className={styles.storyWorkCard}
+                    href={`/admin/studio?destination=media&mediaBatch=${encodeURIComponent(item.importBatchId)}`}
+                  >
+                    <span>{item.status === 'running' ? 'Importing' : item.status === 'failed' ? 'Import failed' : item.status === 'completed_with_errors' ? 'Completed with errors' : 'Completed'}</span>
+                    <strong>{item.processed.toLocaleString()} of {item.total.toLocaleString()} processed</strong>
+                    <span>{item.succeeded.toLocaleString()} imported · {item.skipped.toLocaleString()} already present · {item.failed.toLocaleString()} failed</span>
+                  </Link>
+                ))}
+              </div>
+            ) : <p className={styles.emptyState}>No bounded import operations recorded yet.</p>
+          ) : <p className={styles.unavailable} role="status">Recent import progress is temporarily unavailable.</p>}
         </section>
       </div>
 

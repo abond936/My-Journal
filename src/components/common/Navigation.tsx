@@ -9,6 +9,13 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { getTitleLogoSrc } from '@/lib/utils/titleLogo';
 import { getSafeReaderReturnTo } from '@/lib/utils/readerReturnTo';
+import {
+  getDefaultRoleSurfacePath,
+  getRoleSurface,
+  getRoleSurfaceStorageKey,
+  getSafeRoleSurfacePath,
+  type RoleSurface,
+} from '@/lib/utils/roleSurfaceSwitch';
 import styles from './Navigation.module.css';
 
 interface NavigationProps {
@@ -32,6 +39,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [returnTo, setReturnTo] = useState<string | null>(null);
+  const [roleSwitchHref, setRoleSwitchHref] = useState('/admin');
   const navRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -45,7 +53,10 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const isGuideRoute = Boolean(pathname?.startsWith('/admin/help'));
   const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
   const isArchiveSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
+  const isSharedMediaRoute = Boolean(pathname?.startsWith('/admin/shared-media'));
   const isAccountRoute = pathname === '/account' || pathname === '/settings';
+  const currentRoleSurface = getRoleSurface(pathname);
+  const roleSwitchTarget: RoleSurface = currentRoleSurface === 'author' ? 'reader' : 'author';
 
   useEffect(() => {
     setMounted(true);
@@ -54,6 +65,24 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   useEffect(() => {
     setReturnTo(new URLSearchParams(window.location.search).get('returnTo'));
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const currentSurface = getRoleSurface(window.location.pathname);
+    if (currentSurface) {
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const safeCurrentPath = getSafeRoleSurfacePath(currentPath, currentSurface);
+      if (safeCurrentPath) {
+        window.sessionStorage.setItem(getRoleSurfaceStorageKey(currentSurface), safeCurrentPath);
+      }
+    }
+    const targetSurface: RoleSurface = currentSurface === 'author' ? 'reader' : 'author';
+    const storedTarget = getSafeRoleSurfacePath(
+      window.sessionStorage.getItem(getRoleSurfaceStorageKey(targetSurface)),
+      targetSurface
+    );
+    setRoleSwitchHref(storedTarget ?? getDefaultRoleSurfacePath(targetSurface));
+  }, [isAdmin, pathname]);
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -118,6 +147,15 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
         </div>
 
         <div className={styles.rightSlot}>
+          {isAdmin ? (
+            <Link
+              href={roleSwitchHref}
+              className={styles.roleSwitchLink}
+              aria-label={`Switch to ${roleSwitchTarget === 'author' ? 'Author' : 'Reader'}`}
+            >
+              {roleSwitchTarget === 'author' ? 'Author' : 'Reader'}
+            </Link>
+          ) : null}
           <button
             type="button"
             className={styles.menuButton}
@@ -134,7 +172,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
             href={homeHref}
             className={`${styles.navLink} ${pathname === homeHref ? styles.active : ''}`}
           >
-            Home
+            {isAdmin ? 'Author Home' : 'Home'}
           </Link>
           <Link
             href="/view"
@@ -161,6 +199,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 className={`${styles.navLink} ${styles.desktopAdminLink} ${isUsersRoute ? styles.active : ''}`}
               >
                 Users
+              </Link>
+              <Link
+                href="/admin/shared-media"
+                className={`${styles.navLink} ${styles.desktopAdminLink} ${isSharedMediaRoute ? styles.active : ''}`}
+              >
+                Photo Sharing
               </Link>
               <Link
                 href="/admin/settings"

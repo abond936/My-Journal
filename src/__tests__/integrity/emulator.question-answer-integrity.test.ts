@@ -127,6 +127,146 @@ describeIfEmulator('Question-answer integrity (Firestore emulator)', () => {
     );
     expect((await db.collection('questions').doc('question-delete').get()).exists).toBe(true);
   });
+
+  it('persists a follow-up only beneath a primary question in the same Topic', async () => {
+    const { createQuestion } = await import('@/lib/services/questionService');
+    const primary = await createQuestion({
+      prompt: 'What was your childhood home like?',
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'primary',
+      parentQuestionId: null,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    });
+    const followup = await createQuestion({
+      prompt: 'Which room do you remember best?',
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'followup',
+      parentQuestionId: primary.docId,
+      promptOrder: 1,
+      tagIds: [],
+      subjectTagIds: [],
+    });
+
+    expect(followup.parentQuestionId).toBe(primary.docId);
+    await expect(createQuestion({
+      prompt: 'What happened at school?',
+      category: 'Life stories',
+      topic: 'School',
+      promptKind: 'followup',
+      parentQuestionId: primary.docId,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    })).rejects.toThrow('same Category and Topic');
+  });
+
+  it('protects a primary question while follow-up prompts reference it', async () => {
+    const { createQuestion, deleteQuestion, QuestionAnswerConflictError } = await import('@/lib/services/questionService');
+    const primary = await createQuestion({
+      prompt: 'Who helped you?', category: 'People', topic: 'Influences', promptKind: 'primary',
+      parentQuestionId: null, promptOrder: 0, tagIds: [], subjectTagIds: [],
+    });
+    await createQuestion({
+      prompt: 'What did they teach you?', category: 'People', topic: 'Influences', promptKind: 'followup',
+      parentQuestionId: primary.docId, promptOrder: 0, tagIds: [], subjectTagIds: [],
+    });
+
+    await expect(deleteQuestion(primary.docId)).rejects.toBeInstanceOf(QuestionAnswerConflictError);
+  });
+
+  it('atomically reorders primaries within a Topic and follow-ups within one primary', async () => {
+    const { createQuestion, reorderQuestion } = await import('@/lib/services/questionService');
+    const common = {
+      category: 'Life stories', topic: 'Childhood', tagIds: [], subjectTagIds: [],
+    };
+    const primaryOne = await createQuestion({
+      ...common, prompt: 'Where did you live?', promptKind: 'primary', parentQuestionId: null, promptOrder: 0,
+    });
+    const primaryTwo = await createQuestion({
+      ...common, prompt: 'Who lived with you?', promptKind: 'primary', parentQuestionId: null, promptOrder: 1,
+    });
+    const followupOne = await createQuestion({
+      ...common, prompt: 'What did it look like?', promptKind: 'followup', parentQuestionId: primaryOne.docId, promptOrder: 0,
+    });
+    const followupTwo = await createQuestion({
+      ...common, prompt: 'What did it smell like?', promptKind: 'followup', parentQuestionId: primaryOne.docId, promptOrder: 1,
+    });
+
+    const primaries = await reorderQuestion(primaryTwo.docId, 'up');
+    expect(primaries.map(question => question.docId)).toEqual([primaryTwo.docId, primaryOne.docId]);
+    const followups = await reorderQuestion(followupTwo.docId, 'up');
+    expect(followups.map(question => question.docId)).toEqual([followupTwo.docId, followupOne.docId]);
+
+    const db = getFirestore(app);
+    await expect(Promise.all([
+      db.collection('questions').doc(primaryTwo.docId).get(),
+      db.collection('questions').doc(primaryOne.docId).get(),
+      db.collection('questions').doc(followupTwo.docId).get(),
+      db.collection('questions').doc(followupOne.docId).get(),
+    ])).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ exists: true }),
+    ]));
+    expect((await db.collection('questions').doc(primaryTwo.docId).get()).data()?.promptOrder).toBe(0);
+    expect((await db.collection('questions').doc(primaryOne.docId).get()).data()?.promptOrder).toBe(1);
+    expect((await db.collection('questions').doc(followupTwo.docId).get()).data()?.promptOrder).toBe(0);
+    expect((await db.collection('questions').doc(followupOne.docId).get()).data()?.promptOrder).toBe(1);
+  });
+
+  it('consolidates exact duplicate Prompts while preserving the linked Question Card and follow-ups', async () => {
+    const db = getFirestore(app);
+    const { createQuestion, consolidateExactQuestionDuplicates } = await import('@/lib/services/questionService');
+    const common = {
+      prompt: 'What happened at the beach?',
+      category: 'Life',
+      topic: 'Trips',
+      promptKind: 'primary' as const,
+      parentQuestionId: null,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    };
+    const survivor = await createQuestion(common);
+    const duplicate = await createQuestion({ ...common, category: 'Unsorted', topic: 'Older prompts' });
+    await db.collection('questions').doc(survivor.docId).update({
+      usedByCardIds: ['answer-card'],
+      usageCount: 1,
+      updatedAt: survivor.updatedAt,
+    });
+    await db.collection('cards').doc('answer-card').set(
+      minimalQuestionCard('answer-card', { questionId: survivor.docId })
+    );
+    const followup = await createQuestion({
+      prompt: 'What could you hear?',
+      category: duplicate.category,
+      topic: duplicate.topic,
+      promptKind: 'followup',
+      parentQuestionId: duplicate.docId,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    });
+
+    await consolidateExactQuestionDuplicates(survivor.docId);
+
+    const [survivorSnap, duplicateSnap, followupSnap, cardSnap] = await Promise.all([
+      db.collection('questions').doc(survivor.docId).get(),
+      db.collection('questions').doc(duplicate.docId).get(),
+      db.collection('questions').doc(followup.docId).get(),
+      db.collection('cards').doc('answer-card').get(),
+    ]);
+    expect(survivorSnap.data()?.usedByCardIds).toEqual(['answer-card']);
+    expect(duplicateSnap.exists).toBe(false);
+    expect(followupSnap.data()).toMatchObject({
+      parentQuestionId: survivor.docId,
+      category: survivor.category,
+      topic: survivor.topic,
+    });
+    expect(cardSnap.data()?.questionId).toBe(survivor.docId);
+  });
 });
 
 function minimalQuestion(docId: string) {

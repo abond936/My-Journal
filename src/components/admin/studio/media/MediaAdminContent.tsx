@@ -32,7 +32,7 @@ import {
   type AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
-import type { Card } from '@/lib/types/card';
+import type { Card, GalleryMediaItem } from '@/lib/types/card';
 import type { TemporalFilter } from '@/lib/types/temporal';
 import {
   collectImportBatchIdsFromMedia,
@@ -49,12 +49,19 @@ import { mediaMatchesDimensions, mediaMatchesSearch } from '@/lib/utils/mediaAss
 import { matchesTemporalValueFilter } from '@/lib/utils/temporalValue';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 import { matchesDimensionReviewFilter } from '@/lib/utils/dimensionReview';
+import { uploadImageFileToMediaBank } from '@/lib/utils/uploadImageFileToMediaBank';
 
 export type MediaAdminContentProps = {
   /** When true (e.g. Admin Studio column), use compact scroll layout. */
   embedded?: boolean;
   /** When embedded in Studio, rows register as drag sources for cover/gallery. */
   studioSourceDraggable?: boolean;
+  /** Opens the existing Tags and Subjects review for one exact Media record. */
+  initialReviewMediaId?: string | null;
+  /** Replaces the current Media filters with one exact desktop import batch. */
+  initialImportBatchId?: string | null;
+  /** Replaces the current Media filters with one exact Tag population from the Tags destination. */
+  tagInspectionRequest?: { tagId: string; requestKey: number } | null;
 };
 
 type DimensionKey = 'who' | 'what' | 'when' | 'where';
@@ -70,6 +77,24 @@ type ApiErrorResponse = {
   code?: string;
   details?: string[];
 };
+
+type CardChoiceResponse = {
+  items?: Card[];
+};
+
+export function appendSelectedMediaToGallery(
+  current: GalleryMediaItem[],
+  selected: GalleryMediaItem[]
+): { galleryMedia: GalleryMediaItem[]; addedCount: number } {
+  const existingIds = new Set(current.map((item) => item.mediaId));
+  const additions = selected.filter((item) => item.mediaId && !existingIds.has(item.mediaId));
+  const galleryMedia = [...current, ...additions].map((item, order) => {
+    const stored = { ...item };
+    delete stored.media;
+    return { ...stored, order };
+  });
+  return { galleryMedia, addedCount: additions.length };
+}
 
 function collectAssignedMediaIdsForCard(
   card:
@@ -185,7 +210,13 @@ export function filterSelectedCardMedia(
 }
 
 export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
-  const { embedded = false, studioSourceDraggable = false } = props;
+  const {
+    embedded = false,
+    studioSourceDraggable = false,
+    initialReviewMediaId = null,
+    initialImportBatchId = null,
+    tagInspectionRequest = null,
+  } = props;
   const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
   const initialFetchRequestedRef = useRef(false);
   const router = useRouter();
@@ -212,6 +243,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
     resolveMediaById,
+    registerCreatedMedia,
   } = useMedia();
 
   const { tags: allTags } = useTag();
@@ -241,12 +273,16 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [mediaPopulation, setMediaPopulation] = useState<MediaPopulation>('bank');
   const libraryFilterContextRef = useRef<MediaFilterContextSnapshot | null>(null);
   const selectedCardFilterCardIdRef = useRef<string | null>(null);
+  const appliedTagInspectionRef = useRef<string | null>(null);
+  const appliedImportBatchRef = useRef<string | null>(null);
   const showOnlyAssigned = mediaPopulation === 'this_card';
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
   const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
+  const deviceInputRef = useRef<HTMLInputElement | null>(null);
+  const [deviceImportBusy, setDeviceImportBusy] = useState(false);
   const [tagEditorMediaIds, setTagEditorMediaIds] = useState<string[]>([]);
   const [browseGroupBy, setBrowseGroupBy] = useState(initialLocalFilterPrefsRef.current.browseGroupBy);
   const [galleryCardsForGrouping, setGalleryCardsForGrouping] = useState<Card[]>([]);
@@ -299,6 +335,60 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   );
 
   useEffect(() => {
+    if (!initialImportBatchId || appliedImportBatchRef.current === initialImportBatchId) return;
+    appliedImportBatchRef.current = initialImportBatchId;
+    setMediaPopulation('bank');
+    selectNone();
+    applyFilterContext(
+      {
+        filters: {
+          ...DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+          subjectDimensions: [],
+          dimensionPresence: {},
+          importBatchId: initialImportBatchId,
+        },
+        dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+        dimensionalQueryOverlay: {},
+        clientSort: 'none',
+      },
+      true
+    );
+  }, [applyFilterContext, initialImportBatchId, selectNone]);
+
+  useEffect(() => {
+    if (!tagInspectionRequest?.tagId || allTags.length === 0) return;
+    const requestSignature = `${tagInspectionRequest.requestKey}:${tagInspectionRequest.tagId}`;
+    if (appliedTagInspectionRef.current === requestSignature) return;
+    const dimensionalQuery = groupSelectedTagIdsByDimension(
+      [tagInspectionRequest.tagId],
+      allTags
+    );
+    if (Object.keys(dimensionalQuery).length === 0) return;
+    appliedTagInspectionRef.current = requestSignature;
+    setMediaPopulation('bank');
+    selectNone();
+    applyFilterContext(
+      {
+        filters: {
+          ...DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+          subjectDimensions: [],
+          dimensionPresence: {},
+        },
+        dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+        dimensionalQueryOverlay: dimensionalQuery,
+        clientSort: 'none',
+      },
+      true
+    );
+  }, [
+    allTags,
+    applyFilterContext,
+    selectNone,
+    tagInspectionRequest?.requestKey,
+    tagInspectionRequest?.tagId,
+  ]);
+
+  useEffect(() => {
     writeStoredMediaAdminLocalFilterPreferences({
       duplicateTriageMode: false,
       dimensionFilters,
@@ -334,8 +424,22 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     setTagEditorMediaIds([mediaId]);
     setBulkTagModalOpen(true);
   }, [setBulkTagModalOpen, setSelectedMediaIds]);
+  const initialReviewMediaIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialReviewMediaId || initialReviewMediaIdRef.current === initialReviewMediaId) return;
+    initialReviewMediaIdRef.current = initialReviewMediaId;
+    handleOpenMediaTags(initialReviewMediaId);
+  }, [handleOpenMediaTags, initialReviewMediaId]);
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [isSharingSelection, setIsSharingSelection] = useState(false);
+  const [addToCardOpen, setAddToCardOpen] = useState(false);
+  const [cardChoices, setCardChoices] = useState<Card[]>([]);
+  const [cardChoiceSearch, setCardChoiceSearch] = useState('');
+  const [selectedTargetCardId, setSelectedTargetCardId] = useState('');
+  const [cardChoicesLoading, setCardChoicesLoading] = useState(false);
+  const [cardChoicesError, setCardChoicesError] = useState<string | null>(null);
+  const [isAddingToCard, setIsAddingToCard] = useState(false);
   const {
     mediaById,
     isCreatingStack,
@@ -402,6 +506,156 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       feedback.showError(err instanceof Error ? err.message : 'Failed to create card.', 'Could not create card');
     } finally {
       setIsCreatingCard(false);
+    }
+  };
+
+  const handleShareSelection = async () => {
+    if (!selectedMediaIds.length || isSharingSelection) return;
+    const title = window.prompt(
+      'Enter a new or existing Shared Media Collection title. Selected photos will be added to a private draft; publishing and audience are managed on the Photo Sharing page.'
+    )?.trim();
+    if (!title) return;
+    setIsSharingSelection(true);
+    try {
+      const listResponse = await fetch('/api/admin/shared-media-collections');
+      const listData = await listResponse.json().catch(() => ({}));
+      if (!listResponse.ok) throw new Error(listData.message || 'Photo collections could not be loaded.');
+      const existing = (Array.isArray(listData.collections) ? listData.collections : [])
+        .find((item: { title?: string }) => item.title?.trim().toLowerCase() === title.toLowerCase());
+      if (existing) {
+        if (existing.lifecycle === 'published') {
+          throw new Error('Return that Photo Collection to Draft before adding photos.');
+        }
+        const detailResponse = await fetch(`/api/admin/shared-media-collections/${encodeURIComponent(existing.docId)}`);
+        const detailData = await detailResponse.json().catch(() => ({}));
+        if (!detailResponse.ok) throw new Error(detailData.message || 'The Photo Collection could not be loaded.');
+        const mediaIds = Array.from(new Set([
+          ...(detailData.collection.mediaIds ?? []),
+          ...selectedMediaIds,
+        ]));
+        const updateResponse = await fetch(`/api/admin/shared-media-collections/${encodeURIComponent(existing.docId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expectedRevision: detailData.collection.revision, mediaIds }),
+        });
+        const updateData = await updateResponse.json().catch(() => ({}));
+        if (!updateResponse.ok) throw new Error(updateData.message || 'Selected photos could not be added.');
+      } else {
+        const createResponse = await fetch('/api/admin/shared-media-collections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, mediaIds: selectedMediaIds }),
+        });
+        const createData = await createResponse.json().catch(() => ({}));
+        if (!createResponse.ok) throw new Error(createData.message || 'The Photo Collection could not be created.');
+      }
+      setSelectedMediaIds([]);
+      feedback.showSuccess('Photos saved to a private Shared Media Collection. Choose its audience before publishing.');
+      router.push('/admin/shared-media');
+    } catch (shareError) {
+      feedback.showError(
+        shareError instanceof Error ? shareError.message : 'Selected photos could not be shared.',
+        'Photo Collection not updated'
+      );
+    } finally {
+      setIsSharingSelection(false);
+    }
+  };
+
+  const loadCardChoices = async (query = '') => {
+    setCardChoicesLoading(true);
+    setCardChoicesError(null);
+    try {
+      const params = new URLSearchParams({
+        status: 'all',
+        limit: '50',
+        hydration: 'cover-only',
+        sortBy: 'created',
+        sortDir: 'desc',
+        searchScope: 'admin-title',
+      });
+      if (query.trim()) params.set('q', query.trim());
+      const response = await fetch(`/api/cards?${params.toString()}`, { cache: 'no-store' });
+      if (!response.ok) {
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || `HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as CardChoiceResponse;
+      setCardChoices(payload.items ?? []);
+    } catch (err) {
+      setCardChoices([]);
+      setCardChoicesError(err instanceof Error ? err.message : 'Could not load Cards.');
+    } finally {
+      setCardChoicesLoading(false);
+    }
+  };
+
+  const handleOpenAddToCard = () => {
+    setSelectedTargetCardId(studioShell?.selectedCardId ?? '');
+    setCardChoiceSearch('');
+    setAddToCardOpen(true);
+    void loadCardChoices();
+  };
+
+  const handleAddSelectionToCard = async () => {
+    if (!selectedTargetCardId || selectedMediaIds.length === 0 || isAddingToCard) return;
+    setIsAddingToCard(true);
+    try {
+      const selectedEntries = resolveGalleryEntriesFromSelection(
+        selectedMediaIds,
+        mediaById,
+        stackById
+      ).map(({ mediaId, order, stackId }) => ({
+        mediaId,
+        order,
+        ...(stackId ? { stackId } : {}),
+      }));
+      if (!selectedEntries.length) throw new Error('No valid media selected.');
+
+      const cardResponse = await fetch(
+        `/api/cards/${encodeURIComponent(selectedTargetCardId)}?children=skip`,
+        { cache: 'no-store' }
+      );
+      if (!cardResponse.ok) {
+        const err = (await cardResponse.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || `HTTP ${cardResponse.status}`);
+      }
+      const targetCard = (await cardResponse.json()) as Card;
+      const { galleryMedia, addedCount } = appendSelectedMediaToGallery(
+        targetCard.galleryMedia ?? [],
+        selectedEntries
+      );
+      if (addedCount === 0) {
+        feedback.showSuccess('The selected media are already in this Card.', 'Nothing to add');
+        return;
+      }
+
+      const updateResponse = await fetch(`/api/cards/${encodeURIComponent(selectedTargetCardId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ galleryMedia }),
+      });
+      if (!updateResponse.ok) {
+        const err = (await updateResponse.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || err.details?.[0] || `HTTP ${updateResponse.status}`);
+      }
+
+      setSelectedMediaIds([]);
+      setAddToCardOpen(false);
+      feedback.showSuccess(
+        `${addedCount} media item${addedCount === 1 ? '' : 's'} added to ${targetCard.title || 'the Card'}.`,
+        'Card updated'
+      );
+      if (studioShell?.selectedCardId === selectedTargetCardId) {
+        void studioShell.loadSelectedCard(selectedTargetCardId, { quiet: true });
+      }
+    } catch (err) {
+      feedback.showError(
+        err instanceof Error ? err.message : 'Failed to add media to the Card.',
+        'Could not update Card'
+      );
+    } finally {
+      setIsAddingToCard(false);
     }
   };
 
@@ -475,6 +729,39 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         `${metadataNote} Imported media are selected and ready to codify or caption.`,
       'Import complete'
     );
+  };
+
+  const handleDeviceFiles = async (files: File[]) => {
+    if (!files.length || deviceImportBusy) return;
+    setDeviceImportBusy(true);
+    const imported: Media[] = [];
+    const failedNames: string[] = [];
+    try {
+      for (const file of files) {
+        try {
+          const item = await uploadImageFileToMediaBank(file);
+          registerCreatedMedia(item);
+          imported.push(item);
+        } catch {
+          failedNames.push(file.name);
+        }
+      }
+      if (imported.length) {
+        setSelectedMediaIds(imported.map((item) => item.docId));
+        feedback.showSuccess(
+          `${imported.length} photo${imported.length === 1 ? '' : 's'} added to Media and selected.`,
+          'Device import complete'
+        );
+      }
+      if (failedNames.length) {
+        feedback.showError(
+          `${failedNames.length} photo${failedNames.length === 1 ? '' : 's'} could not be added: ${failedNames.join(', ')}`,
+          imported.length ? 'Some photos were not added' : 'Device import failed'
+        );
+      }
+    } finally {
+      setDeviceImportBusy(false);
+    }
   };
 
   const handleStudioDimensionalFilterChange = useCallback(
@@ -1136,7 +1423,28 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 onClick={() => setImportPickerOpen(true)}
                 className={styles.studioImportButton}
               >
-                Import
+                Import folder
+              </button>
+              <input
+                ref={deviceInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                data-testid="media-device-input"
+                onChange={(event) => {
+                  const files = Array.from(event.currentTarget.files ?? []);
+                  event.currentTarget.value = '';
+                  void handleDeviceFiles(files);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => deviceInputRef.current?.click()}
+                disabled={deviceImportBusy}
+                className={styles.studioImportButton}
+              >
+                {deviceImportBusy ? 'Adding photos…' : 'Add from device'}
               </button>
             </div>
           </div>
@@ -1440,6 +1748,21 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               </button>
               <button
                 type="button"
+                onClick={() => void handleShareSelection()}
+                disabled={isSharingSelection}
+                className={cardAdminStyles.actionButton}
+              >
+                {isSharingSelection ? 'Adding...' : 'Share photos...'}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenAddToCard}
+                className={cardAdminStyles.actionButton}
+              >
+                Add to existing card
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleCreateStackFromSelection()}
                 disabled={isCreatingStack || !createStackEligible}
                 className={cardAdminStyles.actionButton}
@@ -1475,6 +1798,80 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         ) : null}
       </div>
 
+      <EditModal
+        isOpen={addToCardOpen}
+        onClose={() => setAddToCardOpen(false)}
+        title="Add media to an existing Card"
+        footer={
+          <>
+            <button
+              type="button"
+              className={cardAdminStyles.actionButton}
+              onClick={() => void handleAddSelectionToCard()}
+              disabled={!selectedTargetCardId || isAddingToCard}
+            >
+              {isAddingToCard ? 'Adding…' : 'Add to Gallery'}
+            </button>
+            <button
+              type="button"
+              className={cardAdminStyles.actionButton}
+              onClick={() => setAddToCardOpen(false)}
+              disabled={isAddingToCard}
+            >
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <form
+          className={styles.cardChoiceSearch}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadCardChoices(cardChoiceSearch);
+          }}
+        >
+          <label htmlFor="media-card-choice-search">Find a Card by title</label>
+          <div className={styles.cardChoiceSearchRow}>
+            <input
+              id="media-card-choice-search"
+              value={cardChoiceSearch}
+              onChange={(event) => setCardChoiceSearch(event.target.value)}
+              className={styles.cardChoiceSearchInput}
+            />
+            <button type="submit" className={cardAdminStyles.actionButton} disabled={cardChoicesLoading}>
+              Search
+            </button>
+          </div>
+        </form>
+        {cardChoicesError ? <p role="alert">{cardChoicesError}</p> : null}
+        {cardChoicesLoading ? <p>Loading Cards…</p> : null}
+        {!cardChoicesLoading && !cardChoicesError && cardChoices.length === 0 ? (
+          <p>No Cards found.</p>
+        ) : null}
+        <fieldset className={styles.cardChoiceList}>
+          <legend className={styles.visuallyHidden}>Choose a Card</legend>
+          {cardChoices.map((card) => (
+            <label key={card.docId} className={styles.cardChoiceRow}>
+              <input
+                type="radio"
+                name="target-card"
+                value={card.docId}
+                checked={selectedTargetCardId === card.docId}
+                onChange={() => setSelectedTargetCardId(card.docId)}
+              />
+              <span>
+                <strong>{card.title || 'Untitled'}</strong>
+                <small>{card.type} · {card.status}</small>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {cardChoices.find((card) => card.docId === selectedTargetCardId)?.status === 'published' ? (
+          <p className={styles.cardChoiceWarning}>
+            This Card is published. Adding media updates what its readers can see immediately.
+          </p>
+        ) : null}
+      </EditModal>
       <EditModal
         isOpen={bulkDeleteModalOpen}
         onClose={() => setBulkDeleteModalOpen(false)}

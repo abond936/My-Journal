@@ -250,13 +250,19 @@ Only then expand the taxonomy for the next body of material.
 
 Media enters a private author library. Importing an image does not publish it, place it in a Story, or expose the rest of the library to readers.
 
-On a computer, use the Studio Media Library to bring in selected files or a bounded folder. On a phone, Start a Story can select device photos for that Story. The product must retain its own usable copy of Media that becomes part of the archive; Apple Photos or Google Photos may remain the place where an author initially finds it.
+On a computer, use the Studio Media Library to bring in selected files or a bounded folder. On a phone, open the Media destination and choose **Add from device** to select one or more images, or use Start a Story when the photos belong immediately in that Story. Successful device imports are selected in Media so you can classify them or create a Card next. The product retains its own usable copy of Media that becomes part of the private archive; Apple Photos or Google Photos may remain the place where an author initially finds it.
 
 Before a large import, preserve the best source file available and correct trustworthy embedded facts when practical. Scanned images often need an author-supplied date, location, caption, or identity because the scan date is not the historical date. Phone images ordinarily provide stronger date and location evidence, but machine metadata is evidence rather than unquestionable truth.
 
 After import, confirm that the files appear, inspect processing failures, and use Batch, Folder, Metadata, or Day grouping when it helps review the new population. A pending or failed rendition is a processing condition, not permission to delete the source.
 
+If a scan or photo is corrected in another editor, open that existing Media item and choose **Replace image** instead of importing the edited file as a new item. Compare the current and proposed images, check their filenames, dimensions, and sizes, and confirm replacement only when they are the same underlying photo or scan. The comparison also inspects useful embedded caption, date, GPS, and keyword evidence. Any material difference from confirmed archive truth is shown for review; it does not change the existing caption, date, place, identity, tags, subjects, or review decisions. GPS remains coordinate evidence rather than an inferred place. Replacement keeps those decisions and every Story relationship. A different photo belongs as a new Media item; an exact file already owned by another item belongs in duplicate review. If metadata cannot be read, use the visual comparison and same-item judgment. If the source is accepted but a rendition or search stage fails, the replacement remains visible as processing work that can be retried.
+
+When an image only needs a different crop or orientation in one Story, frame or rotate the Cover or that Gallery image in Compose instead of changing or replacing the Media item. These presentation controls belong to the Card and do not alter the canonical Media default, source image, or appearance in other Stories.
+
 **Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
+
+After selecting Media in the Library, choose **Create card** to begin a new Gallery Card or **Add to existing card** to search for a Card and append the selection to its Gallery. Media already in the chosen Gallery is not duplicated. Adding Media to a published Card changes what its readers can see immediately under the current publication policy, so the chooser identifies that consequence before the update.
 
 ## 5. Tag Effectively
 
@@ -272,11 +278,28 @@ Work from broad shared truth toward exceptions:
 4. Add subjects only where emphasis helps.
 5. Use Incomplete and dimensional review filters to find the remaining decisions.
 
+In the Tags destination, the **Cards** and **Media** counts beside a Tag open that exact matching population. The handoff clears unrelated filters so the result is understandable: use Cards to inspect how the Tag participates in authored meaning, or Media to inspect the underlying archive truth. Opening a population does not change any assignment.
+
+Use **Split into…** only when one existing Tag actually combines two identities or meanings. Name the new sibling, then select the exact Cards, Media, and Prompts that belong to it. Nothing is selected automatically. The original Tag, every unselected record, and its child Tags remain in place. If reconciliation is interrupted, reopen Split and retry the preserved reviewed operation; the app resumes the same target instead of creating another Tag.
+
 **Rule:** Never use Unknown or N/A merely to clear a queue. Use them only when they truthfully describe what the author knows.
 
 ## 6. Turn Media Into Stories
 
 Start with the reason another person should open the Story. Select the images, then supply only the words needed to make their meaning understandable.
+
+### Know what each Story field is for
+
+- **Type** chooses the form: Story for narrative, Gallery for an image-led sequence, Question for a prompt-led answer, or Callout for concise emphasized content.
+- **Title** makes the clearest short promise about what the reader will encounter. **Subtitle** adds useful framing that would make the title unwieldy; it is optional.
+- **Excerpt** is a short invitation used where the complete narrative does not fit. It should orient the reader rather than repeat the title or begin a second version of the Story.
+- **Story text** owns the complete authored meaning: memory, sequence, interpretation, and context that the images cannot communicate by themselves.
+- **Cover** is the leading visual presentation. **Gallery** is the ordered supporting image sequence. Framing, rotation, and Gallery order belong to this Card presentation; removing a reference does not delete canonical Media.
+- **Caption** explains what is specifically true or important about one Media item. Put broader interpretation in the Story text rather than repeating it under every image.
+- **Who, What, When, and Where** support intentional retrieval and context. They are not substitutes for the title, caption, or narrative.
+- **Audience** decides which readers may have access. **Feed and Collection placement** decide where authorized readers can encounter the Story. Access and placement are separate decisions.
+
+Question prompts copied from the Prompt Library are temporary authoring guidance once inserted. Keep, rewrite, answer, or remove them as the Story requires; they are not required publication fields and do not remain linked to the library.
 
 The phone Story flow separates the work into five manageable steps:
 
@@ -286,11 +309,21 @@ The phone Story flow separates the work into five manageable steps:
 4. **Placement** — Decide whether the Story belongs in Feed, one or more Collection locations, or both.
 5. **Preview** — Read the Story as a reader will encounter it before publishing.
 
+In **Details**, choose **Suggest existing Tags from this Card** when the words already name a person, event, date label, or place that exists in the Tag library. Review each proposed hierarchy path and its title-or-story-text evidence, then choose **Add** only when it is true. This does not create Tags, choose a subject, or complete dimensional review automatically.
+
+When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. **Exact duplicates** finds Prompt records with the same normalized wording. Choose the one to keep; its duplicates are removed only after confirmation, their tags and subjects are retained, and their follow-ups move beneath the survivor. Duplicates tied to different Question Cards stay separate, and similar wording is never merged automatically. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt, one primary with its ordered follow-ups, or the visible Topic to the open Card. On a Question Card whose title is still empty, the first primary question proposes the title; it never replaces a title you already wrote. Follow-ups and any later primary enter the body. On a Story or other Card, every question enters the body. Body questions are copied as visible editing guidance: answer or rewrite beneath them, then use **Keep as reader heading** for wording the reader should see or **Remove prompt** to remove only the guidance line. Later changes to the Prompt Library do not change the Card.
+
+On a phone, save or discard any unsaved Card changes when the guard asks before moving from **Cards** to **Prompts**. The selected Card remains the authoring target. Adding a prompt or Topic returns to that Card and inserts the guidance into Compose.
+
+If no Card is open, an unlinked Prompt offers **Start a Card** instead of silently creating an answer record. Save that Card, return to Prompts, and add the useful guidance. A Prompt that was already linked to an older Question Card still opens that existing Card so no prior writing is stranded.
+
 A Story may be published in Feed without belonging to a Collection. It may instead appear through a Collection, or use both routes. Placement does not duplicate the Story; each placement points to the same canonical Card.
 
-Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.
+Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, no unresolved writing-prompt blocks, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.
 
 At the current stage, a published Card is one live object. Saved edits may become visible to readers immediately. Return it to Draft before making changes that must remain private until republished.
+
+After publication, choose **Copy Reader link** in Compose to copy the direct Story address. Copying does not add anyone to the audience; send it only to a reader who already has access. Published Collections and Shared Media Collections provide the same action in their own authoring surfaces.
 
 **Default:** Complete and share one modest Story before building a comprehensive Collection.
 
@@ -302,6 +335,8 @@ Use Parts for the broadest divisions, Chapters for substantial movements within 
 
 Structure can be created before every Story is written. Add Part, Chapter, or Section creates a title-only draft Story at the chosen structural location; open that same Card later to add introductory content. Removing a placement does not delete the Card.
 
+When one Part, Chapter, or Section deserves to become its own reading work, choose **Make Collection** beside it and name the new Collection. The structural Card becomes the new Collection introduction, its descendants are arranged under it with new local placements, and every Story still points to the same canonical Card. The source Collection is unchanged, and later reordering in either Collection does not alter the other.
+
 Collection publication is separate from Card publication. A Collection must have an explicit audience, valid structure, and no missing or draft required Cards. Published structure is locked until the Collection deliberately returns to Draft.
 
 **Rule:** Do not publish `My Life` or another large Collection merely to see what it looks like. Use Preview while readiness work remains unfinished.
@@ -309,6 +344,10 @@ Collection publication is separate from Card publication. A Collection must have
 ## 8. Review the Reader Experience
 
 Reader Home offers Collections and Feed. Collections provide authored sequence and context; Feed supports direct and freeform exploration. A direct authorized Story link may bypass both entrances.
+
+An author can move between reading and authoring with the labelled **Reader** or **Author** action in the header. The switch returns to the last safe location used on each side during the current browser session; if there is no prior location, it opens Reader Home or Author Home. Reader-only accounts do not receive the Author action.
+
+Author Home shows truthful progress for recent desktop folder imports. Each row distinguishes newly imported, already-present, and failed files within that exact bounded batch. Choose the row to open the same batch in Media. Device selection and other unbounded intake paths do not appear as batch progress merely because Media records were created.
 
 Review with the intended reader in mind:
 
@@ -322,13 +361,26 @@ Review with the intended reader in mind:
 
 Test representative phone and desktop reading. Reader access includes only authorized published Cards and Collections plus the Media those surfaces reference. It does not expose the author's private Media bank.
 
-Publishing and delivery are not the same action. The author can authorize password accounts, guest recipients, groups, and individuals. In User Management, review the access a new guest will inherit, create the guest, and manually send the private invitation link. The link works once and expires after seven days; use **New invitation link** if it must be replaced. Automated email distribution, password recovery, and conversion from guest access to a password account remain future capabilities.
+Publishing and delivery are not the same action. The author can authorize password accounts, guest recipients, groups, and individuals. In User Management, review the access a new guest will inherit, create the guest, and manually send the private invitation link. The link works once and expires after seven days; use **New invitation link** if it must be replaced. After signing in, a guest can open Account, create a password on that same recipient identity, and then sign in with the existing email and new password. Automated email distribution and password recovery remain future capabilities.
 
 **Default:** Preview first, publish to the smallest truthful audience, and then read the result from that audience's route.
 
 ---
 
-## 9. Maintain the Archive
+## 9. Share a Bounded Photo Collection
+
+Sometimes the useful thing to share is a selected group of photos rather than a Story or an entire Media library. Use a Shared Media Collection for that case.
+
+1. In Studio Media, select the photos you intend to share.
+2. Choose **Share photos...** and enter a new or existing photo-collection title. This creates or updates a private draft; it does not publish anything or change any Story.
+3. Open **Photo Sharing** in Author navigation.
+4. Review the exact photos, add an optional description, and choose all readers, reusable groups, or selected individuals.
+5. Publish the photo collection. It then appears under **Photo collections** only for authorized readers.
+6. Choose **Copy Reader link** if you want to deliver the direct address manually to one of those authorized readers.
+
+The complete Media archive remains private. Removing a photo from this collection does not delete it or remove it from a Story. A published photo collection must return to Draft before its details, audience, or photos can change.
+
+## 10. Maintain the Archive
 
 An archive remains useful when its source files, authored meaning, access rules, and recovery path stay trustworthy.
 
@@ -342,7 +394,7 @@ Review these conditions periodically:
 - published Cards whose current audience or placement no longer matches the author's intent; and
 - Collections whose structure or required Cards are unfinished.
 
-Use the owning surface for each correction. Media truth belongs in the Media Library, Card meaning belongs in Compose, Collection order belongs in Collections, and reader membership belongs in User Management. Dashboard and Needs Attention counts are evidence and navigation aids; they do not authorize automatic repair.
+Use the owning surface for each correction. From Author Home, choose **Review exact items** on a Collection to see the Cards, Media, and missing references behind its Needs Attention counts. Card items open in Compose, dimensional Media items open that record's Tags and Subjects review, readiness items open the exact Media editor, and missing Media references identify the Cards that still refer to them. Media truth belongs in the Media Library, Card meaning belongs in Compose, Collection order belongs in Collections, and reader membership belongs in User Management. The queues are evidence and navigation aids; they do not authorize automatic repair.
 
 Before a broad migration or destructive cleanup, create and verify a recoverable backup, inspect an exact impact preview, make one bounded change through the authoritative operation, and read the result back independently. Tag removal or merge, audience-group membership changes, publication transitions, and Media deletion all deserve consequence review.
 
@@ -350,7 +402,7 @@ Published Cards currently remain live objects. If a revision must remain private
 
 **Rule:** Prefer a small, verified correction over a bulk action whose exceptions cannot be reviewed.
 
-## 10. Worked Examples
+## 11. Worked Examples
 
 ### A phone-first birthday Story
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronDown, ChevronUp, ImageIcon, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, ImageIcon, Info, RotateCcw, RotateCw } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import JournalImage from '@/components/common/JournalImage';
 import styles from './CoverPhotoContainer.module.css';
@@ -15,6 +15,8 @@ import ComposeFeedTilePreview from '@/components/admin/studio/cards/ComposeFeedT
 import PhotoPicker from '@/components/admin/studio/cards/PhotoPicker';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useMedia } from '@/components/providers/MediaProvider';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
+import { turnMediaPresentation } from '@/lib/types/mediaPresentation';
 
 const COVER_FIT_MODE_HINT =
   'Fit preserves the full image inside the frame. Position sliders apply only to Fill mode.';
@@ -24,10 +26,13 @@ interface CoverPhotoContainerProps {
   coverImageMode?: 'fill' | 'fit';
   layoutMode?: 'default' | 'studioCompact';
   objectPosition?: string;
+  rotation?: MediaPresentationRotation;
   onChange: (newCoverImage: Media | null, newPosition?: string) => void;
   onCommit?: (newCoverImage: Media | null, newPosition?: string) => void;
   onCoverModeChange?: (mode: 'fill' | 'fit') => void;
   onCoverModeCommit?: (mode: 'fill' | 'fit') => void;
+  onRotationChange?: (rotation: MediaPresentationRotation) => void;
+  onRotationCommit?: (rotation: MediaPresentationRotation) => void;
   error?: string;
   className?: string;
   isSaving: boolean;
@@ -47,10 +52,13 @@ export default function CoverPhotoContainer({
   coverImageMode = 'fill',
   layoutMode = 'default',
   objectPosition,
+  rotation = 0,
   onChange,
   onCommit,
   onCoverModeChange,
   onCoverModeCommit,
+  onRotationChange,
+  onRotationCommit,
   error,
   className,
   isSaving,
@@ -193,6 +201,12 @@ export default function CoverPhotoContainer({
     },
     [coverImageMode, onCoverModeChange, onCoverModeCommit]
   );
+
+  const handleRotate = useCallback((direction: 'left' | 'right') => {
+    const next = turnMediaPresentation(rotation, direction);
+    onRotationChange?.(next);
+    onRotationCommit?.(next);
+  }, [onRotationChange, onRotationCommit, rotation]);
   
   const displayError = error || portraitError || uploadError;
   const coverBucket = getAspectRatioBucket(coverImage);
@@ -203,6 +217,7 @@ export default function CoverPhotoContainer({
         ...feedPreviewCard,
         coverImage: coverImage ?? feedPreviewCard.coverImage ?? undefined,
         coverImageMode: coverImageMode ?? feedPreviewCard.coverImageMode,
+        coverImageRotation: rotation,
         coverImageFocalPoint:
           coverImage?.width && coverImage?.height
             ? {
@@ -264,6 +279,36 @@ export default function CoverPhotoContainer({
             disabled={isSaving || isUploading}
           >
             Fit
+          </button>
+        </div>
+        <div className={styles.coverModeButtonRow} aria-label="Cover rotation">
+          <button
+            type="button"
+            className={styles.coverModeButton}
+            onMouseDown={swallowButtonEvent}
+            onClick={(event) => {
+              swallowButtonEvent(event);
+              handleRotate('left');
+            }}
+            disabled={isSaving || isUploading}
+            aria-label="Rotate cover left"
+            title="Rotate cover left"
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={styles.coverModeButton}
+            onMouseDown={swallowButtonEvent}
+            onClick={(event) => {
+              swallowButtonEvent(event);
+              handleRotate('right');
+            }}
+            disabled={isSaving || isUploading}
+            aria-label="Rotate cover right"
+            title="Rotate cover right"
+          >
+            <RotateCw size={15} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -391,6 +436,7 @@ export default function CoverPhotoContainer({
               width={600}
               height={450}
               sizes="(max-width: 768px) 100vw, 600px"
+              presentationRotation={rotation}
               style={{
                 objectPosition: objectPosition || '50% 50%',
                 objectFit: coverImageMode === 'fit' ? 'contain' : 'cover',

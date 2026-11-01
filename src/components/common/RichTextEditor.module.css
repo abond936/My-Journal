@@ -108,6 +108,52 @@
   min-height: 1.6em;
 }
 
+.editorContent :global(.ProseMirror [data-prompt-block="true"]) {
+  border-left: 4px solid var(--admin-state-info-border-color);
+  background: var(--admin-state-info-background-color);
+  color: var(--admin-state-info-text-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.promptBlockActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--admin-state-info-background-color);
+  color: var(--admin-state-info-text-color);
+  border-block-end: 1px solid var(--admin-state-info-border-color);
+  font-size: var(--font-size-sm);
+}
+
+.promptBlockActions p {
+  flex: 1 0 100%;
+  margin: 0;
+}
+
+.promptBlockActionRow {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.promptBlockActionRow span {
+  flex: 1 1 18rem;
+}
+
+.promptBlockActionRow button {
+  min-height: 2.25rem;
+  border: 1px solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  padding: 0 var(--spacing-sm);
+  cursor: pointer;
+}
+
 .editorContent :global(.ProseMirror.ProseMirror-focused) {
   outline: none;
 }

@@ -70,7 +70,7 @@ function isCoverOnlyPatch(payload: Record<string, unknown>): boolean {
   if (keys.length === 0) return false;
   return keys.every(
     (key) =>
-      key === 'coverImageId' || key === 'coverImageFocalPoint' || key === 'coverImageMode'
+      key === 'coverImageId' || key === 'coverImageFocalPoint' || key === 'coverImageMode' || key === 'coverImageRotation'
   );
 }
 
@@ -250,6 +250,9 @@ export async function PATCH(
           : {}),
         ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageMode')
           ? { coverImageMode: validatedData.coverImageMode }
+          : {}),
+        ...(Object.prototype.hasOwnProperty.call(validatedData, 'coverImageRotation')
+          ? { coverImageRotation: validatedData.coverImageRotation }
           : {}),
         coverImageFocalPoint: validatedData.coverImageFocalPoint,
       });

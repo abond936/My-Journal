@@ -239,6 +239,9 @@ interface TagAdminListProps {
   /** Studio-only Who relationship editor; omitted on the standalone Tag page. */
   onEditRelationships?: (tag: Tag) => void;
   onMergeTag?: (tag: Tag) => void;
+  onSplitTag?: (tag: Tag) => void;
+  onInspectCards?: (tag: Tag) => void;
+  onInspectMedia?: (tag: Tag) => void;
 }
 
 interface DimensionColumn {
@@ -265,6 +268,9 @@ function TagAdminDimensionColumn({
   onCreateTag,
   onEditRelationships,
   onMergeTag,
+  onSplitTag,
+  onInspectCards,
+  onInspectMedia,
   hideDimensionColumnHeadings,
   highlightTagIds,
 }: {
@@ -302,6 +308,9 @@ function TagAdminDimensionColumn({
   onCreateTag: TagAdminListProps['onCreateTag'];
   onEditRelationships?: TagAdminListProps['onEditRelationships'];
   onMergeTag?: TagAdminListProps['onMergeTag'];
+  onSplitTag?: TagAdminListProps['onSplitTag'];
+  onInspectCards?: TagAdminListProps['onInspectCards'];
+  onInspectMedia?: TagAdminListProps['onInspectMedia'];
 }) {
   const columnRows = col.rows;
   const dimensionKey = col.id.replace(/^dim-/, '') as keyof typeof DIMENSION_ICON;
@@ -532,6 +541,9 @@ function TagAdminDimensionColumn({
                     highlighted={Boolean(tag.docId && highlightTagIds?.has(tag.docId))}
                     onEditRelationships={onEditRelationships}
                     onMergeTag={onMergeTag}
+                    onSplitTag={onSplitTag}
+                    onInspectCards={onInspectCards}
+                    onInspectMedia={onInspectMedia}
                     dragHandle={dragHandle}
                   />
                   }
@@ -567,6 +579,9 @@ export function TagAdminList({
   highlightTagIds = [],
   onEditRelationships,
   onMergeTag,
+  onSplitTag,
+  onInspectCards,
+  onInspectMedia,
 }: TagAdminListProps) {
   const highlightTagIdSet = useMemo(() => new Set(highlightTagIds), [highlightTagIds]);
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(() => {
@@ -707,6 +722,9 @@ export function TagAdminList({
             onCreateTag={onCreateTag}
             onEditRelationships={onEditRelationships}
             onMergeTag={onMergeTag}
+            onSplitTag={onSplitTag}
+            onInspectCards={onInspectCards}
+            onInspectMedia={onInspectMedia}
             highlightTagIds={highlightTagIdSet}
           />
         ))}

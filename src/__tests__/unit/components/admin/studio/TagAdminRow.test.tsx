@@ -32,6 +32,30 @@ describe('TagAdminRow', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
+  it('opens exact matching Card and Media populations when Studio supplies handoffs', () => {
+    const onInspectCards = jest.fn();
+    const onInspectMedia = jest.fn();
+    render(
+      <TagAdminRow
+        tag={tag}
+        depth={0}
+        isCollapsed={false}
+        onUpdateTag={jest.fn()}
+        onDeleteTag={jest.fn()}
+        onCreateTag={jest.fn()}
+        onToggleCollapse={jest.fn()}
+        onInspectCards={onInspectCards}
+        onInspectMedia={onInspectMedia}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View 3 Cards matching Family' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View 5 Media matching Family' }));
+
+    expect(onInspectCards).toHaveBeenCalledWith(tag);
+    expect(onInspectMedia).toHaveBeenCalledWith(tag);
+  });
+
   it('opens relationship editing from the Who tag action menu', () => {
     const onEditRelationships = jest.fn();
     renderRow(onEditRelationships);

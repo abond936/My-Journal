@@ -142,6 +142,7 @@ function shouldRefreshTagCountsAfterCardUpdate(updateData: Partial<Card>): boole
 
 type StudioTreeCandidateCardBankProps = EmbeddedUnparentedBankContext & {
   autoSelectFirstCard?: boolean;
+  tagInspectionRequest?: { tagId: string; requestKey: number } | null;
   registerCatalogRemove?: ((fn: ((cardId: string) => void) | null) => void) | undefined;
   registerDeleteFallbackResolver?:
     | ((fn: ((deletedCardId: string) => StudioSelectedPreview | null) | null) => void)
@@ -161,6 +162,7 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     saving,
     curatedTreeDnd,
     autoSelectFirstCard = false,
+    tagInspectionRequest = null,
     registerCatalogRemove,
     registerDeleteFallbackResolver,
   } = props;
@@ -568,6 +570,27 @@ export default function StudioTreeCandidateCardBank(props: StudioTreeCandidateCa
     setTemporalFilter(undefined);
     setBulkSelectedCardIds(new Set());
   }, [setFilterTagIds, setSearch, setStatusFilter]);
+
+  useEffect(() => {
+    if (!tagInspectionRequest?.tagId) return;
+    setSearch('');
+    setStatusFilter('all');
+    setSortMode('titleAsc');
+    setTypeFilter('all');
+    setDisplayModeFilter('all');
+    setCodificationFilter('all');
+    setFilterTagIds([tagInspectionRequest.tagId]);
+    setTagFilterScope('all');
+    setDimensionFilters(DEFAULT_ADMIN_DIMENSION_FILTERS);
+    setTemporalFilter(undefined);
+    setBulkSelectedCardIds(new Set());
+  }, [
+    setFilterTagIds,
+    setSearch,
+    setStatusFilter,
+    tagInspectionRequest?.requestKey,
+    tagInspectionRequest?.tagId,
+  ]);
 
   const updateDimensionFilter = useCallback(
     (

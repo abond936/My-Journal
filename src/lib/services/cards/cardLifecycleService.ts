@@ -204,16 +204,8 @@ export async function createCard(
         newCard.contentMedia.forEach(id => mediaIdsReferenced.add(id));
       }
 
-      // 4. If a coverImageFocalPoint was provided, update it on the media doc.
-      if (newCard.coverImageFocalPoint && newCard.coverImageId) {
-        const coverRef = firestore.collection(MEDIA_COLLECTION).doc(newCard.coverImageId);
-        transaction.update(coverRef, {
-          objectPosition: `${newCard.coverImageFocalPoint.x} ${newCard.coverImageFocalPoint.y}`,
-          updatedAt: Date.now(),
-        });
-      }
-
-      // 5. Denormalize card reference onto each media doc.
+      // 4. Denormalize card reference onto each media doc. Cover framing stays
+      // on the Card; it must not rewrite the canonical Media presentation.
       for (const mediaId of Array.from(mediaIdsReferenced)) {
         const mediaRef = firestore.collection(MEDIA_COLLECTION).doc(mediaId);
         transaction.update(mediaRef, {
@@ -400,7 +392,9 @@ export async function duplicateCard(sourceCardId: string): Promise<Card> {
     status: 'draft',
     displayMode: source.displayMode,
     coverImageId: source.coverImageId,
+    coverImageMode: source.coverImageMode,
     coverImageFocalPoint: source.coverImageFocalPoint,
+    coverImageRotation: source.coverImageRotation,
     galleryMedia: source.galleryMedia?.map((item) => stripHydratedGalleryItem(item)) ?? [],
     contentMedia: source.contentMedia,
     tags: source.tags ?? [],

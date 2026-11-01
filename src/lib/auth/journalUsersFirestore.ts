@@ -191,6 +191,44 @@ export async function updateJournalUserThemeMode(
   return toPublic(updated.id, updated.data() as JournalUserDoc);
 }
 
+export async function convertGuestRecipientToAccount(
+  docId: string,
+  password: string,
+  firestore: FirebaseFirestore.Firestore = db(),
+  now = Date.now()
+): Promise<JournalUserPublic> {
+  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  const ref = firestore.collection(COLLECTION).doc(docId);
+
+  await firestore.runTransaction(async (transaction) => {
+    const current = await transaction.get(ref);
+    if (!current.exists) throw new Error('Guest recipient not found');
+    const data = current.data() as JournalUserDoc;
+    if (data.disabled) throw new Error('This guest recipient is disabled');
+    if (data.role !== 'viewer' || data.accessKind !== 'guest') {
+      throw new Error('This recipient is not eligible for guest conversion');
+    }
+
+    const invites = await transaction.get(
+      firestore.collection('recipient_invites').where('recipientId', '==', docId)
+    );
+    invites.docs.forEach((invite) => {
+      const inviteData = invite.data() as { redeemedAt?: number | null; revokedAt?: number | null };
+      if (inviteData.redeemedAt == null && inviteData.revokedAt == null) {
+        transaction.update(invite.ref, { revokedAt: now });
+      }
+    });
+    transaction.update(ref, {
+      accessKind: 'account' satisfies JournalUserAccessKind,
+      passwordHash,
+      updatedAt: now,
+    });
+  });
+
+  const updated = await ref.get();
+  return toPublic(updated.id, updated.data() as JournalUserDoc);
+}
+
 /**
  * Idempotent: creates one admin doc from ADMIN_EMAIL / ADMIN_PASSWORD only when the collection is empty.
  */

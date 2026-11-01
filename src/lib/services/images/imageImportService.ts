@@ -1400,7 +1400,7 @@ export async function replaceMediaAssetContent(
   mediaId: string,
   fileBuffer: Buffer,
   originalFilename: string
-): Promise<void> {
+): Promise<Media> {
   const app = getAdminApp();
   const firestore = app.firestore();
   const bucket = app.storage().bucket();
@@ -1437,14 +1437,40 @@ export async function replaceMediaAssetContent(
   }
 
   const contentType = metadata.format ? `image/${metadata.format}` : 'application/octet-stream';
-  const storageFile = bucket.file(existing.storagePath);
-  await storageFile.save(fileBuffer, {
+  const safeFilename = path.basename(originalFilename || existing.filename)
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .slice(-180) || 'replacement';
+  const replacementStoragePath = `images/replacements/${mediaId}/${replacementDigest}-${safeFilename}`;
+  const replacementStorageFile = bucket.file(replacementStoragePath);
+  await replacementStorageFile.save(fileBuffer, {
     metadata: { contentType },
   });
 
-  const storageUrl = getPublicStorageUrl(existing.storagePath);
-  const studioRendition = await persistStudioMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
-  const readerRendition = await persistReaderMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
+  const now = Date.now();
+  const storageUrl = getPublicStorageUrl(replacementStoragePath);
+  const replacementSourceIdentity = buildMediaSourceIdentity(
+    'upload',
+    `replacement:${mediaId}:${replacementDigest}`,
+    `replacement://${originalFilename}`,
+    now,
+    { observedFilename: originalFilename }
+  );
+  const sourceIdentities = existing.sourceIdentities?.some(
+    identity => identity.provider === replacementSourceIdentity.provider &&
+      identity.assetId === replacementSourceIdentity.assetId
+  )
+    ? existing.sourceIdentities
+    : [...(existing.sourceIdentities ?? []), replacementSourceIdentity];
+  const pendingReadiness = buildMediaReadiness(
+    {
+      source: readyStage(now),
+      metadata: readyStage(now),
+      studioRendition: pendingStage(now),
+      readerRendition: pendingStage(now),
+      searchIndex: pendingStage(now),
+    },
+    now
+  );
 
   const payload: Record<string, unknown> = {
     filename: originalFilename || existing.filename,
@@ -1453,30 +1479,16 @@ export async function replaceMediaAssetContent(
     size: fileBuffer.length,
     contentType,
     storageUrl,
+    storagePath: replacementStoragePath,
     contentIdentity: {
       algorithm: 'sha256',
       digest: replacementDigest,
       basis: 'source-bytes',
     },
-    sourceIdentities: [
-      ...(existing.sourceIdentities ?? []),
-      buildMediaSourceIdentity(
-        'upload',
-        `replacement:${mediaId}:${replacementDigest}`,
-        `replacement://${originalFilename}`,
-        Date.now(),
-        { observedFilename: originalFilename }
-      ),
-    ],
-    updatedAt: Date.now(),
+    sourceIdentities,
+    readiness: pendingReadiness,
+    updatedAt: now,
   };
-  const mergedRenditions = mergeMediaRenditions(studioRendition, readerRendition);
-  if (mergedRenditions) {
-    payload.renditions = {
-      ...(existing.renditions ?? {}),
-      ...mergedRenditions,
-    };
-  }
 
   const oldDigest = existing.contentIdentity?.digest;
   const oldIdentityRef =
@@ -1486,24 +1498,107 @@ export async function replaceMediaAssetContent(
   const newIdentityRef = firestore
     .collection(MEDIA_CONTENT_IDENTITIES_COLLECTION)
     .doc(replacementDigest);
-  await firestore.runTransaction(async tx => {
-    const [oldIdentitySnap, newIdentitySnap] = await Promise.all([
-      oldIdentityRef ? tx.get(oldIdentityRef) : Promise.resolve(null),
-      tx.get(newIdentityRef),
-    ]);
-    tx.update(mediaRef, payload);
-    if (oldIdentityRef && oldIdentitySnap?.data()?.mediaId === mediaId) {
-      tx.delete(oldIdentityRef);
-    }
-    if (!newIdentitySnap.exists || newIdentitySnap.data()?.mediaId === mediaId) {
+  try {
+    await firestore.runTransaction(async tx => {
+      const [oldIdentitySnap, newIdentitySnap] = await Promise.all([
+        oldIdentityRef ? tx.get(oldIdentityRef) : Promise.resolve(null),
+        tx.get(newIdentityRef),
+      ]);
+      if (newIdentitySnap.exists && newIdentitySnap.data()?.mediaId !== mediaId) {
+        throw new Error(
+          'This replacement exactly matches another media asset. Review the duplicate instead of replacing.'
+        );
+      }
+      tx.update(mediaRef, payload);
+      if (oldIdentityRef && oldIdentitySnap?.data()?.mediaId === mediaId) {
+        tx.delete(oldIdentityRef);
+      }
       tx.set(newIdentityRef, {
         mediaId,
         algorithm: 'sha256',
-        createdAt: Date.now(),
+        createdAt: now,
       });
+    });
+  } catch (error) {
+    if (existing.storagePath !== replacementStoragePath) {
+      await replacementStorageFile.delete({ ignoreNotFound: true }).catch(() => undefined);
     }
+    throw error;
+  }
+
+  const studioRendition = await persistStudioMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
+  const readerRendition = await persistReaderMediaRenditionBestEffort(bucket, mediaId, fileBuffer);
+  const renditionAt = Date.now();
+  const mergedRenditions = mergeMediaRenditions(studioRendition, readerRendition);
+  const renditionReadiness = buildMediaReadiness(
+    {
+      source: readyStage(now),
+      metadata: readyStage(now),
+      studioRendition: studioRendition
+        ? readyStage(renditionAt)
+        : failedStage(renditionAt, 'STUDIO_RENDITION_FAILED', true),
+      readerRendition: readerRendition
+        ? readyStage(renditionAt)
+        : failedStage(renditionAt, 'READER_RENDITION_FAILED', true),
+      searchIndex: pendingStage(renditionAt),
+    },
+    renditionAt
+  );
+  const nextRenditions = mergedRenditions
+    ? { ...(existing.renditions ?? {}), ...mergedRenditions }
+    : existing.renditions;
+  await mediaRef.update({
+    ...(nextRenditions ? { renditions: nextRenditions } : {}),
+    readiness: renditionReadiness,
+    updatedAt: renditionAt,
   });
-  void syncMediaToTypesenseById(mediaId);
+
+  let replacedMedia = {
+    ...existing,
+    ...payload,
+    ...(nextRenditions ? { renditions: nextRenditions } : {}),
+    readiness: renditionReadiness,
+    updatedAt: renditionAt,
+    docId: mediaId,
+  } as Media;
+  try {
+    await syncMediaToTypesenseStrict(replacedMedia);
+    const indexedAt = Date.now();
+    const readyReadiness = buildMediaReadiness(
+      { ...renditionReadiness.stages, searchIndex: readyStage(indexedAt) },
+      indexedAt
+    );
+    await mediaRef.update({ readiness: readyReadiness, updatedAt: indexedAt });
+    replacedMedia = { ...replacedMedia, readiness: readyReadiness, updatedAt: indexedAt };
+  } catch (error) {
+    const failedAt = Date.now();
+    const failedReadiness = buildMediaReadiness(
+      {
+        ...renditionReadiness.stages,
+        searchIndex: failedStage(
+          failedAt,
+          'SEARCH_INDEX_FAILED',
+          true,
+          error instanceof Error ? error.message : 'Search indexing failed'
+        ),
+      },
+      failedAt
+    );
+    await mediaRef.update({ readiness: failedReadiness, updatedAt: failedAt });
+    replacedMedia = { ...replacedMedia, readiness: failedReadiness, updatedAt: failedAt };
+  }
+
+  if (replacedMedia.readiness?.overall === 'ready' && existing.storagePath !== replacementStoragePath) {
+    await bucket.file(existing.storagePath).delete({ ignoreNotFound: true }).catch((error: unknown) => {
+      console.warn('[media] prior source cleanup failed after replacement became durable', {
+        mediaId,
+        storagePath: existing.storagePath,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  }
+
+  return replacedMedia;
 }
 
 export async function refreshMediaStudioRendition(

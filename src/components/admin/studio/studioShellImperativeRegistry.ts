@@ -1,9 +1,11 @@
 import type { MutableRefObject } from 'react';
 import type { Media } from '@/lib/types/photo';
+import type { PromptInsertRequest } from '@/components/authoring/CardFormSurfaceContext';
 
 /** Imperative Studio shell callbacks registered by Compose / Questions / DnD owners. */
 export type StudioShellImperativeHandlers = {
   bodyMediaInsert: (media: Media) => void;
+  promptTextInsert: (request: PromptInsertRequest) => void;
   composeLeaveGuard: () => Promise<boolean>;
   questionCardDeleteSync: (cardId: string, questionId?: string | null) => void;
   storyPileMembershipChanged: () => void | Promise<void>;

@@ -187,6 +187,27 @@ describe('PATCH /api/cards/[id] cover fast path', () => {
     expect(payload.coverImageId).toBe('media-1');
   });
 
+  it('routes Card-local cover rotation through the cover owner', async () => {
+    mockedUpdateCardCover.mockResolvedValue({
+      docId: 'card-1',
+      coverImageId: 'media-1',
+      coverImageRotation: 90,
+    } as never);
+
+    const res = await PATCH(makeRequest({ coverImageRotation: 90 }), {
+      params: Promise.resolve({ id: 'card-1' }),
+    });
+    const payload = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(mockedUpdateCardCover).toHaveBeenCalledWith('card-1', {
+      coverImageRotation: 90,
+      coverImageFocalPoint: undefined,
+    });
+    expect(mockedUpdateCard).not.toHaveBeenCalled();
+    expect(payload.coverImageRotation).toBe(90);
+  });
+
   it('falls back to broad update path when payload includes non-cover fields', async () => {
     mockedUpdateCard.mockResolvedValue({ docId: 'card-1', title: 'Renamed', coverImageId: 'media-1' } as never);
 

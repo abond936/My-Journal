@@ -5,6 +5,7 @@ import { Extension } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { NodeSelection, TextSelection } from 'prosemirror-state';
 import StarterKit from '@tiptap/starter-kit';
+import { PromptAwareHeading } from '@/lib/tiptap/extensions/PromptAwareHeading';
 import { FigureWithImage, type FigureImageSize } from '@/lib/tiptap/extensions/FigureWithImage';
 import { CardMention } from '@/lib/tiptap/extensions/CardMention';
 import Link from '@tiptap/extension-link';
@@ -48,6 +49,7 @@ export interface RichTextEditorRef {
   getContent: () => string;
   setContent: (content: string) => void;
   insertImage: (media: Media) => void;
+  insertPrompt: (prompt: string) => void;
 }
 
 const RichTextDropCursor = Extension.create({
@@ -216,7 +218,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   }, [content, onChange, onContentMediaChange, extractMediaIds]);
 
   const editor = useEditor({
-    extensions: [StarterKit, FigureWithImage, Link, CardMention, RichTextDropCursor],
+    extensions: [
+      StarterKit.configure({ heading: false }),
+      PromptAwareHeading,
+      FigureWithImage,
+      Link,
+      CardMention,
+      RichTextDropCursor,
+    ],
     content: content,
     editable: !isDisabled,
     immediatelyRender: false,
@@ -389,16 +398,65 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     handleContentUpdate(newContent);
   }, [editor, handleContentUpdate]);
 
+  const insertPrompt = useCallback((prompt: string) => {
+    const text = prompt.trim();
+    if (!editor || !text) return;
+    editor
+      .chain()
+      .insertContent([
+        {
+          type: 'heading',
+          attrs: { level: 3, promptBlock: true },
+          content: [{ type: 'text', text }],
+        },
+        { type: 'paragraph' },
+      ])
+      .run();
+    handleContentUpdate(editor.getHTML());
+  }, [editor, handleContentUpdate]);
+
   useImperativeHandle(ref, () => ({
     getContent: () => editor?.getHTML() || '',
     setContent: (newContent: string) => editor?.commands.setContent(newContent, true),
     insertImage,
+    insertPrompt,
   }));
 
   const handleToolbarButtonPress = (e: React.MouseEvent<HTMLButtonElement>, command: () => void) => {
     e.preventDefault();
     command();
   };
+
+  const promptBlocks = (() => {
+    if (!editor) return [];
+    const blocks: Array<{ index: number; text: string }> = [];
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === 'heading' && node.attrs.promptBlock === true) {
+        blocks.push({ index: blocks.length, text: node.textContent || 'Untitled writing prompt' });
+      }
+    });
+    return blocks;
+  })();
+
+  const resolvePromptBlock = useCallback((targetIndex: number, action: 'keep' | 'remove') => {
+    if (!editor) return;
+    let currentIndex = 0;
+    let target: { pos: number; nodeSize: number; attrs: Record<string, unknown> } | null = null;
+    editor.state.doc.descendants((node, pos) => {
+      if (target || node.type.name !== 'heading' || node.attrs.promptBlock !== true) return;
+      if (currentIndex === targetIndex) {
+        target = { pos, nodeSize: node.nodeSize, attrs: node.attrs };
+        return;
+      }
+      currentIndex += 1;
+    });
+    if (!target) return;
+    const transaction = action === 'keep'
+      ? editor.state.tr.setNodeMarkup(target.pos, undefined, { ...target.attrs, promptBlock: false })
+      : editor.state.tr.delete(target.pos, target.pos + target.nodeSize);
+    editor.view.dispatch(transaction);
+    handleContentUpdate(editor.getHTML());
+  }, [editor, handleContentUpdate]);
 
   const focusEditorSurface = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -473,6 +531,22 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           />
         )}
       </div>
+      {promptBlocks.length > 0 ? (
+        <div className={styles.promptBlockActions} aria-label="Writing prompt actions">
+          <p>{promptBlocks.length} writing prompt{promptBlocks.length === 1 ? '' : 's'} must be kept for readers or removed before publishing.</p>
+          {promptBlocks.map((prompt) => (
+            <div key={`${prompt.index}-${prompt.text}`} className={styles.promptBlockActionRow}>
+              <span>{prompt.text}</span>
+              <button type="button" onClick={() => resolvePromptBlock(prompt.index, 'keep')}>
+                Keep as reader heading
+              </button>
+              <button type="button" onClick={() => resolvePromptBlock(prompt.index, 'remove')}>
+                Remove prompt
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <EditorContent editor={editor} className={styles.editorContent} />
       {error && <p className={styles.errorText}>{error}</p>}
     </div>

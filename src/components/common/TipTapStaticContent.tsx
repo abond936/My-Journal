@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateReadOnlyHtml } from '@/lib/tiptap/generateReadOnlyHtml';
 import styles from './TipTapRenderer.module.css';
+import { stripUnresolvedPromptBlocks } from '@/lib/utils/cardPromptBlocks';
 
 export type TipTapStaticHeadingVariant =
   | 'default'
@@ -53,7 +54,10 @@ const TipTapStaticContent: React.FC<TipTapStaticContentProps> = ({
   headingVariant = 'default',
 }) => {
   const router = useRouter();
-  const html = useMemo(() => generateReadOnlyHtml(content), [content]);
+  const html = useMemo(
+    () => generateReadOnlyHtml(stripUnresolvedPromptBlocks(content)),
+    [content]
+  );
 
   const navigateToCardMention = useCallback(
     (target: EventTarget | null) => {

@@ -19,13 +19,23 @@ const completeDimensionReview = {
 };
 
 jest.mock('sharp', () => {
-  return () => ({
-    metadata: async () => ({
-      format: 'webp',
-      width: 640,
-      height: 480,
-    }),
-  });
+  return () => {
+    const pipeline = {
+      metadata: async () => ({
+        format: 'webp',
+        width: 640,
+        height: 480,
+      }),
+      rotate: () => pipeline,
+      resize: () => pipeline,
+      webp: () => pipeline,
+      toBuffer: async () => ({
+        data: Buffer.from('rendition-bytes'),
+        info: { width: 640, height: 480 },
+      }),
+    };
+    return pipeline;
+  };
 });
 
 jest.mock('image-size', () => ({
@@ -36,6 +46,7 @@ jest.mock('image-size', () => ({
 jest.mock('@/lib/services/typesenseMediaService', () => ({
   syncMediaToTypesense: jest.fn(),
   syncMediaToTypesenseById: jest.fn(),
+  syncMediaToTypesenseStrict: jest.fn(async () => undefined),
   removeMediaFromTypesense: jest.fn(),
 }));
 
@@ -103,7 +114,9 @@ type CardServiceModule =
   typeof import('@/lib/services/cards/cardLifecycleService') &
   typeof import('@/lib/services/cards/cardMediaLifecycleService') &
   typeof import('@/lib/services/cards/cardTagMutationService') &
-  typeof import('@/lib/services/cards/cardCoverMutationService');
+  typeof import('@/lib/services/cards/cardCoverMutationService') &
+  typeof import('@/lib/services/cards/cardBroadMutationService') &
+  typeof import('@/lib/services/cards/cardStatusMutationService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
 type ImageImportServiceModule = typeof import('@/lib/services/images/imageImportService');
 let imageImportServiceModulePromise: Promise<ImageImportServiceModule> | null = null;
@@ -115,11 +128,15 @@ function getCardService(): Promise<CardServiceModule> {
       import('@/lib/services/cards/cardMediaLifecycleService'),
       import('@/lib/services/cards/cardTagMutationService'),
       import('@/lib/services/cards/cardCoverMutationService'),
-    ]).then(([lifecycle, media, tags, cover]) => ({
+      import('@/lib/services/cards/cardBroadMutationService'),
+      import('@/lib/services/cards/cardStatusMutationService'),
+    ]).then(([lifecycle, media, tags, cover, broad, status]) => ({
       ...lifecycle,
       ...media,
       ...tags,
       ...cover,
+      ...broad,
+      ...status,
     }) as CardServiceModule);
   }
   return cardServiceModulePromise;
@@ -480,6 +497,10 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
       size: 1234,
       source: 'local',
       sourcePath: 'folder/original.jpg',
+      caption: 'Family picnic scan',
+      tags: ['what-picnic'],
+      subjectTagIds: ['what-picnic'],
+      dimensionReview: completeDimensionReview,
       referencedByCardIds: ['card-a', 'card-b'],
       createdAt: 1,
       updatedAt: 1,
@@ -520,7 +541,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
     await replaceMediaAssetContent('media-shared', Buffer.from('replacement-bytes'), 'replacement.webp');
 
-    expect(mockStorageFileSave).toHaveBeenCalledTimes(1);
+    expect(mockStorageFileSave).toHaveBeenCalledTimes(3);
 
     const mediaAfter = (await db.collection('media').doc('media-shared').get()).data() as IntegrityMedia & {
       filename: string;
@@ -534,7 +555,9 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     };
 
     expect(mediaAfter.filename).toBe('replacement.webp');
-    expect(mediaAfter.storagePath).toBe('images/media-shared-original.jpg');
+    expect(mediaAfter.storagePath).toBe(
+      'images/replacements/media-shared/70bf69c13743b7193ffd7a3718caab18522b61d4643fe13ac80caa5301e2345a-replacement.webp'
+    );
     expect(mediaAfter.contentType).toBe('image/webp');
     expect(mediaAfter.width).toBe(640);
     expect(mediaAfter.height).toBe(480);
@@ -549,6 +572,11 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
         .data()?.mediaId
     ).toBe('media-shared');
     expect(mediaAfter.referencedByCardIds?.sort()).toEqual(['card-a', 'card-b']);
+    expect(mediaAfter.caption).toBe('Family picnic scan');
+    expect(mediaAfter.tags).toEqual(['what-picnic']);
+    expect(mediaAfter.subjectTagIds).toEqual(['what-picnic']);
+    expect(mediaAfter.dimensionReview).toEqual(completeDimensionReview);
+    expect(mediaAfter.readiness?.overall).toBe('ready');
 
     const cards = await readCards(db);
     const cardA = cards.find((card) => card.docId === 'card-a')!;
@@ -672,6 +700,34 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     })).rejects.toMatchObject({
       code: 'CARD_PUBLICATION_INTEGRITY',
     });
+  });
+
+  it('blocks unresolved Prompt guidance in create, status-only, and broad publication paths', async () => {
+    const db = getFirestore(app);
+    await seedWhoAndWhatTags(db);
+    const { createCard, updateCard, updateCardStatus } = await getCardService();
+    const promptContent = '<h3 data-prompt-block="true">What happened next?</h3><p>Answer</p>';
+    const publishableFields = {
+      title: 'Prompt publication boundary',
+      type: 'story' as const,
+      audience: { allContacts: true, groupIds: [], contactIds: [] },
+      tags: ['what-leaf'],
+      dimensionReview: completeDimensionReview,
+      content: promptContent,
+    };
+
+    await expect(createCard({
+      ...publishableFields,
+      status: 'published',
+    })).rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+
+    const draft = await createCard({ ...publishableFields, status: 'draft' });
+    await expect(updateCardStatus(draft.docId, 'published'))
+      .rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+    await expect(updateCard(draft.docId, { status: 'published' }))
+      .rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+
+    expect((await db.collection('cards').doc(draft.docId).get()).data()?.status).toBe('draft');
   });
 
   it('createCard reconciles enabled Gallery inheritance before returning', async () => {
@@ -813,6 +869,48 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(findBrokenMediaBackReferences(cards, media)).toEqual([]);
     expect(media.find((m) => m.docId === 'media-a')?.referencedByCardIds ?? []).toEqual([]);
     expect(media.find((m) => m.docId === 'media-b')?.referencedByCardIds).toEqual([created.docId]);
+  });
+
+  it('keeps Cover focal framing on the Card across every Card mutation path', async () => {
+    const db = getFirestore(app);
+    const { createCard, updateCard, updateCardCover } = await getCardService();
+
+    await seedWhoAndWhatTags(db);
+    await db.collection('media').doc('media-cover-framing').set({
+      referencedByCardIds: [],
+      objectPosition: '18% 72%',
+      dimensionReview: completeDimensionReview,
+      readiness: { overall: 'ready' },
+    });
+
+    const created = await createCard({
+      title: 'Local cover framing',
+      type: 'story',
+      status: 'draft',
+      coverImageId: 'media-cover-framing',
+      coverImageFocalPoint: { x: 120, y: 240 },
+      tags: ['what-leaf'],
+      dimensionReview: completeDimensionReview,
+      content: '',
+    });
+    expect((await db.collection('media').doc('media-cover-framing').get()).data()?.objectPosition)
+      .toBe('18% 72%');
+
+    await updateCardCover(created.docId, {
+      coverImageFocalPoint: { x: 360, y: 180 },
+    });
+    expect((await db.collection('media').doc('media-cover-framing').get()).data()?.objectPosition)
+      .toBe('18% 72%');
+
+    await updateCard(created.docId, {
+      coverImageFocalPoint: { x: 640, y: 320 },
+    });
+    const [cardSnap, mediaSnap] = await Promise.all([
+      db.collection('cards').doc(created.docId).get(),
+      db.collection('media').doc('media-cover-framing').get(),
+    ]);
+    expect(cardSnap.data()?.coverImageFocalPoint).toEqual({ x: 640, y: 320 });
+    expect(mediaSnap.data()?.objectPosition).toBe('18% 72%');
   });
 });
 

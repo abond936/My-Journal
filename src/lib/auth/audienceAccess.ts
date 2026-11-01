@@ -4,6 +4,7 @@ import { isAdminSession, isAuthenticatedSession } from '@/lib/auth/readerAccess'
 import type { AudienceSelection } from '@/lib/types/audience';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
+import type { SharedMediaCollection } from '@/lib/types/sharedMediaCollection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 import { getReaderValidCollectionRoutesByCard } from '@/lib/services/collections/cardCollectionRouteService';
 
@@ -51,6 +52,20 @@ export async function filterCollectionsForAudience<T extends Collection>(
       collection.recordState === 'active' &&
       collection.lifecycle === 'published' &&
       audienceAllowsContact(collection.audience, context)
+  );
+}
+
+export async function filterSharedMediaCollectionsForAudience<T extends SharedMediaCollection>(
+  session: Session | null | undefined,
+  collections: T[],
+  firestore: FirebaseFirestore.Firestore = getAdminApp().firestore()
+): Promise<T[]> {
+  if (!isAuthenticatedSession(session)) return [];
+  if (isAdminSession(session)) return collections;
+  const context = await loadContactContext(session, firestore);
+  if (!context) return [];
+  return collections.filter((collection) =>
+    collection.lifecycle === 'published' && audienceAllowsContact(collection.audience, context)
   );
 }
 

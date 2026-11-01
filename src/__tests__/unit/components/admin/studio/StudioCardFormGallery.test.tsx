@@ -199,7 +199,8 @@ describe('StudioCardFormGallery modal contract', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Edit gallery item' }));
 
-    expect(screen.getByText('Gallery crop override')).toBeInTheDocument();
+    expect(screen.getByText('Gallery framing')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rotate left' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Use media default crop' })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Optional caption for this slot on the card')).not.toBeInTheDocument();
   });

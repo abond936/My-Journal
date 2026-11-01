@@ -125,6 +125,7 @@ const StoryCardContent: React.FC<{
               width={400}
               height={300}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              presentationRotation={card.coverImageRotation ?? 0}
               style={{ objectFit: coverObjectFit, objectPosition }}
               priority={false}
             />
@@ -232,6 +233,7 @@ const GalleryCardContent: React.FC<{
                   width={400}
                   height={300}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  presentationRotation={card.coverImageRotation ?? 0}
                   style={{ objectFit: coverObjectFit, objectPosition: coverObjectPosition }}
                   priority={false}
                 />
@@ -246,6 +248,7 @@ const GalleryCardContent: React.FC<{
                   width={400}
                   height={300}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  presentationRotation={item.rotation ?? 0}
                   style={{ objectPosition: getEffectiveGalleryObjectPosition(item, item.media!) }}
                   priority={false}
                 />
@@ -423,6 +426,7 @@ const QACardContent: React.FC<{
                 width={400}
                 height={300}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                presentationRotation={card.coverImageRotation ?? 0}
                 style={{ objectFit: coverObjectFit, objectPosition }}
                 priority={false}
               />
@@ -479,6 +483,7 @@ const QACardContent: React.FC<{
               width={400}
               height={300}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              presentationRotation={card.coverImageRotation ?? 0}
               style={{ objectFit: coverObjectFit, objectPosition }}
               priority={false}
             />
@@ -505,6 +510,7 @@ const QACardContent: React.FC<{
             width={400}
             height={300}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            presentationRotation={card.coverImageRotation ?? 0}
             style={{ objectFit: coverObjectFit, objectPosition }}
             priority={false}
           />

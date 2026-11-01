@@ -6,6 +6,8 @@ import { getMediaIdsFromCard } from '@/lib/services/cards/cardMediaHydrationServ
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
 import { filterCardsForAudience } from '@/lib/auth/audienceAccess';
+import { filterSharedMediaCollectionsForAudience } from '@/lib/auth/audienceAccess';
+import { sharedMediaCollectionSchema } from '@/lib/types/sharedMediaCollection';
 
 export async function canReadMedia(
   session: Session | null | undefined,
@@ -18,8 +20,6 @@ export async function canReadMedia(
   const cardIds = Array.from(
     new Set((media.referencedByCardIds ?? []).filter((id) => typeof id === 'string' && id.trim()))
   );
-  if (cardIds.length === 0) return false;
-
   for (let index = 0; index < cardIds.length; index += 30) {
     const chunk = cardIds.slice(index, index + 30);
     const snapshot = await firestore
@@ -36,6 +36,16 @@ export async function canReadMedia(
     if ((await filterCardsForAudience(session, referencedPublishedCards, firestore)).length > 0) {
       return true;
     }
+  }
+  const sharedCollectionsSnapshot = await firestore
+    .collection('shared_media_collections')
+    .where('mediaIds', 'array-contains', media.docId)
+    .get();
+  const sharedCollections = sharedCollectionsSnapshot.docs.map((doc) =>
+    sharedMediaCollectionSchema.parse({ docId: doc.id, ...doc.data() })
+  );
+  if ((await filterSharedMediaCollectionsForAudience(session, sharedCollections, firestore)).length > 0) {
+    return true;
   }
   return false;
 }

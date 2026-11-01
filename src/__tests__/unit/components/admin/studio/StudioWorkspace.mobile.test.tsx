@@ -8,6 +8,7 @@ let mockSelectedCardId: string | null = null;
 let mockSelectedCardType: 'story' | 'callout' = 'story';
 const mockConfirmComposeLeave = jest.fn<Promise<boolean>, []>();
 const mockRequestClearSelectedCard = jest.fn<Promise<boolean>, []>();
+const mockInsertedPrompts: Array<{ prompt: string; role: 'primary' | 'followup' }> = [];
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockRouterReplace }),
@@ -99,6 +100,8 @@ jest.mock('@/components/admin/collections/CollectionsAdminClient', () => ({
     embeddedCollectionsCollapsed?: boolean;
     embeddedCardsCollapsed?: boolean;
     embeddedRightSlotCollapsed?: boolean;
+    onInspectTagCards?: (tag: { docId: string; name: string; dimension: 'who' }) => void;
+    onInspectTagMedia?: (tag: { docId: string; name: string; dimension: 'who' }) => void;
     embeddedUnparentedReplacement?: (context: Record<string, unknown>) => React.ReactNode;
     embeddedRightSlot?: React.ReactNode | ((context: Record<string, unknown>) => React.ReactNode);
   }) => {
@@ -109,7 +112,22 @@ jest.mock('@/components/admin/collections/CollectionsAdminClient', () => ({
     };
     return (
       <div data-testid="collections-shell">
-        {!props.embeddedTagsCollapsed ? <div data-testid="tags-pane" /> : null}
+        {!props.embeddedTagsCollapsed ? (
+          <div data-testid="tags-pane">
+            <button
+              type="button"
+              onClick={() => props.onInspectTagCards?.({ docId: 'family', name: 'Family', dimension: 'who' })}
+            >
+              Inspect Family Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onInspectTagMedia?.({ docId: 'family', name: 'Family', dimension: 'who' })}
+            >
+              Inspect Family Media
+            </button>
+          </div>
+        ) : null}
         {!props.embeddedCollectionsCollapsed ? <div data-testid="collections-pane" /> : null}
         {!props.embeddedCardsCollapsed ? props.embeddedUnparentedReplacement?.(context) : null}
         {!props.embeddedRightSlotCollapsed
@@ -127,24 +145,60 @@ jest.mock('@/components/admin/studio/StudioTreeCandidateCardBank', () => ({
   default: () => <div data-testid="cards-pane" />,
 }));
 
-jest.mock('@/components/admin/studio/StudioCardEditPane', () => ({
-  __esModule: true,
-  default: () => <div data-testid="compose-pane" />,
-}));
+jest.mock('@/components/admin/studio/StudioCardEditPane', () => {
+  function MockStudioCardEditPane() {
+    const ReactActual = jest.requireActual<typeof import('react')>('react');
+    const { useStudioShell } = jest.requireActual<typeof import('@/components/admin/studio/StudioShellContext')>(
+      '@/components/admin/studio/StudioShellContext'
+    );
+    const { registerPromptTextInsert } = useStudioShell();
+    ReactActual.useEffect(() => {
+      registerPromptTextInsert((request) => mockInsertedPrompts.push(request));
+      return () => registerPromptTextInsert(null);
+    }, [registerPromptTextInsert]);
+    return <div data-testid="compose-pane" />;
+  }
+  return { __esModule: true, default: MockStudioCardEditPane };
+});
 
-jest.mock('@/components/admin/studio/StudioQuestionsPane', () => ({
-  __esModule: true,
-  default: () => <div data-testid="prompts-pane" />,
-}));
+jest.mock('@/components/admin/studio/StudioQuestionsPane', () => {
+  function MockStudioQuestionsPane() {
+    const { useStudioShell } = jest.requireActual<typeof import('@/components/admin/studio/StudioShellContext')>(
+      '@/components/admin/studio/StudioShellContext'
+    );
+    const { insertPromptText } = useStudioShell();
+    return (
+      <div data-testid="prompts-pane">
+        <button
+          type="button"
+          onClick={() => insertPromptText({ prompt: 'What do you remember?', role: 'primary' })}
+        >
+          Add test prompt
+        </button>
+      </div>
+    );
+  }
+  return { __esModule: true, default: MockStudioQuestionsPane };
+});
 
 jest.mock('@/components/admin/studio/media/MediaAdminContent', () => ({
   __esModule: true,
-  default: () => <div data-testid="media-pane" />,
+  default: ({ initialReviewMediaId, initialImportBatchId }: {
+    initialReviewMediaId?: string | null;
+    initialImportBatchId?: string | null;
+  }) => (
+    <div
+      data-testid="media-pane"
+      data-review-media-id={initialReviewMediaId ?? undefined}
+      data-import-batch-id={initialImportBatchId ?? undefined}
+    />
+  ),
 }));
 
 jest.mock('@/components/admin/studio/media/MediaEditModal', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ isOpen, selectedMediaId }: { isOpen: boolean; selectedMediaId: string | null }) =>
+    isOpen ? <div data-testid="media-editor">{selectedMediaId}</div> : null,
 }));
 
 describe('StudioWorkspace mobile destinations', () => {
@@ -155,6 +209,7 @@ describe('StudioWorkspace mobile destinations', () => {
     mockSelectedCardType = 'story';
     mockConfirmComposeLeave.mockResolvedValue(true);
     mockRequestClearSelectedCard.mockResolvedValue(true);
+    mockInsertedPrompts.length = 0;
     window.localStorage.clear();
   });
 
@@ -184,6 +239,19 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith('/admin/studio?destination=media');
   });
 
+  it('moves from a Tag to its exact Card population', async () => {
+    mockSearchParams = new URLSearchParams('destination=tags');
+    render(<StudioWorkspace />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect Family Cards' }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Cards' })).toBeInTheDocument());
+    expect(mockRequestClearSelectedCard).toHaveBeenCalled();
+    expect(mockRouterReplace).toHaveBeenCalledWith(
+      '/admin/studio?destination=cards&inspectTag=family&inspectTarget=cards'
+    );
+  });
+
   it('opens a direct durable Collection handoff in the Collections destination', () => {
     mockSearchParams = new URLSearchParams('collection=my-life');
     render(<StudioWorkspace />);
@@ -191,6 +259,42 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(screen.getByRole('heading', { name: 'Collections' })).toBeInTheDocument();
     expect(screen.getByTestId('collections-pane')).toBeInTheDocument();
     expect(screen.queryByTestId('cards-pane')).not.toBeInTheDocument();
+  });
+
+  it('opens an exact Media handoff in the Media destination and editor', async () => {
+    mockSearchParams = new URLSearchParams('destination=media&media=media-1');
+    const fetchMock = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ media: { docId: 'media-1', filename: 'beach.jpg' } }),
+    } as Response);
+    Object.defineProperty(global, 'fetch', { value: fetchMock, writable: true, configurable: true });
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(await screen.findByTestId('media-editor')).toHaveTextContent('media-1');
+    expect(fetchMock).toHaveBeenCalledWith('/api/images/media-1', expect.objectContaining({
+      cache: 'no-store',
+    }));
+    delete (global as typeof globalThis & { fetch?: typeof fetch }).fetch;
+  });
+
+  it('opens an exact Media classification handoff in the review surface', () => {
+    mockSearchParams = new URLSearchParams('destination=media&mediaReview=media-2');
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(screen.getByTestId('media-pane')).toHaveAttribute('data-review-media-id', 'media-2');
+  });
+
+  it('opens an exact bounded import handoff in the Media destination', () => {
+    mockSearchParams = new URLSearchParams('destination=media&mediaBatch=batch-1');
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(screen.getByTestId('media-pane')).toHaveAttribute('data-import-batch-id', 'batch-1');
   });
 
   it('keeps a dirty Compose surface in place when the leave guard declines', async () => {
@@ -209,19 +313,36 @@ describe('StudioWorkspace mobile destinations', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 
-  it('gives mobile Story Compose the full screen and keeps Back to Cards as the guarded exit', async () => {
+  it('keeps mobile Story Compose focused while retaining the persistent destination navigation', async () => {
     mockSelectedCardId = 'story-1';
     mockRequestClearSelectedCard.mockResolvedValue(false);
     render(<StudioWorkspace />);
 
     expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Back to Cards' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Author destinations' })).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Author destinations' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back to Cards' }));
 
     await waitFor(() => expect(mockRequestClearSelectedCard).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('returns a selected mobile Card from Prompts and inserts queued guidance after Compose remounts', async () => {
+    mockSelectedCardId = 'story-1';
+    render(<StudioWorkspace />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Prompts' }));
+    await waitFor(() => expect(screen.getByTestId('prompts-pane')).toBeInTheDocument());
+    expect(mockRouterReplace).toHaveBeenCalledWith('/admin/studio?destination=prompts&card=story-1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add test prompt' }));
+
+    await waitFor(() => expect(screen.getByTestId('compose-pane')).toBeInTheDocument());
+    expect(mockInsertedPrompts).toEqual([
+      { prompt: 'What do you remember?', role: 'primary' },
+    ]);
+    expect(mockRouterReplace).toHaveBeenLastCalledWith('/admin/studio?destination=cards&card=story-1');
   });
 });

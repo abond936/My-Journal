@@ -103,6 +103,7 @@ export default function CollectionIntroduction({ card }: { card: Card }) {
               width={1000}
               height={700}
               sizes="(max-width: 768px) 100vw, 900px"
+              presentationRotation={card.coverImageRotation ?? 0}
               style={{ objectFit: coverObjectFit, objectPosition: coverObjectPosition }}
             />
           </div>

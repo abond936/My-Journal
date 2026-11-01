@@ -209,9 +209,17 @@ jest.mock('@/lib/services/questionService', () => ({
   createQuestion: jest.fn(),
   getQuestionById: jest.fn(),
   updateQuestion: jest.fn(),
+  reorderQuestion: jest.fn(),
+  consolidateExactQuestionDuplicates: jest.fn(),
   deleteQuestion: jest.fn(),
   linkCardToQuestion: jest.fn(),
   unlinkCardFromQuestion: jest.fn(),
+}));
+
+jest.mock('@/lib/services/tagSplitService', () => ({
+  TagSplitConflictError: class TagSplitConflictError extends Error {},
+  getTagSplitReview: jest.fn(),
+  splitTagAssignments: jest.fn(),
 }));
 
 jest.mock('@/lib/scripts/firebase/cleanup-media-collection', () => ({

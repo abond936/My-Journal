@@ -73,6 +73,7 @@ describe('StudioTreeCandidateCardBank', () => {
     mockCardAdminGrid.mockClear();
     mutateTagsMock.mockReset();
     mutateTagsMock.mockResolvedValue(undefined);
+    mockTagContext.setStudioCardFilterTagIds.mockClear();
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('/api/cards')) {
@@ -84,6 +85,33 @@ describe('StudioTreeCandidateCardBank', () => {
       }
       throw new Error(`Unhandled fetch in test: ${url}`);
     }) as jest.Mock;
+  });
+
+  it('replaces existing filters with the exact Tag population requested by Studio', async () => {
+    const setSearch = jest.fn();
+    const setStatusFilter = jest.fn();
+    render(
+      <StudioTreeCandidateCardBank
+        refreshCards={jest.fn()}
+        collectionCards={[]}
+        search="old search"
+        setSearch={setSearch}
+        statusFilter="draft"
+        setStatusFilter={setStatusFilter}
+        selectedCardId={null}
+        onSelectCard={jest.fn()}
+        saving={false}
+        curatedTreeDnd
+        treeDropZonesReadOnly={false}
+        tagInspectionRequest={{ tagId: 'family', requestKey: 1 }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(setSearch).toHaveBeenCalledWith('');
+      expect(setStatusFilter).toHaveBeenCalledWith('all');
+      expect(mockTagContext.setStudioCardFilterTagIds).toHaveBeenCalledWith(['family']);
+    });
   });
 
   it('keeps Studio card bank rows source-only for curated tree DnD', async () => {

@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { ChevronsDown, ChevronsUp } from 'lucide-react';
 import { Card } from '@/lib/types/card';
+import type { Tag } from '@/lib/types/tag';
 import { CuratedTreeNode } from '@/components/admin/studio/cards/CuratedTreeNode';
 import {
   CuratedTreeDragProvider,
@@ -360,6 +361,8 @@ export default function CollectionsAdminClient({
   embeddedCardsCollapsed = false,
   embeddedRightSlotCollapsed = false,
   embeddedStacked = false,
+  onInspectTagCards,
+  onInspectTagMedia,
 }: {
   initialCollectionId?: string | null;
   onSelectCard?: (cardId: string, previewCard?: Card | null) => void | Promise<boolean>;
@@ -376,6 +379,8 @@ export default function CollectionsAdminClient({
   embeddedCardsCollapsed?: boolean;
   embeddedRightSlotCollapsed?: boolean;
   embeddedStacked?: boolean;
+  onInspectTagCards?: (tag: Tag) => void;
+  onInspectTagMedia?: (tag: Tag) => void;
 }) {
   const initialStudioCardBankSharedPrefsRef = useRef(readStoredStudioCardBankSharedFilterPreferences());
   const [cards, setCards] = useState<Card[]>([]);
@@ -1490,7 +1495,11 @@ export default function CollectionsAdminClient({
                 <h2 className={styles.panelStudioColumnTitle}>Tags</h2>
                 <div className={styles.studioLeftTabPanel}>
                   <div className={styles.organizeTreePane}>
-                    <TagAdminStudioPane embeddedColumn />
+                    <TagAdminStudioPane
+                      embeddedColumn
+                      onInspectCards={onInspectTagCards}
+                      onInspectMedia={onInspectTagMedia}
+                    />
                   </div>
                 </div>
               </section>

@@ -725,18 +725,35 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .studioQuestionFilterRow .studioQuestionInput {
-  flex: 1 1 auto;
+  flex: 1 1 12rem;
   min-width: 0;
 }
 
 .studioQuestionFilterRow .studioQuestionSelect {
-  flex: 0 0 auto;
+  flex: 1 1 9.5rem;
   width: auto;
   min-width: 9.5rem;
+}
+
+.studioPromptLibraryFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.studioPromptLibraryFields button {
+  justify-self: start;
+}
+
+.studioPromptLibraryPath {
+  margin: 0;
+  color: var(--admin-support-meta-color);
+  font-size: var(--font-size-xs);
+  line-height: 1.3;
 }
 
 .studioQuestionFilterActions {

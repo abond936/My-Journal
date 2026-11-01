@@ -258,6 +258,20 @@ a.storyWorkCard:hover {
   background: var(--admin-support-control-background-color);
 }
 
+.collectionAttentionActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.collectionReviewLink {
+  color: var(--admin-support-control-text-color);
+  font-size: var(--admin-support-meta-font-size);
+  font-weight: var(--font-weight-semibold);
+}
+
 .collectionAttentionHeader {
   display: flex;
   align-items: center;

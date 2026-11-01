@@ -359,7 +359,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error deleting media asset ${mediaId}:`, errorMessage);
-    if (typeof errorMessage === 'string' && errorMessage.includes('unresolved card references remain')) {
+    if (typeof errorMessage === 'string' && (
+      errorMessage.includes('unresolved card references remain')
+      || errorMessage.includes('Shared Media Collection references remain')
+    )) {
       return errorResponse(
         {
           ok: false,

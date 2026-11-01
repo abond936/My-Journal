@@ -90,8 +90,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       responseMediaMap,
       allTagsForJournal
     );
-    let responseCoverImageId: string | null = null;
-    let responseCoverImageFocalPoint: { x: number; y: number } | undefined;
     return withRetry(async () => {
     await firestore.runTransaction(async (transaction) => {
       const docSnap = await transaction.get(docRef);
@@ -293,21 +291,9 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
       // Finish all transaction reads before any writes begin.
       const mediaRemoved = [...oldMediaIds].filter(id => !newMediaIds.has(id));
       const mediaAdded = [...newMediaIds].filter(id => !oldMediaIds.has(id));
-      const coverImageFocalPoint = cleanedUpdate.coverImageFocalPoint;
-      const coverImageId = cleanedUpdate.coverImageId ?? existingData.coverImageId;
       const checkedMediaIds = [
         ...mediaRemoved,
         ...mediaAdded,
-        ...(
-          !clearingCover &&
-          coverImageId &&
-          typeof coverImageId === 'string' &&
-          coverImageFocalPoint &&
-          'x' in coverImageFocalPoint &&
-          'y' in coverImageFocalPoint
-            ? [coverImageId]
-            : []
-        ),
       ];
       const existingReferencedMediaIds = await getExistingMediaDocIdsInTransaction(
         firestore,
@@ -395,24 +381,6 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
   
       // 5. Tag counts were already adjusted earlier.
 
-      // 6. If a new coverImageFocalPoint was provided (and we're not clearing cover), update the media doc.
-      if (!isClearingCover) {
-        if (coverImageId && typeof coverImageId === 'string' && coverImageFocalPoint && 'x' in coverImageFocalPoint && 'y' in coverImageFocalPoint) {
-          if (existingReferencedMediaIds.has(coverImageId)) {
-            responseCoverImageId = coverImageId;
-            responseCoverImageFocalPoint = {
-              x: coverImageFocalPoint.x,
-              y: coverImageFocalPoint.y,
-            };
-            const coverRef = firestore.collection(MEDIA_COLLECTION).doc(coverImageId);
-            transaction.update(coverRef, {
-              objectPosition: `${coverImageFocalPoint.x} ${coverImageFocalPoint.y}`,
-              updatedAt: Date.now(),
-            });
-          }
-        }
-      }
-
       return null; // Signal completion; we fetch after transaction
     });
 
@@ -421,15 +389,8 @@ export async function updateCard(cardId: string, cardData: Partial<Omit<Card, 'd
         await docRef.update({
           coverImageId: FieldValue.delete(),
           coverImageFocalPoint: FieldValue.delete(),
+          coverImageRotation: FieldValue.delete(),
           coverImage: FieldValue.delete(),
-        });
-      }
-
-      if (responseCoverImageId && responseCoverImageFocalPoint && responseMediaMap.has(responseCoverImageId)) {
-        const cover = responseMediaMap.get(responseCoverImageId)!;
-        responseMediaMap.set(responseCoverImageId, {
-          ...cover,
-          objectPosition: `${responseCoverImageFocalPoint.x} ${responseCoverImageFocalPoint.y}`,
         });
       }
 

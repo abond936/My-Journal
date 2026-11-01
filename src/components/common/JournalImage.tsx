@@ -2,9 +2,11 @@
 
 import React from 'react';
 import Image, { ImageProps } from 'next/image';
+import type { MediaPresentationRotation } from '@/lib/types/mediaPresentation';
 
 type JournalImageProps = Omit<ImageProps, 'alt'> & {
   alt: string;
+  presentationRotation?: MediaPresentationRotation;
 };
 
 /**
@@ -13,6 +15,13 @@ type JournalImageProps = Omit<ImageProps, 'alt'> & {
  * external hosts reject Next.js server-side optimization requests.
  */
 export default function JournalImage(props: JournalImageProps) {
-  const { alt, ...rest } = props;
-  return <Image alt={alt} {...rest} unoptimized />;
+  const { alt, presentationRotation = 0, style, ...rest } = props;
+  return (
+    <Image
+      alt={alt}
+      {...rest}
+      style={{ ...style, ...(presentationRotation ? { transform: `rotate(${presentationRotation}deg)` } : {}) }}
+      unoptimized
+    />
+  );
 }
