@@ -296,6 +296,8 @@ When a memory needs help getting started, keep the Card open in Compose and use 
 
 On a phone, save or discard any unsaved Card changes when the guard asks before moving from **Cards** to **Prompts**. The selected Card remains the authoring target. Adding a prompt or Topic returns to that Card and inserts the guidance into Compose.
 
+If no Card is open, an unlinked Prompt offers **Start a Card** instead of silently creating an answer record. Save that Card, return to Prompts, and add the useful guidance. A Prompt that was already linked to an older Question Card still opens that existing Card so no prior writing is stranded.
+
 A Story may be published in Feed without belonging to a Collection. It may instead appear through a Collection, or use both routes. Placement does not duplicate the Story; each placement points to the same canonical Card.
 
 Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.

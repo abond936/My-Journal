@@ -441,63 +441,21 @@ export default function StudioQuestionsPane() {
   }, [clearEditSaveTimer, editPrompt, editingId, questions, saveQuestion]);
 
   const openQuestionCard = useCallback(async (question: Question) => {
+    const existingCardId = question.usedByCardIds[0];
+    if (!existingCardId) return;
     setBusyId(question.docId);
-    setBusyLabel(question.usedByCardIds[0] ? 'Opening Compose...' : 'Creating Question card...');
+    setBusyLabel('Opening Compose...');
     setPendingQuestionId(question.docId);
     try {
-      const existingCardId = question.usedByCardIds[0];
-      if (existingCardId) {
-        setPendingQuestionCardId(existingCardId);
-        const previewCard = getKnownCardPreview(existingCardId) ?? buildQuestionCardPreview(question, existingCardId);
-        const switched = await requestSelectCard(existingCardId, previewCard);
-        if (!switched) {
-          setPendingQuestionId(null);
-          setPendingQuestionCardId(null);
-          return;
-        }
-        router.replace(`/admin/studio?card=${encodeURIComponent(existingCardId)}`);
+      setPendingQuestionCardId(existingCardId);
+      const previewCard = getKnownCardPreview(existingCardId) ?? buildQuestionCardPreview(question, existingCardId);
+      const switched = await requestSelectCard(existingCardId, previewCard);
+      if (!switched) {
+        setPendingQuestionId(null);
+        setPendingQuestionCardId(null);
         return;
       }
-
-      const res = await fetch(`/api/admin/questions/${encodeURIComponent(question.docId)}/create-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-        cache: 'no-store',
-        credentials: 'same-origin',
-      });
-      const data = (await res.json().catch(() => ({}))) as QuestionResponse;
-      throwIfJsonApiFailed(res, data, 'A card could not be created for this question. Try again.');
-      const cardId = data.card?.docId;
-      if (data.question) {
-        setQuestions(prev => prev.map(q => q.docId === question.docId ? data.question! : q));
-      } else if (cardId) {
-        setQuestions(prev =>
-          prev.map(q =>
-            q.docId === question.docId
-              ? {
-                  ...q,
-                  usedByCardIds: q.usedByCardIds.includes(cardId) ? q.usedByCardIds : [...q.usedByCardIds, cardId],
-                  usageCount: Math.max(q.usageCount ?? 0, q.usedByCardIds.includes(cardId) ? q.usedByCardIds.length : q.usedByCardIds.length + 1),
-                  updatedAt: Date.now(),
-                }
-              : q
-          )
-        );
-      }
-      if (cardId) {
-        setPendingQuestionCardId(cardId);
-        const nextPreview = (data.card as StudioSelectedPreview | undefined) ?? buildQuestionCardPreview(question, cardId);
-        upsertCollectionsCardList(nextPreview);
-        const switched = await requestSelectCard(cardId, nextPreview);
-        if (!switched) {
-          setPendingQuestionId(null);
-          setPendingQuestionCardId(null);
-          return;
-        }
-        router.replace(`/admin/studio?card=${encodeURIComponent(cardId)}`);
-        feedback.showSuccess('Created a draft Question card.');
-      }
+      router.replace(`/admin/studio?card=${encodeURIComponent(existingCardId)}`);
     } catch (e) {
       setPendingQuestionId(null);
       setPendingQuestionCardId(null);
@@ -506,7 +464,11 @@ export default function StudioQuestionsPane() {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [feedback, getKnownCardPreview, requestSelectCard, router, upsertCollectionsCardList]);
+  }, [feedback, getKnownCardPreview, requestSelectCard, router]);
+
+  const startDraftCard = useCallback(() => {
+    router.replace('/admin/studio?destination=cards&new=1');
+  }, [router]);
 
   const unlinkQuestionCard = useCallback(async (question: Question) => {
     const cardId = question.usedByCardIds[0];
@@ -1231,16 +1193,29 @@ export default function StudioQuestionsPane() {
                     >
                       <ListPlus size={16} aria-hidden="true" />
                     </button>
-                    <button
-                      type="button"
-                      className={styles.studioQuestionSmallButton}
-                      disabled={busy}
-                      onClick={() => void openQuestionCard(question)}
-                      aria-label={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
-                      title={included ? 'Open question card in Compose' : 'Create answer card in Compose'}
-                    >
-                      <FolderOpen size={16} aria-hidden="true" />
-                    </button>
+                    {included ? (
+                      <button
+                        type="button"
+                        className={styles.studioQuestionSmallButton}
+                        disabled={busy}
+                        onClick={() => void openQuestionCard(question)}
+                        aria-label="Open linked Question Card in Compose"
+                        title="Open the existing linked Question Card"
+                      >
+                        <FolderOpen size={16} aria-hidden="true" />
+                      </button>
+                    ) : !selectedCardId ? (
+                      <button
+                        type="button"
+                        className={styles.studioQuestionSmallButton}
+                        disabled={busy}
+                        onClick={startDraftCard}
+                        aria-label="Start a Card before adding prompts"
+                        title="Start a Card, save it, then add writing prompts"
+                      >
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className={styles.studioQuestionDeleteButton}

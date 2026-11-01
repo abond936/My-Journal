@@ -1641,6 +1641,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Four focused suites pass 47 tests across accessible Tag actions, exact Card filtering, exact Media filtering, and mobile Tags-to-Cards routing. The complete runnable Jest gate passes 241 suites and 1,322 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, Tag, filter record, account, or Storage object changed.
 
+### Thirty-ninth implementation slice — Card-first Prompt entry
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Remove the remaining competing new-authorship entrance from the Prompt Library while preserving every existing linked Question Card and the ordinary copy-to-Card workflow.
+
+**Includes** — An unlinked Prompt with no selected Card offers Start a Card through the ordinary Cards new-Card route; an open Card retains Add prompt; an existing linked Question Card retains its direct Compose handoff; the library no longer calls the create-linked-Question route for ordinary new writing; and focused route, no-mutation, and compatibility coverage.
+
+**Excludes** — Deleting the compatibility API; rewriting or unlinking existing Question Cards; automatically saving a new Card; carrying unsaved Prompt text into a record that does not yet exist; prompt blocks; duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Cards own new authored work. Prompts supply optional guidance and never create a parallel response object from an unlinked library row. Existing linked answers remain reachable and retain their current Card identity, content, Media, classification, and placement. Starting a Card changes only the route to the existing unsaved Card workflow and creates no record until the author saves.
+
+**Verification gate** — Prove that unlinked Prompts route to the ordinary new-Card flow without calling the create-linked-Question service, existing linked Question Cards still open, copy-to-open-Card behavior remains intact, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused component coverage passes two Card-first and legacy-compatibility cases. The complete runnable Jest gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
