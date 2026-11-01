@@ -1773,6 +1773,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The focused Card-first Prompt suite passes three cases: ordinary Card entry without a linked answer, legacy linked-Question compatibility, and ordered primary-plus-follow-up insertion. The complete runnable Jest gate passes 247 suites and 1,337 tests, with four suites and 33 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
 
+### Forty-seventh implementation slice — Editing-only Prompt publication blocks
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Preserve copied Prompt guidance inside the open draft Card while ensuring unfinished authoring instructions never become reader-visible published content.
+
+**Includes** — An additive Prompt-aware heading attribute in the Card's existing TipTap HTML; visibly distinct Compose presentation; exact per-prompt Keep as reader heading and Remove prompt actions; preservation of authored text beneath a removed prompt; omission from Reader and Compose-preview rendering while unresolved; exact unresolved count in the publication result; and fail-closed enforcement in create-as-published, status-only, and broad Card publication owners.
+
+**Excludes** — A separate answer or working-material record; retroactive conversion of older plain headings; automatic interpretation of author text; arbitrary prompt-subset selection before insertion; Question-Card title proposal; legacy Prompt duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Draft saving remains permissive. A copied Prompt is an editing block until the author explicitly keeps or removes it. Keeping clears only the editing marker and retains an ordinary heading. Removing deletes only the Prompt heading, never the paragraphs beneath it. Reader surfaces never render unresolved guidance, and publication is impossible while any block remains.
+
+**Verification gate** — Prove marker persistence, older-heading compatibility, exact counting, reader omission with answer retention, individual Keep and Remove behavior, structured publication feedback, all three publication mutation owners, touched-code lint, production typecheck, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused utility, publication, editor, and static-Reader suites pass 19 cases. The complete declared Firestore emulator gate passes three suites and 27 tests, including fail-closed create-as-published, status-only, and broad mutation paths. The complete runnable Jest gate passes 248 suites and 1,343 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

@@ -115,7 +115,8 @@ type CardServiceModule =
   typeof import('@/lib/services/cards/cardMediaLifecycleService') &
   typeof import('@/lib/services/cards/cardTagMutationService') &
   typeof import('@/lib/services/cards/cardCoverMutationService') &
-  typeof import('@/lib/services/cards/cardBroadMutationService');
+  typeof import('@/lib/services/cards/cardBroadMutationService') &
+  typeof import('@/lib/services/cards/cardStatusMutationService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
 type ImageImportServiceModule = typeof import('@/lib/services/images/imageImportService');
 let imageImportServiceModulePromise: Promise<ImageImportServiceModule> | null = null;
@@ -128,12 +129,14 @@ function getCardService(): Promise<CardServiceModule> {
       import('@/lib/services/cards/cardTagMutationService'),
       import('@/lib/services/cards/cardCoverMutationService'),
       import('@/lib/services/cards/cardBroadMutationService'),
-    ]).then(([lifecycle, media, tags, cover, broad]) => ({
+      import('@/lib/services/cards/cardStatusMutationService'),
+    ]).then(([lifecycle, media, tags, cover, broad, status]) => ({
       ...lifecycle,
       ...media,
       ...tags,
       ...cover,
       ...broad,
+      ...status,
     }) as CardServiceModule);
   }
   return cardServiceModulePromise;
@@ -697,6 +700,34 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     })).rejects.toMatchObject({
       code: 'CARD_PUBLICATION_INTEGRITY',
     });
+  });
+
+  it('blocks unresolved Prompt guidance in create, status-only, and broad publication paths', async () => {
+    const db = getFirestore(app);
+    await seedWhoAndWhatTags(db);
+    const { createCard, updateCard, updateCardStatus } = await getCardService();
+    const promptContent = '<h3 data-prompt-block="true">What happened next?</h3><p>Answer</p>';
+    const publishableFields = {
+      title: 'Prompt publication boundary',
+      type: 'story' as const,
+      audience: { allContacts: true, groupIds: [], contactIds: [] },
+      tags: ['what-leaf'],
+      dimensionReview: completeDimensionReview,
+      content: promptContent,
+    };
+
+    await expect(createCard({
+      ...publishableFields,
+      status: 'published',
+    })).rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+
+    const draft = await createCard({ ...publishableFields, status: 'draft' });
+    await expect(updateCardStatus(draft.docId, 'published'))
+      .rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+    await expect(updateCard(draft.docId, { status: 'published' }))
+      .rejects.toMatchObject({ code: 'CARD_PUBLICATION_INTEGRITY' });
+
+    expect((await db.collection('cards').doc(draft.docId).get()).data()?.status).toBe('draft');
   });
 
   it('createCard reconciles enabled Gallery inheritance before returning', async () => {

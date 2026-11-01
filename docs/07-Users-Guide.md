@@ -309,7 +309,7 @@ The phone Story flow separates the work into five manageable steps:
 
 In **Details**, choose **Suggest existing Tags from this Card** when the words already name a person, event, date label, or place that exists in the Tag library. Review each proposed hierarchy path and its title-or-story-text evidence, then choose **Add** only when it is true. This does not create Tags, choose a subject, or complete dimensional review automatically.
 
-When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt, one primary with its ordered follow-ups, or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
+When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt, one primary with its ordered follow-ups, or the visible Topic to the open Card. The questions are copied as visible editing guidance: answer or rewrite beneath them, then use **Keep as reader heading** for wording the reader should see or **Remove prompt** to remove only the guidance line. Later changes to the Prompt Library do not change the Story.
 
 On a phone, save or discard any unsaved Card changes when the guard asks before moving from **Cards** to **Prompts**. The selected Card remains the authoring target. Adding a prompt or Topic returns to that Card and inserts the guidance into Compose.
 
@@ -317,7 +317,7 @@ If no Card is open, an unlinked Prompt offers **Start a Card** instead of silent
 
 A Story may be published in Feed without belonging to a Collection. It may instead appear through a Collection, or use both routes. Placement does not duplicate the Story; each placement points to the same canonical Card.
 
-Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.
+Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, no unresolved writing-prompt blocks, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.
 
 At the current stage, a published Card is one live object. Saved edits may become visible to readers immediately. Return it to Draft before making changes that must remain private until republished.
 

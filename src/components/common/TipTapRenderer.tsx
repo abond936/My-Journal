@@ -7,6 +7,7 @@ import { getReadOnlyTipTapExtensions } from '@/lib/tiptap/readOnlyRenderExtensio
 import styles from './TipTapRenderer.module.css';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { stripUnresolvedPromptBlocks } from '@/lib/utils/cardPromptBlocks';
 
 interface TipTapRendererProps {
   content: string;
@@ -32,19 +33,20 @@ const TipTapRenderer: React.FC<TipTapRendererProps> = ({
   headingVariant = 'default',
 }) => {
   const router = useRouter();
+  const readerContent = stripUnresolvedPromptBlocks(content);
 
   const editor = useEditor({
     editable: false,
     extensions: getReadOnlyTipTapExtensions(),
-    content,
+    content: readerContent,
     immediatelyRender: false,
   });
 
   useEffect(() => {
-    if (editor && content && editor.getHTML() !== content) {
-      editor.commands.setContent(content, false);
+    if (editor && readerContent && editor.getHTML() !== readerContent) {
+      editor.commands.setContent(readerContent, false);
     }
-  }, [content, editor]);
+  }, [readerContent, editor]);
 
   useEffect(() => {
     if (!editor) return;

@@ -169,6 +169,31 @@ describe('cardPublicationIntegrityService', () => {
     });
   });
 
+  it('blocks unresolved editing prompts even when classification is optional', () => {
+    expect(
+      evaluateCardPublicationIntegrity(
+        {
+          ...readyCard,
+          content: '<h3 data-prompt-block="true">What happened next?</h3><p>Answer</p>',
+        },
+        new Map(),
+        { media: false, cards: false }
+      )
+    ).toEqual({
+      ready: false,
+      issues: [{ code: 'prompt-blocks', count: 1 }],
+    });
+
+    expect(() => assertCardPublicationIntegrity(
+      {
+        ...readyCard,
+        content: '<h3 data-prompt-block="true">What happened next?</h3><p>Answer</p>',
+      },
+      new Map(),
+      { media: false, cards: false }
+    )).toThrow('keep or remove 1 writing prompt');
+  });
+
   it('throws a stable conflict with structured issue details', () => {
     try {
       assertCardPublicationIntegrity({ ...readyCard, what: [] }, new Map());

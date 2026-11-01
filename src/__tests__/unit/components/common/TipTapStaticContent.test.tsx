@@ -29,4 +29,15 @@ describe('TipTapStaticContent', () => {
     fireEvent.click(screen.getByText('@Mentioned card'));
     expect(mockPush).toHaveBeenCalledWith('/view/card-99');
   });
+
+  it('omits editing-only prompt headings while retaining authored text beneath them', () => {
+    render(
+      <TipTapStaticContent
+        content='<h3 data-prompt-block="true">What happened next?</h3><p>The answer remains.</p>'
+      />
+    );
+
+    expect(screen.queryByText('What happened next?')).not.toBeInTheDocument();
+    expect(screen.getByText('The answer remains.')).toBeInTheDocument();
+  });
 });

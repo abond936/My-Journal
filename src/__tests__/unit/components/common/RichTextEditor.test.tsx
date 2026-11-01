@@ -1,4 +1,4 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createRef } from 'react';
 import RichTextEditor, { type RichTextEditorRef } from '@/components/common/RichTextEditor';
 
@@ -38,8 +38,37 @@ describe('RichTextEditor', () => {
     act(() => ref.current?.insertPrompt('What happened next?'));
 
     await waitFor(() => {
-      expect(ref.current?.getContent()).toContain('<h3>What happened next?</h3>');
+      expect(ref.current?.getContent()).toContain('<h3 data-prompt-block="true">What happened next?</h3>');
       expect(onChange).toHaveBeenCalled();
+    });
+  });
+
+  it('lets the author keep an editing prompt as an ordinary reader heading', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} initialContent="<p>Opening memory</p>" />);
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    act(() => ref.current?.insertPrompt('What happened next?'));
+    const keep = await screen.findByRole('button', { name: 'Keep as reader heading' });
+    fireEvent.click(keep);
+
+    await waitFor(() => {
+      expect(ref.current?.getContent()).toContain('<h3>What happened next?</h3>');
+      expect(ref.current?.getContent()).not.toContain('data-prompt-block="true"');
+    });
+  });
+
+  it('removes only the prompt heading while retaining authored Card text', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} initialContent="<p>Opening memory</p>" />);
+
+    await waitFor(() => expect(ref.current).toBeTruthy());
+    act(() => ref.current?.insertPrompt('Who was there?'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove prompt' }));
+
+    await waitFor(() => {
+      expect(ref.current?.getContent()).not.toContain('Who was there?');
+      expect(ref.current?.getContent()).toContain('Opening memory');
     });
   });
 });
