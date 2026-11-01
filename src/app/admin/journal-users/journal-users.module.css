@@ -194,6 +194,44 @@
   color: var(--text1-color);
 }
 
+.inviteResult {
+  max-width: 760px;
+  padding: var(--spacing-md);
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+}
+
+.inviteResult p {
+  margin: var(--spacing-xs) 0 var(--spacing-sm);
+  color: var(--text2-color);
+  font-size: var(--font-size-sm);
+}
+
+.inviteRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.inviteLink {
+  flex: 1 1 28rem;
+  min-width: 0;
+  padding: 0.55rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--input-background-color);
+  color: var(--text1-color);
+}
+
+.rowInviteResult {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
 .groupList {
   display: grid;
   gap: var(--spacing-sm);

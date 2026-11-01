@@ -7,6 +7,7 @@ const BCRYPT_ROUNDS = 12;
 
 export type JournalUserRole = 'admin' | 'viewer';
 export type ReaderThemeMode = 'light' | 'dark';
+export type JournalUserAccessKind = 'account' | 'guest';
 
 export type JournalUserPublic = {
   docId: string;
@@ -14,6 +15,7 @@ export type JournalUserPublic = {
   role: JournalUserRole;
   displayName: string;
   disabled: boolean;
+  accessKind: JournalUserAccessKind;
   readerThemeMode?: ReaderThemeMode;
   createdAt: number;
   updatedAt: number;
@@ -21,10 +23,11 @@ export type JournalUserPublic = {
 
 type JournalUserDoc = {
   username: string;
-  passwordHash: string;
+  passwordHash?: string;
   role: JournalUserRole;
   displayName: string;
   disabled: boolean;
+  accessKind?: JournalUserAccessKind;
   readerThemeMode?: ReaderThemeMode;
   createdAt: number;
   updatedAt: number;
@@ -58,6 +61,7 @@ function toPublic(docId: string, data: JournalUserDoc): JournalUserPublic {
     role: data.role,
     displayName: data.displayName,
     disabled: data.disabled,
+    accessKind: data.accessKind === 'guest' ? 'guest' : 'account',
     ...(data.readerThemeMode ? { readerThemeMode: data.readerThemeMode } : {}),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
@@ -78,6 +82,7 @@ export async function authorizeJournalUserCredentials(
   if (!row) return null;
 
   if (row.data.disabled) return null;
+  if (!row.data.passwordHash) return null;
 
   const ok = await bcrypt.compare(password, row.data.passwordHash);
   if (!ok) return null;
@@ -124,6 +129,7 @@ export async function createJournalViewer(input: {
     role: 'viewer' satisfies JournalUserRole,
     displayName: (input.displayName?.trim() || username) as string,
     disabled: false,
+    accessKind: 'account' satisfies JournalUserAccessKind,
     createdAt: now,
     updatedAt: now,
   } satisfies JournalUserDoc);
@@ -153,6 +159,9 @@ export async function updateJournalUser(
     payload.disabled = updates.disabled;
   }
   if (updates.password !== undefined && updates.password.length > 0) {
+    if (prev.accessKind === 'guest') {
+      throw new Error('Guest recipients use invitation links, not passwords');
+    }
     payload.passwordHash = await bcrypt.hash(updates.password, BCRYPT_ROUNDS);
   }
 
@@ -209,6 +218,7 @@ export async function seedInitialAdminIfEmpty(): Promise<
     role: 'admin' satisfies JournalUserRole,
     displayName: 'Admin',
     disabled: false,
+    accessKind: 'account' satisfies JournalUserAccessKind,
     createdAt: now,
     updatedAt: now,
   } satisfies JournalUserDoc);

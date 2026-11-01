@@ -233,7 +233,7 @@ export default function AudienceSelector({
                       disabled={disabled || saving}
                       onChange={() => toggleId('contactIds', user.docId)}
                     />
-                    {user.displayName}{user.disabled ? ' (disabled)' : ''}
+                    {user.displayName}{user.accessKind === 'guest' ? ' (guest)' : ''}{user.disabled ? ' (disabled)' : ''}
                   </label>
                 )) : <span>No Reader accounts created.</span>}
               </fieldset>

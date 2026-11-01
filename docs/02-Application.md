@@ -763,17 +763,18 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Audience completion** — The deployed Reader boundary has one legacy-compatible evaluator for standalone Feed Cards, Collection routes, and their referenced Media: missing audience data includes all enabled readers, while explicit individual and reusable-group IDs restrict access and Card access is the union of its active Feed and authorized Collection routes. A Collection contributes inherited Card access only when its complete required structure is reader-valid; an active/published marker with a missing or draft required Card fails closed just as the Collection route does. Story and Collection authoring provide explicit all-readers or selected-group/individual controls, validate stored references, and show exact enabled readers before Save. Saved Stories calculate their complete all-route union, and changing a published Card's Feed inclusion shows exact reader gains and losses before applying the route change. Collection authoring calculates the proposed consequence for every unique placed Card across that Collection, standalone Feed, and other reader-valid Collections, while identifying draft and missing Cards. New Card publication requires an explicit nonempty audience plus Feed inclusion or an active Collection placement. New Collection publication requires explicit audience confirmation, at least one Card, no missing or draft Cards, and the selected Card/Media classification plus inherent Media-reference/readiness contract. Published Collection placement structure and active/shadow authority are locked until deliberately returned to Draft.
 - **Private Media delivery** — Author- and Reader-facing permanent object URLs are replaced with authenticated application delivery. Author responses retain authorized archive metadata; Reader responses contain only display data for Media actually referenced by accessible published content. Production Storage denies direct client reads; deployment readback proves anonymous stored-object denial and successful authenticated Author and Reader byte delivery.
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
+- **Guest recipients** — The local release candidate lets the author create an enabled guest recipient only after reviewing the same exact legacy and all-enabled access inherited by a new Reader. It returns one private, seven-day, single-use link for manual delivery; replacement revokes older unused links. Redemption creates the ordinary Reader session for that stable recipient ID, so existing individual and group audiences apply without copying Cards, Collections, Media, or audience data. Disabling the recipient revokes the session on its next server request.
 
 ⭕1 **Planned**
 
 - **Shared Media Collections** — After Story and Collection audiences are protected, allow the author to curate a bounded Media set, assign its audience, and change membership without changing the Media's use in Stories or exposing unrelated archive Media.
-- **Guest recipients** — Invite a non-account holder by email into a bounded access grant without requiring the current temporary-password administration flow. A recipient may later establish a fuller account without changing the authored audience decision.
+- **Guest-account conversion** — Let a guest later establish a fuller password account without changing the stable recipient ID or authored audience decisions.
 - **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
 - **Distribution** — Publish controls availability; Share chooses which authorized recipients receive a direct link or notification. Making content available to a large audience does not imply notifying everyone after every change.
 
 ⭕2 **Future**
 
-- **Recovery** — Secure invitation, password setup, and recovery.
+- **Recovery** — Password setup and recovery for password accounts and optional guest-account conversion.
 
 📋 **Contracts**
 
@@ -787,6 +788,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - A Card's effective audience is the union of its own explicit audience and each authorized Collection placement that contains it. The author sees that consequence before confirming a placement or audience change.
 - Media access derives from an authorized Card, Collection, or later Shared Media Collection context. Media has no global `shared` boolean, and raw archive membership never implies reader access.
 - Guest links are unguessable, revocable, bounded to their grant, and do not expose unrelated archive content.
+- Raw guest tokens are never stored. A link carries its token in the URL fragment, can be redeemed once, expires after seven days, and is replaced rather than recovered.
 - Commercial plan limits may bound authors, recipients, storage, processing, notifications, or AI use later, but authorization semantics do not depend on a particular pricing package.
 
 ### Theme Management

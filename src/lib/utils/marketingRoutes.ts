@@ -1,6 +1,6 @@
 export function isMarketingRoute(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  if (pathname === '/' || pathname === '/login') return true;
+  if (pathname === '/' || pathname === '/login' || pathname === '/invite') return true;
   if (pathname === '/my-stories' || pathname.startsWith('/my-stories/')) return true;
   return false;
 }

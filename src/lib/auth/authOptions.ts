@@ -5,6 +5,7 @@ import { getAdminApp } from '@/lib/config/firebase/admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getJournalUserByDocId } from '@/lib/auth/journalUsersFirestore';
 import { authorizeCredentials } from '@/lib/auth/authorizeCredentials';
+import { redeemGuestRecipientInvite } from '@/lib/auth/recipientInvites';
 
 const app = getAdminApp();
 const db = getFirestore(app);
@@ -19,6 +20,16 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         return authorizeCredentials(credentials?.username ?? '', credentials?.password ?? '');
+      },
+    }),
+    CredentialsProvider({
+      id: 'guest-invite',
+      name: 'Guest invitation',
+      credentials: {
+        token: { label: 'Invitation token', type: 'text' },
+      },
+      async authorize(credentials) {
+        return redeemGuestRecipientInvite(credentials?.token ?? '');
       },
     }),
   ],
