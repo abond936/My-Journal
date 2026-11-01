@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilterX, FolderOpen, Link2Off, Plus, Save, Tag, Trash2, X } from 'lucide-react';
+import { FilterX, FolderOpen, Link2Off, ListPlus, Plus, Save, Tag, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -12,7 +12,7 @@ import { useStudioShell } from '@/components/admin/studio/StudioShellContext';
 import type { StudioSelectedDetail, StudioSelectedPreview } from '@/components/admin/studio/studioCardTypes';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import { useTag, type TagWithChildren } from '@/components/providers/TagProvider';
-import type { Question } from '@/lib/types/question';
+import type { PromptLibraryKind, Question, UpdateQuestionInput } from '@/lib/types/question';
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { groupSelectedTagIdsByDimension } from '@/lib/utils/tagUtils';
 import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
@@ -25,6 +25,14 @@ const UNTAGGED_FILTER_ID = '__untagged_questions__';
 
 function isIncluded(question: Question): boolean {
   return question.usedByCardIds.length > 0;
+}
+
+function comparePromptLibraryOrder(a: Question, b: Question): number {
+  return a.category.localeCompare(b.category) ||
+    a.topic.localeCompare(b.topic) ||
+    (a.promptKind === b.promptKind ? 0 : a.promptKind === 'primary' ? -1 : 1) ||
+    a.promptOrder - b.promptOrder ||
+    a.prompt.localeCompare(b.prompt);
 }
 
 function tagMatchesSelection(
@@ -169,6 +177,7 @@ export default function StudioQuestionsPane() {
     upsertCollectionsCardList,
     registerQuestionCardDeleteSync,
     selectedLoadState,
+    insertPromptText,
   } = useStudioShell();
   const { tags: allTags, dimensionTree } = useTag();
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -179,18 +188,28 @@ export default function StudioQuestionsPane() {
   const [pendingQuestionCardId, setPendingQuestionCardId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [includedFilter, setIncludedFilter] = useState<IncludedFilter>('all');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [includeChildren, setIncludeChildren] = useState(true);
   const [treeOpen, setTreeOpen] = useState(false);
   const [filterTagIds, setFilterTagIds] = useState<string[]>([]);
   const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
   const [newPrompt, setNewPrompt] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newTopic, setNewTopic] = useState('');
+  const [newPromptKind, setNewPromptKind] = useState<PromptLibraryKind>('primary');
+  const [newParentQuestionId, setNewParentQuestionId] = useState('');
   const [newTagIds, setNewTagIds] = useState<string[]>([]);
   const [newSubjectTagIds, setNewSubjectTagIds] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createAdvancedTagEditorOpen, setCreateAdvancedTagEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editTopic, setEditTopic] = useState('');
+  const [editPromptKind, setEditPromptKind] = useState<PromptLibraryKind>('primary');
+  const [editParentQuestionId, setEditParentQuestionId] = useState('');
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
   const [editSubjectTagIds, setEditSubjectTagIds] = useState<string[]>([]);
   const [advancedTagEditorId, setAdvancedTagEditorId] = useState<string | null>(null);
@@ -232,10 +251,10 @@ export default function StudioQuestionsPane() {
     try {
       const res = await fetch('/api/admin/questions', { cache: 'no-store', credentials: 'same-origin' });
       const data = (await res.json().catch(() => ({}))) as QuestionsResponse;
-      throwIfJsonApiFailed(res, data, 'Questions could not be loaded. Try again.');
+      throwIfJsonApiFailed(res, data, 'Prompts could not be loaded. Try again.');
       setQuestions(data.questions || []);
     } catch (e) {
-      feedback.showError(e instanceof Error ? e.message : 'Failed to load questions', 'Could not load questions');
+      feedback.showError(e instanceof Error ? e.message : 'Failed to load prompts', 'Could not load prompts');
     } finally {
       questionsLoadInFlightRef.current = false;
       setLoading(false);
@@ -291,6 +310,18 @@ export default function StudioQuestionsPane() {
     [allTags, filterTagIds]
   );
 
+  const categoryOptions = useMemo(
+    () => Array.from(new Set(questions.map((question) => question.category).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [questions]
+  );
+  const topicOptions = useMemo(
+    () => Array.from(new Set(questions
+      .filter((question) => !selectedCategory || question.category === selectedCategory)
+      .map((question) => question.topic)
+      .filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [questions, selectedCategory]
+  );
+
   const filteredQuestions = useMemo(() => {
     const q = search.trim().toLowerCase();
     return questions.filter(question => {
@@ -298,6 +329,8 @@ export default function StudioQuestionsPane() {
       const included = isIncluded(question);
       if (includedFilter === 'included' && !included) return false;
       if (includedFilter === 'notIncluded' && included) return false;
+      if (selectedCategory && question.category !== selectedCategory) return false;
+      if (selectedTopic && question.topic !== selectedTopic) return false;
       if (q && !question.prompt_lowercase.includes(q)) return false;
       if (!tagMatchesSelection(question, selectedTagId, selectedDescendantIds, includeChildren)) return false;
       for (const ids of Object.values(groupedTagFilters)) {
@@ -312,11 +345,18 @@ export default function StudioQuestionsPane() {
     pendingQuestionId,
     questions,
     search,
+    selectedCategory,
     selectedDescendantIds,
     selectedTagId,
+    selectedTopic,
   ]);
 
-  const saveQuestion = useCallback(async (questionId: string, body: { prompt?: string; tagIds?: string[]; subjectTagIds?: string[] }) => {
+  const orderedFilteredQuestions = useMemo(
+    () => [...filteredQuestions].sort(comparePromptLibraryOrder),
+    [filteredQuestions]
+  );
+
+  const saveQuestion = useCallback(async (questionId: string, body: UpdateQuestionInput) => {
     setBusyId(questionId);
     setBusyLabel('Saving question...');
     if (body.prompt !== undefined) setEditSaveState('saving');
@@ -344,6 +384,26 @@ export default function StudioQuestionsPane() {
       setBusyLabel(null);
     }
   }, [feedback]);
+
+  const insertQuestionIntoCard = useCallback((question: Question) => {
+    if (!selectedCardId || !insertPromptText(question.prompt)) {
+      feedback.showError('Open a Card in Compose beside Prompts before adding writing guidance.', 'Open a Card first');
+      return;
+    }
+    feedback.showSuccess('Prompt copied into the open Card. Library edits will not change the Card.');
+  }, [feedback, insertPromptText, selectedCardId]);
+
+  const insertSelectedTopicIntoCard = useCallback(() => {
+    if (!selectedTopic || !selectedCardId) return;
+    const topicPrompts = questions
+      .filter((question) => question.topic === selectedTopic && (!selectedCategory || question.category === selectedCategory))
+      .sort(comparePromptLibraryOrder);
+    if (topicPrompts.length === 0 || topicPrompts.some((question) => !insertPromptText(question.prompt))) {
+      feedback.showError('Keep the Card open in Compose while adding Topic prompts.', 'Could not add Topic');
+      return;
+    }
+    feedback.showSuccess(`${topicPrompts.length} Topic prompt${topicPrompts.length === 1 ? '' : 's'} copied into the open Card.`);
+  }, [feedback, insertPromptText, questions, selectedCardId, selectedCategory, selectedTopic]);
 
   const clearEditSaveTimer = useCallback(() => {
     if (editSaveTimerRef.current !== null) {
@@ -508,7 +568,16 @@ export default function StudioQuestionsPane() {
       const res = await fetch('/api/admin/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, tagIds: newTagIds, subjectTagIds: newSubjectTagIds }),
+        body: JSON.stringify({
+          prompt,
+          tagIds: newTagIds,
+          subjectTagIds: newSubjectTagIds,
+          category: newCategory,
+          topic: newTopic,
+          promptKind: newPromptKind,
+          parentQuestionId: newPromptKind === 'followup' ? newParentQuestionId || null : null,
+          promptOrder: 0,
+        }),
         cache: 'no-store',
         credentials: 'same-origin',
       });
@@ -518,6 +587,10 @@ export default function StudioQuestionsPane() {
         setQuestions(prev => [data.question!, ...prev]);
       }
       setNewPrompt('');
+      setNewCategory('');
+      setNewTopic('');
+      setNewPromptKind('primary');
+      setNewParentQuestionId('');
       setNewTagIds([]);
       setNewSubjectTagIds([]);
       setCreateOpen(false);
@@ -529,7 +602,7 @@ export default function StudioQuestionsPane() {
       setBusyId(null);
       setBusyLabel(null);
     }
-  }, [feedback, newPrompt, newSubjectTagIds, newTagIds]);
+  }, [feedback, newCategory, newParentQuestionId, newPrompt, newPromptKind, newSubjectTagIds, newTagIds, newTopic]);
 
   const deleteQuestion = useCallback(async (question: Question) => {
     setBusyId(question.docId);
@@ -560,6 +633,10 @@ export default function StudioQuestionsPane() {
     setCreateOpen(false);
     setCreateAdvancedTagEditorOpen(false);
     setNewPrompt('');
+    setNewCategory('');
+    setNewTopic('');
+    setNewPromptKind('primary');
+    setNewParentQuestionId('');
     setNewTagIds([]);
     setNewSubjectTagIds([]);
   }, []);
@@ -567,15 +644,17 @@ export default function StudioQuestionsPane() {
   const clearFilters = useCallback(() => {
     setSearch('');
     setIncludedFilter('all');
+    setSelectedCategory('');
+    setSelectedTopic('');
     setSelectedTagId(null);
     setFilterTagIds([]);
     setTagFilterModalOpen(false);
   }, []);
 
   return (
-    <aside className={styles.studioQuestionsPane} aria-label="Questions">
+    <aside className={styles.studioQuestionsPane} aria-label="Prompts">
       <div className={styles.studioQuestionsHeader}>
-        <h2 className={styles.studioComposeTitle}>Questions</h2>
+        <h2 className={styles.studioComposeTitle}>Prompts</h2>
         <button
           type="button"
           className={`${styles.studioQuestionPrimaryButton} ${styles.studioQuestionAddButton}`}
@@ -596,6 +675,49 @@ export default function StudioQuestionsPane() {
             placeholder="Question prompt"
             rows={3}
           />
+          <div className={styles.studioPromptLibraryFields}>
+            <input
+              className={styles.studioQuestionInput}
+              value={newCategory}
+              onChange={(event) => setNewCategory(event.target.value)}
+              placeholder="Category"
+              aria-label="Prompt category"
+            />
+            <input
+              className={styles.studioQuestionInput}
+              value={newTopic}
+              onChange={(event) => setNewTopic(event.target.value)}
+              placeholder="Topic"
+              aria-label="Prompt topic"
+            />
+            <select
+              className={styles.studioQuestionSelect}
+              value={newPromptKind}
+              onChange={(event) => {
+                const kind = event.target.value as PromptLibraryKind;
+                setNewPromptKind(kind);
+                if (kind === 'primary') setNewParentQuestionId('');
+              }}
+              aria-label="Prompt kind"
+            >
+              <option value="primary">Primary question</option>
+              <option value="followup">Follow-up question</option>
+            </select>
+            {newPromptKind === 'followup' ? (
+              <select
+                className={styles.studioQuestionSelect}
+                value={newParentQuestionId}
+                onChange={(event) => setNewParentQuestionId(event.target.value)}
+                aria-label="Primary question"
+                required
+              >
+                <option value="">Choose primary question</option>
+                {questions
+                  .filter((question) => question.promptKind === 'primary' && question.category === newCategory.trim() && question.topic === newTopic.trim())
+                  .map((question) => <option key={question.docId} value={question.docId}>{question.prompt}</option>)}
+              </select>
+            ) : null}
+          </div>
           <div className={styles.studioQuestionTagSummaryRow}>
             <DimensionalTagVerticalChips
               tagIds={newTagIds}
@@ -646,7 +768,7 @@ export default function StudioQuestionsPane() {
             <button
               type="submit"
               className={styles.studioQuestionPrimaryButton}
-              disabled={busyId === 'new' || !newPrompt.trim()}
+              disabled={busyId === 'new' || !newPrompt.trim() || (newPromptKind === 'followup' && !newParentQuestionId)}
               aria-label="Save question"
               title="Save question"
             >
@@ -680,10 +802,41 @@ export default function StudioQuestionsPane() {
             value={includedFilter}
             onChange={e => setIncludedFilter(e.target.value as IncludedFilter)}
           >
-            <option value="all">All questions</option>
+            <option value="all">All prompts</option>
             <option value="included">Assigned</option>
             <option value="notIncluded">Unassigned</option>
           </select>
+          <select
+            className={styles.studioQuestionSelect}
+            value={selectedCategory}
+            onChange={(event) => {
+              setSelectedCategory(event.target.value);
+              setSelectedTopic('');
+            }}
+            aria-label="Prompt category filter"
+          >
+            <option value="">All categories</option>
+            {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
+          <select
+            className={styles.studioQuestionSelect}
+            value={selectedTopic}
+            onChange={(event) => setSelectedTopic(event.target.value)}
+            aria-label="Prompt topic filter"
+          >
+            <option value="">All topics</option>
+            {topicOptions.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
+          </select>
+          <button
+            type="button"
+            className={styles.studioQuestionSmallButton}
+            disabled={!selectedTopic || !selectedCardId}
+            onClick={insertSelectedTopicIntoCard}
+            aria-label="Add selected Topic prompts to open Card"
+            title={selectedCardId ? 'Copy this Topic into the open Card' : 'Open a Card in Compose first'}
+          >
+            <ListPlus size={16} aria-hidden="true" />
+          </button>
           <button
             type="button"
             className={styles.studioQuestionClearButton}
@@ -740,7 +893,7 @@ export default function StudioQuestionsPane() {
           aria-expanded={treeOpen}
           onClick={() => setTreeOpen(open => !open)}
         >
-          <span>All questions</span>
+          <span>All prompts</span>
           <span>{treeOpen ? 'Hide' : 'Show'}</span>
         </button>
         <label className={styles.studioQuestionToggleLabel}>
@@ -759,7 +912,7 @@ export default function StudioQuestionsPane() {
               className={`${styles.studioQuestionTreeButton} ${selectedTagId === null ? styles.studioQuestionTreeButtonActive : ''}`}
               onClick={() => setSelectedTagId(null)}
             >
-              <span>All questions</span>
+              <span>All prompts</span>
               <span className={styles.studioQuestionTreeCount}>{questions.length}</span>
             </button>
             <button
@@ -782,11 +935,11 @@ export default function StudioQuestionsPane() {
       </div>
 
       <div className={styles.studioQuestionsList}>
-        {loading ? <p className={styles.metaMuted}>Loading questions...</p> : null}
+        {loading ? <p className={styles.metaMuted}>Loading prompts...</p> : null}
         {!loading && filteredQuestions.length === 0 ? (
-          <p className={styles.metaMuted}>No questions match this view.</p>
+          <p className={styles.metaMuted}>No prompts match this view.</p>
         ) : null}
-        {filteredQuestions.map(question => {
+        {orderedFilteredQuestions.map(question => {
           const included = isIncluded(question);
           const busy = busyId === question.docId;
           const editing = editingId === question.docId;
@@ -838,6 +991,62 @@ export default function StudioQuestionsPane() {
                     rows={3}
                     autoFocus
                   />
+                  <div className={styles.studioPromptLibraryFields}>
+                    <input
+                      className={styles.studioQuestionInput}
+                      value={editCategory}
+                      onChange={(event) => setEditCategory(event.target.value)}
+                      placeholder="Category"
+                      aria-label="Prompt category"
+                    />
+                    <input
+                      className={styles.studioQuestionInput}
+                      value={editTopic}
+                      onChange={(event) => setEditTopic(event.target.value)}
+                      placeholder="Topic"
+                      aria-label="Prompt topic"
+                    />
+                    <select
+                      className={styles.studioQuestionSelect}
+                      value={editPromptKind}
+                      onChange={(event) => {
+                        const kind = event.target.value as PromptLibraryKind;
+                        setEditPromptKind(kind);
+                        if (kind === 'primary') setEditParentQuestionId('');
+                      }}
+                      aria-label="Prompt kind"
+                    >
+                      <option value="primary">Primary question</option>
+                      <option value="followup">Follow-up question</option>
+                    </select>
+                    {editPromptKind === 'followup' ? (
+                      <select
+                        className={styles.studioQuestionSelect}
+                        value={editParentQuestionId}
+                        onChange={(event) => setEditParentQuestionId(event.target.value)}
+                        aria-label="Primary question"
+                      >
+                        <option value="">Choose primary question</option>
+                        {questions
+                          .filter((candidate) => candidate.docId !== question.docId && candidate.promptKind === 'primary' && candidate.category === editCategory.trim() && candidate.topic === editTopic.trim())
+                          .map((candidate) => <option key={candidate.docId} value={candidate.docId}>{candidate.prompt}</option>)}
+                      </select>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={styles.studioQuestionSmallButton}
+                      disabled={busy || (editPromptKind === 'followup' && !editParentQuestionId)}
+                      onClick={() => void saveQuestion(question.docId, {
+                        category: editCategory,
+                        topic: editTopic,
+                        promptKind: editPromptKind,
+                        parentQuestionId: editPromptKind === 'followup' ? editParentQuestionId || null : null,
+                        promptOrder: question.promptOrder,
+                      })}
+                    >
+                      Save organization
+                    </button>
+                  </div>
                 </>
               ) : (
                 <button
@@ -846,6 +1055,10 @@ export default function StudioQuestionsPane() {
                   onClick={() => {
                     setEditingId(question.docId);
                     setEditPrompt(question.prompt);
+                    setEditCategory(question.category);
+                    setEditTopic(question.topic);
+                    setEditPromptKind(question.promptKind);
+                    setEditParentQuestionId(question.parentQuestionId ?? '');
                     setEditSaveState('idle');
                   }}
                   aria-label={`Edit question: ${question.prompt}`}
@@ -853,6 +1066,15 @@ export default function StudioQuestionsPane() {
                   <span className={styles.studioQuestionPrompt}>{question.prompt}</span>
                 </button>
               )}
+              {!editing ? (
+                <p className={styles.studioPromptLibraryPath}>
+                  {question.category || 'Unorganized'}
+                  {' / '}
+                  {question.topic || 'No topic'}
+                  {' · '}
+                  {question.promptKind === 'followup' ? 'Follow-up' : 'Primary'}
+                </p>
+              ) : null}
               {editing ? (
                 <div className={styles.studioQuestionAutosaveStatus} role="status" aria-live="polite">
                   {editSaveState === 'saving'
@@ -941,6 +1163,16 @@ export default function StudioQuestionsPane() {
                 onKeyDown={(event) => event.stopPropagation()}
               >
                 <>
+                    <button
+                      type="button"
+                      className={styles.studioQuestionSmallButton}
+                      disabled={busy || !selectedCardId}
+                      onClick={() => insertQuestionIntoCard(question)}
+                      aria-label="Add prompt to open Card"
+                      title={selectedCardId ? 'Copy prompt into the open Card' : 'Open a Card in Compose first'}
+                    >
+                      <ListPlus size={16} aria-hidden="true" />
+                    </button>
                     <button
                       type="button"
                       className={styles.studioQuestionSmallButton}

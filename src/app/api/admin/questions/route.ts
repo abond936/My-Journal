@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ question }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const validationFailure = message.includes('dimensional tag');
+    const validationFailure = message.includes('dimensional tag') || message.includes('prompt') || message.includes('question');
     return errorResponse(
       {
         ok: false,

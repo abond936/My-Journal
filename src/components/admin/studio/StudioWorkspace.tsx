@@ -132,6 +132,15 @@ export default function StudioWorkspace() {
   const registerBodyMediaInsert = useCallback((handler: ((media: Media) => void) | null) => {
     studioImperatives.register('bodyMediaInsert', handler);
   }, [studioImperatives]);
+  const registerPromptTextInsert = useCallback((handler: ((prompt: string) => void) | null) => {
+    studioImperatives.register('promptTextInsert', handler);
+  }, [studioImperatives]);
+  const insertPromptText = useCallback((prompt: string) => {
+    const handler = studioImperatives.get('promptTextInsert');
+    if (!handler) return false;
+    handler(prompt);
+    return true;
+  }, [studioImperatives]);
   const bodyMediaInsertRef = studioImperatives.bodyMediaInsertRef;
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
   const collectionsRemoveCardRef = useRef<((cardId: string) => void) | null>(null);
@@ -572,6 +581,8 @@ export default function StudioWorkspace() {
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
+      insertPromptText,
+      registerPromptTextInsert,
       bodyMediaInsertRef,
       registerStoryPileMembershipChanged,
     }),
@@ -606,6 +617,8 @@ export default function StudioWorkspace() {
       hasSelectedCardMedia,
       openSelectedCardMediaEditor,
       registerBodyMediaInsert,
+      insertPromptText,
+      registerPromptTextInsert,
       bodyMediaInsertRef,
       registerStoryPileMembershipChanged,
     ]

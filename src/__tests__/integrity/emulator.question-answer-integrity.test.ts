@@ -127,6 +127,56 @@ describeIfEmulator('Question-answer integrity (Firestore emulator)', () => {
     );
     expect((await db.collection('questions').doc('question-delete').get()).exists).toBe(true);
   });
+
+  it('persists a follow-up only beneath a primary question in the same Topic', async () => {
+    const { createQuestion } = await import('@/lib/services/questionService');
+    const primary = await createQuestion({
+      prompt: 'What was your childhood home like?',
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'primary',
+      parentQuestionId: null,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    });
+    const followup = await createQuestion({
+      prompt: 'Which room do you remember best?',
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'followup',
+      parentQuestionId: primary.docId,
+      promptOrder: 1,
+      tagIds: [],
+      subjectTagIds: [],
+    });
+
+    expect(followup.parentQuestionId).toBe(primary.docId);
+    await expect(createQuestion({
+      prompt: 'What happened at school?',
+      category: 'Life stories',
+      topic: 'School',
+      promptKind: 'followup',
+      parentQuestionId: primary.docId,
+      promptOrder: 0,
+      tagIds: [],
+      subjectTagIds: [],
+    })).rejects.toThrow('same Category and Topic');
+  });
+
+  it('protects a primary question while follow-up prompts reference it', async () => {
+    const { createQuestion, deleteQuestion, QuestionAnswerConflictError } = await import('@/lib/services/questionService');
+    const primary = await createQuestion({
+      prompt: 'Who helped you?', category: 'People', topic: 'Influences', promptKind: 'primary',
+      parentQuestionId: null, promptOrder: 0, tagIds: [], subjectTagIds: [],
+    });
+    await createQuestion({
+      prompt: 'What did they teach you?', category: 'People', topic: 'Influences', promptKind: 'followup',
+      parentQuestionId: primary.docId, promptOrder: 0, tagIds: [], subjectTagIds: [],
+    });
+
+    await expect(deleteQuestion(primary.docId)).rejects.toBeInstanceOf(QuestionAnswerConflictError);
+  });
 });
 
 function minimalQuestion(docId: string) {

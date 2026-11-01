@@ -48,6 +48,7 @@ export interface RichTextEditorRef {
   getContent: () => string;
   setContent: (content: string) => void;
   insertImage: (media: Media) => void;
+  insertPrompt: (prompt: string) => void;
 }
 
 const RichTextDropCursor = Extension.create({
@@ -389,10 +390,24 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     handleContentUpdate(newContent);
   }, [editor, handleContentUpdate]);
 
+  const insertPrompt = useCallback((prompt: string) => {
+    const text = prompt.trim();
+    if (!editor || !text) return;
+    editor
+      .chain()
+      .insertContent([
+        { type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text }] },
+        { type: 'paragraph' },
+      ])
+      .run();
+    handleContentUpdate(editor.getHTML());
+  }, [editor, handleContentUpdate]);
+
   useImperativeHandle(ref, () => ({
     getContent: () => editor?.getHTML() || '',
     setContent: (newContent: string) => editor?.commands.setContent(newContent, true),
     insertImage,
+    insertPrompt,
   }));
 
   const handleToolbarButtonPress = (e: React.MouseEvent<HTMLButtonElement>, command: () => void) => {
