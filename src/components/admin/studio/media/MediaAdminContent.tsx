@@ -49,6 +49,7 @@ import { mediaMatchesDimensions, mediaMatchesSearch } from '@/lib/utils/mediaAss
 import { matchesTemporalValueFilter } from '@/lib/utils/temporalValue';
 import { hasDimensionAssignment } from '@/lib/utils/dimensionAssignment';
 import { matchesDimensionReviewFilter } from '@/lib/utils/dimensionReview';
+import { uploadImageFileToMediaBank } from '@/lib/utils/uploadImageFileToMediaBank';
 
 export type MediaAdminContentProps = {
   /** When true (e.g. Admin Studio column), use compact scroll layout. */
@@ -214,6 +215,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     dimensionalQueryOverlay,
     setDimensionalQueryOverlay,
     resolveMediaById,
+    registerCreatedMedia,
   } = useMedia();
 
   const { tags: allTags } = useTag();
@@ -249,6 +251,8 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const [assignedOnlyLoading, setAssignedOnlyLoading] = useState(false);
   const assignedOnlyMediaRef = useRef<typeof media>([]);
   const [importPickerOpen, setImportPickerOpen] = useState(false);
+  const deviceInputRef = useRef<HTMLInputElement | null>(null);
+  const [deviceImportBusy, setDeviceImportBusy] = useState(false);
   const [tagEditorMediaIds, setTagEditorMediaIds] = useState<string[]>([]);
   const [browseGroupBy, setBrowseGroupBy] = useState(initialLocalFilterPrefsRef.current.browseGroupBy);
   const [galleryCardsForGrouping, setGalleryCardsForGrouping] = useState<Card[]>([]);
@@ -537,6 +541,39 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         `${metadataNote} Imported media are selected and ready to codify or caption.`,
       'Import complete'
     );
+  };
+
+  const handleDeviceFiles = async (files: File[]) => {
+    if (!files.length || deviceImportBusy) return;
+    setDeviceImportBusy(true);
+    const imported: Media[] = [];
+    const failedNames: string[] = [];
+    try {
+      for (const file of files) {
+        try {
+          const item = await uploadImageFileToMediaBank(file);
+          registerCreatedMedia(item);
+          imported.push(item);
+        } catch {
+          failedNames.push(file.name);
+        }
+      }
+      if (imported.length) {
+        setSelectedMediaIds(imported.map((item) => item.docId));
+        feedback.showSuccess(
+          `${imported.length} photo${imported.length === 1 ? '' : 's'} added to Media and selected.`,
+          'Device import complete'
+        );
+      }
+      if (failedNames.length) {
+        feedback.showError(
+          `${failedNames.length} photo${failedNames.length === 1 ? '' : 's'} could not be added: ${failedNames.join(', ')}`,
+          imported.length ? 'Some photos were not added' : 'Device import failed'
+        );
+      }
+    } finally {
+      setDeviceImportBusy(false);
+    }
   };
 
   const handleStudioDimensionalFilterChange = useCallback(
@@ -1198,7 +1235,28 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 onClick={() => setImportPickerOpen(true)}
                 className={styles.studioImportButton}
               >
-                Import
+                Import folder
+              </button>
+              <input
+                ref={deviceInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                data-testid="media-device-input"
+                onChange={(event) => {
+                  const files = Array.from(event.currentTarget.files ?? []);
+                  event.currentTarget.value = '';
+                  void handleDeviceFiles(files);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => deviceInputRef.current?.click()}
+                disabled={deviceImportBusy}
+                className={styles.studioImportButton}
+              >
+                {deviceImportBusy ? 'Adding photos…' : 'Add from device'}
               </button>
             </div>
           </div>

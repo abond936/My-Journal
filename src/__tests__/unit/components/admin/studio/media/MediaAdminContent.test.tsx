@@ -8,6 +8,9 @@ import { DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES } from '@/lib/preferences/
 
 const useMediaMock = jest.fn();
 const useStudioShellOptionalMock = jest.fn();
+const uploadImageFileToMediaBankMock = jest.fn();
+const feedbackShowSuccessMock = jest.fn();
+const feedbackShowErrorMock = jest.fn();
 
 jest.mock('@/lib/preferences/adminFilters', () => {
   const actual = jest.requireActual('@/lib/preferences/adminFilters');
@@ -35,9 +38,13 @@ jest.mock('@/components/providers/TagProvider', () => ({
 
 jest.mock('@/components/providers/AppFeedbackProvider', () => ({
   useAppFeedback: () => ({
-    showSuccess: jest.fn(),
-    showError: jest.fn(),
+    showSuccess: feedbackShowSuccessMock,
+    showError: feedbackShowErrorMock,
   }),
+}));
+
+jest.mock('@/lib/utils/uploadImageFileToMediaBank', () => ({
+  uploadImageFileToMediaBank: (...args: unknown[]) => uploadImageFileToMediaBankMock(...args),
 }));
 
 jest.mock('@/components/admin/studio/media/useMediaStacks', () => ({
@@ -151,6 +158,7 @@ const baseMediaContext = {
   setDimensionalQueryOverlay: jest.fn(),
   setTransientDimensionalQueryOverlay: jest.fn(),
   resolveMediaById: jest.fn(),
+  registerCreatedMedia: jest.fn(),
 };
 
 describe('MediaAdminContent', () => {
@@ -160,6 +168,7 @@ describe('MediaAdminContent', () => {
     jest.clearAllMocks();
     global.fetch = fetchMock;
     fetchMock.mockReset();
+    uploadImageFileToMediaBankMock.mockReset();
     useMediaMock.mockReturnValue(baseMediaContext);
     useStudioShellOptionalMock.mockReturnValue(null);
     const { readStoredMediaAdminLocalFilterPreferences } = jest.requireMock(
@@ -170,6 +179,54 @@ describe('MediaAdminContent', () => {
     readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
       DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
     );
+  });
+
+  it('adds selected device photos to the Media bank and selects the successful imports', async () => {
+    const setSelectedMediaIds = jest.fn();
+    const registerCreatedMedia = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      setSelectedMediaIds,
+      registerCreatedMedia,
+    });
+    uploadImageFileToMediaBankMock
+      .mockResolvedValueOnce({ docId: 'media-1', filename: 'one.jpg' })
+      .mockResolvedValueOnce({ docId: 'media-2', filename: 'two.jpg' });
+    render(<MediaAdminContent embedded />);
+
+    const input = screen.getByTestId('media-device-input');
+    const files = [
+      new File(['one'], 'one.jpg', { type: 'image/jpeg' }),
+      new File(['two'], 'two.jpg', { type: 'image/jpeg' }),
+    ];
+    fireEvent.change(input, { target: { files } });
+
+    await waitFor(() => expect(registerCreatedMedia).toHaveBeenCalledTimes(2));
+    expect(setSelectedMediaIds).toHaveBeenCalledWith(['media-1', 'media-2']);
+    expect(feedbackShowSuccessMock).toHaveBeenCalledWith(
+      '2 photos added to Media and selected.',
+      'Device import complete'
+    );
+  });
+
+  it('keeps successful device imports selected and reports individual failures', async () => {
+    const setSelectedMediaIds = jest.fn();
+    useMediaMock.mockReturnValue({ ...baseMediaContext, setSelectedMediaIds });
+    uploadImageFileToMediaBankMock
+      .mockResolvedValueOnce({ docId: 'media-1', filename: 'one.jpg' })
+      .mockRejectedValueOnce(new Error('Upload failed'));
+    render(<MediaAdminContent embedded />);
+
+    fireEvent.change(screen.getByTestId('media-device-input'), { target: { files: [
+      new File(['one'], 'one.jpg', { type: 'image/jpeg' }),
+      new File(['bad'], 'bad.jpg', { type: 'image/jpeg' }),
+    ] } });
+
+    await waitFor(() => expect(feedbackShowErrorMock).toHaveBeenCalledWith(
+      '1 photo could not be added: bad.jpg',
+      'Some photos were not added'
+    ));
+    expect(setSelectedMediaIds).toHaveBeenCalledWith(['media-1']);
   });
 
   it('uses the simplified assignment and exact-match filters without a separate match workspace', () => {

@@ -48,6 +48,7 @@
 
 .studioHeaderActions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--spacing-xs);
@@ -849,6 +850,12 @@
 @media (max-width: 768px) {
   .container {
     padding: var(--spacing-md);
+  }
+
+  .studioHeaderActions {
+    width: 100%;
+    justify-content: flex-start;
+    align-self: stretch;
   }
 
   .bulkActions {

@@ -1539,6 +1539,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused service, Reader-route, Media-authorization, audience-impact, account-impact, Reader Home, navigation, and administrator-boundary suites pass. The complete runnable Jest gate passes 234 suites and 1,278 tests, with four suites and 29 tests skipped by their declared environment gates. The optimized production build compiles 63 routes/pages and validates types. No production request, content record, account, audience, or Storage object changed.
 
+### Thirty-third implementation slice — Mobile Media device intake
+
+**Definition:** Ready
+
+**Execution:** Verified locally and through the protected PR gate
+
+**Outcome** — Let a phone-first author bring selected device images into the private Media bank from the focused Media destination, without requiring a folder import or beginning a Story first.
+
+**Includes** — A visible Add from device action; the browser or operating-system image chooser; multi-image selection; sequential use of the existing authoritative browser-upload owner; immediate provider registration; successful imports selected for the next classification or Card action; retention of successes when another file fails; exact failed filenames; a bounded busy state; and a distinct Import folder action for the existing desktop-oriented workflow.
+
+**Excludes** — Whole-device synchronization; direct dependence on Apple Photos or Google Photos references; background import; automatic classification; publication; adding the selection to an existing Card; video; replacement of Story-specific device intake; and production content or Storage mutation during verification.
+
+**Contracts** — Device intake copies only the files the author selects into the canonical private Media bank. Import does not publish, classify, review, or share Media. A partial failure preserves and selects every successful import. The chooser does not force camera capture, allowing the device to offer its available camera, photo-library, and Files sources. Desktop and mobile use the same Media identity and upload owner.
+
+**Completion evidence** — Focused Media coverage passes twenty-one tests, including complete and partial-failure device imports. Touched-code lint, production typecheck from a clean generated-type state, diff checks, the complete runnable Jest gate, and the optimized production build pass. No production request, content record, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
