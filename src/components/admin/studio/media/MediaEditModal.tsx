@@ -21,6 +21,19 @@ type CurrentCardContext = {
   roles: string[];
 };
 
+type ReplacementCandidate = {
+  file: File;
+  previewUrl: string;
+  width: number | null;
+  height: number | null;
+};
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function MediaEditModal({
   isOpen,
   mediaItems,
@@ -61,6 +74,7 @@ export default function MediaEditModal({
   const [focalV, setFocalV] = useState(50);
   const [saving, setSaving] = useState(false);
   const [replacing, setReplacing] = useState(false);
+  const [replacementCandidate, setReplacementCandidate] = useState<ReplacementCandidate | null>(null);
   const [relatedCards, setRelatedCards] = useState<RelatedCardSummary[]>([]);
   const [loadingRelatedCards, setLoadingRelatedCards] = useState(false);
 
@@ -71,6 +85,17 @@ export default function MediaEditModal({
     setFocalH(horizontal);
     setFocalV(vertical);
   }, [selectedMedia]);
+
+  useEffect(() => {
+    setReplacementCandidate(null);
+  }, [selectedMedia?.docId]);
+
+  useEffect(() => {
+    const previewUrl = replacementCandidate?.previewUrl;
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [replacementCandidate?.previewUrl]);
 
   useEffect(() => {
     if (!isOpen || !selectedMedia) return;
@@ -157,32 +182,57 @@ export default function MediaEditModal({
     }
   };
 
-  const handleReplaceFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !selectedMedia) return;
+    const previewUrl = URL.createObjectURL(file);
+    setReplacementCandidate({ file, previewUrl, width: null, height: null });
+    const image = new window.Image();
+    image.onload = () => {
+      setReplacementCandidate((current) => current?.previewUrl === previewUrl
+        ? { ...current, width: image.naturalWidth, height: image.naturalHeight }
+        : current);
+    };
+    image.src = previewUrl;
+    event.target.value = '';
+  };
+
+  const handleConfirmReplacement = async () => {
+    if (!replacementCandidate || !selectedMedia) return;
     setReplacing(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', replacementCandidate.file);
+      formData.append('sameUnderlyingMedia', 'true');
       const response = await fetch(`/api/images/${selectedMedia.docId}/replace`, {
         method: 'POST',
         body: formData,
       });
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        media?: Media;
+        processingComplete?: boolean;
+      };
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         throw new Error(typeof data.message === 'string' ? data.message : 'Failed to replace image');
       }
-      const refreshed = await fetch(`/api/images/${selectedMedia.docId}`, {
-        cache: 'no-store',
-        credentials: 'same-origin',
-      });
-      const refreshedData = (await refreshed.json().catch(() => ({}))) as { media?: Media };
-      if (refreshed.ok && refreshedData.media) {
+      if (data.media) {
         setLocalOverrides((current) => ({
           ...current,
-          [selectedMedia.docId]: refreshedData.media!,
+          [selectedMedia.docId]: data.media!,
         }));
-        onMediaUpdated?.(refreshedData.media);
+        onMediaUpdated?.(data.media);
+      }
+      setReplacementCandidate(null);
+      if (data.processingComplete === false) {
+        feedback.showToast({
+          title: 'Image replaced; processing needs attention',
+          message: data.message || 'The new source is durable, but a rendition or search stage needs retry.',
+          tone: 'warning',
+          persistent: true,
+        });
+      } else {
+        feedback.showSuccess('The image was replaced without changing its caption, tags, or Story relationships.');
       }
     } catch (error) {
       feedback.showError(
@@ -191,7 +241,6 @@ export default function MediaEditModal({
       );
     } finally {
       setReplacing(false);
-      event.target.value = '';
     }
   };
 
@@ -350,6 +399,74 @@ export default function MediaEditModal({
                   <div className={styles.emptyState}>This image is not assigned to any cards.</div>
                 )}
               </div>
+
+              {replacementCandidate ? (
+                <section className={styles.replacementReview} aria-label="Review image replacement">
+                  <div className={styles.replacementHeading}>
+                    <div>
+                      <div className={styles.fieldLabel}>Confirm this is the same underlying item</div>
+                      <p className={styles.hint}>
+                        Replacement keeps this Media ID, caption, tags, review decisions, and every Story relationship.
+                        Choose Cancel if this is a different photo or scan.
+                      </p>
+                    </div>
+                  </div>
+                  <div className={styles.replacementComparison}>
+                    <div className={styles.replacementSide}>
+                      <span className={styles.replacementLabel}>Current</span>
+                      <div className={styles.replacementPreviewFrame}>
+                        <JournalImage
+                          src={getDisplayUrl(selectedMedia)}
+                          alt={`Current ${selectedMedia.caption || selectedMedia.filename}`}
+                          fill
+                          className={styles.replacementPreviewImage}
+                          sizes="(max-width: 860px) 100vw, 320px"
+                        />
+                      </div>
+                      <span className={styles.replacementFacts}>
+                        {selectedMedia.filename} · {selectedMedia.width}×{selectedMedia.height} · {formatBytes(selectedMedia.size)}
+                      </span>
+                    </div>
+                    <div className={styles.replacementSide}>
+                      <span className={styles.replacementLabel}>Proposed replacement</span>
+                      <div className={styles.replacementPreviewFrame}>
+                        <JournalImage
+                          src={replacementCandidate.previewUrl}
+                          alt={`Proposed replacement ${replacementCandidate.file.name}`}
+                          fill
+                          className={styles.replacementPreviewImage}
+                          sizes="(max-width: 860px) 100vw, 320px"
+                        />
+                      </div>
+                      <span className={styles.replacementFacts}>
+                        {replacementCandidate.file.name}
+                        {replacementCandidate.width && replacementCandidate.height
+                          ? ` · ${replacementCandidate.width}×${replacementCandidate.height}`
+                          : ''}
+                        {' · '}{formatBytes(replacementCandidate.file.size)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.replacementActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setReplacementCandidate(null)}
+                      disabled={replacing}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void handleConfirmReplacement()}
+                      disabled={replacing}
+                    >
+                      {replacing ? 'Replacing...' : 'Yes, replace this Media item'}
+                    </button>
+                  </div>
+                </section>
+              ) : null}
 
               <div className={styles.actions}>
                 <div className={styles.actionsLeft}>

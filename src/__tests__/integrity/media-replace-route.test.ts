@@ -41,9 +41,10 @@ const mockedReplaceMediaAssetContent =
 
 const adminSession = { user: { role: 'admin' } } as Awaited<ReturnType<typeof getServerSession>>;
 
-function makeRequest(file?: File): NextRequest {
+function makeRequest(file?: File, confirmed = false): NextRequest {
   const formData = new FormData();
   if (file) formData.set('file', file);
+  if (confirmed) formData.set('sameUnderlyingMedia', 'true');
   return {
     formData: async () => formData,
   } as NextRequest;
@@ -103,10 +104,13 @@ describe('POST /api/images/[id]/replace', () => {
 
   it('passes the existing media id through and replaces content in place on success', async () => {
     mockedGetServerSession.mockResolvedValueOnce(adminSession);
-    mockedReplaceMediaAssetContent.mockResolvedValueOnce();
+    mockedReplaceMediaAssetContent.mockResolvedValueOnce({
+      docId: 'media-shared',
+      readiness: { overall: 'ready' },
+    } as Awaited<ReturnType<typeof replaceMediaAssetContent>>);
 
     const file = makeImageFile('image-bytes');
-    const res = await POST(makeRequest(file), { params: Promise.resolve({ id: 'media-shared' }) });
+    const res = await POST(makeRequest(file, true), { params: Promise.resolve({ id: 'media-shared' }) });
     const payload = await res.json();
 
     expect(res.status).toBe(200);
@@ -117,7 +121,20 @@ describe('POST /api/images/[id]/replace', () => {
     );
     expect(payload).toMatchObject({
       message: 'Media asset media-shared replaced successfully.',
+      processingComplete: true,
     });
+  });
+
+  it('requires an explicit same-item confirmation before replacing', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+
+    const file = makeImageFile('image-bytes');
+    const res = await POST(makeRequest(file), { params: Promise.resolve({ id: 'media-shared' }) });
+    const payload = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(payload).toMatchObject({ code: 'MEDIA_REPLACE_CONFIRMATION_REQUIRED' });
+    expect(mockedReplaceMediaAssetContent).not.toHaveBeenCalled();
   });
 
   it('returns 404 when the target media row does not exist', async () => {
@@ -127,7 +144,7 @@ describe('POST /api/images/[id]/replace', () => {
     );
 
     const file = makeImageFile('image-bytes');
-    const res = await POST(makeRequest(file), { params: Promise.resolve({ id: 'media-missing' }) });
+    const res = await POST(makeRequest(file, true), { params: Promise.resolve({ id: 'media-missing' }) });
     const payload = await res.json();
 
     expect(res.status).toBe(404);
@@ -145,13 +162,30 @@ describe('POST /api/images/[id]/replace', () => {
     );
 
     const file = makeImageFile('image-bytes');
-    const res = await POST(makeRequest(file), { params: Promise.resolve({ id: 'media-bad' }) });
+    const res = await POST(makeRequest(file, true), { params: Promise.resolve({ id: 'media-bad' }) });
     const payload = await res.json();
 
     expect(res.status).toBe(409);
     expect(payload).toMatchObject({
       code: 'MEDIA_REPLACE_INVALID_TARGET',
       message: 'Media asset is missing required storage metadata.',
+      retryable: false,
+    });
+  });
+
+  it('returns a specific conflict when the replacement belongs to another Media item', async () => {
+    mockedGetServerSession.mockResolvedValueOnce(adminSession);
+    mockedReplaceMediaAssetContent.mockRejectedValueOnce(
+      new Error('This replacement exactly matches another media asset. Review the duplicate instead of replacing.')
+    );
+
+    const file = makeImageFile('duplicate-bytes');
+    const res = await POST(makeRequest(file, true), { params: Promise.resolve({ id: 'media-bad' }) });
+    const payload = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(payload).toMatchObject({
+      code: 'MEDIA_REPLACE_DUPLICATE',
       retryable: false,
     });
   });
