@@ -1388,6 +1388,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused creation owner, API, shared control, durable Collection pane, and Story-placement suites pass twenty tests. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
 
+### Twenty-fifth implementation slice — Explicit Collection structural destinations
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author shape a new Collection into Parts, Chapters, and Sections without first creating an ambiguous ordinary Card and retrofitting its placement role.
+
+**Includes** — Clear Add Part, Add Chapter, and Add Section actions in the Collections destination; required structural title; legal parent selection; title-only draft Story creation through the ordinary Card owner; explicit Collection-only Feed default; append order beneath the selected parent; revision-checked placement through the existing structure owner; published-structure locking; direct access to the canonical Card for later introductory content; and truthful recovery language if concurrent structure work prevents placement after Card creation.
+
+**Excludes** — Structural creation from phone Story Compose; automatic Story placement; audience inference; publication; arbitrary nesting; implicit child movement; structure promotion; deletion; production mutation; push; merge; and deployment.
+
+**Contracts** — A structural destination is a canonical Card plus one Collection-local placement, not a second content object. Part begins at Collection level. Chapter may begin at Collection level or beneath Part. Section requires Chapter. The new Card is a private draft and is explicitly excluded from Feed until the author changes that choice. Card creation and placement use their existing owners; because those owners are intentionally separate, a placement conflict preserves the created draft Card and directs the author to place that same Card again instead of deleting it or silently claiming success.
+
+**Completion evidence** — The focused durable Collection pane suite passes twelve tests, including Part and Section creation, role-compatible parenting, revision-checked graph replacement, published locking, existing-Card placement, and Card-preserving removal. The complete runnable Jest gate passes 228 suites and 1,240 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

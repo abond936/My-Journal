@@ -592,9 +592,10 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ✅ **Additional Collection creation** — An author can create an empty active draft Collection with a title and optional description from the Collections destination or Story Placement. Creation establishes durable authority but does not infer an audience, publish, create structural Cards, or place content automatically.
 
+✅ **Explicit structural destination creation** — The Collections destination provides Add Part, Add Chapter, and Add Section actions. Each action creates one title-only draft Story Card through the ordinary Card owner, defaults it out of Feed, and places it at a role-compatible Collection location through the revision-checked structure owner. A Part begins at Collection level; a Chapter may begin at Collection level or beneath a Part; a Section requires a Chapter. The author may open the same Card later to add introductory content. If concurrent Collection work prevents the second placement step, the recoverable draft Card remains visible in Cards and the author is told to place it again rather than receiving a false success.
+
 ⭕1 **Planned**
 
-- **Explicit structural placement actions** — Add clear Add Part, Add Chapter, and Add Section actions rather than an ambiguous generic Add child action. Add Card is already available through durable Collection search and Story Placement.
 - **Promote structure** — Create a new Collection from an existing Part, Chapter, or Section by copying that local arrangement and its Card placements while continuing to reference the same Cards. Later structural edits remain independent rather than propagating through live shared-parent hierarchy.
 - **Book edition** — Export or print a stable edition of the Collection's selected structure, Card versions, Media, order, and presentation without freezing continued work on the living Collection.
 - **Book playback** — Let the author choose original telling, final human narration, disclosed synthetic narration when separately available, or no playback for each included Card. Generate edition-owned QR destinations that remain stable after the living Card changes.

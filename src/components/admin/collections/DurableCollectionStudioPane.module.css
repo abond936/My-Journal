@@ -41,6 +41,27 @@
   gap: var(--spacing-xs);
 }
 
+.structuralActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: 1px solid var(--border1-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.structuralButtons,
+.structuralForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.structuralForm input {
+  min-width: 12rem;
+  flex: 1;
+}
+
 .addCard input,
 .searchResults li span {
   min-width: 0;
