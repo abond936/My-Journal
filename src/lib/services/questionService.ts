@@ -12,6 +12,7 @@ import {
   updateQuestionSchema,
 } from '@/lib/types/question';
 import { resolveSubjectTagState } from '@/lib/utils/subjectTag';
+import { exactQuestionDuplicateGroupForSurvivor } from '@/lib/utils/questionDuplicateReview';
 
 const COLLECTION = 'questions';
 
@@ -19,6 +20,13 @@ export class QuestionAnswerConflictError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'QuestionAnswerConflictError';
+  }
+}
+
+export class QuestionDuplicateConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuestionDuplicateConflictError';
   }
 }
 
@@ -291,6 +299,87 @@ export async function deleteQuestion(questionId: string): Promise<void> {
     }
     tx.delete(ref);
   });
+}
+
+export async function consolidateExactQuestionDuplicates(survivorId: string): Promise<Question> {
+  const questions = await listQuestions();
+  const group = exactQuestionDuplicateGroupForSurvivor(questions, survivorId);
+  if (!group) throw new QuestionDuplicateConflictError('No exact duplicate prompts remain for this question');
+  if (!group.canConsolidate) {
+    throw new QuestionDuplicateConflictError(group.blockedReason ?? 'This duplicate group cannot be consolidated safely');
+  }
+  const survivor = group.questions.find((question) => question.docId === survivorId);
+  if (!survivor) throw new Error('Question not found');
+  const linkedOwner = group.questions.find((question) => question.usedByCardIds.length > 0);
+  if (linkedOwner && linkedOwner.docId !== survivorId) {
+    throw new QuestionDuplicateConflictError('Keep the prompt that owns the existing Question Card');
+  }
+
+  const duplicateIds = new Set(group.questions.map((question) => question.docId));
+  const followups = survivor.promptKind === 'primary'
+    ? questions.filter((question) =>
+        question.promptKind === 'followup' &&
+        Boolean(question.parentQuestionId) &&
+        duplicateIds.has(question.parentQuestionId!)
+      )
+    : [];
+  if (group.questions.length + followups.length > 400) {
+    throw new QuestionDuplicateConflictError('This duplicate group is too large for one safe consolidation');
+  }
+
+  const tagIds = sanitizeTagIds(group.questions.flatMap((question) => question.tagIds));
+  await assertQuestionTagsAreDimensional(tagIds);
+  const allTags = await getAllTags();
+  const subjectState = await resolveSubjectTagState({
+    assignedTagIds: tagIds,
+    requestedSubjectTagIds: group.questions.flatMap((question) => question.subjectTagIds),
+    subjectTagIdsProvided: true,
+    subjectTagIdProvided: false,
+    allTags,
+  });
+  const legacyTags = sanitizeTags(group.questions.flatMap((question) => question.tags));
+  const expectedUpdatedAt = new Map(group.questions.map((question) => [question.docId, question.updatedAt]));
+  const database = db();
+  const collection = database.collection(COLLECTION);
+  const now = Date.now();
+
+  await database.runTransaction(async (tx) => {
+    const memberSnapshots: FirebaseFirestore.DocumentSnapshot[] = [];
+    for (const question of group.questions) {
+      memberSnapshots.push(await tx.get(collection.doc(question.docId)));
+    }
+    for (const snapshot of memberSnapshots) {
+      if (!snapshot.exists) throw new QuestionDuplicateConflictError('The duplicate group changed; review it again');
+      const current = toQuestion(snapshot.id, snapshot.data() ?? {});
+      if (current.updatedAt !== expectedUpdatedAt.get(current.docId)) {
+        throw new QuestionDuplicateConflictError('The duplicate group changed; review it again');
+      }
+    }
+    tx.update(collection.doc(survivorId), {
+      tagIds,
+      subjectTagId: subjectState.subjectTagId,
+      subjectTagIds: subjectState.subjectTagIds,
+      subjectFilterTags: subjectState.subjectFilterTags,
+      tags: legacyTags,
+      updatedAt: now,
+    });
+    for (const question of group.questions) {
+      if (question.docId !== survivorId) tx.delete(collection.doc(question.docId));
+    }
+    for (const followup of followups) {
+      if (duplicateIds.has(followup.docId)) continue;
+      tx.update(collection.doc(followup.docId), {
+        parentQuestionId: survivorId,
+        category: survivor.category,
+        topic: survivor.topic,
+        updatedAt: now,
+      });
+    }
+  });
+
+  const result = await getQuestionById(survivorId);
+  if (!result) throw new Error('Question not found after consolidation');
+  return result;
 }
 
 export async function linkCardToQuestion(questionId: string, cardId: string): Promise<Question> {

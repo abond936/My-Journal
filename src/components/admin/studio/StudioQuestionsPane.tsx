@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, FilterX, FolderOpen, Link2Off, ListPlus, ListTree, Plus, Save, Tag, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Combine, FilterX, FolderOpen, Link2Off, ListPlus, ListTree, Plus, Save, Tag, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -22,12 +22,14 @@ import {
   PROMPT_NEEDS_ORGANIZATION_FILTER,
   promptNeedsOrganization,
 } from '@/lib/utils/promptLibrary';
+import { findExactQuestionDuplicateGroups } from '@/lib/utils/questionDuplicateReview';
 import styles from './StudioWorkspace.module.css';
 
 type QuestionsResponse = { questions?: Question[]; message?: string; error?: string };
 type QuestionResponse = { question?: Question; card?: { docId?: string }; message?: string; error?: string };
 type IncludedFilter = 'all' | 'included' | 'notIncluded';
 const UNTAGGED_FILTER_ID = '__untagged_questions__';
+const PROMPT_DUPLICATES_FILTER = '__exact_prompt_duplicates__';
 
 function isIncluded(question: Question): boolean {
   return question.usedByCardIds.length > 0;
@@ -312,11 +314,19 @@ export default function StudioQuestionsPane() {
     () => Array.from(new Set(questions.map((question) => question.category).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [questions]
   );
+  const duplicateGroups = useMemo(() => findExactQuestionDuplicateGroups(questions), [questions]);
+  const duplicateGroupByQuestionId = useMemo(() => new Map(
+    duplicateGroups.flatMap((group) => group.questions.map((question) => [question.docId, group] as const))
+  ), [duplicateGroups]);
   const topicOptions = useMemo(
     () => Array.from(new Set(questions
       .filter((question) =>
         !selectedCategory ||
-        (selectedCategory !== PROMPT_NEEDS_ORGANIZATION_FILTER && question.category === selectedCategory)
+        (
+          selectedCategory !== PROMPT_NEEDS_ORGANIZATION_FILTER &&
+          selectedCategory !== PROMPT_DUPLICATES_FILTER &&
+          question.category === selectedCategory
+        )
       )
       .map((question) => question.topic)
       .filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -331,9 +341,11 @@ export default function StudioQuestionsPane() {
       if (includedFilter === 'included' && !included) return false;
       if (includedFilter === 'notIncluded' && included) return false;
       if (selectedCategory === PROMPT_NEEDS_ORGANIZATION_FILTER && !promptNeedsOrganization(question)) return false;
+      if (selectedCategory === PROMPT_DUPLICATES_FILTER && !duplicateGroupByQuestionId.has(question.docId)) return false;
       if (
         selectedCategory &&
         selectedCategory !== PROMPT_NEEDS_ORGANIZATION_FILTER &&
+        selectedCategory !== PROMPT_DUPLICATES_FILTER &&
         question.category !== selectedCategory
       ) return false;
       if (selectedTopic && question.topic !== selectedTopic) return false;
@@ -353,6 +365,7 @@ export default function StudioQuestionsPane() {
     search,
     selectedCategory,
     selectedDescendantIds,
+    duplicateGroupByQuestionId,
     selectedTagId,
     selectedTopic,
   ]);
@@ -644,6 +657,58 @@ export default function StudioQuestionsPane() {
     }
   }, [feedback]);
 
+  const consolidateDuplicateQuestion = useCallback(async (question: Question) => {
+    const group = duplicateGroupByQuestionId.get(question.docId);
+    if (!group) return;
+    if (!group.canConsolidate) {
+      feedback.showError(group.blockedReason ?? 'These prompts cannot be consolidated safely.', 'Review duplicate prompts');
+      return;
+    }
+    const linkedOwner = group.questions.find((candidate) => candidate.usedByCardIds.length > 0);
+    if (linkedOwner && linkedOwner.docId !== question.docId) {
+      feedback.showError('Keep the duplicate that owns the existing Question Card.', 'Choose the linked prompt');
+      return;
+    }
+    const confirmed = await feedback.confirm({
+      title: `Keep this Prompt and consolidate ${group.questions.length - 1} duplicate${group.questions.length === 2 ? '' : 's'}?`,
+      message: [
+        'Exact duplicate Prompt records will be removed.',
+        'Their tags and subjects will be retained on this Prompt.',
+        question.promptKind === 'primary'
+          ? 'Their follow-ups will move beneath this primary Prompt.'
+          : 'The duplicate follow-ups already belong to the same primary Prompt.',
+        'Existing Question Cards are never merged or rewritten.',
+      ].join(' '),
+      confirmLabel: 'Keep and consolidate',
+      cancelLabel: 'Cancel',
+      tone: 'default',
+    });
+    if (!confirmed) return;
+    setBusyId(question.docId);
+    setBusyLabel('Consolidating duplicate prompts...');
+    try {
+      const response = await fetch('/api/admin/questions/consolidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ survivorId: question.docId }),
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const data = (await response.json().catch(() => ({}))) as QuestionResponse;
+      throwIfJsonApiFailed(response, data, 'Duplicate prompts could not be consolidated. Review the group and try again.');
+      await loadQuestions();
+      feedback.showSuccess('Exact duplicate prompts were consolidated without changing any Question Card.');
+    } catch (error) {
+      feedback.showError(
+        error instanceof Error ? error.message : 'Duplicate prompts could not be consolidated.',
+        'Could not consolidate prompts'
+      );
+    } finally {
+      setBusyId(null);
+      setBusyLabel(null);
+    }
+  }, [duplicateGroupByQuestionId, feedback, loadQuestions]);
+
   const cancelCreate = useCallback(() => {
     setCreateOpen(false);
     setCreateAdvancedTagEditorOpen(false);
@@ -834,6 +899,9 @@ export default function StudioQuestionsPane() {
             <option value={PROMPT_NEEDS_ORGANIZATION_FILTER}>
               Needs organization ({questions.filter(promptNeedsOrganization).length})
             </option>
+            <option value={PROMPT_DUPLICATES_FILTER}>
+              Exact duplicates ({duplicateGroups.reduce((count, group) => count + group.questions.length, 0)})
+            </option>
             {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
           </select>
           <select
@@ -841,7 +909,10 @@ export default function StudioQuestionsPane() {
             value={selectedTopic}
             onChange={(event) => setSelectedTopic(event.target.value)}
             aria-label="Prompt topic filter"
-            disabled={selectedCategory === PROMPT_NEEDS_ORGANIZATION_FILTER}
+            disabled={
+              selectedCategory === PROMPT_NEEDS_ORGANIZATION_FILTER ||
+              selectedCategory === PROMPT_DUPLICATES_FILTER
+            }
           >
             <option value="">All topics</option>
             {topicOptions.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
@@ -979,6 +1050,7 @@ export default function StudioQuestionsPane() {
           const followupCount = question.promptKind === 'primary'
             ? questions.filter(candidate => candidate.promptKind === 'followup' && candidate.parentQuestionId === question.docId).length
             : 0;
+          const duplicateGroup = duplicateGroupByQuestionId.get(question.docId);
           return (
             <article
               key={question.docId}
@@ -1228,6 +1300,20 @@ export default function StudioQuestionsPane() {
                         title={selectedCardId ? 'Copy this primary question and its follow-ups into the open Card' : 'Open a Card in Compose first'}
                       >
                         <ListTree size={16} aria-hidden="true" />
+                      </button>
+                    ) : null}
+                    {duplicateGroup ? (
+                      <button
+                        type="button"
+                        className={styles.studioQuestionSmallButton}
+                        disabled={busy || !duplicateGroup.canConsolidate}
+                        onClick={() => void consolidateDuplicateQuestion(question)}
+                        aria-label="Keep this Prompt and consolidate exact duplicates"
+                        title={duplicateGroup.canConsolidate
+                          ? 'Keep this Prompt and consolidate exact duplicates'
+                          : duplicateGroup.blockedReason}
+                      >
+                        <Combine size={16} aria-hidden="true" />
                       </button>
                     ) : null}
                     {included ? (

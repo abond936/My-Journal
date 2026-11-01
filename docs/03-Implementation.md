@@ -1827,6 +1827,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Three focused CardForm, Prompt-pane, and mobile-workspace suites pass 28 cases. The complete runnable Jest gate passes 249 suites and 1,352 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
 
+### Fiftieth implementation slice — Exact Prompt duplicate consolidation
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Let the author remove genuinely duplicate legacy Prompt records without guessing at similar wording, losing classification, or merging and rewriting the Question Cards that answered them.
+
+**Includes** — Normalized exact-text grouping separated by primary versus follow-up role; parent-specific follow-up grouping; an Exact duplicates queue; author-selected survivor; explicit confirmation; union of governed Tag and Subject assignments onto the survivor; primary follow-up reassignment to the survivor's Category and Topic; stale-group rejection; bounded group size; and a hard block when different duplicates own different Question Cards.
+
+**Excludes** — Fuzzy or semantic duplicate detection; automatic survivor choice; consolidation across different follow-up parents; Card merge, deletion, relinking, or content rewrite; automatic organization of unrelated prompts; production data mutation; merge; and deployment.
+
+**Contracts** — Similar wording is not identity. A linked Prompt must be the survivor. If more than one distinct linked Question Card appears in a group, the group remains unresolved because preserving both Cards takes precedence over Prompt cleanup. Consolidation changes only Prompt-library records and follow-up parent placement; the existing linked Card's stable question ID is unchanged. Concurrent Prompt changes invalidate the reviewed group and require another review.
+
+**Verification gate** — Prove exact normalization, near-duplicate exclusion, follow-up-parent isolation, multiple-linked-Card blocking, author-selected survivor routing, classification preservation, follow-up reassignment, Card non-mutation, stale-group rejection, administrator authorization, production typecheck, touched-code and full lint, diff checks, optimized build, the Firestore emulator transaction, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Two focused duplicate-review and Prompt-pane suites pass seven cases. The isolated Firestore emulator Question-integrity suite passes eight cases, including survivor preservation, duplicate deletion, follow-up reassignment, and unchanged linked Card identity. The administrator-route inventory proves anonymous and Reader rejection. The complete runnable Jest gate passes 250 suites and 1,358 tests, with four suites and 35 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Prompt, Question Card, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

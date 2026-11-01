@@ -10,6 +10,7 @@ const insertPromptText = jest.fn(() => true);
 const feedback = {
   showError: jest.fn(),
   showSuccess: jest.fn(),
+  confirm: jest.fn(),
 };
 let selectedCardId: string | null = null;
 
@@ -128,6 +129,7 @@ describe('StudioQuestionsPane Card-first entry', () => {
     jest.clearAllMocks();
     selectedCardId = null;
     requestSelectCard.mockResolvedValue(true);
+    feedback.confirm.mockResolvedValue(true);
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
       if (String(input) === '/api/admin/questions') {
         return {
@@ -179,5 +181,55 @@ describe('StudioQuestionsPane Card-first entry', () => {
       { prompt: 'What could you hear?', role: 'followup' },
     ]);
     expect(feedback.showSuccess).toHaveBeenCalledWith('2 related prompts copied into the open Card.');
+  });
+
+  it('lets the author choose the survivor for an exact duplicate group', async () => {
+    const duplicate = {
+      ...questions[0],
+      docId: 'unlinked-duplicate',
+      category: 'Older',
+      topic: 'Unsorted',
+      createdAt: 3,
+      updatedAt: 3,
+    };
+    let loadCount = 0;
+    global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/admin/questions' && !init?.method) {
+        loadCount += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ questions: loadCount === 1 ? [...questions, duplicate] : questions }),
+        } as Response;
+      }
+      if (String(input) === '/api/admin/questions/consolidate') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ question: questions[0] }),
+        } as Response;
+      }
+      throw new Error(`Unexpected request: ${String(input)}`);
+    }) as jest.Mock;
+
+    render(<StudioQuestionsPane />);
+    const actions = await screen.findAllByRole('button', {
+      name: 'Keep this Prompt and consolidate exact duplicates',
+    });
+    fireEvent.click(actions[0]);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      '/api/admin/questions/consolidate',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ survivorId: 'unlinked' }),
+      })
+    ));
+    expect(feedback.confirm).toHaveBeenCalledWith(expect.objectContaining({
+      confirmLabel: 'Keep and consolidate',
+    }));
+    await waitFor(() => expect(feedback.showSuccess).toHaveBeenCalledWith(
+      'Exact duplicate prompts were consolidated without changing any Question Card.'
+    ));
   });
 });

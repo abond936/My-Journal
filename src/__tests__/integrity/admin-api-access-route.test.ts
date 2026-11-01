@@ -210,6 +210,7 @@ jest.mock('@/lib/services/questionService', () => ({
   getQuestionById: jest.fn(),
   updateQuestion: jest.fn(),
   reorderQuestion: jest.fn(),
+  consolidateExactQuestionDuplicates: jest.fn(),
   deleteQuestion: jest.fn(),
   linkCardToQuestion: jest.fn(),
   unlinkCardFromQuestion: jest.fn(),
