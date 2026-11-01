@@ -113,10 +113,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Return** — Reader detail preserves safe feed, search, query, card-focus, and scroll context with direct-entry fallback.
 - **Appearance** — The quick account-backed action offers Light with a sun when Dark is active and Dark with a moon when Light is active; Account retains the personal placeholder.
 - **Help** — The administrator menu opens the canonical User's Guide as a read-only phone-and-desktop surface. The guide covers product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and worked phone-first and scanned-archive examples.
-
-⭕1 **Planned**
-
-- **Reader/Author switch** — Give the author-administrator a persistent, clear way to move between Reader and Author after role-aware entry; readers never receive the Author destination.
+- **Reader/Author switch** — The author-administrator always has a labelled header action that switches to the other role surface without opening the menu. Each side remembers its last safe same-origin Reader or Author location for the current browser session and falls back to Reader Home or Author Home when no valid location exists. The menu names Author Home explicitly. Reader-only accounts never receive the Author switch or Author destinations.
 
 ### Left Navigation
 

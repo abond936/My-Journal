@@ -1490,6 +1490,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The component comparison proves selecting a replacement performs no request, displays both images and their file facts, submits the file only with explicit same-item confirmation, and retains visible warning feedback when downstream processing is incomplete. Route coverage proves administrator-only access, image validation, required confirmation, canonical-ID use, missing-target handling, invalid-target handling, exact-byte duplicate conflict, and Ready success. The Firestore emulator replacement path preserves caption, tags, subjects, dimensional review, Card back-references, cover/Gallery/body references, and canonical Media ID while switching source-byte identity and the durable versioned source path; the complete declared emulator gate passes three suites and 25 tests. The complete runnable Jest gate passes 233 suites and 1,262 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized 59-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, record, or Storage object changed.
 
+### Thirtieth implementation slice — Persistent Reader/Author switch
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let the author move deliberately between enjoying the archive as a reader and stewarding it as an author without searching a hidden menu or losing the useful place on either side.
+
+**Includes** — One compact labelled header action visible to administrators on Reader, Author, and neutral authenticated surfaces; context-sensitive Reader or Author destination; explicit Author Home menu wording; session-scoped last safe Reader and Author locations; Reader Home and Author Home fallbacks; same-origin and surface-bound path validation; phone and desktop presentation; and focused navigation and safety coverage.
+
+**Excludes** — New authorization roles; reader access to Administration; cross-device position synchronization; durable navigation-history records; automatic content mutation; Reader-filter redesign; Author Home redesign; production data mutation; merge; and deployment.
+
+**Contracts** — The switch grants no permission and appears only for an authenticated administrator. Reader-only accounts never receive an Author destination. Remembered locations must be internal and belong to the requested Reader or Author surface; protocol-relative, external, malformed, cross-surface, and neutral paths fall back safely. Switching changes application context but does not change Cards, Media, Collections, filters, audience, publication, or account truth.
+
+**Verification gate** — Prove role-based visibility, explicit Author Home wording, both switch directions, safe context retention, unsafe and cross-surface rejection, defaults, keyboard focus, phone-width fit, existing menu hierarchy, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused Navigation coverage proves the administrator-only switch, explicit Author Home wording, both directions, preservation of query-bearing Reader and Author locations, viewer exclusion, and the existing menu hierarchy. The isolated path contract rejects external, protocol-relative, cross-surface, and neutral destinations and supplies `/view` and `/admin` defaults. The switch uses the existing header control roles, a visible focus treatment, compact phone typography and target height, and does not add a sixth mobile Studio destination. Seven focused tests pass. The complete runnable Jest gate passes 233 suites and 1,262 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized 59-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. Authenticated candidate-browser rendering was not available locally and is not claimed. No production request, record, account, navigation preference, or content object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

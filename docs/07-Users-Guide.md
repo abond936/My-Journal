@@ -314,6 +314,8 @@ Collection publication is separate from Card publication. A Collection must have
 
 Reader Home offers Collections and Feed. Collections provide authored sequence and context; Feed supports direct and freeform exploration. A direct authorized Story link may bypass both entrances.
 
+An author can move between reading and authoring with the labelled **Reader** or **Author** action in the header. The switch returns to the last safe location used on each side during the current browser session; if there is no prior location, it opens Reader Home or Author Home. Reader-only accounts do not receive the Author action.
+
 Review with the intended reader in mind:
 
 - Can the reader tell where to begin?

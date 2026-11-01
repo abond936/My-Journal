@@ -43,6 +43,7 @@
 
 .rightSlot {
   justify-content: flex-end;
+  gap: var(--spacing-xs);
 }
 
 .centerSlot {
@@ -183,6 +184,34 @@
   z-index: calc(var(--z-index-header) + 2);
 }
 
+.roleSwitchLink {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--reader-support-control-border-color);
+  border-radius: 999px;
+  background: var(--reader-support-control-background-color);
+  color: var(--reader-support-control-text-color);
+  padding: 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.roleSwitchLink:hover {
+  border-color: var(--reader-support-control-strong-border-color);
+  background: var(--reader-support-control-hover-background-color);
+  color: var(--reader-support-control-hover-text-color);
+}
+
+.roleSwitchLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--reader-focus-ring-color);
+}
+
 .themeRow {
   display: flex;
   align-items: center;
@@ -259,6 +288,16 @@
   .leftSlot,
   .rightSlot {
     min-width: 3rem;
+  }
+
+  .rightSlot {
+    gap: 2px;
+  }
+
+  .roleSwitchLink {
+    min-height: 40px;
+    padding: 0 var(--spacing-xs);
+    font-size: var(--font-size-xs);
   }
 
   .logoImage {
