@@ -1404,6 +1404,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The focused durable Collection pane suite passes twelve tests, including Part and Section creation, role-compatible parenting, revision-checked graph replacement, published locking, existing-Card placement, and Card-preserving removal. The complete runnable Jest gate passes 228 suites and 1,240 tests, with four suites and 29 tests skipped by their declared environment gates. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
 
+### Twenty-sixth implementation slice — Read-only hosted verification
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make the required hosted PR and nightly browser gates genuinely read-only while retaining the Card-save browser test for an explicitly isolated local data target.
+
+**Includes** — One shared execution guard that recognizes either hosted base-URL input; fail-closed default behavior; hosted blocking even when an isolated-target label is also present; explicit `E2E_LOCAL=1` plus `E2E_MUTATION_TARGET=isolated` opt-in for the mutating save test; focused regression coverage; and direct Playwright proof that a hosted-shaped run skips before authentication or any application request.
+
+**Excludes** — Production content mutation; replacement of read-only hosted authentication, Reader, Author Home, Studio, Collection-preview, or guided-Reader checks; creation of a permanent test Card in the production archive; a separate hosted data environment; and weakening the aggregate integrity gate.
+
+**Contracts** — Hosted verification may authenticate and read authorized application state but must not create, edit, publish, restore, or delete application records or Storage objects. A cleanup attempt does not make a mutation read-only. Mutation browser tests require both local application execution and an explicit declaration that their backing data is isolated; a configured hosted URL always wins and blocks mutation.
+
+**Completion evidence** — The guard's focused Jest suite passes four cases covering both hosted URL inputs, misleading hosted opt-in, default local denial, and explicit isolated-local allowance. A hosted-shaped Playwright invocation with the isolated label deliberately present skips the Card-save test before setup. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Explicit touched-file lint, production typecheck, diff checks, and the optimized build pass. No production request or data mutation was made while verifying this slice.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

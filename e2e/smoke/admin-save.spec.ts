@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { canRunMutationE2E } from '../helpers/mutationTarget';
 
 test.describe('admin card save', () => {
+  test.skip(
+    !canRunMutationE2E(),
+    'Card-save E2E requires a local app and E2E_MUTATION_TARGET=isolated; hosted smoke is read-only.'
+  );
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('@admin saves reader quick-edit metadata via PATCH', async ({ page }) => {
