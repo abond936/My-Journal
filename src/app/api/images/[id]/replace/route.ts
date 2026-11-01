@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import { replaceMediaAssetContent } from '@/lib/services/images/imageImportService';
+import { reviewReplacementMetadata } from '@/lib/services/images/replacementMetadataReviewService';
 
 type ApiErrorPayload = {
   ok: false;
@@ -60,6 +61,86 @@ function classifyReplaceError(errorMessage: string): { status: number; code: str
     message: 'Error replacing media asset.',
     retryable: true,
   };
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!isAdminSession(session)) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'AUTH_FORBIDDEN',
+        message: 'Forbidden.',
+        severity: 'error',
+        retryable: false,
+      },
+      403
+    );
+  }
+
+  const { id: mediaId } = await params;
+  if (!mediaId) {
+    return errorResponse(
+      {
+        ok: false,
+        code: 'MEDIA_ID_REQUIRED',
+        message: 'Media ID is required.',
+        severity: 'error',
+        retryable: false,
+      },
+      400
+    );
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file');
+    if (!(file instanceof File)) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_REPLACE_FILE_REQUIRED',
+          message: 'No file provided.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
+    if (!file.type.startsWith('image/')) {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_REPLACE_FILE_TYPE_INVALID',
+          message: 'Only image files are supported.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const review = await reviewReplacementMetadata(mediaId, fileBuffer, file.name);
+    return NextResponse.json({ review });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Error reviewing replacement metadata for ${mediaId}:`, errorMessage);
+    const classified = classifyReplaceError(errorMessage);
+    return errorResponse(
+      {
+        ok: false,
+        code: classified.code,
+        message: classified.message,
+        severity: 'error',
+        retryable: classified.retryable,
+        error: errorMessage,
+      },
+      classified.status
+    );
+  }
 }
 
 export async function POST(

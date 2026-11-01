@@ -6,6 +6,7 @@ import EditModal from '@/components/admin/studio/cards/EditModal';
 import JournalImage from '@/components/common/JournalImage';
 import { useAppFeedback } from '@/components/providers/AppFeedbackProvider';
 import type { Media } from '@/lib/types/photo';
+import type { ReplacementMetadataReview } from '@/lib/utils/replacementMetadataReview';
 import { getDisplayUrl } from '@/lib/utils/photoUtils';
 import { parseObjectPositionToPercents } from '@/lib/utils/parseObjectPositionPercent';
 import styles from './MediaEditModal.module.css';
@@ -26,6 +27,9 @@ type ReplacementCandidate = {
   previewUrl: string;
   width: number | null;
   height: number | null;
+  metadataReview: ReplacementMetadataReview | null;
+  metadataReviewing: boolean;
+  metadataReviewError: string | null;
 };
 
 function formatBytes(value: number): string {
@@ -186,7 +190,15 @@ export default function MediaEditModal({
     const file = event.target.files?.[0];
     if (!file || !selectedMedia) return;
     const previewUrl = URL.createObjectURL(file);
-    setReplacementCandidate({ file, previewUrl, width: null, height: null });
+    setReplacementCandidate({
+      file,
+      previewUrl,
+      width: null,
+      height: null,
+      metadataReview: null,
+      metadataReviewing: true,
+      metadataReviewError: null,
+    });
     const image = new window.Image();
     image.onload = () => {
       setReplacementCandidate((current) => current?.previewUrl === previewUrl
@@ -195,6 +207,41 @@ export default function MediaEditModal({
     };
     image.src = previewUrl;
     event.target.value = '';
+    void (async () => {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`/api/images/${selectedMedia.docId}/replace`, {
+          method: 'PUT',
+          body: formData,
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          message?: string;
+          review?: ReplacementMetadataReview;
+        };
+        if (!response.ok || !data.review) {
+          throw new Error(data.message || 'Embedded metadata could not be reviewed.');
+        }
+        setReplacementCandidate((current) => current?.previewUrl === previewUrl
+          ? {
+              ...current,
+              metadataReview: data.review!,
+              metadataReviewing: false,
+              metadataReviewError: null,
+            }
+          : current);
+      } catch (error) {
+        setReplacementCandidate((current) => current?.previewUrl === previewUrl
+          ? {
+              ...current,
+              metadataReviewing: false,
+              metadataReviewError: error instanceof Error
+                ? error.message
+                : 'Embedded metadata could not be reviewed.',
+            }
+          : current);
+      }
+    })();
   };
 
   const handleConfirmReplacement = async () => {
@@ -447,12 +494,71 @@ export default function MediaEditModal({
                       </span>
                     </div>
                   </div>
+                  <div className={styles.metadataReview} aria-label="Replacement metadata review">
+                    <div className={styles.replacementLabel}>Embedded metadata evidence</div>
+                    {replacementCandidate.metadataReviewing ? (
+                      <p className={styles.hint}>Reviewing the proposed file&apos;s embedded metadata…</p>
+                    ) : replacementCandidate.metadataReviewError ? (
+                      <p className={styles.metadataReadIssue}>
+                        Metadata review was unavailable: {replacementCandidate.metadataReviewError}
+                        {' '}You can still confirm the replacement from the visual comparison.
+                      </p>
+                    ) : replacementCandidate.metadataReview ? (
+                      <>
+                        {replacementCandidate.metadataReview.conflicts.length > 0 ? (
+                          <div className={styles.metadataConflicts}>
+                            <strong>Review before replacing</strong>
+                            {replacementCandidate.metadataReview.conflicts.map((conflict, index) => (
+                              <div key={`${conflict.field}-${index}`} className={styles.metadataConflict}>
+                                <span>{conflict.label}</span>
+                                <span>Confirmed: {conflict.confirmedValue}</span>
+                                <span>Replacement file: {conflict.replacementEvidence}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className={styles.hint}>No material conflict with confirmed Media truth was found.</p>
+                        )}
+                        <div className={styles.metadataEvidenceList}>
+                          {replacementCandidate.metadataReview.evidence.capturedAt ? (
+                            <span>Date: {replacementCandidate.metadataReview.evidence.capturedAt.raw}</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.gps ? (
+                            <span>
+                              GPS: {replacementCandidate.metadataReview.evidence.gps.latitude.toFixed(5)},{' '}
+                              {replacementCandidate.metadataReview.evidence.gps.longitude.toFixed(5)}
+                              {' '}(evidence only; no place is inferred)
+                            </span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.caption ? (
+                            <span>Caption: {replacementCandidate.metadataReview.evidence.caption}</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.evidence.keywords.length > 0 ? (
+                            <span>Keywords: {replacementCandidate.metadataReview.evidence.keywords.join(', ')}</span>
+                          ) : null}
+                          {!replacementCandidate.metadataReview.evidence.capturedAt &&
+                          !replacementCandidate.metadataReview.evidence.gps &&
+                          !replacementCandidate.metadataReview.evidence.caption &&
+                          replacementCandidate.metadataReview.evidence.keywords.length === 0 ? (
+                            <span>No useful embedded date, GPS, caption, or keyword evidence was found.</span>
+                          ) : null}
+                          {replacementCandidate.metadataReview.readIssue ? (
+                            <span>Metadata reader note: {replacementCandidate.metadataReview.readIssue}</span>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
+                    <p className={styles.hint}>
+                      This evidence is not applied automatically. Replacement preserves the confirmed caption,
+                      date, tags, subjects, and review decisions.
+                    </p>
+                  </div>
                   <div className={styles.replacementActions}>
                     <button
                       type="button"
                       className={styles.secondaryButton}
                       onClick={() => setReplacementCandidate(null)}
-                      disabled={replacing}
+                      disabled={replacing || replacementCandidate.metadataReviewing}
                     >
                       Cancel
                     </button>
@@ -460,7 +566,7 @@ export default function MediaEditModal({
                       type="button"
                       className={styles.primaryButton}
                       onClick={() => void handleConfirmReplacement()}
-                      disabled={replacing}
+                      disabled={replacing || replacementCandidate.metadataReviewing}
                     >
                       {replacing ? 'Replacing...' : 'Yes, replace this Media item'}
                     </button>

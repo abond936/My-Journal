@@ -63,6 +63,21 @@ export type EmbeddedCaptionReadResult = {
   infrastructureError?: string;
 };
 
+export type EmbeddedReplacementMetadataEvidence = EmbeddedCaptionReadResult & {
+  capturedAt?: {
+    raw: string;
+    year: number;
+    month?: number;
+    day?: number;
+    hour?: number;
+    minute?: number;
+  };
+  gps?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
 /** `-j` keys are often group-prefixed (`IPTC:Caption-Abstract`); match the tag names we request. */
 function valueForTagName(rec: Record<string, unknown>, tagName: string): unknown {
   const direct = rec[tagName];
@@ -202,9 +217,12 @@ const IMPORT_METADATA_READ_ARGS = [
   '-CatalogSets',
 ] as const;
 
-async function readMetadataRecordViaExecFile(fullPath: string): Promise<Record<string, unknown>> {
+async function readMetadataRecordViaExecFile(
+  fullPath: string,
+  readArgs: readonly string[] = IMPORT_METADATA_READ_ARGS
+): Promise<Record<string, unknown>> {
   const bin = await getExiftoolBinaryPath();
-  const args = ['-charset', 'filename=utf8', '-j', '-q', ...IMPORT_METADATA_READ_ARGS, fullPath];
+  const args = ['-charset', 'filename=utf8', '-j', '-q', ...readArgs, fullPath];
   const { stdout } = await execFileAsync(bin, args, {
     timeout: 25_000,
     maxBuffer: 25 * 1024 * 1024,
@@ -225,6 +243,87 @@ async function readMetadataRecordViaExecFile(fullPath: string): Promise<Record<s
     return {};
   }
   return first;
+}
+
+const REPLACEMENT_METADATA_READ_ARGS = [
+  ...IMPORT_METADATA_READ_ARGS,
+  '-DateTimeOriginal',
+  '-CreateDate',
+  '-MediaCreateDate',
+  '-DateCreated',
+  '-GPSLatitude#',
+  '-GPSLongitude#',
+] as const;
+
+function parseExifDate(raw: unknown): EmbeddedReplacementMetadataEvidence['capturedAt'] {
+  const value = coerceToString(raw);
+  const match = value.match(/^(\d{4})[:/-](\d{2})[:/-](\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!match) return undefined;
+  const [, year, month, day, hour, minute] = match;
+  return {
+    raw: value,
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+    ...(hour === undefined ? {} : { hour: Number(hour) }),
+    ...(minute === undefined ? {} : { minute: Number(minute) }),
+  };
+}
+
+function coerceFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value.trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+/**
+ * Reads replacement-only source evidence. The result is informational and must
+ * never be persisted as confirmed Media truth without an author decision.
+ */
+export async function readEmbeddedReplacementMetadataEvidence(
+  fullPath: string
+): Promise<EmbeddedReplacementMetadataEvidence> {
+  let rec: Record<string, unknown>;
+  try {
+    rec = await readMetadataRecordViaExecFile(fullPath, REPLACEMENT_METADATA_READ_ARGS);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { caption: '', keywordStrings: [], infrastructureError: message };
+  }
+
+  let caption = '';
+  for (const key of CAPTION_TAG_KEYS) {
+    const candidate = coerceToString(valueForTagName(rec, key));
+    if (candidate) {
+      caption = candidate;
+      break;
+    }
+  }
+  const keywordSet = new Set<string>();
+  for (const key of KEYWORD_TAG_KEYS) {
+    collectKeywordStrings(valueForTagName(rec, key), keywordSet);
+  }
+
+  let capturedAt: EmbeddedReplacementMetadataEvidence['capturedAt'];
+  for (const key of ['DateTimeOriginal', 'CreateDate', 'MediaCreateDate', 'DateCreated']) {
+    capturedAt = parseExifDate(valueForTagName(rec, key));
+    if (capturedAt) break;
+  }
+
+  const latitude = coerceFiniteNumber(valueForTagName(rec, 'GPSLatitude'));
+  const longitude = coerceFiniteNumber(valueForTagName(rec, 'GPSLongitude'));
+
+  return {
+    caption,
+    keywordStrings: [...keywordSet].filter((keyword) => !isStructuralOrCardseedKeyword(keyword)),
+    ...(capturedAt ? { capturedAt } : {}),
+    ...(latitude === undefined || longitude === undefined
+      ? {}
+      : { gps: { latitude, longitude } }),
+  };
 }
 
 /**
