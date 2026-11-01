@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, LibraryBig, Rows3 } from 'lucide-react';
+import { BookOpen, Images, LibraryBig, Rows3 } from 'lucide-react';
 import { useCardContext, type ReaderMode } from '@/components/providers/CardProvider';
 import {
   buildReaderModePath,
@@ -94,6 +94,15 @@ export default function ReaderHome() {
             Browse published Feed Cards and narrow the view by people, subjects, time, or place.
           </span>
           <span className={styles.pathAction}>Explore the feed <span aria-hidden="true">→</span></span>
+        </button>
+
+        <button type="button" className={styles.pathCard} onClick={() => router.push('/shared-media')}>
+          <span className={styles.pathIcon} aria-hidden="true"><Images /></span>
+          <span className={styles.pathLabel}>Photo collections</span>
+          <span className={styles.pathDescription}>
+            Browse photo sets that were selected and shared with you.
+          </span>
+          <span className={styles.pathAction}>View shared photos <span aria-hidden="true">→</span></span>
         </button>
       </section>
     </div>

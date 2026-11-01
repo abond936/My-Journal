@@ -401,8 +401,9 @@ export default function JournalUsersAdminPage() {
             {guestAccessImpact ? (
               <div className={styles.impactReview}>
                 <strong>Review the guest&apos;s initial access</strong>
-                <p>This enabled guest will immediately gain access to {guestAccessImpact.collections.length} Collection{guestAccessImpact.collections.length === 1 ? '' : 's'} and {guestAccessImpact.cards.length} published Card{guestAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
+                <p>This enabled guest will immediately gain access to {guestAccessImpact.collections.length} Collection{guestAccessImpact.collections.length === 1 ? '' : 's'}, {(guestAccessImpact.sharedMediaCollections ?? []).length} shared photo collection{(guestAccessImpact.sharedMediaCollections ?? []).length === 1 ? '' : 's'}, and {guestAccessImpact.cards.length} published Card{guestAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
                 {guestAccessImpact.collections.length ? <details><summary>Collections</summary><ul>{guestAccessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details> : null}
+                {(guestAccessImpact.sharedMediaCollections ?? []).length ? <details><summary>Shared photo collections</summary><ul>{(guestAccessImpact.sharedMediaCollections ?? []).map((item) => <li key={item.id}>{item.title}</li>)}</ul></details> : null}
                 {guestAccessImpact.cards.length ? <details><summary>Published Cards</summary><ul>{guestAccessImpact.cards.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details> : null}
               </div>
             ) : null}
@@ -472,9 +473,12 @@ export default function JournalUsersAdminPage() {
             {prospectiveAccessImpact ? (
               <div className={styles.impactReview}>
                 <strong>Review the new Reader&apos;s initial access</strong>
-                <p>This enabled account will immediately gain access to {prospectiveAccessImpact.collections.length} Collection{prospectiveAccessImpact.collections.length === 1 ? '' : 's'} and {prospectiveAccessImpact.cards.length} published Card{prospectiveAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
+                <p>This enabled account will immediately gain access to {prospectiveAccessImpact.collections.length} Collection{prospectiveAccessImpact.collections.length === 1 ? '' : 's'}, {(prospectiveAccessImpact.sharedMediaCollections ?? []).length} shared photo collection{(prospectiveAccessImpact.sharedMediaCollections ?? []).length === 1 ? '' : 's'}, and {prospectiveAccessImpact.cards.length} published Card{prospectiveAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
                 {prospectiveAccessImpact.collections.length ? (
                   <details><summary>Collections</summary><ul>{prospectiveAccessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
+                ) : null}
+                {(prospectiveAccessImpact.sharedMediaCollections ?? []).length ? (
+                  <details><summary>Shared photo collections</summary><ul>{(prospectiveAccessImpact.sharedMediaCollections ?? []).map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
                 ) : null}
                 {prospectiveAccessImpact.cards.length ? (
                   <details><summary>Published Cards</summary><ul>{prospectiveAccessImpact.cards.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
@@ -564,7 +568,7 @@ export default function JournalUsersAdminPage() {
                   <div className={styles.impactReview} role="status">
                     <strong>Review this access change before saving</strong>
                     <p>Adds: {names(reviewedImpact.addedMembers)}. Removes: {names(reviewedImpact.removedMembers)}.</p>
-                    {reviewedImpact.cards.length || reviewedImpact.collections.length ? (
+                    {reviewedImpact.cards.length || reviewedImpact.collections.length || (reviewedImpact.sharedMediaCollections ?? []).length ? (
                       <>
                         {reviewedImpact.collections.length ? (
                           <div>
@@ -575,6 +579,9 @@ export default function JournalUsersAdminPage() {
                               ))}
                             </ul>
                           </div>
+                        ) : null}
+                        {(reviewedImpact.sharedMediaCollections ?? []).length ? (
+                          <details><summary>Shared photo collections</summary><ul>{(reviewedImpact.sharedMediaCollections ?? []).map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
                         ) : null}
                         {reviewedImpact.cards.length ? (
                           <details>
@@ -591,7 +598,7 @@ export default function JournalUsersAdminPage() {
                       <p>No currently Reader-visible Card or Collection changes access.</p>
                     )}
                     <p className={styles.impactNote}>
-                      This group is selected by {reviewedImpact.referencedCardAudiences} Card audience{reviewedImpact.referencedCardAudiences === 1 ? '' : 's'} and {reviewedImpact.referencedCollectionAudiences} Collection audience{reviewedImpact.referencedCollectionAudiences === 1 ? '' : 's'}. Draft or incomplete content does not change Reader access now.
+                      This group is selected by {reviewedImpact.referencedCardAudiences} Card audience{reviewedImpact.referencedCardAudiences === 1 ? '' : 's'}, {reviewedImpact.referencedCollectionAudiences} Collection audience{reviewedImpact.referencedCollectionAudiences === 1 ? '' : 's'}, and {reviewedImpact.referencedSharedMediaCollectionAudiences ?? 0} shared photo audience{reviewedImpact.referencedSharedMediaCollectionAudiences === 1 ? '' : 's'}. Draft or incomplete content does not change Reader access now.
                     </p>
                   </div>
                 ) : membershipChanged ? (
@@ -665,12 +672,15 @@ export default function JournalUsersAdminPage() {
                           {u.role === 'viewer' && reviewedState ? (
                             <div className={styles.impactReview}>
                               <strong>Review Reader access before {action}</strong>
-                              <p>{u.displayName} will {accessImpact.effect} access to {accessImpact.collections.length} Collection{accessImpact.collections.length === 1 ? '' : 's'} and {accessImpact.cards.length} published Card{accessImpact.cards.length === 1 ? '' : 's'}.</p>
+                              <p>{u.displayName} will {accessImpact.effect} access to {accessImpact.collections.length} Collection{accessImpact.collections.length === 1 ? '' : 's'}, {(accessImpact.sharedMediaCollections ?? []).length} shared photo collection{(accessImpact.sharedMediaCollections ?? []).length === 1 ? '' : 's'}, and {accessImpact.cards.length} published Card{accessImpact.cards.length === 1 ? '' : 's'}.</p>
                               {accessImpact.collections.length ? (
                                 <details>
                                   <summary>Collections</summary>
                                   <ul>{accessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul>
                                 </details>
+                              ) : null}
+                              {(accessImpact.sharedMediaCollections ?? []).length ? (
+                                <details><summary>Shared photo collections</summary><ul>{(accessImpact.sharedMediaCollections ?? []).map((item) => <li key={item.id}>{item.title}</li>)}</ul></details>
                               ) : null}
                               {accessImpact.cards.length ? (
                                 <details>

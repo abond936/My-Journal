@@ -3,6 +3,7 @@ import { audienceAllowsContact } from '@/lib/auth/audienceAccess';
 import { getReaderCollectionStructure } from '@/lib/services/collections/collectionProjectionReadService';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
+import { sharedMediaCollectionSchema } from '@/lib/types/sharedMediaCollection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 
 export type ReaderAccountAccessItem = { id: string; title: string };
@@ -14,21 +15,24 @@ export type ReaderAccountAccessImpact = {
   effect: 'gain' | 'lose' | 'none';
   cards: ReaderAccountAccessItem[];
   collections: ReaderAccountAccessItem[];
+  sharedMediaCollections: ReaderAccountAccessItem[];
 };
 export type ProspectiveReaderAccessImpact = {
   effect: 'gain';
   cards: ReaderAccountAccessItem[];
   collections: ReaderAccountAccessItem[];
+  sharedMediaCollections: ReaderAccountAccessItem[];
 };
 
 async function resolveReaderContent(args: {
   contactId: string;
   groupIds: ReadonlySet<string>;
   firestore: FirebaseFirestore.Firestore;
-}): Promise<Pick<ReaderAccountAccessImpact, 'cards' | 'collections'>> {
-  const [cardsSnapshot, collectionsSnapshot] = await Promise.all([
+}): Promise<Pick<ReaderAccountAccessImpact, 'cards' | 'collections' | 'sharedMediaCollections'>> {
+  const [cardsSnapshot, collectionsSnapshot, sharedMediaCollectionsSnapshot] = await Promise.all([
     args.firestore.collection('cards').where('status', '==', 'published').get(),
     args.firestore.collection('collections').where('recordState', '==', 'active').get(),
+    args.firestore.collection('shared_media_collections').where('lifecycle', '==', 'published').get(),
   ]);
   const context = { contactId: args.contactId, groupIds: args.groupIds };
   const cards = cardsSnapshot.docs.map((doc) => ({ docId: doc.id, ...doc.data() } as Card));
@@ -61,6 +65,11 @@ async function resolveReaderContent(args: {
       .sort(byTitle),
     collections: accessibleCollections
       .map(({ collection }) => ({ id: collection.docId, title: collection.title }))
+      .sort(byTitle),
+    sharedMediaCollections: sharedMediaCollectionsSnapshot.docs
+      .map((doc) => sharedMediaCollectionSchema.parse({ docId: doc.id, ...doc.data() }))
+      .filter((collection) => audienceAllowsContact(collection.audience, context))
+      .map((collection) => ({ id: collection.docId, title: collection.title }))
       .sort(byTitle),
   };
 }
