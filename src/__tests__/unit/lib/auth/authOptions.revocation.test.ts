@@ -9,6 +9,7 @@ jest.mock('@/lib/auth/journalUsersFirestore', () => ({
   getJournalUserByDocId: jest.fn(),
 }));
 jest.mock('@/lib/auth/authorizeCredentials', () => ({ authorizeCredentials: jest.fn() }));
+jest.mock('@/lib/auth/recipientInvites', () => ({ redeemGuestRecipientInvite: jest.fn() }));
 
 import { authOptions } from '@/lib/auth/authOptions';
 
@@ -22,7 +23,7 @@ describe('JWT account revocation', () => {
   it('refreshes active role from account truth', async () => {
     getJournalUserByDocIdMock.mockResolvedValue({
       docId: 'reader-1', username: 'reader', displayName: 'Reader', role: 'viewer',
-      disabled: false, createdAt: 1, updatedAt: 1,
+      disabled: false, accessKind: 'account', createdAt: 1, updatedAt: 1,
     });
 
     const token = await jwtCallback({ token: { sub: 'reader-1', role: 'viewer' } } as never);
@@ -31,7 +32,7 @@ describe('JWT account revocation', () => {
   });
 
   it.each([
-    ['disabled', { docId: 'reader-1', username: 'reader', displayName: 'Reader', role: 'viewer' as const, disabled: true, createdAt: 1, updatedAt: 2 }],
+    ['disabled', { docId: 'reader-1', username: 'reader', displayName: 'Reader', role: 'viewer' as const, disabled: true, accessKind: 'account' as const, createdAt: 1, updatedAt: 2 }],
     ['missing', null],
   ])('revokes an existing token when the account is %s', async (_label, row) => {
     getJournalUserByDocIdMock.mockResolvedValue(row);

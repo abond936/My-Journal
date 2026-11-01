@@ -14,6 +14,7 @@ import styles from './journal-users.module.css';
 
 type ListResponse = { users: JournalUserPublic[] };
 type GroupListResponse = { groups: AudienceGroup[] };
+type InviteResult = { recipientId: string; inviteUrl: string; expiresAt: number };
 
 async function fetchUsers(): Promise<JournalUserPublic[]> {
   const res = await fetch('/api/admin/journal-users');
@@ -42,6 +43,11 @@ export default function JournalUsersAdminPage() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
   const [prospectiveAccessImpact, setProspectiveAccessImpact] = useState<ProspectiveReaderAccessImpact | null>(null);
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestDisplayName, setGuestDisplayName] = useState('');
+  const [guestBusy, setGuestBusy] = useState(false);
+  const [guestAccessImpact, setGuestAccessImpact] = useState<ProspectiveReaderAccessImpact | null>(null);
+  const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
   const [passwordById, setPasswordById] = useState<Record<string, string>>({});
   const [passwordErrorById, setPasswordErrorById] = useState<Record<string, string>>({});
   const [rowBusy, setRowBusy] = useState<string | null>(null);
@@ -110,6 +116,70 @@ export default function JournalUsersAdminPage() {
       feedback.showError(err instanceof Error ? err.message : 'This user could not be added. Try again.', 'User not added');
     } finally {
       setCreateBusy(false);
+    }
+  };
+
+  const handleCreateGuest = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setGuestBusy(true);
+    try {
+      if (!guestAccessImpact) {
+        const impactResponse = await fetch('/api/admin/journal-users/prospective-access-impact');
+        const impactData = await impactResponse.json();
+        throwIfJsonApiFailed(impactResponse, impactData, 'New guest access could not be calculated.');
+        setGuestAccessImpact(impactData.impact as ProspectiveReaderAccessImpact);
+        return;
+      }
+      const response = await fetch('/api/admin/recipient-invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'create',
+          email: guestEmail,
+          displayName: guestDisplayName.trim() || undefined,
+        }),
+      });
+      const data = await response.json();
+      throwIfJsonApiFailed(response, data, 'This guest invitation could not be created.');
+      setInviteResult(data as InviteResult);
+      setGuestEmail('');
+      setGuestDisplayName('');
+      setGuestAccessImpact(null);
+      feedback.showSuccess('Guest added. Copy and send the private invitation link.');
+      await load();
+    } catch (error) {
+      feedback.showError(error instanceof Error ? error.message : 'This guest invitation could not be created.', 'Invitation not created');
+    } finally {
+      setGuestBusy(false);
+    }
+  };
+
+  const handleReissueInvite = async (recipientId: string) => {
+    setRowBusy(recipientId);
+    try {
+      const response = await fetch('/api/admin/recipient-invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'reissue', recipientId }),
+      });
+      const data = await response.json();
+      throwIfJsonApiFailed(response, data, 'A new invitation link could not be created.');
+      setInviteResult(data as InviteResult);
+      feedback.showSuccess('New invitation created. The previous unused link no longer works.');
+    } catch (error) {
+      feedback.showError(error instanceof Error ? error.message : 'A new invitation link could not be created.', 'Invitation not created');
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const copyInvite = async () => {
+    if (!inviteResult) return;
+    try {
+      await navigator.clipboard.writeText(inviteResult.inviteUrl);
+      feedback.showSuccess('Invitation link copied.');
+    } catch {
+      feedback.showError('Select and copy the invitation link manually.', 'Link not copied');
     }
   };
 
@@ -298,7 +368,63 @@ export default function JournalUsersAdminPage() {
       {listError && <div className={styles.error}>{listError}</div>}
 
       <section className={styles.section}>
-        <h2>Add User</h2>
+        <h2>Invite a guest</h2>
+        <p className={styles.intro}>Create Reader access without a password. The private link works once, expires after seven days, and can be replaced at any time.</p>
+        <form onSubmit={handleCreateGuest}>
+          <div className={styles.formRow}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="guest-email">Email</label>
+              <input
+                id="guest-email"
+                type="email"
+                className={styles.input}
+                value={guestEmail}
+                onChange={(event) => {
+                  setGuestEmail(event.target.value);
+                  setGuestAccessImpact(null);
+                }}
+                required
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label htmlFor="guest-display">Display name (optional)</label>
+              <input
+                id="guest-display"
+                className={styles.input}
+                value={guestDisplayName}
+                onChange={(event) => {
+                  setGuestDisplayName(event.target.value);
+                  setGuestAccessImpact(null);
+                }}
+              />
+            </div>
+            {guestAccessImpact ? (
+              <div className={styles.impactReview}>
+                <strong>Review the guest&apos;s initial access</strong>
+                <p>This enabled guest will immediately gain access to {guestAccessImpact.collections.length} Collection{guestAccessImpact.collections.length === 1 ? '' : 's'} and {guestAccessImpact.cards.length} published Card{guestAccessImpact.cards.length === 1 ? '' : 's'} through legacy or all-enabled-reader routes.</p>
+                {guestAccessImpact.collections.length ? <details><summary>Collections</summary><ul>{guestAccessImpact.collections.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details> : null}
+                {guestAccessImpact.cards.length ? <details><summary>Published Cards</summary><ul>{guestAccessImpact.cards.map((item) => <li key={item.id}>{item.title}</li>)}</ul></details> : null}
+              </div>
+            ) : null}
+            <button type="submit" className={styles.button} disabled={guestBusy}>
+              {guestBusy ? 'Working…' : guestAccessImpact ? 'Create guest with reviewed access' : 'Review initial access'}
+            </button>
+          </div>
+        </form>
+        {inviteResult ? (
+          <div className={styles.inviteResult} role="status">
+            <strong>Private invitation link</strong>
+            <p>Send this link only to the intended guest. It expires {new Date(inviteResult.expiresAt).toLocaleString()}.</p>
+            <div className={styles.inviteRow}>
+              <input className={styles.inviteLink} readOnly value={inviteResult.inviteUrl} aria-label="Private invitation link" onFocus={(event) => event.currentTarget.select()} />
+              <button type="button" className={styles.buttonSecondary} onClick={() => void copyInvite()}>Copy link</button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Add password account</h2>
         <form onSubmit={handleCreate}>
           <div className={styles.formRow}>
             <div className={styles.inputGroup}>
@@ -385,7 +511,7 @@ export default function JournalUsersAdminPage() {
                   checked={newGroupMemberIds.includes(user.docId)}
                   onChange={() => setNewGroupMemberIds((ids) => toggleMember(ids, user.docId))}
                 />
-                <span>{user.displayName}{user.disabled ? ' (disabled)' : ''}</span>
+                <span>{user.displayName}{user.accessKind === 'guest' ? ' (guest)' : ''}{user.disabled ? ' (disabled)' : ''}</span>
               </label>
             ))}
           </div>
@@ -430,7 +556,7 @@ export default function JournalUsersAdminPage() {
                           },
                         }))}
                       />
-                      <span>{user.displayName}{user.disabled ? ' (disabled)' : ''}</span>
+                      <span>{user.displayName}{user.accessKind === 'guest' ? ' (guest)' : ''}{user.disabled ? ' (disabled)' : ''}</span>
                     </label>
                   ))}
                 </div>
@@ -508,7 +634,7 @@ export default function JournalUsersAdminPage() {
                   <tr>
                     <th>Username</th>
                     <th>Display name</th>
-                    <th>Role</th>
+                    <th>Access</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -522,7 +648,7 @@ export default function JournalUsersAdminPage() {
                     <tr key={u.docId} className={u.disabled ? styles.rowDisabled : undefined}>
                       <td>{u.username}</td>
                       <td>{u.displayName}</td>
-                      <td>{u.role}</td>
+                      <td>{u.accessKind === 'guest' ? 'Guest' : u.role}</td>
                       <td>{u.disabled ? 'Disabled' : 'Active'}</td>
                       <td>
                         <div className={styles.actions}>
@@ -554,6 +680,7 @@ export default function JournalUsersAdminPage() {
                               ) : null}
                             </div>
                           ) : null}
+                          {u.accessKind !== 'guest' ? <>
                           <input
                             type="password"
                             className={styles.input}
@@ -585,6 +712,28 @@ export default function JournalUsersAdminPage() {
                           >
                             Set password
                           </button>
+                          </> : (
+                            <button
+                              type="button"
+                              className={styles.buttonSecondary}
+                              disabled={rowBusy === u.docId || u.disabled}
+                              onClick={() => void handleReissueInvite(u.docId)}
+                            >
+                              {u.disabled ? 'Enable before inviting' : 'New invitation link'}
+                            </button>
+                          )}
+                          {u.accessKind === 'guest' && inviteResult?.recipientId === u.docId ? (
+                            <div className={styles.rowInviteResult} role="status">
+                              <input
+                                className={styles.inviteLink}
+                                readOnly
+                                value={inviteResult.inviteUrl}
+                                aria-label={`Private invitation link for ${u.displayName}`}
+                                onFocus={(event) => event.currentTarget.select()}
+                              />
+                              <button type="button" className={styles.buttonSecondary} onClick={() => void copyInvite()}>Copy link</button>
+                            </div>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -594,7 +743,7 @@ export default function JournalUsersAdminPage() {
               </table>
             </div>
             {users.length === 0 && !loading && (
-              <p className={styles.intro}>No users have been added yet. Use Add User above to create the first reader account.</p>
+              <p className={styles.intro}>No readers have been added yet. Use one of the forms above to add a guest or password account.</p>
             )}
           </>
         )}

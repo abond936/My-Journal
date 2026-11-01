@@ -1,0 +1,49 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--layout-background2-color);
+  color: var(--text1-color);
+}
+
+.card {
+  width: min(100%, 32rem);
+  padding: 2rem;
+  border: var(--border-width-thin) solid var(--border1-color);
+  border-radius: var(--border-radius-lg);
+  background: var(--layout-background1-color);
+  box-shadow: var(--shadow-md);
+}
+
+.card h1 {
+  margin: 0 0 0.75rem;
+  font-size: var(--font-size-2xl);
+}
+
+.card p {
+  margin: 0 0 1.25rem;
+  color: var(--text2-color);
+  line-height: 1.55;
+}
+
+.action,
+.secondary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--border-radius-sm);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+}
+
+.action {
+  color: var(--primary-action-text-color);
+  background: var(--primary-action-background-color);
+}
+
+.secondary {
+  color: var(--text1-color);
+  border: var(--border-width-thin) solid var(--border1-color);
+}

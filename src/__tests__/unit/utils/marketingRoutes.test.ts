@@ -9,6 +9,7 @@ describe('marketingRoutes', () => {
   it('treats public marketing paths as marketing routes', () => {
     expect(isMarketingRoute('/')).toBe(true);
     expect(isMarketingRoute('/login')).toBe(true);
+    expect(isMarketingRoute('/invite')).toBe(true);
     expect(isMarketingRoute('/my-stories')).toBe(true);
     expect(isMarketingRoute('/my-stories/4')).toBe(true);
   });

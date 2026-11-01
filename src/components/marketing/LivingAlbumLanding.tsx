@@ -566,7 +566,7 @@ function FAQ() {
   const faqs = [
     {
       q: 'How do I get an account?',
-      a: 'v1 access is invitation-based. An operator creates accounts for the author and invited family readers. Open self-signup is not available yet.',
+      a: 'Access is invitation-based. An author can send a private guest link or create a password account for a family reader. Open self-signup is not available.',
     },
     {
       q: 'Who can see my stories?',
@@ -582,7 +582,7 @@ function FAQ() {
     },
     {
       q: 'Where do I get help?',
-      a: 'Invited users should contact their project operator. In-app Help is planned; for now, use Sign in once you have credentials.',
+      a: 'Readers should contact the author who invited them. Authors can open the in-app Guide from the main menu.',
     },
   ];
 
@@ -612,12 +612,11 @@ function ContactAccess() {
       <div className="container grid gap-12 lg:grid-cols-2 lg:items-start">
         <SectionIntro kicker="Contact / access" title="Request access" titleEmphasis="(coming soon).">
           <p>
-            If you do not yet have credentials, request-access and operator contact channels are still
-            being set up. Use the placeholder form below to preview the flow — submissions are not active
-            yet.
+            If you do not have an invitation or password account, contact the author of the private archive.
+            The request-access form below is only a preview — submissions are not active yet.
           </p>
           <p className="mt-4">
-            Already invited?{' '}
+            Have a password account?{' '}
             <Link href="/login" className="font-semibold text-terracotta hover:text-terracotta-deep">
               Sign in here
             </Link>
