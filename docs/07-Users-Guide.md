@@ -342,7 +342,7 @@ Review these conditions periodically:
 - published Cards whose current audience or placement no longer matches the author's intent; and
 - Collections whose structure or required Cards are unfinished.
 
-Use the owning surface for each correction. Media truth belongs in the Media Library, Card meaning belongs in Compose, Collection order belongs in Collections, and reader membership belongs in User Management. Dashboard and Needs Attention counts are evidence and navigation aids; they do not authorize automatic repair.
+Use the owning surface for each correction. From Author Home, choose **Review exact items** on a Collection to see the Cards, Media, and missing references behind its Needs Attention counts. Card items open in Compose, dimensional Media items open that record's Tags and Subjects review, readiness items open the exact Media editor, and missing Media references identify the Cards that still refer to them. Media truth belongs in the Media Library, Card meaning belongs in Compose, Collection order belongs in Collections, and reader membership belongs in User Management. The queues are evidence and navigation aids; they do not authorize automatic repair.
 
 Before a broad migration or destructive cleanup, create and verify a recoverable backup, inspect an exact impact preview, make one bounded change through the authoritative operation, and read the result back independently. Tag removal or merge, audience-group membership changes, publication transitions, and Media deletion all deserve consequence review.
 

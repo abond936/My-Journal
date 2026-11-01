@@ -71,6 +71,10 @@ describe('AuthorDashboard', () => {
       'href',
       '/admin/studio?collection=my-life'
     );
+    expect(screen.getByRole('link', { name: 'Review exact items' })).toHaveAttribute(
+      'href',
+      '/admin/collections/my-life/attention'
+    );
     expect(screen.getByText('87')).toBeInTheDocument();
     expect(screen.getByText('17')).toBeInTheDocument();
     expect(screen.getByText('278')).toBeInTheDocument();

@@ -62,7 +62,8 @@ jest.mock('@/components/admin/studio/media/MediaAdminGrid', () => ({
 
 jest.mock('@/components/admin/studio/media/BulkEditMediaTagsModal', () => ({
   __esModule: true,
-  default: () => null,
+  default: ({ isOpen, mediaIds }: { isOpen: boolean; mediaIds: string[] }) =>
+    isOpen ? <div data-testid="media-tags-modal">{mediaIds.join(',')}</div> : null,
 }));
 
 jest.mock('@/components/admin/studio/media/MediaLocalImportDialog', () => ({
@@ -182,6 +183,13 @@ describe('MediaAdminContent', () => {
     expect(screen.getByRole('option', { name: 'No Matches' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Browse' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Exact matches' })).not.toBeInTheDocument();
+  });
+
+  it('opens the existing classification editor for an exact Media handoff', async () => {
+    render(<MediaAdminContent embedded initialReviewMediaId="media-1" />);
+
+    expect(await screen.findByTestId('media-tags-modal')).toHaveTextContent('media-1');
+    expect(baseMediaContext.setSelectedMediaIds).toHaveBeenCalledWith(['media-1']);
   });
 
   it('does not start the embedded media fetch before Studio has an active card context', () => {

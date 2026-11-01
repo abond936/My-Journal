@@ -13,6 +13,7 @@ import { getAuthorSettings } from '@/lib/services/authorSettingsService';
 import type { ClassificationRequirements } from '@/lib/types/authorSettings';
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
+export type AttentionDimension = (typeof DIMENSIONS)[number];
 
 export type CollectionPublicationAttention = {
   collectionId: string;
@@ -35,6 +36,39 @@ export type CollectionPublicationAttention = {
   audienceSelectionState: 'legacy_all_enabled' | 'all_enabled' | 'selected' | 'none';
 };
 
+export type CollectionPublicationAttentionDetails = {
+  summary: CollectionPublicationAttention;
+  missingRequiredCardIds: string[];
+  draftCards: AttentionCardItem[];
+  cardsNeedingDimensionReview: AttentionCardItem[];
+  cardsMissingMeaningfulWhat: AttentionCardItem[];
+  missingMedia: AttentionMissingMediaItem[];
+  mediaNeedingDimensionReview: AttentionMediaItem[];
+  mediaReadinessAttention: AttentionMediaItem[];
+};
+
+export type AttentionCardItem = {
+  cardId: string;
+  title: string;
+  incompleteDimensions: AttentionDimension[];
+};
+
+export type AttentionCardReference = {
+  cardId: string;
+  title: string;
+};
+
+export type AttentionMissingMediaItem = {
+  mediaId: string;
+  referencedByCards: AttentionCardReference[];
+};
+
+export type AttentionMediaItem = AttentionMissingMediaItem & {
+  label: string;
+  incompleteDimensions: AttentionDimension[];
+  readiness: 'pending' | 'failed' | 'unassessed';
+};
+
 function audienceSelectionState(
   collection: Collection
 ): CollectionPublicationAttention['audienceSelectionState'] {
@@ -52,6 +86,34 @@ function referencedMediaIds(cards: Card[]): string[] {
     card.contentMedia?.forEach((mediaId) => mediaId && ids.add(mediaId));
   }
   return [...ids];
+}
+
+function cardTitle(card: Card): string {
+  return card.title?.trim() || card.subtitle?.trim() || 'Untitled Card';
+}
+
+function incompleteDimensions(item: Pick<Card | Media, 'dimensionReview'>): AttentionDimension[] {
+  return DIMENSIONS.filter(
+    (dimension) => !isDimensionReviewComplete(item.dimensionReview?.[dimension])
+  );
+}
+
+function referencesByMedia(cards: Card[]): Map<string, AttentionCardReference[]> {
+  const references = new Map<string, AttentionCardReference[]>();
+  for (const card of cards) {
+    if (!card.docId) continue;
+    const cardReference = { cardId: card.docId, title: cardTitle(card) };
+    const ids = new Set<string>();
+    if (card.coverImageId) ids.add(card.coverImageId);
+    card.galleryMedia?.forEach((item) => item.mediaId && ids.add(item.mediaId));
+    card.contentMedia?.forEach((mediaId) => mediaId && ids.add(mediaId));
+    ids.forEach((mediaId) => {
+      const current = references.get(mediaId) ?? [];
+      current.push(cardReference);
+      references.set(mediaId, current);
+    });
+  }
+  return references;
 }
 
 export function evaluateCollectionPublicationAttention(args: {
@@ -112,6 +174,75 @@ export function evaluateCollectionPublicationAttention(args: {
   };
 }
 
+export function evaluateCollectionPublicationAttentionDetails(args: {
+  structure: CollectionStructureReadModel;
+  media: Media[];
+  classificationRequirements?: ClassificationRequirements;
+}): CollectionPublicationAttentionDetails {
+  const classificationRequirements = args.classificationRequirements ?? {
+    media: true,
+    cards: true,
+  };
+  const { collection, placements, cards } = args.structure;
+  const cardsById = new Map(cards.flatMap((card) => card.docId ? [[card.docId, card]] : []));
+  const requiredCardIds = [...new Set([
+    ...(collection.introductionCardId ? [collection.introductionCardId] : []),
+    ...placements.map((placement) => placement.cardId),
+  ])];
+  const requiredCards = requiredCardIds
+    .map((cardId) => cardsById.get(cardId))
+    .filter((card): card is Card => Boolean(card));
+  const mediaById = new Map(args.media.flatMap((item) => item.docId ? [[item.docId, item]] : []));
+  const mediaReferences = referencesByMedia(requiredCards);
+  const mediaIds = [...mediaReferences.keys()];
+  const toCardItem = (card: Card): AttentionCardItem => ({
+    cardId: card.docId!,
+    title: cardTitle(card),
+    incompleteDimensions: incompleteDimensions(card),
+  });
+  const toMediaItem = (media: Media): AttentionMediaItem => ({
+    mediaId: media.docId!,
+    label: media.caption?.trim() || media.filename?.trim() || media.docId!,
+    incompleteDimensions: incompleteDimensions(media),
+    readiness:
+      media.readiness?.overall === 'pending' || media.readiness?.overall === 'failed'
+        ? media.readiness.overall
+        : 'unassessed',
+    referencedByCards: mediaReferences.get(media.docId!) ?? [],
+  });
+
+  return {
+    summary: evaluateCollectionPublicationAttention(args),
+    missingRequiredCardIds: requiredCardIds.filter((cardId) => !cardsById.has(cardId)),
+    draftCards: requiredCards.filter((card) => card.status !== 'published').map(toCardItem),
+    cardsNeedingDimensionReview: classificationRequirements.cards
+      ? requiredCards.filter((card) => incompleteDimensions(card).length > 0).map(toCardItem)
+      : [],
+    cardsMissingMeaningfulWhat: classificationRequirements.cards
+      ? requiredCards
+          .filter((card) =>
+            !isDimensionReviewComplete(card.dimensionReview?.what) || (card.what?.length ?? 0) === 0
+          )
+          .map(toCardItem)
+      : [],
+    missingMedia: mediaIds
+      .filter((mediaId) => !mediaById.has(mediaId))
+      .map((mediaId) => ({ mediaId, referencedByCards: mediaReferences.get(mediaId) ?? [] })),
+    mediaNeedingDimensionReview: classificationRequirements.media
+      ? mediaIds
+          .map((mediaId) => mediaById.get(mediaId))
+          .filter((media): media is Media => Boolean(media?.docId))
+          .filter((media) => incompleteDimensions(media).length > 0)
+          .map(toMediaItem)
+      : [],
+    mediaReadinessAttention: mediaIds
+      .map((mediaId) => mediaById.get(mediaId))
+      .filter((media): media is Media => Boolean(media?.docId))
+      .filter((media) => media.readiness?.overall !== 'ready')
+      .map(toMediaItem),
+  };
+}
+
 async function loadMedia(
   mediaIds: string[],
   firestore: Firestore
@@ -137,6 +268,22 @@ export async function getCollectionPublicationAttention(
   if (!structure) return null;
   const media = await loadMedia(referencedMediaIds(structure.cards), firestore);
   return evaluateCollectionPublicationAttention({ structure, media, classificationRequirements });
+}
+
+export async function getCollectionPublicationAttentionDetails(
+  collectionId: string,
+  firestore: Firestore = getAdminApp().firestore(),
+  classificationRequirements?: ClassificationRequirements
+): Promise<CollectionPublicationAttentionDetails | null> {
+  const structure = await getActiveCollectionStructure(collectionId, firestore);
+  if (!structure) return null;
+  const media = await loadMedia(referencedMediaIds(structure.cards), firestore);
+  const requirements = classificationRequirements ?? (await getAuthorSettings(firestore)).classificationRequirements;
+  return evaluateCollectionPublicationAttentionDetails({
+    structure,
+    media,
+    classificationRequirements: requirements,
+  });
 }
 
 export async function listActiveCollectionPublicationAttention(
