@@ -292,6 +292,8 @@ The phone Story flow separates the work into five manageable steps:
 4. **Placement** — Decide whether the Story belongs in Feed, one or more Collection locations, or both.
 5. **Preview** — Read the Story as a reader will encounter it before publishing.
 
+In **Details**, choose **Suggest existing Tags from this Card** when the words already name a person, event, date label, or place that exists in the Tag library. Review each proposed hierarchy path and its title-or-story-text evidence, then choose **Add** only when it is true. This does not create Tags, choose a subject, or complete dimensional review automatically.
+
 When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
 
 On a phone, save or discard any unsaved Card changes when the guard asks before moving from **Cards** to **Prompts**. The selected Card remains the authoring target. Adding a prompt or Topic returns to that Card and inserts the guidance into Compose.

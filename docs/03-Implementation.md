@@ -1689,6 +1689,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Four focused suites pass 23 tests, and the direct link-control plus durable Collection regression passes sixteen tests after removing an unnecessary provider dependency exposed by the first full run. The complete runnable Jest gate passes 243 suites and 1,327 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Collection, Shared Media Collection, audience, account, delivery record, or Storage object changed.
 
+### Forty-second implementation slice — Author-reviewed Card-word Tag suggestions
+
+**Definition:** Ready
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Give phone and desktop authors a restrained classification starting point from the Story they are already writing, without assigning Tags automatically or creating uncontrolled vocabulary.
+
+**Includes** — An author-invoked Card Details action; exact whole-phrase matching of current title, subtitle, and rich-text words to existing Tags; hierarchy-aware labels; bounded results per Who, What, When, and Where dimension; visible title-versus-story-text evidence; selected-Tag exclusion; one-at-a-time explicit Add; and ordinary authoritative Card Tag persistence.
+
+**Excludes** — Background inference; semantic or visual AI; automatic assignment, subject selection, review completion, Tag creation, identity creation, Media classification, content rewriting, production data mutation during verification, merge, and deployment.
+
+**Contracts** — A textual name match is a proposal, not proof. Suggestions use only existing governed Tag IDs and do not make the Card complete, reviewed, or publishable by themselves. The author sees the proposed Tag path and evidence source before choosing Add, and may ignore every result.
+
+**Verification gate** — Prove exact phrase rather than substring matching, title/body evidence, selected-Tag exclusion, no work before author invocation, no assignment before explicit Add, current-editor text use, ordinary persistence, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Focused utility and component coverage passes three cases, and the existing Card form regression passes thirteen cases. The complete runnable Jest gate passes 245 suites and 1,330 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Tag, Media, review state, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

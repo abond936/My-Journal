@@ -464,11 +464,12 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Media intake and composition** — Select device images into the canonical Media bank from the Story workflow or choose existing Media; make or change the cover, add, order, caption, frame, or remove Gallery Media, and preserve canonical Media when a Story reference is removed.
 - **Placement** — Place one durable Story Card in one or more Collection, Part, Chapter, or Section contexts without copying it; choose sibling order; remove a placement without deleting the Story; publish to Feed independently; and create a lightweight draft Collection or title-only structural destination through the existing owners.
 - **Preview and publication** — Preview the Reader presentation, review integrity and effective audience, publish deliberately, understand that edits to a still-published Story may become reader-visible immediately, and deliberately return it to Draft before private editing when needed. Private working revisions, republish history, and restore remain Future.
+- **Card-word Tag suggestions** — On demand, the open Card compares its current title, subtitle, and body with exact names in the existing governed Tag library. It proposes bounded Who, What, When, and Where matches with visible title-or-story-text evidence; nothing is assigned until the author adds one suggestion, and it never creates vocabulary or claims that text proves identity or meaning.
 
 ⭕1 **Planned**
 
 - **Voice capture** — Record speech as canonical audio Media, transcribe it into the open draft Card, preserve the untouched recording, and let the author deliberately include the original telling or a separate final narration in Reader and Book output.
-- **Assisted contextual classification** — Build on delivered Who, What, When, and Where review, exact taxonomy search, governed creation, and explicit blank, Unknown, or Not applicable resolution with restrained machine proposals and a safer minimal-identity creation flow. Proposals remain provisional until accepted, corrected, or rejected.
+- **Media and identity assistance** — Build on delivered Who, What, When, and Where review, exact taxonomy search, governed creation, explicit blank, Unknown, or Not applicable resolution, and Card-word proposals with provisional visible-Media evidence, restrained person suggestions, and a safer minimal-identity creation flow. Proposals remain provisional until accepted, corrected, or rejected.
 
 📋 **Contracts**
 

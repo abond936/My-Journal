@@ -52,6 +52,7 @@ import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
 import MobileStoryFlowNav, { type MobileStoryStep } from '@/components/admin/studio/cards/MobileStoryFlowNav';
 import StoryCollectionPlacementControl from '@/components/admin/studio/cards/StoryCollectionPlacementControl';
 import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
+import CardTextTagSuggestions from '@/components/admin/studio/cards/CardTextTagSuggestions';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -750,6 +751,20 @@ const CardForm: React.FC = () => {
     return allTags.filter(tag => tagIds.has(tag.docId));
   }, [cardData.tags, allTags]);
 
+  const cardTextTagSuggestions = (
+    <CardTextTagSuggestions
+      allTags={allTags}
+      selectedTagIds={cardData.tags ?? []}
+      disabled={isSaving}
+      getSource={() => ({
+        title: titleDraft,
+        subtitle: subtitleDraft,
+        content: editorRef.current?.getContent() ?? cardData.content,
+      })}
+      onAccept={(tagId) => handleTagsChange(Array.from(new Set([...(cardData.tags ?? []), tagId])))}
+    />
+  );
+
   const galleryMediaForTagRollup = useMemo(
     () =>
       ((cardData.galleryMedia ?? []) as HydratedGalleryMediaItem[])
@@ -1264,6 +1279,7 @@ const CardForm: React.FC = () => {
                   underlineTags
                   hideSearch
                   temporalValue={cardData.temporal}
+                  footerContent={cardTextTagSuggestions}
                   trailingSlot={
                     <button
                       type="button"
@@ -1619,6 +1635,7 @@ const CardForm: React.FC = () => {
               underlineTags
               hideSearch
               temporalValue={cardData.temporal}
+              footerContent={cardTextTagSuggestions}
               trailingSlot={
                 <button
                   type="button"
