@@ -4,6 +4,7 @@ import type { Media } from '@/lib/types/photo';
 /** Imperative Studio shell callbacks registered by Compose / Questions / DnD owners. */
 export type StudioShellImperativeHandlers = {
   bodyMediaInsert: (media: Media) => void;
+  promptTextInsert: (prompt: string) => void;
   composeLeaveGuard: () => Promise<boolean>;
   questionCardDeleteSync: (cardId: string, questionId?: string | null) => void;
   storyPileMembershipChanged: () => void | Promise<void>;

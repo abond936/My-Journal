@@ -633,6 +633,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Answers** — Transactionally create or open the sole linked Question card in Compose.
 - **Unlink** — Preserve the answer as a draft Story.
 - **Integrity** — Reject conflicting links, protect linked prompts from deletion, and atomically unlink and convert answers.
+- **Structured Prompt Library foundation** — Existing Question records may be organized additively as Category → Topic → Primary Question → Follow-up Questions without changing their IDs, tags, or linked Question Cards. Legacy records remain valid as unorganized primary prompts. Follow-ups must reference a primary question in the same Category and Topic, and a primary cannot be deleted or reorganized while follow-ups still depend on it.
+- **Card-first copying** — From the Prompts pane, the author can copy one prompt or the currently filtered Topic into an already-open Compose Card. The copied questions become ordinary editable Card headings immediately and have no continuing dependency on the Prompt Library; later prompt edits never rewrite the Card.
 
 📋 **Current contracts**
 
@@ -645,7 +647,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕1 **Planned**
 
-- **Structured Prompt Library** — Organize guidance as Category → Topic → Primary Question → optional Follow-up Questions. Follow-ups draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
+- **Structured Prompt Library completion** — Add author-reviewed curation of the legacy question bank, direct primary/follow-up ordering, richer Topic browsing, and the remaining publication-time prompt-block resolution below. Follow-ups continue to draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
 - **Card-first entry** — Create or open a draft Card before answering. The author may start blank or add writing prompts from inside that Card; the Prompts destination does not create a competing authorship entrance.
 - **Flexible scope** — Insert one primary question, its useful follow-ups, or the useful prompts from a whole Topic. Any number of prompts may contribute to one Card, and the author explicitly starts another Card when the material warrants it.
 - **Card-type presentation** — For a Question Card, the selected primary question proposes the title and follow-ups enter the body as guidance. For a Story Card, selected questions enter the body as editable writing prompts. The author may retain, rewrite, or remove copied question text.

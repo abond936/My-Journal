@@ -14,6 +14,7 @@ export type CardFormSurfaceContextValue = {
   reloadCard?: (cardId: string) => void;
   openMediaEditor?: (mediaId: string) => void;
   registerBodyMediaInsert?: (handler: ((media: Media) => void) | null) => void;
+  registerPromptTextInsert?: (handler: ((prompt: string) => void) | null) => void;
 };
 
 const CardFormSurfaceContext = createContext<CardFormSurfaceContextValue | null>(null);

@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest, { params }: { params: RoutePar
     return NextResponse.json({ question });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const validationFailure = message.includes('dimensional tag');
+    const validationFailure = message.includes('dimensional tag') || message.includes('prompt') || message.includes('question');
     const status = message.includes('not found') ? 404 : validationFailure ? 400 : 500;
     const code = status === 404
       ? 'QUESTION_NOT_FOUND'
@@ -138,7 +138,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: RouteP
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const linkedQuestion = message.includes('linked to Q&A cards');
+    const linkedQuestion = error instanceof QuestionAnswerConflictError;
     return errorResponse(
       {
         ok: false,

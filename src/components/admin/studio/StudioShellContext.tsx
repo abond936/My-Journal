@@ -59,6 +59,9 @@ export type StudioShellContextValue = {
    * Compose-only: register TipTap body insert handler for Studio relationship DnD (`drop:body`).
    */
   registerBodyMediaInsert: (handler: ((media: Media) => void) | null) => void;
+  /** Insert a copied Prompt Library question into the currently mounted Compose body. */
+  insertPromptText: (prompt: string) => boolean;
+  registerPromptTextInsert: (handler: ((prompt: string) => void) | null) => void;
   /**
    * @deprecated Prefer {@link registerBodyMediaInsert}; retained for DnD bridge reads.
    */

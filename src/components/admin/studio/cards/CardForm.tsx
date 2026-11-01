@@ -205,6 +205,15 @@ const CardForm: React.FC = () => {
   }, [authoringSurface, studioShellDnd]);
 
   useEffect(() => {
+    const register = authoringSurface?.registerPromptTextInsert;
+    if (!register) return;
+    register((prompt: string) => {
+      editorRef.current?.insertPrompt(prompt);
+    });
+    return () => register(null);
+  }, [authoringSurface]);
+
+  useEffect(() => {
     return registerEditorContentGetter(
       () => editorRef.current?.getContent() ?? (cardData.content ?? '')
     );

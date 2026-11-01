@@ -75,6 +75,7 @@ export default function StudioCardEditPane({
     loadSelectedCard,
     openSelectedCardMediaEditor,
     registerBodyMediaInsert,
+    registerPromptTextInsert,
   } = useStudioShell();
   const { tags: allTags, mutate: mutateTags } = useTag();
   const handleSave = useCallback(
@@ -184,6 +185,7 @@ export default function StudioCardEditPane({
             reloadCard: (cardId) => void loadSelectedCard(cardId, { quiet: true }),
             openMediaEditor: openSelectedCardMediaEditor,
             registerBodyMediaInsert,
+            registerPromptTextInsert,
           }}>
             <StudioCardFormShellSync />
             <CardForm />
