@@ -246,14 +246,143 @@ Only then expand the taxonomy for the next body of material.
 
 ---
 
-## Next Chapters
+## 4. Import and Prepare Media
 
-The next guide slices will cover:
+Media enters a private author library. Importing an image does not publish it, place it in a Story, or expose the rest of the library to readers.
 
-4. Import and Prepare Media
-5. Tag Effectively
-6. Turn Media Into Cards
-7. Build Collections
-8. Review the Reader Experience
-9. Maintain the Archive
-10. Worked Examples
+On a computer, use the Studio Media Library to bring in selected files or a bounded folder. On a phone, Start a Story can select device photos for that Story. The product must retain its own usable copy of Media that becomes part of the archive; Apple Photos or Google Photos may remain the place where an author initially finds it.
+
+Before a large import, preserve the best source file available and correct trustworthy embedded facts when practical. Scanned images often need an author-supplied date, location, caption, or identity because the scan date is not the historical date. Phone images ordinarily provide stronger date and location evidence, but machine metadata is evidence rather than unquestionable truth.
+
+After import, confirm that the files appear, inspect processing failures, and use Batch, Folder, Metadata, or Day grouping when it helps review the new population. A pending or failed rendition is a processing condition, not permission to delete the source.
+
+**Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
+
+## 5. Tag Effectively
+
+Settings offers four archive standards: require neither Media nor Cards to have complete Who, What, When, and Where review; require Media only; require Cards only; or require both. These are author-selected standards, not different products.
+
+Draft work remains open under every standard. The selected requirements are enforced when publishing a Card. If Media review is required, the Media referenced by that Card must be reviewed; unrelated library Media does not block the Story. If Card review is required, the Card must have all four dimensions reviewed and a meaningful What. Blank remains unreviewed; Unknown and N/A are explicit searchable decisions.
+
+Work from broad shared truth toward exceptions:
+
+1. Select a bounded population using a batch, folder, date, or existing Tag.
+2. Apply shared Tags in bulk.
+3. Remove or refine Tags for exceptions.
+4. Add subjects only where emphasis helps.
+5. Use Incomplete and dimensional review filters to find the remaining decisions.
+
+**Rule:** Never use Unknown or N/A merely to clear a queue. Use them only when they truthfully describe what the author knows.
+
+## 6. Turn Media Into Stories
+
+Start with the reason another person should open the Story. Select the images, then supply only the words needed to make their meaning understandable.
+
+The phone Story flow separates the work into five manageable steps:
+
+1. **Words** — Give the Story a useful title and write the narrative it needs.
+2. **Media** — Choose the cover and supporting images; add or improve image captions where they carry important image-level context.
+3. **Details** — Review the Story's Who, What, When, and Where meaning and choose its audience.
+4. **Placement** — Decide whether the Story belongs in Feed, one or more Collection locations, or both.
+5. **Preview** — Read the Story as a reader will encounter it before publishing.
+
+A Story may be published in Feed without belonging to a Collection. It may instead appear through a Collection, or use both routes. Placement does not duplicate the Story; each placement points to the same canonical Card.
+
+Draft saving is permissive. Publishing requires the selected classification standard, valid referenced Media, ready renditions, an explicit nonempty audience, and at least one Reader route. Audience can use all enabled readers, reusable groups, or selected individuals.
+
+At the current stage, a published Card is one live object. Saved edits may become visible to readers immediately. Return it to Draft before making changes that must remain private until republished.
+
+**Default:** Complete and share one modest Story before building a comprehensive Collection.
+
+## 7. Build Collections
+
+A Collection is an authored reading path, not a second copy of the archive. Begin it as a private draft and add only the structure that improves understanding.
+
+Use Parts for the broadest divisions, Chapters for substantial movements within the work, and Sections only where a Chapter benefits from another meaningful layer. An ordinary Story may also sit directly at Collection level. The same Story may appear in more than one location when each placement serves a real reading purpose.
+
+Structure can be created before every Story is written. Add Part, Chapter, or Section creates a title-only draft Story at the chosen structural location; open that same Card later to add introductory content. Removing a placement does not delete the Card.
+
+Collection publication is separate from Card publication. A Collection must have an explicit audience, valid structure, and no missing or draft required Cards. Published structure is locked until the Collection deliberately returns to Draft.
+
+**Rule:** Do not publish `My Life` or another large Collection merely to see what it looks like. Use Preview while readiness work remains unfinished.
+
+## 8. Review the Reader Experience
+
+Reader Home offers Collections and Feed. Collections provide authored sequence and context; Feed supports direct and freeform exploration. A direct authorized Story link may bypass both entrances.
+
+Review with the intended reader in mind:
+
+- Can the reader tell where to begin?
+- Does the title make a clear promise?
+- Do captions explain images that would otherwise be ambiguous?
+- Does the Story contain enough context without repeating what the images already show?
+- Does Collection placement improve understanding?
+- Can the reader return, continue, and recognize where they are?
+- Does the selected audience match the author's intent?
+
+Test representative phone and desktop reading. Reader access includes only authorized published Cards and Collections plus the Media those surfaces reference. It does not expose the author's private Media bank.
+
+Publishing and delivery are not the same action. The current product can authorize existing reader accounts, groups, and individuals. Guest invitation, password establishment or recovery, and distribution notifications remain future capabilities; until then, an operator must create and communicate reader credentials separately.
+
+**Default:** Preview first, publish to the smallest truthful audience, and then read the result from that audience's route.
+
+---
+
+## 9. Maintain the Archive
+
+An archive remains useful when its source files, authored meaning, access rules, and recovery path stay trustworthy.
+
+Review these conditions periodically:
+
+- failed or pending Media processing;
+- unresolved dimensional review that matters to the selected classification standard;
+- missing Media references;
+- failed durable operations;
+- audience groups whose membership has changed;
+- published Cards whose current audience or placement no longer matches the author's intent; and
+- Collections whose structure or required Cards are unfinished.
+
+Use the owning surface for each correction. Media truth belongs in the Media Library, Card meaning belongs in Compose, Collection order belongs in Collections, and reader membership belongs in User Management. Dashboard and Needs Attention counts are evidence and navigation aids; they do not authorize automatic repair.
+
+Before a broad migration or destructive cleanup, create and verify a recoverable backup, inspect an exact impact preview, make one bounded change through the authoritative operation, and read the result back independently. Tag removal or merge, audience-group membership changes, publication transitions, and Media deletion all deserve consequence review.
+
+Published Cards currently remain live objects. If a revision must remain private, return the Card to Draft before editing. Do not assume that an unfinished private working-revision system protects published content.
+
+**Rule:** Prefer a small, verified correction over a bulk action whose exceptions cannot be reviewed.
+
+## 10. Worked Examples
+
+### A phone-first birthday Story
+
+Elizabeth wants to share Charlie's recent birthday. Her phone already makes the photographs easy to find by date and face, so she does not need to import or classify her whole camera roll.
+
+1. From Author Home, choose Start a Story.
+2. In Media, select only the birthday photographs that belong in the Story.
+3. In Words, title the Story and add the context the photographs do not convey.
+4. Caption only the images whose meaning or participants would otherwise be unclear.
+5. In Details, follow the archive's selected classification standard and choose the intended family audience.
+6. In Placement, include the Story in Feed, a family Collection, or both.
+7. Preview on a phone, then publish when the audience and route are correct.
+
+This workflow produces one durable Story and retains the Media it uses. It does not require importing, tagging, or managing every photograph already on the phone. If classification is optional, search and discovery will rely more heavily on the Story's words, captions, and whatever confirmed Tags the author elects to add.
+
+### A scanned family-history batch
+
+Alan has a folder of scanned photographs inherited across several generations. The file dates mostly describe scanning rather than the historical events, so the source needs more deliberate preparation.
+
+1. Choose one understandable folder of approximately 25–100 images.
+2. Preserve the best scans and import that bounded folder into the Media Library.
+3. Group by Folder or Batch and identify shared people, period, place, and event context.
+4. Apply broad shared Who, What, When, and Where truth in bulk, then correct exceptions.
+5. Use structured dates at the precision actually known; use Unknown only where the historical answer cannot presently be established.
+6. Add captions to important individual photographs, especially where identity, provenance, or significance is not visually evident.
+7. Create several focused Stories rather than one enormous record.
+8. Arrange those Stories in a draft family-history Collection when sequence and introduction improve understanding.
+9. Review the Collection in Preview while missing references, unfinished Cards, or audience decisions remain.
+10. Publish Stories and eventually the Collection only after their selected classification, Media readiness, audience, and destination requirements are satisfied.
+
+This workflow uses the full archive benefit: author-confirmed hierarchy and dimensions support retrieval across people, events, time, and place. The additional precision is valuable because the scanned source lacks much of the searchable context a modern phone library ordinarily provides.
+
+### What the examples have in common
+
+Both authors preserve only the Media they deliberately bring into My Stories, create Cards as the durable units of meaning, and control who may read published work. The difference is the amount of archive organization they need. Phone-first authors can begin with one Story and light classification. Archival authors can invest in complete Media and Card review where that precision improves freeform exploration and long-term understanding.

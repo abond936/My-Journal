@@ -62,12 +62,33 @@ export default defineConfig({
       },
     },
     {
+      name: 'smoke-viewer-mobile',
+      testMatch: /smoke\/reader\.spec\.ts/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
+        storageState: viewerAuthFile,
+      },
+    },
+    {
       name: 'smoke-admin',
       testMatch: /smoke\/admin-(access|save)\.spec\.ts/,
       grep: /@admin/,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
+        storageState: adminAuthFile,
+      },
+    },
+    {
+      name: 'smoke-admin-mobile',
+      testMatch: /smoke\/mobile-author\.spec\.ts/,
+      grep: /@admin/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['iPhone 13'],
+        browserName: 'chromium',
         storageState: adminAuthFile,
       },
     },
