@@ -5,6 +5,7 @@ import StudioWorkspace from '@/components/admin/studio/StudioWorkspace';
 const mockRouterReplace = jest.fn();
 let mockSearchParams = new URLSearchParams();
 let mockSelectedCardId: string | null = null;
+let mockSelectedCardType: 'story' | 'callout' = 'story';
 const mockConfirmComposeLeave = jest.fn<Promise<boolean>, []>();
 const mockRequestClearSelectedCard = jest.fn<Promise<boolean>, []>();
 
@@ -61,7 +62,7 @@ jest.mock('@/components/admin/studio/useStudioSelectedCard', () => ({
   useStudioSelectedCard: () => ({
     selectedCardId: mockSelectedCardId,
     setSelectedCardId: jest.fn(),
-    selectedPreview: mockSelectedCardId ? { docId: mockSelectedCardId, title: 'Selected' } : null,
+    selectedPreview: mockSelectedCardId ? { docId: mockSelectedCardId, title: 'Selected', type: mockSelectedCardType } : null,
     setSelectedPreview: jest.fn(),
     selectedDetail: null,
     setSelectedDetail: jest.fn(),
@@ -83,7 +84,7 @@ jest.mock('@/components/admin/studio/useStudioSelectedCard', () => ({
     evictCard: jest.fn(),
     activeCardViewModel: {
       status: mockSelectedCardId ? 'preview' : 'empty',
-      card: mockSelectedCardId ? { docId: mockSelectedCardId, title: 'Selected' } : null,
+      card: mockSelectedCardId ? { docId: mockSelectedCardId, title: 'Selected', type: mockSelectedCardType } : null,
       preview: null,
       detail: null,
       error: null,
@@ -151,6 +152,7 @@ describe('StudioWorkspace mobile destinations', () => {
     jest.clearAllMocks();
     mockSearchParams = new URLSearchParams();
     mockSelectedCardId = null;
+    mockSelectedCardType = 'story';
     mockConfirmComposeLeave.mockResolvedValue(true);
     mockRequestClearSelectedCard.mockResolvedValue(true);
     window.localStorage.clear();
@@ -193,6 +195,7 @@ describe('StudioWorkspace mobile destinations', () => {
 
   it('keeps a dirty Compose surface in place when the leave guard declines', async () => {
     mockSelectedCardId = 'card-1';
+    mockSelectedCardType = 'callout';
     mockConfirmComposeLeave.mockResolvedValue(false);
     render(<StudioWorkspace />);
 
@@ -203,6 +206,22 @@ describe('StudioWorkspace mobile destinations', () => {
     await waitFor(() => expect(mockConfirmComposeLeave).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cards' })).toHaveAttribute('aria-current', 'page');
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('gives mobile Story Compose the full screen and keeps Back to Cards as the guarded exit', async () => {
+    mockSelectedCardId = 'story-1';
+    mockRequestClearSelectedCard.mockResolvedValue(false);
+    render(<StudioWorkspace />);
+
+    expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to Cards' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Author destinations' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Cards' }));
+
+    await waitFor(() => expect(mockRequestClearSelectedCard).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('compose-pane')).toBeInTheDocument();
     expect(mockRouterReplace).not.toHaveBeenCalled();
   });
 });

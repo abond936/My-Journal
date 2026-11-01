@@ -151,19 +151,19 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
               </Link>
               <Link
                 href="/admin/journal-users"
-                className={`${styles.navLink} ${isUsersRoute ? styles.active : ''}`}
+                className={`${styles.navLink} ${styles.desktopAdminLink} ${isUsersRoute ? styles.active : ''}`}
               >
                 Users
               </Link>
               <Link
                 href="/admin/settings"
-                className={`${styles.navLink} ${isArchiveSettingsRoute ? styles.active : ''}`}
+                className={`${styles.navLink} ${styles.desktopAdminLink} ${isArchiveSettingsRoute ? styles.active : ''}`}
               >
                 Settings
               </Link>
               <Link
                 href="/admin/theme-admin"
-                className={`${styles.navLink} ${isThemeAdminRoute ? styles.active : ''}`}
+                className={`${styles.navLink} ${styles.desktopAdminLink} ${isThemeAdminRoute ? styles.active : ''}`}
                 onClick={(event) => {
                   event.preventDefault();
                   openThemeAdmin();

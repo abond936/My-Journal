@@ -1294,6 +1294,100 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Focused settings normalization, classification-policy, Collection-attention, dashboard, Reader tag-strip, and Compose tag-command tests pass. The read-only Collection publication audit now reports and applies the saved classification requirements while distinguishing the delivered Card-integrity core from the still-incomplete full publication contract. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record, author setting, or Storage object changed during verification.
 
+### Nineteenth implementation slice — Restore mobile Author entry
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make the approved mobile Author Home and sequential Studio reachable instead of covering every narrow `/admin` route with the legacy desktop-only dialog.
+
+**Includes** — A route-aware Administration viewport gate that permits only Author Home and Studio at phone width; retention of the desktop-only boundary for Users, Settings, Theme, development, maintenance, and preview routes; removal of those unavailable destinations from mobile primary navigation; and a truthful desktop-only Settings note on mobile Author Home.
+
+**Excludes** — Making archive-scale administration mobile; changing the mobile destination model; redesigning Author Home or Compose; adding destination-specific touch workflows; changing Reader behavior; production data mutation; deployment; and publication of any Card or Collection.
+
+**Contracts** — Mobile capability is granted to exact approved surfaces, not to the `/admin` namespace as a whole. Theme retains its independent desktop gate even when opened over a mobile-capable Author route. Desktop behavior and navigation remain unchanged. Unavailable mobile destinations are absent or identified before selection rather than leading to a surprise blocker.
+
+**Completion evidence** — Production inspection first reproduced the global `Admin only available on desktop` dialog on Author Home, Cards, and Start a Story at phone width and traced it to the shared Administration gate. Four focused gate, navigation, Theme-overlay, and Author Home suites pass thirteen tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. Authenticated local browser rendering could not run without Firebase service credentials and was not replaced with fabricated credentials. No production record or Storage object changed.
+
+### Twentieth implementation slice — Resume a real Story from Author Home
+
+**Definition:** Ready
+
+**Execution:** Verified locally; index and application are not deployed
+
+**Outcome** — Put current creative work ahead of archive administration by naming and directly opening the most recently edited draft Story, while retaining a recent published Story reference.
+
+**Includes** — A read-only recent-Story dashboard section; direct durable Card handoffs for the latest draft and latest published Story; truthful empty and independently unavailable states; responsive Story cards before the Collection backlog; and the narrow `status` + `type` + `updatedAt` Firestore index required by the bounded query.
+
+**Excludes** — Automatic Story creation; mutation or migration of Cards; a new activity log; per-author ownership; changing the definition of draft or published; mobile Compose redesign; index deployment; application deployment; and publication of any Card or Collection.
+
+**Contracts** — The query reads only `type: story` Cards and uses durable Card IDs. Failure of the recent-Story query does not hide Card counts, Media, operations, or Collection attention. General Continue in Studio retains its saved-workspace meaning; the named draft handoff is the specific resume path.
+
+**Completion evidence** — Focused dashboard service, component, and page suites pass eleven tests; touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. The build used the checked-in Theme fallback when cloud credentials were unavailable as designed. No production query, index, record, or Storage object changed during local verification.
+
+### Twenty-first implementation slice — Mobile Story workflow wayfinding
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Turn the phone Story editor from an undifferentiated long form into one explicitly navigable creative journey without forking the Card model or hiding existing capability prematurely.
+
+**Includes** — Phone-only Words, Media, Details, Placement, and Preview navigation; direct movement to durable sections of the existing form; a live Reader tile preview; phone Story editing without desktop cross-pane relationship drag targets; retained Save, discard, draft, and unsaved-leave behavior; and unchanged desktop Compose.
+
+**Excludes** — Hiding nonactive sections; autosave redesign; new Collection-placement persistence; a full Reader-detail preview; publication from a new owner; content or Media mutation during verification; deployment; and production data changes.
+
+**Contracts** — The workflow is presentation over the shared Card and Media truth. It appears only for Story Cards in phone Studio. Other Card types and desktop Studio keep their current form. Placement continues to use the existing Feed and audience controls; this slice does not claim that Collection placement is complete inside Compose.
+
+**Completion evidence** — Focused workflow navigation, mobile workspace, and Card-form suites pass seventeen tests. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production record or Storage object changed.
+
+### Twenty-second implementation slice — Step-by-step mobile Story and direct Collection placement
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make phone Story creation genuinely sequential and let the author place a saved Story at a Collection's top level or an exact Part, Chapter, or Section without leaving Compose.
+
+**Includes** — Mutually exclusive Words, Media, Details, Placement, and Preview panels; active-step indication; title, prose, Story assistance, cover, Gallery, classification, type and display controls assigned to their owning step; Feed and audience controls in Placement; live Reader preview and publication status in Preview; active Collection selection; top-level placement as the simple default; optional exact structural destination; existing-placement display and removal; duplicate same-destination prevention; published-Collection locking; and revision-checked writes through the existing durable Collection structure owner.
+
+**Excludes** — Creating a new Collection or structural destination from Compose; restructuring a Collection; bypassing published-structure locks; automatic placement; autosave redesign; Reader-detail preview; notifications; deployment; production data mutation; and changes to desktop Compose.
+
+**Contracts** — A Story must be saved before it can be placed. Placement creates a durable placement reference and never copies the Card. One Card may be placed in multiple Collections or distinct locations. Top-level placement is an explicit valid choice, not an inferred fallback. Every write submits the full current structure with its expected revision to the existing transactional owner; conflicts reload rather than overwrite concurrent work.
+
+**Completion evidence** — Focused mobile workflow, Story placement, durable Collection pane, workspace, and Card-form suites pass. Touched-code lint, non-incremental production typecheck, and diff checks pass. No production Card, Collection, placement, Media, audience, or Storage object changed.
+
+### Twenty-third implementation slice — Focused mobile Story exit and placement order
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Keep phone Story creation focused on its five Story steps while preserving one guarded exit, and let the author choose where the new Story appears among siblings at the selected Collection destination.
+
+**Includes** — Hide the global Author-destination bar only while a new or existing Story is open in phone Compose; retain Back to Cards as the unsaved-work-protected exit; leave non-Story mobile Card editing and ordinary destination navigation unchanged; show Collection placement roles beside destination titles; choose beginning, end, or after an existing sibling; and normalize only that destination's sibling order through the existing revision-checked structure owner.
+
+**Excludes** — New Collection or structural-destination creation; Collection restructuring outside the selected Story insertion; automatic placement; changes to desktop Studio; and production mutation or deployment.
+
+**Completion evidence** — Focused mobile-workspace and Story-placement suites pass eight tests. Touched-code lint and non-incremental production typecheck pass. No production record or Storage object changed.
+
+### Twenty-fourth implementation slice — Ordinary draft Collection creation
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author begin a second durable Reader path instead of treating migrated `My Life` as the only Collection authority.
+
+**Includes** — Administrator-only creation of an empty active draft Collection; required title and optional description; case-insensitive active-title conflict protection; stable append order; initial authority revision and establishment time; creation from the Collections destination and saved-Story Placement; automatic selection of the new Collection; and the existing audience, structure, placement, and lifecycle owners after creation.
+
+**Excludes** — Audience inference; publication; automatic Story placement; introduction creation; Add Part, Add Chapter, or Add Section; promotion of existing structure; deletion; production mutation; push; and deployment.
+
+**Contracts** — Creation writes one Collection record and no Card or placement. It begins private in Draft, has no implicitly confirmed audience, and cannot become Reader-visible until the existing lifecycle gate accepts its explicit audience and complete Reader-valid contents. Duplicate active titles fail before a write.
+
+**Completion evidence** — Focused creation owner, API, shared control, durable Collection pane, and Story-placement suites pass twenty tests. Touched-code lint, non-incremental production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

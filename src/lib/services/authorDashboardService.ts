@@ -10,6 +10,12 @@ export type DashboardSection<T> =
   | { status: 'ready'; data: T }
   | { status: 'unavailable' };
 
+export type DashboardStory = {
+  docId: string;
+  title: string;
+  updatedAt: number;
+};
+
 export type AuthorDashboardSummary = {
   generatedAt: number;
   cards: DashboardSection<{
@@ -30,6 +36,10 @@ export type AuthorDashboardSummary = {
   collections: DashboardSection<{
     total: number;
     items: CollectionPublicationAttention[];
+  }>;
+  storyWork: DashboardSection<{
+    recentDraft: DashboardStory | null;
+    recentPublished: DashboardStory | null;
   }>;
 };
 
@@ -239,10 +249,32 @@ async function readOperationSummary(firestore: Firestore) {
   }
 }
 
+async function readRecentStory(
+  firestore: Firestore,
+  status: 'draft' | 'published'
+): Promise<DashboardStory | null> {
+  const snapshot = await firestore
+    .collection('cards')
+    .where('status', '==', status)
+    .where('type', '==', 'story')
+    .orderBy('updatedAt', 'desc')
+    .limit(1)
+    .select('title', 'subtitle', 'updatedAt')
+    .get();
+  const doc = snapshot.docs[0];
+  if (!doc) return null;
+  const data = doc.data() as { title?: string; subtitle?: string; updatedAt?: number };
+  return {
+    docId: doc.id,
+    title: data.title?.trim() || data.subtitle?.trim() || 'Untitled Story',
+    updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : 0,
+  };
+}
+
 export async function getAuthorDashboardSummary(
   firestore: Firestore = getAdminApp().firestore()
 ): Promise<AuthorDashboardSummary> {
-  const [cards, media, operations, collections] = await Promise.all([
+  const [cards, media, operations, collections, storyWork] = await Promise.all([
     section(() => readCardSummary(firestore)),
     section(() => readMediaSummary(firestore)),
     section(() => readOperationSummary(firestore)),
@@ -250,7 +282,14 @@ export async function getAuthorDashboardSummary(
       const items = await listActiveCollectionPublicationAttention(firestore);
       return { total: items.length, items };
     }),
+    section(async () => {
+      const [recentDraft, recentPublished] = await Promise.all([
+        readRecentStory(firestore, 'draft'),
+        readRecentStory(firestore, 'published'),
+      ]);
+      return { recentDraft, recentPublished };
+    }),
   ]);
 
-  return { generatedAt: Date.now(), cards, media, operations, collections };
+  return { generatedAt: Date.now(), cards, media, operations, collections, storyWork };
 }

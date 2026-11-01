@@ -1,0 +1,55 @@
+.control {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  border-top: var(--border-width-thin) solid var(--admin-window-border-color);
+  padding-top: var(--spacing-lg);
+}
+
+.control h4,
+.control p {
+  margin: 0;
+}
+
+.control label {
+  display: grid;
+  gap: var(--spacing-xs);
+  color: var(--admin-support-label-color);
+}
+
+.control select,
+.control button {
+  min-height: 44px;
+  border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+}
+
+.placements {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.placements li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.note {
+  color: var(--admin-support-meta-color);
+}
+
+.message {
+  color: var(--admin-state-success-text-color);
+}
+
+.error {
+  color: var(--admin-state-error-text-color);
+}

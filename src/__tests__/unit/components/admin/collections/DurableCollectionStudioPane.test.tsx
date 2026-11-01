@@ -13,14 +13,16 @@ function response(data: unknown, ok = true) {
 describe('DurableCollectionStudioPane', () => {
   beforeEach(() => jest.resetAllMocks());
 
-  it('leaves the legacy pane in authority when there is no active durable Collection', async () => {
+  it('offers durable Collection creation while reporting no active durable authority', async () => {
     global.fetch = jest.fn().mockResolvedValue(response({ ok: true, collections: [] }));
     const onAvailabilityChange = jest.fn();
-    const { container } = render(
+    render(
       <DurableCollectionStudioPane onAvailabilityChange={onAvailabilityChange} />
     );
     await waitFor(() => expect(onAvailabilityChange).toHaveBeenLastCalledWith('none'));
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.getByRole('button', { name: 'New Collection' })).toBeInTheDocument();
+    expect(screen.getByText(/No active Collections yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: 'Find a Card to add' })).not.toBeInTheDocument();
   });
 
   it('renders placement identity separately from canonical Card identity', async () => {

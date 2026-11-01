@@ -57,9 +57,11 @@ function StudioComposeLeaveGuardBridge() {
 export default function StudioCardEditPane({
   newCardRequested = false,
   onCardCreated,
+  mobileStoryFlow = false,
 }: {
   newCardRequested?: boolean;
   onCardCreated?: (cardId: string) => void;
+  mobileStoryFlow?: boolean;
 }) {
   const router = useRouter();
   const feedback = useAppFeedback();
@@ -176,7 +178,8 @@ export default function StudioCardEditPane({
         <div className={styles.studioCardEditScroll}>
           <CardFormSurfaceProvider value={{
             compact: true,
-            enableStudioRelationshipDnd: true,
+            enableStudioRelationshipDnd: !mobileStoryFlow,
+            mobileStoryFlow,
             activeCardId: selectedCardId,
             reloadCard: (cardId) => void loadSelectedCard(cardId, { quiet: true }),
             openMediaEditor: openSelectedCardMediaEditor,

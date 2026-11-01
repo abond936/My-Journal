@@ -13,6 +13,57 @@
   box-sizing: border-box;
 }
 
+.mobileStoryFlowNav {
+  display: none;
+}
+
+.mobileStoryAnchor {
+  scroll-margin-top: 9rem;
+}
+
+.mobileStoryPreview {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .mobileStoryFlowNav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-index-sticky);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-xs);
+    border-bottom: var(--border-width-thin) solid var(--admin-window-border-color);
+    background: var(--admin-chrome-background-color);
+  }
+
+  .mobileStoryFlowButton {
+    min-width: 0;
+    min-height: 44px;
+    border: var(--border-width-thin) solid var(--admin-support-control-border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-2xs);
+    background: var(--admin-support-control-background-color);
+    color: var(--admin-support-control-text-color);
+    font-size: clamp(0.65rem, 2.7vw, var(--font-size-sm));
+  }
+
+  .mobileStoryFlowButtonActive {
+    border-color: var(--admin-support-control-strong-border-color);
+    background: var(--admin-support-control-strong-background-color);
+    color: var(--admin-support-control-strong-text-color);
+  }
+}
+
+.mobileStoryDetailsControls,
+.mobileStoryPlacementControls,
+.mobileStoryPublishControls {
+  display: grid;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
 .compactShellForm {
   --card-form-shell-width: 100%;
   max-width: none;

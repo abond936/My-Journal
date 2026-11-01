@@ -10,7 +10,7 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <AdminDesktopOnlyGate>
+    <AdminDesktopOnlyGate allowMobileAuthorPaths>
       <div className={styles.simplifiedLayout}>
         <div className={styles.topNavSpacer} id="admin-tabs-bar" aria-hidden="true" />
         <div className={styles.pageContent}>{children}</div>

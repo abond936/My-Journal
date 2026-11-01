@@ -8,6 +8,8 @@ export type CardFormSurfaceContextValue = {
   compact: boolean;
   /** Enables Studio-only bank/tree relationship drag targets. */
   enableStudioRelationshipDnd?: boolean;
+  /** Enables the phone Story wayfinding flow without changing durable Card truth. */
+  mobileStoryFlow?: boolean;
   activeCardId?: string | null;
   reloadCard?: (cardId: string) => void;
   openMediaEditor?: (mediaId: string) => void;

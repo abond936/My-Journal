@@ -86,6 +86,12 @@
   color: var(--admin-support-control-text-color);
 }
 
+.mobileOnlyNote {
+  display: none;
+  color: var(--admin-support-meta-color);
+  font-size: var(--admin-support-meta-font-size);
+}
+
 .sectionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -105,6 +111,46 @@
 
 .section:first-child {
   grid-column: 1 / -1;
+}
+
+.storyFocus {
+  max-width: 80rem;
+  margin: 0 auto var(--spacing-lg);
+}
+
+.storyWorkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+.storyWorkCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  border: var(--border-width-thin) solid var(--admin-support-control-strong-border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  background: var(--admin-support-control-background-color);
+  color: var(--admin-support-control-text-color);
+  text-decoration: none;
+}
+
+.storyWorkCard span {
+  color: var(--admin-support-label-color);
+  font-size: var(--admin-support-meta-font-size);
+}
+
+.storyWorkCard strong {
+  overflow: hidden;
+  font-size: var(--font-size-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.storyWorkCard:hover {
+  background: var(--admin-support-control-hover-background-color);
 }
 
 .attentionSection {
@@ -285,5 +331,19 @@
   .headerActions {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .storyWorkGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .desktopOnlyAction {
+    display: none;
+  }
+
+  .mobileOnlyNote {
+    display: inline;
   }
 }
