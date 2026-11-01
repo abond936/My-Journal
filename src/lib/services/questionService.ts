@@ -5,6 +5,7 @@ import { cardSchema } from '@/lib/types/card';
 import { syncCardToTypesense } from '@/lib/services/typesenseService';
 import {
   CreateQuestionInput,
+  PromptLibraryMoveDirection,
   Question,
   UpdateQuestionInput,
   createQuestionSchema,
@@ -234,6 +235,46 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
   await ref.update(updatePayload);
   const fresh = await ref.get();
   return toQuestion(fresh.id, fresh.data() ?? {});
+}
+
+export async function reorderQuestion(
+  questionId: string,
+  direction: PromptLibraryMoveDirection
+): Promise<Question[]> {
+  const database = db();
+  const collectionRef = database.collection(COLLECTION);
+  return database.runTransaction(async tx => {
+    const snap = await tx.get(collectionRef);
+    const questions = snap.docs.map(doc => toQuestion(doc.id, doc.data()));
+    const target = questions.find(question => question.docId === questionId);
+    if (!target) throw new Error('Question not found');
+
+    const siblings = questions
+      .filter(question =>
+        question.category === target.category &&
+        question.topic === target.topic &&
+        question.promptKind === target.promptKind &&
+        (target.promptKind === 'primary' || question.parentQuestionId === target.parentQuestionId)
+      )
+      .sort((a, b) =>
+        a.promptOrder - b.promptOrder ||
+        a.prompt.localeCompare(b.prompt) ||
+        a.docId.localeCompare(b.docId)
+      );
+    const currentIndex = siblings.findIndex(question => question.docId === questionId);
+    const nextIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= siblings.length) return siblings;
+
+    [siblings[currentIndex], siblings[nextIndex]] = [siblings[nextIndex], siblings[currentIndex]];
+    const now = Date.now();
+    siblings.forEach((question, index) => {
+      if (question.promptOrder === index) return;
+      tx.update(collectionRef.doc(question.docId), { promptOrder: index, updatedAt: now });
+      question.promptOrder = index;
+      question.updatedAt = now;
+    });
+    return siblings;
+  });
 }
 
 export async function deleteQuestion(questionId: string): Promise<void> {

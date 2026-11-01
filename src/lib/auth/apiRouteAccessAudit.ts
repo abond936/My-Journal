@@ -109,6 +109,7 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
 
   { method: 'GET', path: '/api/admin/questions', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/questions', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
+  { method: 'POST', path: '/api/admin/questions/reorder', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'PATCH', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'PUT', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/questions/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -225,6 +226,7 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
 
   { id: 'admin-questions-get', method: 'GET', path: '/api/admin/questions', modulePath: '@/app/api/admin/questions/route', requestUrl: 'https://example.test/api/admin/questions' },
   { id: 'admin-questions-post', method: 'POST', path: '/api/admin/questions', modulePath: '@/app/api/admin/questions/route', requestUrl: 'https://example.test/api/admin/questions', body: { prompt: 'Why?' } },
+  { id: 'admin-questions-reorder-post', method: 'POST', path: '/api/admin/questions/reorder', modulePath: '@/app/api/admin/questions/reorder/route', requestUrl: 'https://example.test/api/admin/questions/reorder', body: { questionId: 'q-1', direction: 'up' } },
   { id: 'admin-questions-id-patch', method: 'PATCH', path: '/api/admin/questions/[id]', modulePath: '@/app/api/admin/questions/[id]/route', requestUrl: 'https://example.test/api/admin/questions/q-1', params: Promise.resolve({ id: 'q-1' }), body: { prompt: 'Updated?' } },
   { id: 'admin-questions-id-put', method: 'PUT', path: '/api/admin/questions/[id]', modulePath: '@/app/api/admin/questions/[id]/route', requestUrl: 'https://example.test/api/admin/questions/q-1', params: Promise.resolve({ id: 'q-1' }), body: { prompt: 'Updated?' } },
   { id: 'admin-questions-id-post', method: 'POST', path: '/api/admin/questions/[id]', modulePath: '@/app/api/admin/questions/[id]/route', requestUrl: 'https://example.test/api/admin/questions/q-1', params: Promise.resolve({ id: 'q-1' }), body: {} },

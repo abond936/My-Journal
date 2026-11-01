@@ -177,6 +177,44 @@ describeIfEmulator('Question-answer integrity (Firestore emulator)', () => {
 
     await expect(deleteQuestion(primary.docId)).rejects.toBeInstanceOf(QuestionAnswerConflictError);
   });
+
+  it('atomically reorders primaries within a Topic and follow-ups within one primary', async () => {
+    const { createQuestion, reorderQuestion } = await import('@/lib/services/questionService');
+    const common = {
+      category: 'Life stories', topic: 'Childhood', tagIds: [], subjectTagIds: [],
+    };
+    const primaryOne = await createQuestion({
+      ...common, prompt: 'Where did you live?', promptKind: 'primary', parentQuestionId: null, promptOrder: 0,
+    });
+    const primaryTwo = await createQuestion({
+      ...common, prompt: 'Who lived with you?', promptKind: 'primary', parentQuestionId: null, promptOrder: 1,
+    });
+    const followupOne = await createQuestion({
+      ...common, prompt: 'What did it look like?', promptKind: 'followup', parentQuestionId: primaryOne.docId, promptOrder: 0,
+    });
+    const followupTwo = await createQuestion({
+      ...common, prompt: 'What did it smell like?', promptKind: 'followup', parentQuestionId: primaryOne.docId, promptOrder: 1,
+    });
+
+    const primaries = await reorderQuestion(primaryTwo.docId, 'up');
+    expect(primaries.map(question => question.docId)).toEqual([primaryTwo.docId, primaryOne.docId]);
+    const followups = await reorderQuestion(followupTwo.docId, 'up');
+    expect(followups.map(question => question.docId)).toEqual([followupTwo.docId, followupOne.docId]);
+
+    const db = getFirestore(app);
+    await expect(Promise.all([
+      db.collection('questions').doc(primaryTwo.docId).get(),
+      db.collection('questions').doc(primaryOne.docId).get(),
+      db.collection('questions').doc(followupTwo.docId).get(),
+      db.collection('questions').doc(followupOne.docId).get(),
+    ])).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ exists: true }),
+    ]));
+    expect((await db.collection('questions').doc(primaryTwo.docId).get()).data()?.promptOrder).toBe(0);
+    expect((await db.collection('questions').doc(primaryOne.docId).get()).data()?.promptOrder).toBe(1);
+    expect((await db.collection('questions').doc(followupTwo.docId).get()).data()?.promptOrder).toBe(0);
+    expect((await db.collection('questions').doc(followupOne.docId).get()).data()?.promptOrder).toBe(1);
+  });
 });
 
 function minimalQuestion(docId: string) {

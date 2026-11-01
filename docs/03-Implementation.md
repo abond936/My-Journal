@@ -1587,6 +1587,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The complete combined runnable Jest gate passes 240 suites and 1,311 tests, with four suites and 31 tests skipped by their declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings. Production typecheck, diff checks, and the optimized 63-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. Focused combined Media and Navigation coverage passes 28 tests before the complete gate. No production request, content record, account, audience, or Storage object changed.
 
+### Thirty-sixth implementation slice — Direct Prompt Library ordering
+
+**Definition:** Ready
+
+**Execution:** Verified locally; protected integration review pending
+
+**Outcome** — Turn the delivered Prompt Library order field into an author-controlled capability and present the approved Category → Topic → Primary Question → Follow-up Questions hierarchy truthfully.
+
+**Includes** — Primary questions displayed with their own follow-ups; deterministic fallback ordering for legacy zero-order records; explicit up and down actions; primary ordering scoped to one Category and Topic; follow-up ordering scoped to one primary; one administrator-only reorder route; atomic normalization and movement of the affected sibling set; immediate visible reconciliation; and authorization, schema, pure-order, production-type, and Firestore-transaction coverage.
+
+**Excludes** — Automatic legacy-bank migration or deduplication; changing prompt text, tags, answer links, Cards, Media, or Collection placement; dragging; cross-Topic moves; moving a follow-up to another primary; editing-only prompt blocks; publication-time block resolution; production data mutation; merge; and deployment.
+
+**Contracts** — Ordering is explicit and never inferred from question text or existing Card structure. Moving a primary cannot reorder another Topic. Moving a follow-up cannot reorder another primary's follow-ups. The transaction reads current Question truth, writes only changed sibling order values, and either commits the bounded move together or leaves the library unchanged. Card copies remain ordinary independent Card content.
+
+**Verification gate** — Prove hierarchical ordering, sibling-scope isolation, strict move-direction validation, administrator-only access, atomic persisted order, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Pure ordering coverage proves primary-with-follow-up presentation and sibling-scope isolation. Schema and exhaustive administrator-route coverage prove strict move input and access boundaries. The isolated Firestore emulator passes all seven Question-answer integrity cases, including atomic primary and follow-up movement with persisted readback. The complete runnable Jest gate passes 241 suites and 1,316 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Question, Card, Media, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

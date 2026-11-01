@@ -1,6 +1,7 @@
 ﻿import { z } from 'zod';
 
 export const promptLibraryKindSchema = z.enum(['primary', 'followup']);
+export const promptLibraryMoveDirectionSchema = z.enum(['up', 'down']);
 
 const promptLibraryFields = {
   category: z.string().trim().max(120).default(''),
@@ -59,8 +60,14 @@ export const updateQuestionSchema = z
     message: 'At least one field is required',
   });
 
+export const reorderQuestionSchema = z.object({
+  questionId: z.string().min(1),
+  direction: promptLibraryMoveDirectionSchema,
+});
+
 export type Question = z.infer<typeof questionSchema>;
 export type CreateQuestionInput = z.infer<typeof createQuestionSchema>;
 export type UpdateQuestionInput = z.infer<typeof updateQuestionSchema>;
 export type PromptLibraryKind = z.infer<typeof promptLibraryKindSchema>;
+export type PromptLibraryMoveDirection = z.infer<typeof promptLibraryMoveDirectionSchema>;
 

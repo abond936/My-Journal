@@ -290,7 +290,7 @@ The phone Story flow separates the work into five manageable steps:
 4. **Placement** — Decide whether the Story belongs in Feed, one or more Collection locations, or both.
 5. **Preview** — Read the Story as a reader will encounter it before publishing.
 
-When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with broad primary questions followed by narrower questions that draw out people, sensory detail, consequences, and meaning. Add one useful prompt or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
+When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
 
 A Story may be published in Feed without belonging to a Collection. It may instead appear through a Collection, or use both routes. Placement does not duplicate the Story; each placement points to the same canonical Card.
 

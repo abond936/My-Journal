@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FilterX, FolderOpen, Link2Off, ListPlus, Plus, Save, Tag, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, FilterX, FolderOpen, Link2Off, ListPlus, Plus, Save, Tag, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -16,6 +16,7 @@ import type { PromptLibraryKind, Question, UpdateQuestionInput } from '@/lib/typ
 import { throwIfJsonApiFailed } from '@/lib/utils/httpJsonApiErrors';
 import { groupSelectedTagIdsByDimension } from '@/lib/utils/tagUtils';
 import { DIMENSION_ORDER } from '@/lib/utils/tagDisplay';
+import { getPromptOrderSiblings, orderPromptLibraryQuestions } from '@/lib/utils/promptLibrary';
 import styles from './StudioWorkspace.module.css';
 
 type QuestionsResponse = { questions?: Question[]; message?: string; error?: string };
@@ -25,14 +26,6 @@ const UNTAGGED_FILTER_ID = '__untagged_questions__';
 
 function isIncluded(question: Question): boolean {
   return question.usedByCardIds.length > 0;
-}
-
-function comparePromptLibraryOrder(a: Question, b: Question): number {
-  return a.category.localeCompare(b.category) ||
-    a.topic.localeCompare(b.topic) ||
-    (a.promptKind === b.promptKind ? 0 : a.promptKind === 'primary' ? -1 : 1) ||
-    a.promptOrder - b.promptOrder ||
-    a.prompt.localeCompare(b.prompt);
 }
 
 function tagMatchesSelection(
@@ -351,10 +344,10 @@ export default function StudioQuestionsPane() {
     selectedTopic,
   ]);
 
-  const orderedFilteredQuestions = useMemo(
-    () => [...filteredQuestions].sort(comparePromptLibraryOrder),
-    [filteredQuestions]
-  );
+  const orderedFilteredQuestions = useMemo(() => {
+    const visibleIds = new Set(filteredQuestions.map(question => question.docId));
+    return orderPromptLibraryQuestions(questions).filter(question => visibleIds.has(question.docId));
+  }, [filteredQuestions, questions]);
 
   const saveQuestion = useCallback(async (questionId: string, body: UpdateQuestionInput) => {
     setBusyId(questionId);
@@ -395,9 +388,8 @@ export default function StudioQuestionsPane() {
 
   const insertSelectedTopicIntoCard = useCallback(() => {
     if (!selectedTopic || !selectedCardId) return;
-    const topicPrompts = questions
-      .filter((question) => question.topic === selectedTopic && (!selectedCategory || question.category === selectedCategory))
-      .sort(comparePromptLibraryOrder);
+    const topicPrompts = orderPromptLibraryQuestions(questions)
+      .filter((question) => question.topic === selectedTopic && (!selectedCategory || question.category === selectedCategory));
     if (topicPrompts.length === 0 || topicPrompts.some((question) => !insertPromptText(question.prompt))) {
       feedback.showError('Keep the Card open in Compose while adding Topic prompts.', 'Could not add Topic');
       return;
@@ -628,6 +620,32 @@ export default function StudioQuestionsPane() {
       setBusyLabel(null);
     }
   }, [editingId, feedback]);
+
+  const moveQuestion = useCallback(async (question: Question, direction: 'up' | 'down') => {
+    setBusyId(question.docId);
+    setBusyLabel('Saving prompt order...');
+    try {
+      const res = await fetch('/api/admin/questions/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: question.docId, direction }),
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const data = (await res.json().catch(() => ({}))) as QuestionsResponse;
+      throwIfJsonApiFailed(res, data, 'The prompt order could not be saved. Try again.');
+      if (data.questions) {
+        const replacements = new Map(data.questions.map(item => [item.docId, item]));
+        setQuestions(prev => prev.map(item => replacements.get(item.docId) ?? item));
+      }
+      feedback.showSuccess('Prompt order saved.');
+    } catch (e) {
+      feedback.showError(e instanceof Error ? e.message : 'Failed to reorder prompt', 'Could not save prompt order');
+    } finally {
+      setBusyId(null);
+      setBusyLabel(null);
+    }
+  }, [feedback]);
 
   const cancelCreate = useCallback(() => {
     setCreateOpen(false);
@@ -954,6 +972,9 @@ export default function StudioQuestionsPane() {
           const tagEditorOpen = advancedTagEditorId === question.docId;
           const activeTagIdsForDisplay = tagEditorOpen ? editTagIds : question.tagIds;
           const activeSubjectTagIds = tagEditorOpen ? editSubjectTagIds : question.subjectTagIds;
+          const orderSiblings = getPromptOrderSiblings(question, questions);
+          const orderIndex = orderSiblings.findIndex(candidate => candidate.docId === question.docId);
+          const orderLabel = question.promptKind === 'primary' ? 'primary question' : 'follow-up question';
           return (
             <article
               key={question.docId}
@@ -1163,6 +1184,26 @@ export default function StudioQuestionsPane() {
                 onKeyDown={(event) => event.stopPropagation()}
               >
                 <>
+                    <button
+                      type="button"
+                      className={styles.studioQuestionSmallButton}
+                      disabled={busy || orderIndex <= 0}
+                      onClick={() => void moveQuestion(question, 'up')}
+                      aria-label={`Move ${orderLabel} up`}
+                      title={`Move ${orderLabel} up`}
+                    >
+                      <ArrowUp size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.studioQuestionSmallButton}
+                      disabled={busy || orderIndex < 0 || orderIndex >= orderSiblings.length - 1}
+                      onClick={() => void moveQuestion(question, 'down')}
+                      aria-label={`Move ${orderLabel} down`}
+                      title={`Move ${orderLabel} down`}
+                    >
+                      <ArrowDown size={16} aria-hidden="true" />
+                    </button>
                     <button
                       type="button"
                       className={styles.studioQuestionSmallButton}
