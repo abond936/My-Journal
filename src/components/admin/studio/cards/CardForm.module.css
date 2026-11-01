@@ -513,6 +513,10 @@
 }
 
 .publishedEditNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
   width: var(--card-form-shell-width);
   max-width: 100%;
   margin: 0 0 var(--spacing-md);
@@ -523,6 +527,37 @@
   color: var(--admin-state-warning-text-color);
   font-size: var(--font-size-sm);
   line-height: 1.45;
+}
+
+.distributionAction {
+  display: inline-flex;
+  min-height: 2.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width-thin) solid currentColor;
+  border-radius: var(--input-border-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.distributionAction:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 640px) {
+  .publishedEditNotice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .distributionAction {
+    justify-content: center;
+  }
 }
 
 .statusSelect {

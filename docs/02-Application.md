@@ -779,12 +779,13 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
 - **Guest recipients** — The local release candidate lets the author create an enabled guest recipient only after reviewing the same exact legacy and all-enabled access inherited by a new Reader. It returns one private, seven-day, single-use link for manual delivery; replacement revokes older unused links. Redemption creates the ordinary Reader session for that stable recipient ID, so existing individual and group audiences apply without copying Cards, Collections, Media, or audience data. Disabling the recipient revokes the session on its next server request.
 - **Shared Media Collections** — The author can select up to 250 existing Media items in Studio Media, create or add them to a bounded private photo-set draft, choose an explicit Reader audience, and publish that set without changing the Media items' Card uses or exposing any other archive Media. Reader Home lists only published sets authorized for the signed-in Reader, and their Media bytes use the same authenticated delivery boundary as Story Media. Published set content and audience are locked until the author returns the set to Draft. Reader-account, group-membership, group-deletion, and Media-deletion consequence paths include these sets.
+- **Manual Reader links** — Published Cards, durable Collections, and Shared Media Collections expose a direct Reader-link action in their authoring owner. Copying a link performs no access mutation and explicitly states that only an already-authorized reader can open it; the author chooses how and to whom the link is delivered.
 
 ⭕1 **Planned**
 
 - **Guest-account conversion** — Let a guest later establish a fuller password account without changing the stable recipient ID or authored audience decisions.
 - **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
-- **Distribution** — Publish controls availability; Share chooses which authorized recipients receive a direct link or notification. Making content available to a large audience does not imply notifying everyone after every change.
+- **Automated distribution** — Build on manual Reader links with an explicit selection of already-authorized recipients, delivery status, and optional notification transport. Making content available to a large audience does not imply notifying everyone after every change, and distribution never grants access implicitly.
 
 ⭕2 **Future**
 

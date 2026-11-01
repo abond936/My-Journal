@@ -1671,6 +1671,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Evidence** — The corresponding implementation slices, shared mutation owners, schemas, UI controls, and focused tests remain in the integrated branch. The immediately preceding full gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped; lint, production typecheck, diff checks, and the optimized 64-page build pass. No production request or data mutation occurred.
 
+### Forty-first implementation slice — Manual Reader-link distribution
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author move a published Story, durable Collection, or bounded photo collection from availability to deliberate manual delivery without weakening audience authorization or adding an external notification dependency.
+
+**Includes** — A shared internal-link copier; published Card link from Compose; published durable Collection link from the Collections owner; published Shared Media Collection link from Photo Sharing; same-origin path validation; success copy that says existing access is still required; and actionable clipboard-failure recovery.
+
+**Excludes** — Granting access, changing audiences, publishing content, recipient selection or delivery tracking, email or text integration, public or tokenized content links, production data mutation, merge, and deployment.
+
+**Contracts** — Publishing controls availability; audience controls authorization; copying a Reader link controls neither. The copied route is an ordinary authenticated Reader destination and remains subject to the existing complete Card, Collection, Shared Media Collection, account, and Media-delivery policies.
+
+**Verification gate** — Prove same-origin construction and external-path rejection, clipboard success and failure truth, focused Card/Collection/photo-set regressions, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Four focused suites pass 23 tests, and the direct link-control plus durable Collection regression passes sixteen tests after removing an unnecessary provider dependency exposed by the first full run. The complete runnable Jest gate passes 243 suites and 1,327 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Collection, Shared Media Collection, audience, account, delivery record, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

@@ -12,6 +12,7 @@ import type {
 import type { AudienceSelection } from '@/lib/types/audience';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
 import CreateCollectionControl from '@/components/admin/collections/CreateCollectionControl';
+import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
 import type { CollectionAudienceImpact } from '@/lib/services/audienceImpactService';
 import styles from './DurableCollectionStudioPane.module.css';
 
@@ -603,6 +604,12 @@ export default function DurableCollectionStudioPane({
             >
               {structure.collection.lifecycle === 'published' ? 'Return to Draft' : 'Publish Collection'}
             </button>
+            {structure.collection.lifecycle === 'published' ? (
+              <CopyReaderLinkButton
+                path={`/view?mode=guided&collection=${encodeURIComponent(structure.collection.docId)}`}
+                label="Copy Reader link"
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

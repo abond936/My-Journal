@@ -51,6 +51,7 @@ import type { AudienceSelection } from '@/lib/types/audience';
 import type { CardAudienceImpact } from '@/lib/services/audienceImpactService';
 import MobileStoryFlowNav, { type MobileStoryStep } from '@/components/admin/studio/cards/MobileStoryFlowNav';
 import StoryCollectionPlacementControl from '@/components/admin/studio/cards/StoryCollectionPlacementControl';
+import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
 
 function objectPositionToFocalPoint(
   media: Media,
@@ -973,9 +974,15 @@ const CardForm: React.FC = () => {
   );
 
   const publishedEditNotice = cardData.status === 'published' ? (
-    <p className={styles.publishedEditNotice} role="note">
-      This Card is published. Saved changes may be visible to readers. Return it to Draft first if you want to take it offline while editing.
-    </p>
+    <div className={styles.publishedEditNotice} role="note">
+      <span>This Card is published. Saved changes may be visible to readers. Return it to Draft first if you want to take it offline while editing.</span>
+      {cardData.docId ? (
+        <CopyReaderLinkButton
+          path={`/view/${encodeURIComponent(cardData.docId)}`}
+          className={styles.distributionAction}
+        />
+      ) : null}
+    </div>
   ) : null;
 
   const storyAssistSection = (

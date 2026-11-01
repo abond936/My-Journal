@@ -304,6 +304,8 @@ Draft saving is permissive. Publishing requires the selected classification stan
 
 At the current stage, a published Card is one live object. Saved edits may become visible to readers immediately. Return it to Draft before making changes that must remain private until republished.
 
+After publication, choose **Copy Reader link** in Compose to copy the direct Story address. Copying does not add anyone to the audience; send it only to a reader who already has access. Published Collections and Shared Media Collections provide the same action in their own authoring surfaces.
+
 **Default:** Complete and share one modest Story before building a comprehensive Collection.
 
 ## 7. Build Collections
@@ -353,6 +355,7 @@ Sometimes the useful thing to share is a selected group of photos rather than a 
 3. Open **Photo Sharing** in Author navigation.
 4. Review the exact photos, add an optional description, and choose all readers, reusable groups, or selected individuals.
 5. Publish the photo collection. It then appears under **Photo collections** only for authorized readers.
+6. Choose **Copy Reader link** if you want to deliver the direct address manually to one of those authorized readers.
 
 The complete Media archive remains private. Removing a photo from this collection does not delete it or remove it from a Story. A published photo collection must return to Draft before its details, audience, or photos can change.
 

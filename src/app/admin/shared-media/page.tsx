@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import AudienceSelector from '@/components/admin/audience/AudienceSelector';
+import CopyReaderLinkButton from '@/components/admin/common/CopyReaderLinkButton';
 import type { AudienceSelection } from '@/lib/types/audience';
 import type { Media } from '@/lib/types/photo';
 import type { SharedMediaCollection } from '@/lib/types/sharedMediaCollection';
@@ -151,6 +152,9 @@ export default function SharedMediaAdminPage() {
               <button type="button" disabled={busy} onClick={() => void patch({ lifecycle: detail.collection.lifecycle === 'published' ? 'draft' : 'published' }).then((saved) => { if (saved) setMessage(saved.lifecycle === 'published' ? 'Photo collection published to its selected audience.' : 'Photo collection returned to Draft.'); })}>
                 {detail.collection.lifecycle === 'published' ? 'Return to Draft' : 'Publish photo collection'}
               </button>
+              {detail.collection.lifecycle === 'published' ? (
+                <CopyReaderLinkButton path={`/shared-media/${encodeURIComponent(detail.collection.docId)}`} />
+              ) : null}
             </div>
           </section>
           <AudienceSelector
