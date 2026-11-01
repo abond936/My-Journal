@@ -5,6 +5,7 @@ import { getReaderCollectionStructure } from '@/lib/services/collections/collect
 import { audienceGroupSchema } from '@/lib/types/audience';
 import type { Card } from '@/lib/types/card';
 import type { Collection } from '@/lib/types/collection';
+import { sharedMediaCollectionSchema } from '@/lib/types/sharedMediaCollection';
 import { isCardIncludedInFeed } from '@/lib/utils/cardFeedInclusion';
 
 export type AudienceGroupChangedMember = AudienceImpactReader & { enabled: boolean };
@@ -21,8 +22,10 @@ export type AudienceGroupMembershipImpact = {
   removedMembers: AudienceGroupChangedMember[];
   referencedCardAudiences: number;
   referencedCollectionAudiences: number;
+  referencedSharedMediaCollectionAudiences: number;
   cards: AudienceGroupLiveContentImpact[];
   collections: AudienceGroupLiveContentImpact[];
+  sharedMediaCollections: AudienceGroupLiveContentImpact[];
 };
 
 type GroupMembership = { docId: string; memberContactIds: string[] };
@@ -71,12 +74,13 @@ export async function getAudienceGroupMembershipImpact(args: {
   firestore?: FirebaseFirestore.Firestore;
 }): Promise<AudienceGroupMembershipImpact | null> {
   const firestore = args.firestore ?? getAdminApp().firestore();
-  const [groupSnapshot, readersSnapshot, groupsSnapshot, cardReferences, collectionReferences] = await Promise.all([
+  const [groupSnapshot, readersSnapshot, groupsSnapshot, cardReferences, collectionReferences, sharedMediaReferences] = await Promise.all([
     firestore.collection('audience_groups').doc(args.groupId).get(),
     firestore.collection('journal_users').where('role', '==', 'viewer').get(),
     firestore.collection('audience_groups').get(),
     firestore.collection('cards').where('audience.groupIds', 'array-contains', args.groupId).get(),
     firestore.collection('collections').where('audience.groupIds', 'array-contains', args.groupId).get(),
+    firestore.collection('shared_media_collections').where('audience.groupIds', 'array-contains', args.groupId).get(),
   ]);
   if (!groupSnapshot.exists) return null;
   const group = audienceGroupSchema.parse({ docId: groupSnapshot.id, ...groupSnapshot.data() });
@@ -131,6 +135,20 @@ export async function getAudienceGroupMembershipImpact(args: {
       : [];
   }).sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id));
 
+  const sharedMediaCollections = sharedMediaReferences.docs
+    .map((doc) => sharedMediaCollectionSchema.parse({ docId: doc.id, ...doc.data() }))
+    .filter((collection) => collection.lifecycle === 'published')
+    .flatMap((collection) => {
+      const current = resolveAudienceReaderIds({ audience: collection.audience, enabledReaderIds, groups: currentGroups });
+      const proposed = resolveAudienceReaderIds({ audience: collection.audience, enabledReaderIds, groups: proposedGroups });
+      const gainingReaders = namedReaders(difference(proposed, current), readersById);
+      const losingReaders = namedReaders(difference(current, proposed), readersById);
+      return gainingReaders.length || losingReaders.length
+        ? [{ id: collection.docId, title: collection.title, gainingReaders, losingReaders }]
+        : [];
+    })
+    .sort((left, right) => left.title.localeCompare(right.title) || left.id.localeCompare(right.id));
+
   const candidateCards = new Map<string, Card>();
   cardReferences.docs.forEach((doc) => {
     const card = { docId: doc.id, ...doc.data() } as Card;
@@ -168,7 +186,9 @@ export async function getAudienceGroupMembershipImpact(args: {
     removedMembers: changedMembers(difference(currentIds, proposedIdSet)),
     referencedCardAudiences: cardReferences.size,
     referencedCollectionAudiences: collectionReferences.size,
+    referencedSharedMediaCollectionAudiences: sharedMediaReferences.size,
     cards,
     collections,
+    sharedMediaCollections,
   };
 }

@@ -45,6 +45,7 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
   const isGuideRoute = Boolean(pathname?.startsWith('/admin/help'));
   const isUsersRoute = Boolean(pathname?.startsWith('/admin/journal-users'));
   const isArchiveSettingsRoute = Boolean(pathname?.startsWith('/admin/settings'));
+  const isSharedMediaRoute = Boolean(pathname?.startsWith('/admin/shared-media'));
   const isAccountRoute = pathname === '/account' || pathname === '/settings';
 
   useEffect(() => {
@@ -161,6 +162,12 @@ const Navigation: React.FC<NavigationProps> = ({ className, sidebarOpen }) => {
                 className={`${styles.navLink} ${styles.desktopAdminLink} ${isUsersRoute ? styles.active : ''}`}
               >
                 Users
+              </Link>
+              <Link
+                href="/admin/shared-media"
+                className={`${styles.navLink} ${styles.desktopAdminLink} ${isSharedMediaRoute ? styles.active : ''}`}
+              >
+                Photo Sharing
               </Link>
               <Link
                 href="/admin/settings"

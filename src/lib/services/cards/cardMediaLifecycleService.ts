@@ -246,6 +246,15 @@ export async function removeMediaReferenceFromCard(cardId: string, mediaId: stri
 
 /** Deletes media and removes its references from all cards (Option B). */
 export async function deleteMediaWithCardCleanup(mediaId: string): Promise<void> {
+  const sharedReferences = await firestore
+    .collection('shared_media_collections')
+    .where('mediaIds', 'array-contains', mediaId)
+    .get();
+  if (!sharedReferences.empty) {
+    throw new Error(
+      `Cannot delete media ${mediaId}; Shared Media Collection references remain: ${sharedReferences.docs.map((doc) => doc.id).join(', ')}`
+    );
+  }
   const firstPassCardIds = await getCardsReferencingMedia(mediaId);
   const cardIds = Array.from(new Set(firstPassCardIds));
   for (const cardId of cardIds) {

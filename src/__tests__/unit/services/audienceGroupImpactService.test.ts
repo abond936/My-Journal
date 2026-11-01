@@ -29,6 +29,11 @@ describe('audienceGroupImpactService', () => {
       audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
     };
     const collectionCard = { docId: 'in-book', title: 'Book Story', status: 'published', feedIncluded: false };
+    const sharedPhotos = {
+      title: 'Family Photos', mediaIds: ['media-1'], lifecycle: 'published', revision: 1,
+      order: 10, createdAt: 1, updatedAt: 2,
+      audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+    };
     mockGetReaderStructure.mockResolvedValue({ collection: book, cards: [collectionCard], placements: [] });
     mockGetCollectionRoutes.mockResolvedValue(new Map([
       ['direct', []],
@@ -49,6 +54,8 @@ describe('audienceGroupImpactService', () => {
                 ? { docs: [doc('direct', directCard)], size: 1 }
                 : name === 'collections' && field === 'audience.groupIds'
                   ? { docs: [doc('book', book)], size: 1 }
+                  : name === 'shared_media_collections' && field === 'audience.groupIds'
+                    ? { docs: [doc('family-photos', sharedPhotos)], size: 1 }
                   : { docs: [], size: 0 }
           ),
         })),
@@ -66,8 +73,14 @@ describe('audienceGroupImpactService', () => {
       removedMembers: [{ contactId: 'alex', displayName: 'Alex', enabled: true }],
       referencedCardAudiences: 1,
       referencedCollectionAudiences: 1,
+      referencedSharedMediaCollectionAudiences: 1,
       collections: [{
         id: 'book',
+        gainingReaders: [{ contactId: 'blair', displayName: 'Blair' }],
+        losingReaders: [{ contactId: 'alex', displayName: 'Alex' }],
+      }],
+      sharedMediaCollections: [{
+        id: 'family-photos',
         gainingReaders: [{ contactId: 'blair', displayName: 'Blair' }],
         losingReaders: [{ contactId: 'alex', displayName: 'Alex' }],
       }],

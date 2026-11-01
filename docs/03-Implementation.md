@@ -1438,6 +1438,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
 
+### Twenty-eighth implementation slice — Shared Media Collections
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Let an author share a deliberately bounded photo set with selected readers without publishing the raw Media archive or forcing those photos into a Story.
+
+**Includes** — A durable Shared Media Collection with title, description, ordered unique Media membership, explicit audience, Draft/Published lifecycle, and revision; selection-based creation or addition from Studio Media; a desktop Photo Sharing owner for audience, lifecycle, details, removal, and protected preview; a Reader Home photo-collection path; audience-filtered list and detail APIs; display-only Reader Media payloads; authenticated byte delivery; exact account and group consequence integration; group- and Media-deletion safeguards; and publication checks for audience, nonempty membership, existing Media, and protected delivery readiness.
+
+**Excludes** — Raw archive browsing for readers; a global per-Media sharing flag; Media duplication; Story or Collection mutation; tagging requirements for a shared set; automatic distribution or notifications; possession-based public links; mobile archive administration; production data mutation; merge; and deployment.
+
+**Contracts** — The archive remains private by default. A Shared Media Collection is its own publication object and grants access only to its explicitly listed Media through its own audience. The same canonical Media item may participate in multiple Cards, Collections, and Shared Media Collections without copying the Media record. Drafts are private. Publication requires at least one deliverable Media item and an explicit nonempty audience. Published title, description, membership, and audience remain locked until the set returns to Draft. Reader responses omit source paths, Storage URLs, tags, and private archive metadata. Deleting a referenced Media item or audience group fails closed until the author removes that reference.
+
+**Completion evidence** — Focused service, Reader-route, Media-authorization, audience-impact, account-impact, Reader Home, navigation, and administrator-boundary suites pass. The complete runnable Jest gate passes 234 suites and 1,278 tests, with four suites and 29 tests skipped by their declared environment gates. The optimized production build compiles 63 routes/pages and validates types. No production request, content record, account, audience, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
