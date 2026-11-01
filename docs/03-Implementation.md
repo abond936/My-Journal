@@ -1454,6 +1454,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
 
+### Twenty-eighth implementation slice — Structured Prompt Library foundation
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Make reusable writing guidance exist as an additive structured library and let it contribute directly to the Card the author is already writing, without creating a second answer store or rewriting existing Question Cards.
+
+**Includes** — Additive Category, Topic, Primary Question, Follow-up Question, parent, and order fields on existing Question records; legacy compatibility as unorganized primary prompts; same-Category-and-Topic parent validation; dependent-follow-up protection; Category and Topic filtering; creation and editing of library placement; copy of one prompt or a filtered Topic into the currently open Compose body; ordinary editable heading insertion; and focused schema, editor, imperative-handoff, and Firestore-integrity coverage.
+
+**Excludes** — Automatic migration or reorganization of existing questions; mutation of existing Question Cards; a separate response or interview entity; automatic Card creation from library browsing; mobile cross-destination insertion while Compose is unmounted; custom editing-only Prompt nodes; publication-time conversion or removal of such nodes; Question-Card title proposal; AI prompt generation; production data mutation; merge; and deployment.
+
+**Contracts** — Existing Question records, links, tags, Cards, Media, and Collection placements remain authoritative and unchanged until the author edits them. A follow-up references one primary question in the same Category and Topic. A primary with follow-ups cannot be deleted, converted, or moved independently. Copying guidance into a Card creates ordinary Card content with no live link back to the library. An open Card is required; browsing Prompts alone creates no Card or authored response. Legacy create/open Question Card behavior remains available during the additive transition.
+
+**Verification gate** — Prove legacy-schema normalization, structured follow-up persistence and invalid-parent rejection, primary deletion protection, imperative handoff isolation, rich-text insertion, existing Question-answer integrity, administrator route authorization, production typecheck, touched-code lint, diff checks, the optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Legacy Question records normalize as unorganized primary prompts while structured follow-ups persist only beneath a primary in the same Category and Topic. The service blocks invalid parents, independent primary moves or conversion while dependents exist, and primary deletion with dependents. Prompt insertion is isolated through the Studio imperative registry and copies ordinary editable headings into the open Card without a live library dependency. Four focused schema, editor, and handoff suites pass 187 tests; the declared Firestore emulator integrity suite passes six tests. The complete runnable Jest gate passes 232 suites and 1,262 tests, with four suites and 31 tests skipped by their declared environment gates. Touched-code lint, production typecheck, diff checks, and the optimized production build pass. No production record or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

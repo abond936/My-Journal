@@ -37,6 +37,10 @@ function sanitizeTagIds(raw: string[] | undefined): string[] {
   return Array.from(new Set(raw.map(t => t.trim()).filter(Boolean))).slice(0, 50);
 }
 
+function sanitizeLibraryLabel(raw: string | undefined): string {
+  return raw?.trim() ?? '';
+}
+
 async function assertQuestionTagsAreDimensional(tagIds: string[]): Promise<void> {
   if (tagIds.length === 0) return;
   const allTags = await getAllTags();
@@ -66,9 +70,44 @@ function toQuestion(docId: string, data: FirebaseFirestore.DocumentData): Questi
     tags: Array.isArray(data.tags) ? data.tags : [],
     usedByCardIds: Array.isArray(data.usedByCardIds) ? data.usedByCardIds : [],
     usageCount: typeof data.usageCount === 'number' ? data.usageCount : 0,
+    category: typeof data.category === 'string' ? data.category.trim() : '',
+    topic: typeof data.topic === 'string' ? data.topic.trim() : '',
+    promptKind: data.promptKind === 'followup' ? 'followup' : 'primary',
+    parentQuestionId: typeof data.parentQuestionId === 'string' ? data.parentQuestionId : null,
+    promptOrder: typeof data.promptOrder === 'number' && data.promptOrder >= 0 ? Math.floor(data.promptOrder) : 0,
     createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
     updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : Date.now(),
   };
+}
+
+async function assertPromptLibraryPlacement(input: {
+  questionId?: string;
+  category: string;
+  topic: string;
+  promptKind: Question['promptKind'];
+  parentQuestionId: string | null;
+}): Promise<void> {
+  if (input.promptKind === 'primary') {
+    if (input.parentQuestionId) throw new Error('A primary prompt cannot have a parent question');
+    return;
+  }
+  if (!input.parentQuestionId) throw new Error('A follow-up prompt requires a primary question');
+  if (input.parentQuestionId === input.questionId) throw new Error('A prompt cannot follow itself');
+  const parent = await getQuestionById(input.parentQuestionId);
+  if (!parent) throw new Error('The selected primary question was not found');
+  if (parent.promptKind !== 'primary') throw new Error('A follow-up prompt must belong to a primary question');
+  if (parent.category !== input.category || parent.topic !== input.topic) {
+    throw new Error('A follow-up prompt must use the same Category and Topic as its primary question');
+  }
+}
+
+async function hasFollowups(questionId: string): Promise<boolean> {
+  const snap = await db()
+    .collection(COLLECTION)
+    .where('parentQuestionId', '==', questionId)
+    .limit(1)
+    .get();
+  return !snap.empty;
 }
 
 export async function listQuestions(): Promise<Question[]> {
@@ -81,6 +120,10 @@ export async function createQuestion(input: CreateQuestionInput): Promise<Questi
   const now = Date.now();
   const prompt = parsed.prompt.trim();
   const tagIds = sanitizeTagIds(parsed.tagIds);
+  const category = sanitizeLibraryLabel(parsed.category);
+  const topic = sanitizeLibraryLabel(parsed.topic);
+  const parentQuestionId = parsed.promptKind === 'followup' ? parsed.parentQuestionId : null;
+  await assertPromptLibraryPlacement({ category, topic, promptKind: parsed.promptKind, parentQuestionId });
   await assertQuestionTagsAreDimensional(tagIds);
   const allTags = await getAllTags();
   const subjectState = await resolveSubjectTagState({
@@ -100,6 +143,11 @@ export async function createQuestion(input: CreateQuestionInput): Promise<Questi
     tags: sanitizeTags(parsed.tags),
     usedByCardIds: [],
     usageCount: 0,
+    category,
+    topic,
+    promptKind: parsed.promptKind,
+    parentQuestionId,
+    promptOrder: parsed.promptOrder,
     createdAt: now,
     updatedAt: now,
   };
@@ -133,6 +181,34 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
   if (parsed.tags !== undefined) {
     updatePayload.tags = sanitizeTags(parsed.tags);
   }
+  if (
+    parsed.category !== undefined ||
+    parsed.topic !== undefined ||
+    parsed.promptKind !== undefined ||
+    parsed.parentQuestionId !== undefined ||
+    parsed.promptOrder !== undefined
+  ) {
+    const existing = toQuestion(snap.id, snap.data() ?? {});
+    const category = sanitizeLibraryLabel(parsed.category ?? existing.category);
+    const topic = sanitizeLibraryLabel(parsed.topic ?? existing.topic);
+    const promptKind = parsed.promptKind ?? existing.promptKind;
+    const parentQuestionId = promptKind === 'followup'
+      ? (parsed.parentQuestionId !== undefined ? parsed.parentQuestionId : existing.parentQuestionId)
+      : null;
+    if (
+      existing.promptKind === 'primary' &&
+      await hasFollowups(questionId) &&
+      (promptKind !== 'primary' || category !== existing.category || topic !== existing.topic)
+    ) {
+      throw new Error('Move or reassign this primary question’s follow-ups before changing its Category, Topic, or kind');
+    }
+    await assertPromptLibraryPlacement({ questionId, category, topic, promptKind, parentQuestionId });
+    updatePayload.category = category;
+    updatePayload.topic = topic;
+    updatePayload.promptKind = promptKind;
+    updatePayload.parentQuestionId = parentQuestionId;
+    updatePayload.promptOrder = parsed.promptOrder ?? existing.promptOrder;
+  }
   if (parsed.tagIds !== undefined) {
     const tagIds = sanitizeTagIds(parsed.tagIds);
     await assertQuestionTagsAreDimensional(tagIds);
@@ -161,6 +237,9 @@ export async function updateQuestion(questionId: string, input: UpdateQuestionIn
 }
 
 export async function deleteQuestion(questionId: string): Promise<void> {
+  if (await hasFollowups(questionId)) {
+    throw new QuestionAnswerConflictError('Cannot delete a primary question that still has follow-up prompts');
+  }
   const ref = db().collection(COLLECTION).doc(questionId);
   await db().runTransaction(async tx => {
     const snap = await tx.get(ref);

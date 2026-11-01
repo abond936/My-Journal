@@ -18,4 +18,36 @@ describe('Question subject contract', () => {
     expect(parsed.subjectTagIds).toEqual([]);
     expect(parsed.subjectFilterTags).toEqual({});
   });
+
+  it('keeps legacy questions as unorganized primary prompts', () => {
+    const parsed = questionSchema.parse({
+      docId: 'legacy', prompt: 'What happened?', prompt_lowercase: 'what happened?',
+      tagIds: [], tags: [], usedByCardIds: [], usageCount: 0, createdAt: 1, updatedAt: 1,
+    });
+    expect(parsed).toEqual(expect.objectContaining({
+      category: '',
+      topic: '',
+      promptKind: 'primary',
+      parentQuestionId: null,
+      promptOrder: 0,
+    }));
+  });
+
+  it('accepts structured follow-up placement fields', () => {
+    const parsed = createQuestionSchema.parse({
+      prompt: 'What did the room feel like?',
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'followup',
+      parentQuestionId: 'primary-1',
+      promptOrder: 2,
+    });
+    expect(parsed).toEqual(expect.objectContaining({
+      category: 'Life stories',
+      topic: 'Childhood home',
+      promptKind: 'followup',
+      parentQuestionId: 'primary-1',
+      promptOrder: 2,
+    }));
+  });
 });
