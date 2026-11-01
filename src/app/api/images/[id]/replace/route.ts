@@ -45,6 +45,15 @@ function classifyReplaceError(errorMessage: string): { status: number; code: str
     };
   }
 
+  if (errorMessage.includes('exactly matches another media asset')) {
+    return {
+      status: 409,
+      code: 'MEDIA_REPLACE_DUPLICATE',
+      message: 'The selected file already belongs to another Media item. Review that duplicate instead.',
+      retryable: false,
+    };
+  }
+
   return {
     status: 500,
     code: 'MEDIA_REPLACE_FAILED',
@@ -112,11 +121,30 @@ export async function POST(
         400
       );
     }
+    if (formData.get('sameUnderlyingMedia') !== 'true') {
+      return errorResponse(
+        {
+          ok: false,
+          code: 'MEDIA_REPLACE_CONFIRMATION_REQUIRED',
+          message: 'Confirm that the selected file represents the same underlying Media item.',
+          severity: 'error',
+          retryable: false,
+        },
+        400
+      );
+    }
 
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    await replaceMediaAssetContent(mediaId, fileBuffer, file.name);
+    const media = await replaceMediaAssetContent(mediaId, fileBuffer, file.name);
+    const processingComplete = media.readiness?.overall === 'ready';
 
-    return NextResponse.json({ message: `Media asset ${mediaId} replaced successfully.` });
+    return NextResponse.json({
+      message: processingComplete
+        ? `Media asset ${mediaId} replaced successfully.`
+        : `Media asset ${mediaId} was replaced, but some processing needs attention.`,
+      media,
+      processingComplete,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error replacing media asset ${mediaId}:`, errorMessage);

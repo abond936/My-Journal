@@ -19,13 +19,23 @@ const completeDimensionReview = {
 };
 
 jest.mock('sharp', () => {
-  return () => ({
-    metadata: async () => ({
-      format: 'webp',
-      width: 640,
-      height: 480,
-    }),
-  });
+  return () => {
+    const pipeline = {
+      metadata: async () => ({
+        format: 'webp',
+        width: 640,
+        height: 480,
+      }),
+      rotate: () => pipeline,
+      resize: () => pipeline,
+      webp: () => pipeline,
+      toBuffer: async () => ({
+        data: Buffer.from('rendition-bytes'),
+        info: { width: 640, height: 480 },
+      }),
+    };
+    return pipeline;
+  };
 });
 
 jest.mock('image-size', () => ({
@@ -36,6 +46,7 @@ jest.mock('image-size', () => ({
 jest.mock('@/lib/services/typesenseMediaService', () => ({
   syncMediaToTypesense: jest.fn(),
   syncMediaToTypesenseById: jest.fn(),
+  syncMediaToTypesenseStrict: jest.fn(async () => undefined),
   removeMediaFromTypesense: jest.fn(),
 }));
 
@@ -480,6 +491,10 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
       size: 1234,
       source: 'local',
       sourcePath: 'folder/original.jpg',
+      caption: 'Family picnic scan',
+      tags: ['what-picnic'],
+      subjectTagIds: ['what-picnic'],
+      dimensionReview: completeDimensionReview,
       referencedByCardIds: ['card-a', 'card-b'],
       createdAt: 1,
       updatedAt: 1,
@@ -520,7 +535,7 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
 
     await replaceMediaAssetContent('media-shared', Buffer.from('replacement-bytes'), 'replacement.webp');
 
-    expect(mockStorageFileSave).toHaveBeenCalledTimes(1);
+    expect(mockStorageFileSave).toHaveBeenCalledTimes(3);
 
     const mediaAfter = (await db.collection('media').doc('media-shared').get()).data() as IntegrityMedia & {
       filename: string;
@@ -534,7 +549,9 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     };
 
     expect(mediaAfter.filename).toBe('replacement.webp');
-    expect(mediaAfter.storagePath).toBe('images/media-shared-original.jpg');
+    expect(mediaAfter.storagePath).toBe(
+      'images/replacements/media-shared/70bf69c13743b7193ffd7a3718caab18522b61d4643fe13ac80caa5301e2345a-replacement.webp'
+    );
     expect(mediaAfter.contentType).toBe('image/webp');
     expect(mediaAfter.width).toBe(640);
     expect(mediaAfter.height).toBe(480);
@@ -549,6 +566,11 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
         .data()?.mediaId
     ).toBe('media-shared');
     expect(mediaAfter.referencedByCardIds?.sort()).toEqual(['card-a', 'card-b']);
+    expect(mediaAfter.caption).toBe('Family picnic scan');
+    expect(mediaAfter.tags).toEqual(['what-picnic']);
+    expect(mediaAfter.subjectTagIds).toEqual(['what-picnic']);
+    expect(mediaAfter.dimensionReview).toEqual(completeDimensionReview);
+    expect(mediaAfter.readiness?.overall).toBe('ready');
 
     const cards = await readCards(db);
     const cardA = cards.find((card) => card.docId === 'card-a')!;
