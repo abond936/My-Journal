@@ -25,7 +25,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Content** — Story, Gallery, Question, and Callout forms.
 - **State communication** — Loading, empty, success, warning, error, and unavailable states appear only when true. Normal asynchronous work does not masquerade as missing data, and recoverable failures provide a useful next action where one exists.
 - **Role-aware authenticated entry** — Safe internal callbacks remain authoritative. Without one, reader-only accounts enter Reader and the author-administrator enters Author Home; Reader remains available to the administrator through normal navigation.
-- **Reader Home** — Fresh ordinary Reader entry offers Continue Reading when meaningful, Collections, and Feed. It has no sidebar until the reader selects a path.
+- **Reader Home** — Fresh ordinary Reader entry offers Continue Reading when meaningful, Collections, Feed, and independently shared photo collections. It has no sidebar until the reader selects a path.
 
 ⭕2 **Future**
 
@@ -149,7 +149,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Feed context retains the reader's author and dimensional filters, Card position, and return state. Collection context retains the selected Collection placement, expanded contents, current Part, Chapter, or Section, Card position, and return state.
 - Viewing users are read-only; Reader mutations remain administrator-authorized server-side.
 - Reader authorization applies to Cards and Collections. Media referenced by authorized content is visible in that content context; authorization does not expose the complete Media bank or create a standalone Media publication decision.
-- Ordinary readers do not receive raw Media-library browsing. A later Shared Media Collection is an explicitly curated publication object with its own audience rather than a filter over the author's private library.
+- Ordinary readers do not receive raw Media-library browsing. A Shared Media Collection is an explicitly curated publication object with its own audience rather than a filter over the author's private library.
 - Authors may edit the current card and visible media as fully as practical while preserving their Reader position.
 - Studio remains the primary workspace for archive-wide, bulk, and taxonomy-structure operations; Reader retains contextual assignment and correction.
 
@@ -766,10 +766,10 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Private Media delivery** — Author- and Reader-facing permanent object URLs are replaced with authenticated application delivery. Author responses retain authorized archive metadata; Reader responses contain only display data for Media actually referenced by accessible published content. Production Storage denies direct client reads; deployment readback proves anonymous stored-object denial and successful authenticated Author and Reader byte delivery.
 - **Consistency** — Use the current Administration shell, theme, feedback, confirmation, validation, table, spacing, and action patterns.
 - **Guest recipients** — The local release candidate lets the author create an enabled guest recipient only after reviewing the same exact legacy and all-enabled access inherited by a new Reader. It returns one private, seven-day, single-use link for manual delivery; replacement revokes older unused links. Redemption creates the ordinary Reader session for that stable recipient ID, so existing individual and group audiences apply without copying Cards, Collections, Media, or audience data. Disabling the recipient revokes the session on its next server request.
+- **Shared Media Collections** — The author can select up to 250 existing Media items in Studio Media, create or add them to a bounded private photo-set draft, choose an explicit Reader audience, and publish that set without changing the Media items' Card uses or exposing any other archive Media. Reader Home lists only published sets authorized for the signed-in Reader, and their Media bytes use the same authenticated delivery boundary as Story Media. Published set content and audience are locked until the author returns the set to Draft. Reader-account, group-membership, group-deletion, and Media-deletion consequence paths include these sets.
 
 ⭕1 **Planned**
 
-- **Shared Media Collections** — After Story and Collection audiences are protected, allow the author to curate a bounded Media set, assign its audience, and change membership without changing the Media's use in Stories or exposing unrelated archive Media.
 - **Guest-account conversion** — Let a guest later establish a fuller password account without changing the stable recipient ID or authored audience decisions.
 - **Identity linkage** — Optionally link one access identity to its corresponding Who identity. Relationship facts and Story subjects may suggest recipients or group membership but never add access without author confirmation.
 - **Distribution** — Publish controls availability; Share chooses which authorized recipients receive a direct link or notification. Making content available to a large audience does not imply notifying everyone after every change.
@@ -788,7 +788,8 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - Who identity, relationship graph, access identity, audience membership, publication, and notification remain separate authorities.
 - Audience membership is explicit and reviewable. Editing a Who relationship or Card tag never grants or revokes Reader access.
 - A Card's effective audience is the union of its own explicit audience and each authorized Collection placement that contains it. The author sees that consequence before confirming a placement or audience change.
-- Media access derives from an authorized Card, Collection, or later Shared Media Collection context. Media has no global `shared` boolean, and raw archive membership never implies reader access.
+- Media access derives from an authorized Card, Collection, or Shared Media Collection context. Media has no global `shared` boolean, and raw archive membership never implies reader access.
+- Shared Media Collection membership is independent of Story and Collection placement. One canonical Media item may appear in multiple shared sets and Cards without copying the Media record; removing it from one set changes no other context. A set must have at least one deliverable Media item and an explicit nonempty audience before publication.
 - Guest links are unguessable, revocable, bounded to their grant, and do not expose unrelated archive content.
 - Raw guest tokens are never stored. A link carries its token in the URL fragment, can be redeemed once, expires after seven days, and is replaced rather than recovered.
 - Commercial plan limits may bound authors, recipients, storage, processing, notifications, or AI use later, but authorization semantics do not depend on a particular pricing package.

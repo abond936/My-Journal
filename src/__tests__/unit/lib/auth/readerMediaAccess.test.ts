@@ -6,7 +6,8 @@ jest.mock('@/lib/config/firebase/admin', () => ({
 
 function firestoreWithCards(
   cards: Array<{ id: string; data: Record<string, unknown> }>,
-  groupIds: string[] = []
+  groupIds: string[] = [],
+  sharedCollections: Array<{ id: string; data: Record<string, unknown> }> = []
 ) {
   const collection = jest.fn((name: string) => ({
     where: jest.fn(() => ({
@@ -14,6 +15,8 @@ function firestoreWithCards(
         docs:
           name === 'cards'
             ? cards.map((card) => ({ id: card.id, data: () => card.data }))
+            : name === 'shared_media_collections'
+              ? sharedCollections.map((collection) => ({ id: collection.id, data: () => collection.data }))
             : name === 'audience_groups'
               ? groupIds.map((id) => ({ id, data: () => ({}) }))
               : [],
@@ -89,5 +92,25 @@ describe('Reader Media authorization', () => {
         firestore as never
       )
     ).resolves.toBe(false);
+  });
+
+  it('allows Media through an audience-authorized published Shared Media Collection', async () => {
+    const firestore = firestoreWithCards([], ['family'], [{
+      id: 'shared-1',
+      data: {
+        title: 'Family photos',
+        mediaIds: ['media-1'],
+        audience: { allContacts: false, groupIds: ['family'], contactIds: [] },
+        lifecycle: 'published',
+        revision: 1,
+        order: 10,
+        createdAt: 1,
+        updatedAt: 2,
+      },
+    }]);
+
+    await expect(
+      canReadMedia(viewer, { docId: 'media-1', referencedByCardIds: [] }, firestore as never)
+    ).resolves.toBe(true);
   });
 });

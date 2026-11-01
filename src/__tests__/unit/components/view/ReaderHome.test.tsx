@@ -29,13 +29,25 @@ describe('ReaderHome', () => {
     } as never);
   });
 
-  it('offers Collections and Feed without inventing Continue on first entry', () => {
+  it('offers Collections, Feed, and Photo collections without inventing Continue on first entry', () => {
     render(<ReaderHome />);
 
     expect(screen.getByRole('heading', { name: 'Where would you like to begin?' })).toBeVisible();
     expect(screen.queryByText('Continue reading')).toBeNull();
     expect(screen.getByRole('button', { name: /Collections/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Feed/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Photo collections/ })).toBeVisible();
+  });
+
+  it('opens independently shared photo collections without changing the story mode', () => {
+    render(<ReaderHome />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Photo collections/ }));
+
+    expect(setReaderMode).not.toHaveBeenCalled();
+    expect(setActiveDimension).not.toHaveBeenCalled();
+    expect(setCollectionId).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith('/shared-media');
   });
 
   it('opens the existing explicit Collections path and resets to its overview', () => {

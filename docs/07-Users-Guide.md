@@ -336,7 +336,19 @@ Publishing and delivery are not the same action. The author can authorize passwo
 
 ---
 
-## 9. Maintain the Archive
+## 9. Share a Bounded Photo Collection
+
+Sometimes the useful thing to share is a selected group of photos rather than a Story or an entire Media library. Use a Shared Media Collection for that case.
+
+1. In Studio Media, select the photos you intend to share.
+2. Choose **Share photos...** and enter a new or existing photo-collection title. This creates or updates a private draft; it does not publish anything or change any Story.
+3. Open **Photo Sharing** in Author navigation.
+4. Review the exact photos, add an optional description, and choose all readers, reusable groups, or selected individuals.
+5. Publish the photo collection. It then appears under **Photo collections** only for authorized readers.
+
+The complete Media archive remains private. Removing a photo from this collection does not delete it or remove it from a Story. A published photo collection must return to Draft before its details, audience, or photos can change.
+
+## 10. Maintain the Archive
 
 An archive remains useful when its source files, authored meaning, access rules, and recovery path stay trustworthy.
 
@@ -358,7 +370,7 @@ Published Cards currently remain live objects. If a revision must remain private
 
 **Rule:** Prefer a small, verified correction over a bulk action whose exceptions cannot be reviewed.
 
-## 10. Worked Examples
+## 11. Worked Examples
 
 ### A phone-first birthday Story
 

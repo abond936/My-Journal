@@ -108,14 +108,15 @@ export async function deleteAudienceGroup(
   firestore: FirebaseFirestore.Firestore = getAdminApp().firestore()
 ): Promise<void> {
   const ref = firestore.collection(GROUPS).doc(id);
-  const [group, cardReferences, collectionReferences] = await Promise.all([
+  const [group, cardReferences, collectionReferences, sharedMediaReferences] = await Promise.all([
     ref.get(),
     firestore.collection('cards').where('audience.groupIds', 'array-contains', id).limit(1).get(),
     firestore.collection('collections').where('audience.groupIds', 'array-contains', id).limit(1).get(),
+    firestore.collection('shared_media_collections').where('audience.groupIds', 'array-contains', id).limit(1).get(),
   ]);
   if (!group.exists) throw new Error('Audience group not found.');
-  if (!cardReferences.empty || !collectionReferences.empty) {
-    throw new Error('Remove this group from every Card and Collection audience before deleting it.');
+  if (!cardReferences.empty || !collectionReferences.empty || !sharedMediaReferences.empty) {
+    throw new Error('Remove this group from every Card, Collection, and Shared Media Collection audience before deleting it.');
   }
   await ref.delete();
 }

@@ -139,7 +139,7 @@ describe('audience group service', () => {
     };
 
     await expect(deleteAudienceGroup('group-1', firestore as never)).rejects.toThrow(
-      'Remove this group from every Card and Collection audience'
+      'Remove this group from every Card, Collection, and Shared Media Collection audience'
     );
     expect(ref.delete).not.toHaveBeenCalled();
   });

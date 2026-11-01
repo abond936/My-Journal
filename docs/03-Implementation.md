@@ -1522,6 +1522,23 @@ The former stabilization objective and its controlling execution order are compl
 **Contracts** — Promotion reads one complete active source graph but writes only a new Collection, new local placement records for the selected descendants, and one operation record. The selected structural Card becomes the introduction rather than appearing twice as both introduction and immediate placement. Part children already legal at Collection level retain their roles. Chapter children that were Sections become top-level Chapters because Section cannot exist at Collection level; their Card children remain unchanged. Section children become top-level Cards. Empty structural placements may become introduction-only draft Collections. Source publication does not block the copy because promotion does not mutate the source, but a stale structure revision fails closed.
 
 **Completion evidence** — Five focused promotion-plan, transaction-owner, administrator-route, Studio, and access-contract suites pass 201 tests. The plan proves Part, Chapter, and empty-structure cases, excludes neighboring branches, preserves Card IDs and order, and rejects stale source revisions. The complete runnable Jest gate passes 235 suites and 1,269 tests, with four suites and 29 tests skipped by their declared environment gates. Production typecheck, touched-code lint, the 59-page optimized build, and diff checks pass; protected PR verification remains pending. No production request, content record, audience, lifecycle, or Storage object changed.
+
+### Thirty-second implementation slice — Shared Media Collections
+
+**Definition:** Ready
+
+**Execution:** Verified locally and through the protected PR gate
+
+**Outcome** — Let an author share a deliberately bounded photo set with selected readers without publishing the raw Media archive or forcing those photos into a Story.
+
+**Includes** — A durable Shared Media Collection with title, description, ordered unique Media membership, explicit audience, Draft/Published lifecycle, and revision; selection-based creation or addition from Studio Media; a desktop Photo Sharing owner for audience, lifecycle, details, removal, and protected preview; a Reader Home photo-collection path; audience-filtered list and detail APIs; display-only Reader Media payloads; authenticated byte delivery; exact account and group consequence integration; group- and Media-deletion safeguards; and publication checks for audience, nonempty membership, existing Media, and protected delivery readiness.
+
+**Excludes** — Raw archive browsing for readers; a global per-Media sharing flag; Media duplication; Story or Collection mutation; tagging requirements for a shared set; automatic distribution or notifications; possession-based public links; mobile archive administration; production data mutation; merge; and deployment.
+
+**Contracts** — The archive remains private by default. A Shared Media Collection is its own publication object and grants access only to its explicitly listed Media through its own audience. The same canonical Media item may participate in multiple Cards, Collections, and Shared Media Collections without copying the Media record. Drafts are private. Publication requires at least one deliverable Media item and an explicit nonempty audience. Published title, description, membership, and audience remain locked until the set returns to Draft. Reader responses omit source paths, Storage URLs, tags, and private archive metadata. Deleting a referenced Media item or audience group fails closed until the author removes that reference.
+
+**Completion evidence** — Focused service, Reader-route, Media-authorization, audience-impact, account-impact, Reader Home, navigation, and administrator-boundary suites pass. The complete runnable Jest gate passes 234 suites and 1,278 tests, with four suites and 29 tests skipped by their declared environment gates. The optimized production build compiles 63 routes/pages and validates types. No production request, content record, account, audience, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

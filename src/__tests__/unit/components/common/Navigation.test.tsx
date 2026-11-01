@@ -34,7 +34,7 @@ describe('Navigation hierarchy', () => {
 
     const labels = screen.getAllByRole('link').map((link) => link.textContent?.trim()).filter(Boolean);
     expect(labels).toEqual([
-      'Author', 'Author Home', 'Reader', 'Studio', 'Guide', 'Users', 'Settings', 'Theme', 'Account',
+      'Author', 'Author Home', 'Reader', 'Studio', 'Guide', 'Users', 'Photo Sharing', 'Settings', 'Theme', 'Account',
     ]);
     expect(screen.getByRole('link', { name: 'Author Home' })).toHaveAttribute('href', '/admin');
     expect(screen.getByRole('link', { name: 'Switch to Author' })).toHaveAttribute('href', '/admin');

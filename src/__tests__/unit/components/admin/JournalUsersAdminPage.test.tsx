@@ -92,7 +92,7 @@ describe('JournalUsersAdminPage audience-group consequences', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Review disable access' }));
     expect(await screen.findByText('Review Reader access before disable')).toBeInTheDocument();
-    expect(screen.getByText(/lose access to 1 Collection and 1 published Card/)).toBeInTheDocument();
+    expect(screen.getByText(/lose access to 1 Collection, 0 shared photo collections, and 1 published Card/)).toBeInTheDocument();
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Apply reviewed disable' }));
@@ -121,7 +121,7 @@ describe('JournalUsersAdminPage audience-group consequences', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Review initial access' })[1]);
 
     expect(await screen.findByText("Review the new Reader's initial access")).toBeInTheDocument();
-    expect(screen.getByText(/immediately gain access to 1 Collection and 1 published Card/)).toBeInTheDocument();
+    expect(screen.getByText(/immediately gain access to 1 Collection, 0 shared photo collections, and 1 published Card/)).toBeInTheDocument();
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Create Reader with reviewed access' }));

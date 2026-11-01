@@ -49,6 +49,8 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
 
   { method: 'GET', path: '/api/collections', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Active published Collections for viewers; active drafts also visible to administrators' },
   { method: 'GET', path: '/api/collections/[id]', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Viewer read fails closed unless Collection and all referenced Cards are published' },
+  { method: 'GET', path: '/api/shared-media-collections', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Lists only published Shared Media Collections authorized for the current Reader' },
+  { method: 'GET', path: '/api/shared-media-collections/[id]', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed', notes: 'Returns display-only Media for one authorized published Shared Media Collection' },
 
   { method: 'GET', path: '/api/view/media', access: 'authenticated-reader', anonymousStatus: 401, viewer: 'allowed' },
 
@@ -121,6 +123,10 @@ export const API_ROUTE_ACCESS_AUDIT: readonly ApiRouteAuditEntry[] = [
   { method: 'PATCH', path: '/api/admin/collections/[id]/audience', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Updates the Collection Reader audience after validating group and Reader references' },
   { method: 'POST', path: '/api/admin/collections/[id]/audience-impact', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Read-only proposed Collection audience impact across every placed Card and its other Reader routes' },
   { method: 'PATCH', path: '/api/admin/collections/[id]/lifecycle', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Draft and Published Collection lifecycle owner with publication-integrity enforcement' },
+  { method: 'GET', path: '/api/admin/shared-media-collections', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Lists authored Shared Media Collections' },
+  { method: 'POST', path: '/api/admin/shared-media-collections', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Creates a bounded private draft from explicitly selected Media IDs' },
+  { method: 'GET', path: '/api/admin/shared-media-collections/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Loads one authored set with administrator-protected Media metadata' },
+  { method: 'PATCH', path: '/api/admin/shared-media-collections/[id]', access: 'admin-only', anonymousStatus: 403, viewer: 403, notes: 'Revision-checked draft editing and explicit publication lifecycle' },
 
   { method: 'POST', path: '/api/admin/media/tags', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
   { method: 'POST', path: '/api/admin/media/tags/reconcile', access: 'admin-only', anonymousStatus: 403, viewer: 403 },
@@ -233,6 +239,10 @@ export const ADMIN_ROUTE_BOUNDARY_CASES: readonly AdminRouteBoundaryCase[] = [
   { id: 'admin-collections-audience-patch', method: 'PATCH', path: '/api/admin/collections/[id]/audience', modulePath: '@/app/api/admin/collections/[id]/audience/route', requestUrl: 'https://example.test/api/admin/collections/my-life/audience', params: Promise.resolve({ id: 'my-life' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
   { id: 'admin-collections-audience-impact-post', method: 'POST', path: '/api/admin/collections/[id]/audience-impact', modulePath: '@/app/api/admin/collections/[id]/audience-impact/route', requestUrl: 'https://example.test/api/admin/collections/my-life/audience-impact', params: Promise.resolve({ id: 'my-life' }), body: { allContacts: true, groupIds: [], contactIds: [] } },
   { id: 'admin-collections-lifecycle-patch', method: 'PATCH', path: '/api/admin/collections/[id]/lifecycle', modulePath: '@/app/api/admin/collections/[id]/lifecycle/route', requestUrl: 'https://example.test/api/admin/collections/my-life/lifecycle', params: Promise.resolve({ id: 'my-life' }), body: { lifecycle: 'draft' } },
+  { id: 'admin-shared-media-get', method: 'GET', path: '/api/admin/shared-media-collections', modulePath: '@/app/api/admin/shared-media-collections/route', requestUrl: 'https://example.test/api/admin/shared-media-collections' },
+  { id: 'admin-shared-media-post', method: 'POST', path: '/api/admin/shared-media-collections', modulePath: '@/app/api/admin/shared-media-collections/route', requestUrl: 'https://example.test/api/admin/shared-media-collections', body: { title: 'Family Photos', mediaIds: [] } },
+  { id: 'admin-shared-media-id-get', method: 'GET', path: '/api/admin/shared-media-collections/[id]', modulePath: '@/app/api/admin/shared-media-collections/[id]/route', requestUrl: 'https://example.test/api/admin/shared-media-collections/family', params: Promise.resolve({ id: 'family' }) },
+  { id: 'admin-shared-media-id-patch', method: 'PATCH', path: '/api/admin/shared-media-collections/[id]', modulePath: '@/app/api/admin/shared-media-collections/[id]/route', requestUrl: 'https://example.test/api/admin/shared-media-collections/family', params: Promise.resolve({ id: 'family' }), body: { expectedRevision: 0, title: 'Family Photos' } },
 
   { id: 'admin-media-tags', method: 'POST', path: '/api/admin/media/tags', modulePath: '@/app/api/admin/media/tags/route', requestUrl: 'https://example.test/api/admin/media/tags', body: { mediaIds: [], tagIds: [] } },
   { id: 'admin-media-tags-reconcile', method: 'POST', path: '/api/admin/media/tags/reconcile', modulePath: '@/app/api/admin/media/tags/reconcile/route', requestUrl: 'https://example.test/api/admin/media/tags/reconcile', body: {} },

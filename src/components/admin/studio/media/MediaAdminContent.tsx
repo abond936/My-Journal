@@ -344,6 +344,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   }, [handleOpenMediaTags, initialReviewMediaId]);
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [isSharingSelection, setIsSharingSelection] = useState(false);
   const {
     mediaById,
     isCreatingStack,
@@ -410,6 +411,59 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       feedback.showError(err instanceof Error ? err.message : 'Failed to create card.', 'Could not create card');
     } finally {
       setIsCreatingCard(false);
+    }
+  };
+
+  const handleShareSelection = async () => {
+    if (!selectedMediaIds.length || isSharingSelection) return;
+    const title = window.prompt(
+      'Enter a new or existing Shared Media Collection title. Selected photos will be added to a private draft; publishing and audience are managed on the Photo Sharing page.'
+    )?.trim();
+    if (!title) return;
+    setIsSharingSelection(true);
+    try {
+      const listResponse = await fetch('/api/admin/shared-media-collections');
+      const listData = await listResponse.json().catch(() => ({}));
+      if (!listResponse.ok) throw new Error(listData.message || 'Photo collections could not be loaded.');
+      const existing = (Array.isArray(listData.collections) ? listData.collections : [])
+        .find((item: { title?: string }) => item.title?.trim().toLowerCase() === title.toLowerCase());
+      if (existing) {
+        if (existing.lifecycle === 'published') {
+          throw new Error('Return that Photo Collection to Draft before adding photos.');
+        }
+        const detailResponse = await fetch(`/api/admin/shared-media-collections/${encodeURIComponent(existing.docId)}`);
+        const detailData = await detailResponse.json().catch(() => ({}));
+        if (!detailResponse.ok) throw new Error(detailData.message || 'The Photo Collection could not be loaded.');
+        const mediaIds = Array.from(new Set([
+          ...(detailData.collection.mediaIds ?? []),
+          ...selectedMediaIds,
+        ]));
+        const updateResponse = await fetch(`/api/admin/shared-media-collections/${encodeURIComponent(existing.docId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expectedRevision: detailData.collection.revision, mediaIds }),
+        });
+        const updateData = await updateResponse.json().catch(() => ({}));
+        if (!updateResponse.ok) throw new Error(updateData.message || 'Selected photos could not be added.');
+      } else {
+        const createResponse = await fetch('/api/admin/shared-media-collections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, mediaIds: selectedMediaIds }),
+        });
+        const createData = await createResponse.json().catch(() => ({}));
+        if (!createResponse.ok) throw new Error(createData.message || 'The Photo Collection could not be created.');
+      }
+      setSelectedMediaIds([]);
+      feedback.showSuccess('Photos saved to a private Shared Media Collection. Choose its audience before publishing.');
+      router.push('/admin/shared-media');
+    } catch (shareError) {
+      feedback.showError(
+        shareError instanceof Error ? shareError.message : 'Selected photos could not be shared.',
+        'Photo Collection not updated'
+      );
+    } finally {
+      setIsSharingSelection(false);
     }
   };
 
@@ -1445,6 +1499,14 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
                 className={cardAdminStyles.actionButton}
               >
                 {isCreatingCard ? 'Creating...' : 'Create card'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleShareSelection()}
+                disabled={isSharingSelection}
+                className={cardAdminStyles.actionButton}
+              >
+                {isSharingSelection ? 'Adding...' : 'Share photos...'}
               </button>
               <button
                 type="button"
