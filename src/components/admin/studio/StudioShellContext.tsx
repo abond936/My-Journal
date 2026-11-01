@@ -3,6 +3,7 @@
 import React, { createContext, useContext, type MutableRefObject } from 'react';
 import type { Card } from '@/lib/types/card';
 import type { Media } from '@/lib/types/photo';
+import type { PromptInsertRequest } from '@/components/authoring/CardFormSurfaceContext';
 import type {
   StudioActiveCardViewModel,
   StudioSelectedDetail,
@@ -60,8 +61,8 @@ export type StudioShellContextValue = {
    */
   registerBodyMediaInsert: (handler: ((media: Media) => void) | null) => void;
   /** Insert a copied Prompt Library question into the currently mounted Compose body. */
-  insertPromptText: (prompt: string) => boolean;
-  registerPromptTextInsert: (handler: ((prompt: string) => void) | null) => void;
+  insertPromptText: (request: PromptInsertRequest) => boolean;
+  registerPromptTextInsert: (handler: ((request: PromptInsertRequest) => void) | null) => void;
   /**
    * @deprecated Prefer {@link registerBodyMediaInsert}; retained for DnD bridge reads.
    */

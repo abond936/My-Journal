@@ -20,7 +20,10 @@ import {
   StudioShellProvider,
   type StudioShellContextValue,
 } from '@/components/admin/studio/StudioShellContext';
-import { createStudioShellImperativeRegistry } from '@/components/admin/studio/studioShellImperativeRegistry';
+import {
+  createStudioShellImperativeRegistry,
+} from '@/components/admin/studio/studioShellImperativeRegistry';
+import type { PromptInsertRequest } from '@/components/authoring/CardFormSurfaceContext';
 import type { CollectionsCardDragData } from '@/lib/dnd/collectionsDragContract';
 import type { Media } from '@/lib/types/photo';
 import { useMedia } from '@/components/providers/MediaProvider';
@@ -174,15 +177,15 @@ export default function StudioWorkspace() {
   const [selectedCardMediaId, setSelectedCardMediaId] = useState<string | null>(null);
 
   const studioImperatives = useMemo(() => createStudioShellImperativeRegistry(), []);
-  const pendingPromptTextRef = useRef<string[]>([]);
+  const pendingPromptTextRef = useRef<PromptInsertRequest[]>([]);
   const registerBodyMediaInsert = useCallback((handler: ((media: Media) => void) | null) => {
     studioImperatives.register('bodyMediaInsert', handler);
   }, [studioImperatives]);
-  const registerPromptTextInsert = useCallback((handler: ((prompt: string) => void) | null) => {
+  const registerPromptTextInsert = useCallback((handler: ((request: PromptInsertRequest) => void) | null) => {
     studioImperatives.register('promptTextInsert', handler);
     if (!handler || pendingPromptTextRef.current.length === 0) return;
     const pendingPrompts = pendingPromptTextRef.current.splice(0);
-    pendingPrompts.forEach(prompt => handler(prompt));
+    pendingPrompts.forEach(request => handler(request));
   }, [studioImperatives]);
   const bodyMediaInsertRef = studioImperatives.bodyMediaInsertRef;
   const collectionsUpsertCardRef = useRef<((card: Card) => void) | null>(null);
@@ -262,14 +265,14 @@ export default function StudioWorkspace() {
     router.replace(query ? `/admin/studio?${query}` : '/admin/studio');
   }, [router, searchParams]);
 
-  const insertPromptText = useCallback((prompt: string) => {
+  const insertPromptText = useCallback((request: PromptInsertRequest) => {
     const handler = studioImperatives.get('promptTextInsert');
     if (handler) {
-      handler(prompt);
+      handler(request);
       return true;
     }
     if (wideLayout || !selectedCardId) return false;
-    pendingPromptTextRef.current.push(prompt);
+    pendingPromptTextRef.current.push(request);
     setMobileDestination('cards');
     writeStoredMobileAuthorDestination('cards');
     replaceStudioQuery((params) => {

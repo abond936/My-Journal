@@ -8,7 +8,7 @@ let mockSelectedCardId: string | null = null;
 let mockSelectedCardType: 'story' | 'callout' = 'story';
 const mockConfirmComposeLeave = jest.fn<Promise<boolean>, []>();
 const mockRequestClearSelectedCard = jest.fn<Promise<boolean>, []>();
-const mockInsertedPrompts: string[] = [];
+const mockInsertedPrompts: Array<{ prompt: string; role: 'primary' | 'followup' }> = [];
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mockRouterReplace }),
@@ -153,7 +153,7 @@ jest.mock('@/components/admin/studio/StudioCardEditPane', () => {
     );
     const { registerPromptTextInsert } = useStudioShell();
     ReactActual.useEffect(() => {
-      registerPromptTextInsert((prompt: string) => mockInsertedPrompts.push(prompt));
+      registerPromptTextInsert((request) => mockInsertedPrompts.push(request));
       return () => registerPromptTextInsert(null);
     }, [registerPromptTextInsert]);
     return <div data-testid="compose-pane" />;
@@ -169,7 +169,12 @@ jest.mock('@/components/admin/studio/StudioQuestionsPane', () => {
     const { insertPromptText } = useStudioShell();
     return (
       <div data-testid="prompts-pane">
-        <button type="button" onClick={() => insertPromptText('What do you remember?')}>Add test prompt</button>
+        <button
+          type="button"
+          onClick={() => insertPromptText({ prompt: 'What do you remember?', role: 'primary' })}
+        >
+          Add test prompt
+        </button>
       </div>
     );
   }
@@ -319,7 +324,9 @@ describe('StudioWorkspace mobile destinations', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add test prompt' }));
 
     await waitFor(() => expect(screen.getByTestId('compose-pane')).toBeInTheDocument());
-    expect(mockInsertedPrompts).toEqual(['What do you remember?']);
+    expect(mockInsertedPrompts).toEqual([
+      { prompt: 'What do you remember?', role: 'primary' },
+    ]);
     expect(mockRouterReplace).toHaveBeenLastCalledWith('/admin/studio?destination=cards&card=story-1');
   });
 });

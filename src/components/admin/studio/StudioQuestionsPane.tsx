@@ -392,7 +392,10 @@ export default function StudioQuestionsPane() {
   }, [feedback]);
 
   const insertQuestionIntoCard = useCallback((question: Question) => {
-    if (!selectedCardId || !insertPromptText(question.prompt)) {
+    if (!selectedCardId || !insertPromptText({
+      prompt: question.prompt,
+      role: question.promptKind === 'followup' ? 'followup' : 'primary',
+    })) {
       feedback.showError('Open a Card in Compose beside Prompts before adding writing guidance.', 'Open a Card first');
       return;
     }
@@ -403,7 +406,10 @@ export default function StudioQuestionsPane() {
     if (!selectedTopic || !selectedCardId) return;
     const topicPrompts = orderPromptLibraryQuestions(questions)
       .filter((question) => question.topic === selectedTopic && (!selectedCategory || question.category === selectedCategory));
-    if (topicPrompts.length === 0 || topicPrompts.some((question) => !insertPromptText(question.prompt))) {
+    if (topicPrompts.length === 0 || topicPrompts.some((question) => !insertPromptText({
+      prompt: question.prompt,
+      role: question.promptKind === 'followup' ? 'followup' : 'primary',
+    }))) {
       feedback.showError('Keep the Card open in Compose while adding Topic prompts.', 'Could not add Topic');
       return;
     }
@@ -416,7 +422,10 @@ export default function StudioQuestionsPane() {
       question.docId === primary.docId ||
       (question.promptKind === 'followup' && question.parentQuestionId === primary.docId)
     );
-    if (promptGroup.length === 0 || promptGroup.some((question) => !insertPromptText(question.prompt))) {
+    if (promptGroup.length === 0 || promptGroup.some((question) => !insertPromptText({
+      prompt: question.prompt,
+      role: question.promptKind === 'followup' ? 'followup' : 'primary',
+    }))) {
       feedback.showError('Keep the Card open in Compose while adding this prompt group.', 'Could not add prompt group');
       return;
     }

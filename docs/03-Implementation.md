@@ -1809,6 +1809,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Three focused route, comparison, and UI suites pass 16 cases. The complete runnable Jest gate passes 249 suites and 1,349 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Media record, Tag, Card, or Storage object changed.
 
+### Forty-ninth implementation slice — Question Card Prompt presentation
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Use the selected primary question as a useful proposed title for an untitled Question Card while keeping follow-ups as private authoring guidance and preserving author control over existing titles.
+
+**Includes** — A typed primary/follow-up insertion contract across Prompt Library, Studio imperative routing, mobile handoff, and Compose; first-primary title proposal only when the open Card is a Question Card and its title is blank; preservation of an existing title; editing-only body insertion for follow-ups and later primaries; unchanged body insertion for Story and other Card types; and focused desktop/mobile routing and CardForm coverage.
+
+**Excludes** — Automatic Card creation; overwriting an authored title; linking the Card back to the Prompt record; copying Prompt classification; automatic title persistence outside the existing draft Card lifecycle; resolving body Prompt blocks; legacy Question Card rewriting; production data mutation; merge; and deployment.
+
+**Contracts** — Prompt role travels with copied text but is not stored as a continuing library relationship. A proposed title is ordinary editable Card title state as soon as it enters Compose. Only the first primary may fill a blank Question Card title. An existing title always wins, and the incoming primary remains available as body guidance rather than being discarded. Every body insertion uses the same editing-only Prompt marker and publication gate.
+
+**Verification gate** — Prove primary/follow-up role routing, empty Question title proposal, existing-title preservation, follow-up body insertion, Story Card compatibility, mobile pending-handoff preservation, production typecheck, touched-code and full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Three focused CardForm, Prompt-pane, and mobile-workspace suites pass 28 cases. The complete runnable Jest gate passes 249 suites and 1,352 tests, with four suites and 34 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

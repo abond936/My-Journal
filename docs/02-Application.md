@@ -649,6 +649,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Card-first copying** — From the Prompts pane, the author can copy one prompt or the currently filtered Topic into an already-open Compose Card. The copied questions become ordinary editable Card headings immediately and have no continuing dependency on the Prompt Library; later prompt edits never rewrite the Card.
 - **Flexible copy scope** — A primary question with follow-ups exposes a separate action that copies the primary followed by its ordered follow-ups. Together with single-prompt and filtered-Topic copying, this lets the author choose a useful amount of guidance without creating another answer record or Card automatically.
 - **Editing-only Prompt blocks** — Newly copied Prompt guidance enters the Card body as visibly distinct editing blocks. Each block can be kept as an ordinary reader-visible heading or removed without deleting authored text beneath it. Reader and preview rendering omit unresolved blocks, and every server-owned publication path blocks publication until none remain. Older ordinary headings are not retroactively reclassified.
+- **Card-type Prompt presentation** — On a Question Card with an empty title, the first copied primary question proposes that title instead of entering the body. It never overwrites an authored title; a later primary enters as ordinary editing guidance. Follow-ups always enter the body as Prompt blocks. Story and other Card types continue to receive every selected question as body guidance.
 
 📋 **Current contracts**
 
@@ -661,8 +662,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕1 **Planned**
 
-- **Structured Prompt Library completion** — Resolve author-confirmed duplicate consolidation in the legacy question bank and the remaining publication-time prompt-block behavior below. Follow-ups continue to draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
-- **Card-type presentation** — For a Question Card, the selected primary question proposes the title and follow-ups enter the body as guidance. For a Story Card, selected questions enter the body as editable writing prompts. The author may retain, rewrite, or remove copied question text.
+- **Structured Prompt Library completion** — Resolve author-confirmed duplicate consolidation in the legacy question bank. Follow-ups continue to draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
 - **Independent Cards** — Inserting a prompt copies its text and any selected classification into the Card's authoring context without a continuing content dependency. Later prompt edits or deletion do not alter existing Cards.
 - **Existing-content migration** — Preserve every existing Question Card, its authored content, Media, tags, and Collection placement. Existing Question records seed an author-reviewed prompt-curation queue; organization and deduplication may change the Prompt Library but never merge or rewrite Cards that answered those questions.
 - **Guidance instead of templates** — Organized Prompt Categories and Topics provide the guided path. Collection templates are not required by the active architecture; Collections, Chapters, Sections, and Cards remain flexibly authored.

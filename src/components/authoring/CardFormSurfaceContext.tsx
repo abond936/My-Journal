@@ -3,6 +3,11 @@
 import React, { createContext, useContext } from 'react';
 import type { Media } from '@/lib/types/photo';
 
+export type PromptInsertRequest = {
+  prompt: string;
+  role: 'primary' | 'followup';
+};
+
 export type CardFormSurfaceContextValue = {
   /** Compact authoring presentation used by bounded modal and Studio surfaces. */
   compact: boolean;
@@ -14,7 +19,7 @@ export type CardFormSurfaceContextValue = {
   reloadCard?: (cardId: string) => void;
   openMediaEditor?: (mediaId: string) => void;
   registerBodyMediaInsert?: (handler: ((media: Media) => void) | null) => void;
-  registerPromptTextInsert?: (handler: ((prompt: string) => void) | null) => void;
+  registerPromptTextInsert?: (handler: ((request: PromptInsertRequest) => void) | null) => void;
 };
 
 const CardFormSurfaceContext = createContext<CardFormSurfaceContextValue | null>(null);

@@ -174,9 +174,9 @@ describe('StudioQuestionsPane Card-first entry', () => {
       name: 'Add primary question and 1 follow-up to open Card',
     }));
 
-    expect(insertPromptText.mock.calls.map(([prompt]) => prompt)).toEqual([
-      'What happened at the beach?',
-      'What could you hear?',
+    expect(insertPromptText.mock.calls.map(([request]) => request)).toEqual([
+      { prompt: 'What happened at the beach?', role: 'primary' },
+      { prompt: 'What could you hear?', role: 'followup' },
     ]);
     expect(feedback.showSuccess).toHaveBeenCalledWith('2 related prompts copied into the open Card.');
   });

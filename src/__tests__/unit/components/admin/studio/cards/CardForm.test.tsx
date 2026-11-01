@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CardForm from '@/components/admin/studio/cards/CardForm';
 import { CardFormProvider } from '@/components/providers/CardFormProvider';
@@ -8,7 +8,17 @@ import { Tag } from '@/lib/types/tag';
 
 const confirmMock = jest.fn();
 const showErrorMock = jest.fn();
-let mockAuthoringSurface: { compact?: boolean; mobileStoryFlow?: boolean } | null = null;
+const mockInsertPrompt = jest.fn();
+let registeredPromptInsert:
+  | ((request: { prompt: string; role: 'primary' | 'followup' }) => void)
+  | null = null;
+let mockAuthoringSurface: {
+  compact?: boolean;
+  mobileStoryFlow?: boolean;
+  registerPromptTextInsert?: (
+    handler: ((request: { prompt: string; role: 'primary' | 'followup' }) => void) | null
+  ) => void;
+} | null = null;
 
 jest.mock('react-dnd', () => ({
   DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -100,6 +110,7 @@ jest.mock('@/components/common/RichTextEditor', () => {
     React.useImperativeHandle(ref, () => ({
       getContent: () => value,
       insertImage: jest.fn(),
+      insertPrompt: mockInsertPrompt,
     }));
     return (
       <textarea
@@ -190,6 +201,7 @@ describe('CardForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockAuthoringSurface = null;
+    registeredPromptInsert = null;
     confirmMock.mockResolvedValue(true);
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -205,6 +217,71 @@ describe('CardForm', () => {
         },
       }),
     }) as jest.Mock;
+  });
+
+  it('uses the first primary Prompt as an empty Question Card title and keeps follow-ups in the body', () => {
+    mockAuthoringSurface = {
+      registerPromptTextInsert: (handler) => {
+        registeredPromptInsert = handler;
+      },
+    };
+    renderCardForm({
+      ...mockCard,
+      title: '',
+      title_lowercase: '',
+      type: 'qa',
+    });
+
+    act(() => {
+      registeredPromptInsert?.({ prompt: 'What happened at the beach?', role: 'primary' });
+    });
+    expect(screen.getByPlaceholderText('Card Title')).toHaveValue('What happened at the beach?');
+    expect(mockInsertPrompt).not.toHaveBeenCalled();
+
+    act(() => {
+      registeredPromptInsert?.({ prompt: 'What could you hear?', role: 'followup' });
+    });
+    expect(mockInsertPrompt).toHaveBeenCalledWith('What could you hear?');
+  });
+
+  it('does not overwrite an existing Question Card title with a primary Prompt', () => {
+    mockAuthoringSurface = {
+      registerPromptTextInsert: (handler) => {
+        registeredPromptInsert = handler;
+      },
+    };
+    renderCardForm({
+      ...mockCard,
+      title: 'My chosen title',
+      title_lowercase: 'my chosen title',
+      type: 'qa',
+    });
+
+    act(() => {
+      registeredPromptInsert?.({ prompt: 'What happened at the beach?', role: 'primary' });
+    });
+    expect(screen.getByPlaceholderText('Card Title')).toHaveValue('My chosen title');
+    expect(mockInsertPrompt).toHaveBeenCalledWith('What happened at the beach?');
+  });
+
+  it('keeps a primary Prompt in the body for a Story Card', () => {
+    mockAuthoringSurface = {
+      registerPromptTextInsert: (handler) => {
+        registeredPromptInsert = handler;
+      },
+    };
+    renderCardForm({
+      ...mockCard,
+      title: '',
+      title_lowercase: '',
+      type: 'story',
+    });
+
+    act(() => {
+      registeredPromptInsert?.({ prompt: 'What happened at the beach?', role: 'primary' });
+    });
+    expect(screen.getByPlaceholderText('Card Title')).toHaveValue('');
+    expect(mockInsertPrompt).toHaveBeenCalledWith('What happened at the beach?');
   });
 
   it('shows one mobile Story workflow panel at a time', async () => {

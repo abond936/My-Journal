@@ -208,15 +208,6 @@ const CardForm: React.FC = () => {
   }, [authoringSurface, studioShellDnd]);
 
   useEffect(() => {
-    const register = authoringSurface?.registerPromptTextInsert;
-    if (!register) return;
-    register((prompt: string) => {
-      editorRef.current?.insertPrompt(prompt);
-    });
-    return () => register(null);
-  }, [authoringSurface]);
-
-  useEffect(() => {
     return registerEditorContentGetter(
       () => editorRef.current?.getContent() ?? (cardData.content ?? '')
     );
@@ -226,6 +217,20 @@ const CardForm: React.FC = () => {
   const [titleDraft, setTitleDraft] = useState(cardData.title || '');
   const [subtitleDraft, setSubtitleDraft] = useState(cardData.subtitle || '');
   const [excerptDraft, setExcerptDraft] = useState(cardData.excerpt || '');
+
+  useEffect(() => {
+    const register = authoringSurface?.registerPromptTextInsert;
+    if (!register) return;
+    register((request) => {
+      if (request.role === 'primary' && cardData.type === 'qa' && !titleDraft.trim()) {
+        setTitleDraft(request.prompt);
+        setField('title', request.prompt);
+        return;
+      }
+      editorRef.current?.insertPrompt(request.prompt);
+    });
+    return () => register(null);
+  }, [authoringSurface, cardData.type, setField, titleDraft]);
 
   useEffect(() => {
     setTagMacroExpanded(false);
