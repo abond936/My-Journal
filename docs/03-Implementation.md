@@ -1438,6 +1438,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
 
+### Twenty-eighth implementation slice — Explicit Media assignment to an existing Card
+
+**Definition:** Ready
+
+**Execution:** Verified locally
+
+**Outcome** — Complete the missing Media-destination cross-object action so an author can deliberately add the current selection to an existing Card without relying on desktop drag-and-drop or creating another Card.
+
+**Includes** — A visible Add to existing Card action for selected Media; a bounded recent-Card list; title search; one explicit target; Card type and lifecycle context; a published-target visibility warning; full target hydration immediately before mutation; duplicate-safe Gallery append; preservation of existing slot caption, framing, stack identity, and order; sequential order for additions; the existing Gallery-only API path and transactional Gallery owner; selection clearing after success; and refresh of the open target Card.
+
+**Excludes** — Hidden assignment to the currently open Card; body-Media insertion; cover replacement; creating a Card; changing Card type, status, audience, Feed inclusion, or Collection placement; private working revisions; bulk assignment to several Cards; and production content mutation during verification.
+
+**Contracts** — Target choice is explicit. The mutation uses the same Gallery membership owner as ordinary Card editing, so referenced Media validation, reverse references, inherited Media signals, search projection, and Gallery tag inheritance remain authoritative. Existing Gallery membership is never duplicated. Under the current practical publication policy, a Gallery mutation on a published Card is immediately reader-visible; the chooser states that consequence rather than implying a private revision.
+
+**Completion evidence** — Focused Media coverage passes twenty-one tests, including explicit target choice, published-target warning, duplicate suppression, and preservation of existing Gallery slot details. Touched-code lint, production typecheck, diff checks, the complete runnable Jest gate, and the optimized production build pass. No production request, content record, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MediaAdminContent, {
+  appendSelectedMediaToGallery,
   filterSelectedCardMedia,
 } from '@/components/admin/studio/media/MediaAdminContent';
 import { DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES } from '@/lib/preferences/adminFilters';
@@ -75,10 +76,12 @@ jest.mock('@/components/admin/studio/cards/EditModal', () => ({
   default: ({
     isOpen,
     children,
+    footer,
   }: {
     isOpen?: boolean;
     children?: React.ReactNode;
-  }) => (isOpen ? <div>{children}</div> : null),
+    footer?: React.ReactNode;
+  }) => (isOpen ? <div>{children}{footer}</div> : null),
 }));
 
 jest.mock('@/components/admin/studio/cards/MacroTagSelector', () => ({
@@ -169,6 +172,82 @@ describe('MediaAdminContent', () => {
     readStoredMediaAdminLocalFilterPreferences.mockReturnValue(
       DEFAULT_MEDIA_ADMIN_LOCAL_FILTER_PREFERENCES
     );
+  });
+
+  it('appends only new media while preserving Gallery slot details and order', () => {
+    expect(appendSelectedMediaToGallery(
+      [{
+        mediaId: 'media-1',
+        order: 7,
+        caption: 'Keep this caption',
+        media: { docId: 'media-1', filename: 'one.jpg' },
+      }],
+      [
+        { mediaId: 'media-1', order: 0 },
+        { mediaId: 'media-2', order: 1, stackId: 'stack-1' },
+      ]
+    )).toEqual({
+      galleryMedia: [
+        { mediaId: 'media-1', order: 0, caption: 'Keep this caption' },
+        { mediaId: 'media-2', order: 1, stackId: 'stack-1' },
+      ],
+      addedCount: 1,
+    });
+  });
+
+  it('adds selected media to an explicitly chosen existing Card without duplicating membership', async () => {
+    const setSelectedMediaIds = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      media: [
+        { docId: 'media-1', filename: 'one.jpg' },
+        { docId: 'media-2', filename: 'two.jpg' },
+      ],
+      selectedMediaIds: ['media-1', 'media-2'],
+      setSelectedMediaIds,
+    });
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ docId: 'card-1', title: 'Published Story', type: 'story', status: 'published' }],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          docId: 'card-1',
+          title: 'Published Story',
+          type: 'story',
+          status: 'published',
+          galleryMedia: [{
+            mediaId: 'media-1',
+            order: 0,
+            caption: 'Existing caption',
+            media: { docId: 'media-1', filename: 'one.jpg' },
+          }],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ docId: 'card-1' }) } as Response);
+
+    render(<MediaAdminContent />);
+    await userEvent.click(screen.getByRole('button', { name: 'Add to existing card' }));
+    await userEvent.click(await screen.findByRole('radio', { name: /Published Story/ }));
+
+    expect(screen.getByText(/updates what its readers can see immediately/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Add to Gallery' }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    const patchCall = fetchMock.mock.calls[2];
+    expect(patchCall[0]).toBe('/api/cards/card-1');
+    expect(patchCall[1]).toMatchObject({ method: 'PATCH' });
+    expect(JSON.parse(String((patchCall[1] as RequestInit).body))).toEqual({
+      galleryMedia: [
+        { mediaId: 'media-1', order: 0, caption: 'Existing caption' },
+        { mediaId: 'media-2', order: 1 },
+      ],
+    });
+    expect(setSelectedMediaIds).toHaveBeenCalledWith([]);
   });
 
   it('uses the simplified assignment and exact-match filters without a separate match workspace', () => {
