@@ -1420,6 +1420,22 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The guard's focused Jest suite passes four cases covering both hosted URL inputs, misleading hosted opt-in, default local denial, and explicit isolated-local allowance. A hosted-shaped Playwright invocation with the isolated label deliberately present skips the Card-save test before setup. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Explicit touched-file lint, production typecheck, diff checks, and the optimized build pass. No production request or data mutation was made while verifying this slice.
 
+### Twenty-seventh implementation slice — Read-only phone acceptance coverage
+
+**Definition:** Ready
+
+**Execution:** Verified locally and through the protected PR gate
+
+**Outcome** — Exercise the deployed Reader and Author entrances at an actual phone viewport instead of inferring mobile behavior from desktop smoke checks and component tests.
+
+**Includes** — An iPhone-width Reader project that repeats Reader Home → Feed → Card detail; an iPhone-width Author project that verifies the five focused Studio destinations, enters Start a Story without saving, traverses Words, Media, Details, Placement, and Preview, confirms the full-screen Story flow hides the destination bar, and fails if the application issues any non-read API request during that Author journey.
+
+**Excludes** — Creating or saving a Card; importing Media; changing classification, audience, Feed inclusion, Collection placement, publication, or production content; claiming subjective first-time-user acceptance; and replacing representative human review.
+
+**Contracts** — Hosted acceptance remains read-only. Opening an unsaved Story and changing its client-side workflow panel are navigation and presentation checks, not content creation. Phone coverage supplements rather than weakens the desktop administrator, Reader, access-boundary, Collection-preview, and guided-Reader checks.
+
+**Completion evidence** — Playwright discovers the new mobile Reader and Author projects and their dependency setup. The focused mobile Author suite passes 33 tests. The complete runnable Jest gate passes 229 suites and 1,244 tests, with four suites and 29 tests skipped by their declared environment gates. Full lint reports zero errors, production typecheck passes, diff checks pass, and the optimized production build succeeds using the documented theme fallback because this checkout has no Firebase service credentials. Protected PR run `41280639848` passed the iPhone-profile Reader and Author checks in hosted Chromium, the existing desktop and access-boundary checks, `pr-gate`, aggregate `integrity-gate`, and Vercel Preview. The mobile Author probe completed without any non-read application API request; the hosted mutation test remained skipped. No production content or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate
@@ -1539,7 +1555,7 @@ The former stabilization objective and its controlling execution order are compl
 Prioritize individually only after Release Candidate and the relevant comprehension work:
 
 1. **Reader package choice** — Per-reader Journal/Editorial selection and persistence.
-2. **Help** — Product guidance beyond essential contextual copy. `07-Users-Guide.md` now owns the initial support guidance for the author method, with substantive chapters on product purpose, starting small, and Tag design. Remaining Media, tagging, Card, Collection, Reader-review, maintenance, and worked-example chapters are unwritten; in-app delivery remains deferred and requires its own Definition Gate.
+2. **Help** — Product guidance beyond essential contextual copy. `07-Users-Guide.md` now covers the complete initial author method: product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and contrasting phone-first and scanned-archive examples. In-app delivery remains deferred and requires its own Definition Gate.
 3. **Editorial controls** — Deliberate long-form presentation controls where approved.
 4. **Media duplicates** — Evidence recovery and confirmed same-asset reconciliation; likely-match review remains low priority unless archive pain proves otherwise.
 5. **Search and taxonomy extensions** — Include/exclude filtering, useful aggregation, and advanced keyboard/drag behavior.

@@ -119,7 +119,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 ⭕2 **Future**
 
-- **Help** — Deliver product guidance beyond essential contextual copy through an in-app surface. The support User's Guide now establishes the initial author method for product purpose, starting small, and designing Tags; the remaining guide and its in-app delivery are not complete.
+- **Help** — Deliver product guidance beyond essential contextual copy through an in-app surface. The support User's Guide now covers product purpose, starting small, Tag design, Media intake and review, classification standards, Story authoring, Collection structure, Reader review, archive maintenance, and worked phone-first and scanned-archive examples. In-app delivery remains incomplete.
 
 ### Left Navigation
 
