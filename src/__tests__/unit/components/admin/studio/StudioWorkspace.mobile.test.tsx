@@ -183,8 +183,15 @@ jest.mock('@/components/admin/studio/StudioQuestionsPane', () => {
 
 jest.mock('@/components/admin/studio/media/MediaAdminContent', () => ({
   __esModule: true,
-  default: ({ initialReviewMediaId }: { initialReviewMediaId?: string | null }) => (
-    <div data-testid="media-pane" data-review-media-id={initialReviewMediaId ?? undefined} />
+  default: ({ initialReviewMediaId, initialImportBatchId }: {
+    initialReviewMediaId?: string | null;
+    initialImportBatchId?: string | null;
+  }) => (
+    <div
+      data-testid="media-pane"
+      data-review-media-id={initialReviewMediaId ?? undefined}
+      data-import-batch-id={initialImportBatchId ?? undefined}
+    />
   ),
 }));
 
@@ -279,6 +286,15 @@ describe('StudioWorkspace mobile destinations', () => {
 
     expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
     expect(screen.getByTestId('media-pane')).toHaveAttribute('data-review-media-id', 'media-2');
+  });
+
+  it('opens an exact bounded import handoff in the Media destination', () => {
+    mockSearchParams = new URLSearchParams('destination=media&mediaBatch=batch-1');
+
+    render(<StudioWorkspace />);
+
+    expect(screen.getByRole('heading', { name: 'Media' })).toBeInTheDocument();
+    expect(screen.getByTestId('media-pane')).toHaveAttribute('data-import-batch-id', 'batch-1');
   });
 
   it('keeps a dirty Compose surface in place when the leave guard declines', async () => {

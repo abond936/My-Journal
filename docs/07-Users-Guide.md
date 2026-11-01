@@ -347,6 +347,8 @@ Reader Home offers Collections and Feed. Collections provide authored sequence a
 
 An author can move between reading and authoring with the labelled **Reader** or **Author** action in the header. The switch returns to the last safe location used on each side during the current browser session; if there is no prior location, it opens Reader Home or Author Home. Reader-only accounts do not receive the Author action.
 
+Author Home shows truthful progress for recent desktop folder imports. Each row distinguishes newly imported, already-present, and failed files within that exact bounded batch. Choose the row to open the same batch in Media. Device selection and other unbounded intake paths do not appear as batch progress merely because Media records were created.
+
 Review with the intended reader in mind:
 
 - Can the reader tell where to begin?

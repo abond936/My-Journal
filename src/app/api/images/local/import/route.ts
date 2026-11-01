@@ -3,6 +3,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/authOptions';
 import { isAdminSession } from '@/lib/auth/readerAccess';
 import { importFromLocalDrive } from '@/lib/services/images/imageImportService';
+import {
+  failMediaImportOperation,
+  startMediaImportOperation,
+  updateMediaImportOperation,
+} from '@/lib/services/mediaImportOperationService';
 import type { Media } from '@/lib/types/photo';
 import { protectMediaForAuthenticatedSession } from '@/lib/utils/readerMediaDelivery';
 
@@ -72,6 +77,7 @@ export async function POST(request: NextRequest) {
   }
 
   let sourcePathForLog: string | undefined;
+  let activeImportBatchId: string | undefined;
   try {
     const body = await request.json();
     /** Opt-in: only when `true` (omitted/false skips Exif and matches PhotoPicker default). */
@@ -115,6 +121,8 @@ export async function POST(request: NextRequest) {
         typeof body.importBatchId === 'string' && body.importBatchId.trim()
           ? body.importBatchId.trim()
           : `batch-${Date.now()}`;
+      activeImportBatchId = importBatchId;
+      await startMediaImportOperation(importBatchId, batchPaths.length);
 
       const importConcurrency = readEmbeddedMetadata ? 1 : CONCURRENT_LOCAL_IMPORTS;
 
@@ -193,6 +201,13 @@ export async function POST(request: NextRequest) {
             });
           }
         });
+        const skipped = results.filter((result) => result.skipped).length;
+        await updateMediaImportOperation(importBatchId, batchPaths.length, {
+          processed: results.length + errors.length,
+          succeeded: results.length - skipped,
+          skipped,
+          failed: errors.length,
+        });
       }
 
       if (importRouteDebug) {
@@ -205,6 +220,14 @@ export async function POST(request: NextRequest) {
           })
         );
       }
+
+      const skipped = results.filter((result) => result.skipped).length;
+      await updateMediaImportOperation(importBatchId, batchPaths.length, {
+        processed: results.length + errors.length,
+        succeeded: results.length - skipped,
+        skipped,
+        failed: errors.length,
+      }, true);
 
       return NextResponse.json({
         importBatchId,
@@ -254,6 +277,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    if (activeImportBatchId) {
+      await failMediaImportOperation(activeImportBatchId, errorMessage).catch(() => undefined);
+    }
     console.error('[/api/images/local/import] Error importing image:', {
       sourcePath: sourcePathForLog,
       error:

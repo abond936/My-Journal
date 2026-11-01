@@ -87,6 +87,11 @@ export default function StudioWorkspace() {
     return trimmed ? trimmed : null;
   }, [searchParams]);
   const requestedMediaHandoffId = requestedMediaReviewId ?? requestedMediaId;
+  const requestedMediaBatchId = useMemo(() => {
+    const raw = searchParams.get('mediaBatch');
+    const trimmed = raw?.trim();
+    return trimmed ? trimmed : null;
+  }, [searchParams]);
   const requestedInspectionTagId = useMemo(() => {
     const raw = searchParams.get('inspectTag');
     const trimmed = raw?.trim();
@@ -109,7 +114,7 @@ export default function StudioWorkspace() {
     const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
     if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') return 'cards';
     if (requestedCollectionId) return 'collections';
-    if (requestedMediaHandoffId) return 'media';
+    if (requestedMediaHandoffId || requestedMediaBatchId) return 'media';
     return explicitDestination ?? 'cards';
   });
   const tagInspectionSequenceRef = useRef(0);
@@ -147,13 +152,13 @@ export default function StudioWorkspace() {
     ));
   }, [requestedCollectionId, setPaneVisibility]);
   useEffect(() => {
-    if (!requestedMediaHandoffId) return;
+    if (!requestedMediaHandoffId && !requestedMediaBatchId) return;
     setPaneVisibility((current) => (
       current.mediaCollapsed
         ? { ...current, mediaCollapsed: false }
         : current
     ));
-  }, [requestedMediaHandoffId, setPaneVisibility]);
+  }, [requestedMediaBatchId, requestedMediaHandoffId, setPaneVisibility]);
   const collectionsRefreshRef = useRef<(() => void) | null>(null);
   const cardsBankRemoveRef = useRef<((cardId: string) => void) | null>(null);
   const cardsBankDeleteFallbackResolverRef = useRef<((deletedCardId: string) => StudioSelectedPreview | null) | null>(null);
@@ -244,19 +249,19 @@ export default function StudioWorkspace() {
       ? 'cards'
       : requestedCollectionId
         ? 'collections'
-        : requestedMediaHandoffId
+        : requestedMediaHandoffId || requestedMediaBatchId
           ? 'media'
           : explicitDestination ?? readStoredMobileAuthorDestination();
     setMobileDestination(initialDestination);
-  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, searchParams, wideLayout]);
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaBatchId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   useEffect(() => {
     if (wideLayout) return;
     const explicitDestination = parseMobileAuthorDestination(searchParams.get('destination'));
     if ((requestedCardId || newCardRequested) && explicitDestination !== 'prompts') setMobileDestination('cards');
     else if (requestedCollectionId) setMobileDestination('collections');
-    else if (requestedMediaHandoffId) setMobileDestination('media');
-  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaHandoffId, searchParams, wideLayout]);
+    else if (requestedMediaHandoffId || requestedMediaBatchId) setMobileDestination('media');
+  }, [newCardRequested, requestedCardId, requestedCollectionId, requestedMediaBatchId, requestedMediaHandoffId, searchParams, wideLayout]);
 
   const replaceStudioQuery = useCallback((update: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -944,6 +949,7 @@ export default function StudioWorkspace() {
                                 embedded
                                 studioSourceDraggable
                                 initialReviewMediaId={requestedMediaReviewId}
+                                initialImportBatchId={requestedMediaBatchId}
                                 tagInspectionRequest={tagInspectionRequest?.target === 'media'
                                   ? tagInspectionRequest
                                   : null}

@@ -50,6 +50,21 @@ const baseSummary: AuthorDashboardSummary = {
       recentPublished: { docId: 'published-story', title: 'Welcome', updatedAt: 10 },
     },
   },
+  imports: {
+    status: 'ready',
+    data: {
+      items: [{
+        importBatchId: 'batch-1',
+        status: 'completed_with_errors',
+        total: 4,
+        processed: 4,
+        succeeded: 2,
+        skipped: 1,
+        failed: 1,
+        updatedAt: 30,
+      }],
+    },
+  },
 };
 
 describe('AuthorDashboard', () => {
@@ -94,6 +109,10 @@ describe('AuthorDashboard', () => {
     expect(screen.getByRole('link', { name: /Recently published Welcome/ })).toHaveAttribute(
       'href',
       '/admin/studio?card=published-story'
+    );
+    expect(screen.getByRole('link', { name: /Completed with errors.*4 of 4 processed/ })).toHaveAttribute(
+      'href',
+      '/admin/studio?destination=media&mediaBatch=batch-1'
     );
   });
 

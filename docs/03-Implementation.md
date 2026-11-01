@@ -1863,6 +1863,24 @@ The former stabilization objective and its controlling execution order are compl
 
 **Completion evidence** — The focused modal test proves no inferred partition and an exact author-selected request. The administrator-route inventory proves anonymous and Reader rejection. The isolated Firestore emulator test proves selected Card, Media, and Prompt movement, unselected-record, source, and child preservation, durable operation completion, same-target retry, and reopened failed-operation recovery. Failed and running split operations participate in the existing Author Home durable-operation count. The complete runnable Jest gate passes 251 suites and 1,363 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. No production request, Tag, assignment, subject, account, or Storage object changed.
 
+### Fifty-second implementation slice — Truthful bounded import progress
+
+**Definition:** Complete
+
+**Execution:** Complete locally on the non-deployed integration branch
+
+**Outcome** — Show useful import progress and recovery context only where the application owns an exact bounded import population.
+
+**Includes** — One durable operation per desktop local-folder batch; requested, processed, imported, already-present, and failed counts; running, completed, completed-with-errors, and failed states; count updates after each server chunk; inclusion in Author Home's active and failed operation summary; the five most recent batches on Author Home; and an exact batch handoff that replaces unrelated Media filters with that batch.
+
+**Excludes** — Fabricated archive-wide completion; progress for device, single-file, paste, script, or external-library intake that lacks the same authoritative batch operation; a generic Task entity; background queueing; resumable upload transport; production data mutation; merge; and deployment.
+
+**Contracts** — The operation denominator is the exact request received by the existing server batch owner. Already-present files are processed and reported separately from newly imported files. Partial completion remains visible rather than becoming a false success. The operation is supporting evidence over canonical Media records, not a competing Media or progress store. Opening a recent batch uses the existing server-backed `importBatchId` filter and therefore reproduces the population being summarized.
+
+**Verification gate** — Prove batch-operation creation and final counts, skipped-file accounting, absence of invented single-file progress, dashboard aggregate and recent-operation reads, exact Author Home link, mobile destination routing, replacement of unrelated Media filters, independent dashboard degradation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
+
+**Completion evidence** — Five focused route, read-model, Author Home, Studio, and Media suites pass 47 tests. The complete runnable Jest gate passes 251 suites and 1,365 tests, with five suites and 36 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 65-page build pass. The build used the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Media record, import operation, account, or Storage object changed.
+
 ### 1. Release Candidate
 
 **Definition:** Accepted current baseline; broader workflow and product-direction reassessment remains separate

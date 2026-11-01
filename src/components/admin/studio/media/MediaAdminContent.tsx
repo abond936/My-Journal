@@ -58,6 +58,8 @@ export type MediaAdminContentProps = {
   studioSourceDraggable?: boolean;
   /** Opens the existing Tags and Subjects review for one exact Media record. */
   initialReviewMediaId?: string | null;
+  /** Replaces the current Media filters with one exact desktop import batch. */
+  initialImportBatchId?: string | null;
   /** Replaces the current Media filters with one exact Tag population from the Tags destination. */
   tagInspectionRequest?: { tagId: string; requestKey: number } | null;
 };
@@ -212,6 +214,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     embedded = false,
     studioSourceDraggable = false,
     initialReviewMediaId = null,
+    initialImportBatchId = null,
     tagInspectionRequest = null,
   } = props;
   const initialLocalFilterPrefsRef = useRef(readStoredMediaAdminLocalFilterPreferences());
@@ -271,6 +274,7 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
   const libraryFilterContextRef = useRef<MediaFilterContextSnapshot | null>(null);
   const selectedCardFilterCardIdRef = useRef<string | null>(null);
   const appliedTagInspectionRef = useRef<string | null>(null);
+  const appliedImportBatchRef = useRef<string | null>(null);
   const showOnlyAssigned = mediaPopulation === 'this_card';
   const [visibleAssignedCount, setVisibleAssignedCount] = useState(0);
   const [assignedOnlyMedia, setAssignedOnlyMedia] = useState<typeof media>([]);
@@ -329,6 +333,27 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
     },
     [applyFilterContext]
   );
+
+  useEffect(() => {
+    if (!initialImportBatchId || appliedImportBatchRef.current === initialImportBatchId) return;
+    appliedImportBatchRef.current = initialImportBatchId;
+    setMediaPopulation('bank');
+    selectNone();
+    applyFilterContext(
+      {
+        filters: {
+          ...DEFAULT_MEDIA_ADMIN_STORED_FILTERS,
+          subjectDimensions: [],
+          dimensionPresence: {},
+          importBatchId: initialImportBatchId,
+        },
+        dimensionFilters: DEFAULT_ADMIN_DIMENSION_FILTERS,
+        dimensionalQueryOverlay: {},
+        clientSort: 'none',
+      },
+      true
+    );
+  }, [applyFilterContext, initialImportBatchId, selectNone]);
 
   useEffect(() => {
     if (!tagInspectionRequest?.tagId || allTags.length === 0) return;

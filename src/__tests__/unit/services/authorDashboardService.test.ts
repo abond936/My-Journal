@@ -77,6 +77,7 @@ describe('authorDashboardService', () => {
       card_bulk_tag_operations: [0, 3, 4],
       tag_mutation_operations: [0, 5, 6],
       tag_split_operations: [0, 7, 8],
+      media_import_operations: [0, 9, 10],
     };
     const select = jest.fn();
     const collection = jest.fn((name: string) => {
@@ -84,6 +85,29 @@ describe('authorDashboardService', () => {
         return {
           where: jest.fn(() => ({
             get: jest.fn().mockResolvedValue({ docs: [] }),
+          })),
+        };
+      }
+      if (name === 'media_import_operations' && (whereCallByCollection.get(name) ?? 0) >= 2) {
+        return {
+          orderBy: jest.fn(() => ({
+            limit: jest.fn(() => ({
+              get: jest.fn().mockResolvedValue({
+                docs: [{
+                  id: 'batch-doc',
+                  data: () => ({
+                    importBatchId: 'batch-1',
+                    status: 'completed',
+                    total: 3,
+                    processed: 3,
+                    succeeded: 2,
+                    skipped: 1,
+                    failed: 0,
+                    updatedAt: 123,
+                  }),
+                }],
+              }),
+            })),
           })),
         };
       }
@@ -120,13 +144,19 @@ describe('authorDashboardService', () => {
     });
     expect(summary.operations).toEqual({
       status: 'ready',
-      data: { attention: 36, active: 16, failed: 20 },
+      data: { attention: 55, active: 25, failed: 30 },
     });
     expect(summary.collections).toEqual({
       status: 'ready',
       data: { total: 0, items: [] },
     });
     expect(summary.storyWork).toEqual({ status: 'unavailable' });
+    expect(summary.imports).toEqual({
+      status: 'ready',
+      data: {
+        items: [expect.objectContaining({ importBatchId: 'batch-1', processed: 3 })],
+      },
+    });
     expect(select).not.toHaveBeenCalled();
     errorSpy.mockRestore();
   });
@@ -167,6 +197,7 @@ describe('authorDashboardService', () => {
       data: { total: 0, items: [] },
     });
     expect(summary.storyWork).toEqual({ status: 'unavailable' });
+    expect(summary.imports).toEqual({ status: 'unavailable' });
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
     warningSpy.mockRestore();

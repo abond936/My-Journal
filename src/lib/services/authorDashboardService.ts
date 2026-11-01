@@ -16,6 +16,17 @@ export type DashboardStory = {
   updatedAt: number;
 };
 
+export type DashboardImportOperation = {
+  importBatchId: string;
+  status: 'running' | 'completed' | 'completed_with_errors' | 'failed';
+  total: number;
+  processed: number;
+  succeeded: number;
+  skipped: number;
+  failed: number;
+  updatedAt: number;
+};
+
 export type AuthorDashboardSummary = {
   generatedAt: number;
   cards: DashboardSection<{
@@ -41,6 +52,7 @@ export type AuthorDashboardSummary = {
     recentDraft: DashboardStory | null;
     recentPublished: DashboardStory | null;
   }>;
+  imports: DashboardSection<{ items: DashboardImportOperation[] }>;
 };
 
 const DIMENSIONS = ['who', 'what', 'when', 'where'] as const;
@@ -49,6 +61,7 @@ const OPERATION_COLLECTIONS = [
   'card_bulk_tag_operations',
   'tag_mutation_operations',
   'tag_split_operations',
+  'media_import_operations',
 ] as const;
 
 type CountableQuery = {
@@ -272,10 +285,42 @@ async function readRecentStory(
   };
 }
 
+function numericTime(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (value && typeof value === 'object' && 'toMillis' in value && typeof value.toMillis === 'function') {
+    return value.toMillis();
+  }
+  return 0;
+}
+
+async function readRecentImports(firestore: Firestore): Promise<{ items: DashboardImportOperation[] }> {
+  const snapshot = await firestore
+    .collection('media_import_operations')
+    .orderBy('updatedAt', 'desc')
+    .limit(5)
+    .get();
+  const items = snapshot.docs.flatMap((doc) => {
+    const data = doc.data() as Record<string, unknown>;
+    const status = String(data.status);
+    if (!['running', 'completed', 'completed_with_errors', 'failed'].includes(status)) return [];
+    return [{
+      importBatchId: String(data.importBatchId || doc.id),
+      status: status as DashboardImportOperation['status'],
+      total: Number(data.total) || 0,
+      processed: Number(data.processed) || 0,
+      succeeded: Number(data.succeeded) || 0,
+      skipped: Number(data.skipped) || 0,
+      failed: Number(data.failed) || 0,
+      updatedAt: numericTime(data.updatedAt),
+    }];
+  });
+  return { items };
+}
+
 export async function getAuthorDashboardSummary(
   firestore: Firestore = getAdminApp().firestore()
 ): Promise<AuthorDashboardSummary> {
-  const [cards, media, operations, collections, storyWork] = await Promise.all([
+  const [cards, media, operations, collections, storyWork, imports] = await Promise.all([
     section(() => readCardSummary(firestore)),
     section(() => readMediaSummary(firestore)),
     section(() => readOperationSummary(firestore)),
@@ -290,7 +335,8 @@ export async function getAuthorDashboardSummary(
       ]);
       return { recentDraft, recentPublished };
     }),
+    section(() => readRecentImports(firestore)),
   ]);
 
-  return { generatedAt: Date.now(), cards, media, operations, collections, storyWork };
+  return { generatedAt: Date.now(), cards, media, operations, collections, storyWork, imports };
 }

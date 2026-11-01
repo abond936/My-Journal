@@ -216,6 +216,27 @@ describe('MediaAdminContent', () => {
     });
   });
 
+  it('replaces existing filters with the exact import batch requested by Author Home', async () => {
+    const fetchMedia = jest.fn();
+    const selectNone = jest.fn();
+    useMediaMock.mockReturnValue({
+      ...baseMediaContext,
+      fetchMedia,
+      selectNone,
+    });
+
+    render(<MediaAdminContent embedded initialImportBatchId="batch-1" />);
+
+    await waitFor(() => {
+      expect(selectNone).toHaveBeenCalled();
+      expect(fetchMedia).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ importBatchId: 'batch-1', search: '', assignment: 'all' }),
+        {}
+      );
+    });
+  });
+
   it('adds selected device photos to the Media bank and selects the successful imports', async () => {
     const setSelectedMediaIds = jest.fn();
     const registerCreatedMedia = jest.fn();
