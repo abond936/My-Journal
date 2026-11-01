@@ -250,7 +250,7 @@ Only then expand the taxonomy for the next body of material.
 
 Media enters a private author library. Importing an image does not publish it, place it in a Story, or expose the rest of the library to readers.
 
-On a computer, use the Studio Media Library to bring in selected files or a bounded folder. On a phone, Start a Story can select device photos for that Story. The product must retain its own usable copy of Media that becomes part of the archive; Apple Photos or Google Photos may remain the place where an author initially finds it.
+On a computer, use the Studio Media Library to bring in selected files or a bounded folder. On a phone, open the Media destination and choose **Add from device** to select one or more images, or use Start a Story when the photos belong immediately in that Story. Successful device imports are selected in Media so you can classify them or create a Card next. The product retains its own usable copy of Media that becomes part of the private archive; Apple Photos or Google Photos may remain the place where an author initially finds it.
 
 Before a large import, preserve the best source file available and correct trustworthy embedded facts when practical. Scanned images often need an author-supplied date, location, caption, or identity because the scan date is not the historical date. Phone images ordinarily provide stronger date and location evidence, but machine metadata is evidence rather than unquestionable truth.
 
