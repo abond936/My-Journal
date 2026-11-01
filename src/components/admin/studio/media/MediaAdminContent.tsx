@@ -32,7 +32,7 @@ import {
   type AdminDimensionFilterState,
 } from '@/lib/preferences/adminFilters';
 import type { Media } from '@/lib/types/photo';
-import type { Card } from '@/lib/types/card';
+import type { Card, GalleryMediaItem } from '@/lib/types/card';
 import type { TemporalFilter } from '@/lib/types/temporal';
 import {
   collectImportBatchIdsFromMedia,
@@ -73,6 +73,24 @@ type ApiErrorResponse = {
   code?: string;
   details?: string[];
 };
+
+type CardChoiceResponse = {
+  items?: Card[];
+};
+
+export function appendSelectedMediaToGallery(
+  current: GalleryMediaItem[],
+  selected: GalleryMediaItem[]
+): { galleryMedia: GalleryMediaItem[]; addedCount: number } {
+  const existingIds = new Set(current.map((item) => item.mediaId));
+  const additions = selected.filter((item) => item.mediaId && !existingIds.has(item.mediaId));
+  const galleryMedia = [...current, ...additions].map((item, order) => {
+    const stored = { ...item };
+    delete stored.media;
+    return { ...stored, order };
+  });
+  return { galleryMedia, addedCount: additions.length };
+}
 
 function collectAssignedMediaIdsForCard(
   card:
@@ -349,6 +367,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
 
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isSharingSelection, setIsSharingSelection] = useState(false);
+  const [addToCardOpen, setAddToCardOpen] = useState(false);
+  const [cardChoices, setCardChoices] = useState<Card[]>([]);
+  const [cardChoiceSearch, setCardChoiceSearch] = useState('');
+  const [selectedTargetCardId, setSelectedTargetCardId] = useState('');
+  const [cardChoicesLoading, setCardChoicesLoading] = useState(false);
+  const [cardChoicesError, setCardChoicesError] = useState<string | null>(null);
+  const [isAddingToCard, setIsAddingToCard] = useState(false);
   const {
     mediaById,
     isCreatingStack,
@@ -468,6 +493,103 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
       );
     } finally {
       setIsSharingSelection(false);
+    }
+  };
+
+  const loadCardChoices = async (query = '') => {
+    setCardChoicesLoading(true);
+    setCardChoicesError(null);
+    try {
+      const params = new URLSearchParams({
+        status: 'all',
+        limit: '50',
+        hydration: 'cover-only',
+        sortBy: 'created',
+        sortDir: 'desc',
+        searchScope: 'admin-title',
+      });
+      if (query.trim()) params.set('q', query.trim());
+      const response = await fetch(`/api/cards?${params.toString()}`, { cache: 'no-store' });
+      if (!response.ok) {
+        const err = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || `HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as CardChoiceResponse;
+      setCardChoices(payload.items ?? []);
+    } catch (err) {
+      setCardChoices([]);
+      setCardChoicesError(err instanceof Error ? err.message : 'Could not load Cards.');
+    } finally {
+      setCardChoicesLoading(false);
+    }
+  };
+
+  const handleOpenAddToCard = () => {
+    setSelectedTargetCardId(studioShell?.selectedCardId ?? '');
+    setCardChoiceSearch('');
+    setAddToCardOpen(true);
+    void loadCardChoices();
+  };
+
+  const handleAddSelectionToCard = async () => {
+    if (!selectedTargetCardId || selectedMediaIds.length === 0 || isAddingToCard) return;
+    setIsAddingToCard(true);
+    try {
+      const selectedEntries = resolveGalleryEntriesFromSelection(
+        selectedMediaIds,
+        mediaById,
+        stackById
+      ).map(({ mediaId, order, stackId }) => ({
+        mediaId,
+        order,
+        ...(stackId ? { stackId } : {}),
+      }));
+      if (!selectedEntries.length) throw new Error('No valid media selected.');
+
+      const cardResponse = await fetch(
+        `/api/cards/${encodeURIComponent(selectedTargetCardId)}?children=skip`,
+        { cache: 'no-store' }
+      );
+      if (!cardResponse.ok) {
+        const err = (await cardResponse.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || `HTTP ${cardResponse.status}`);
+      }
+      const targetCard = (await cardResponse.json()) as Card;
+      const { galleryMedia, addedCount } = appendSelectedMediaToGallery(
+        targetCard.galleryMedia ?? [],
+        selectedEntries
+      );
+      if (addedCount === 0) {
+        feedback.showSuccess('The selected media are already in this Card.', 'Nothing to add');
+        return;
+      }
+
+      const updateResponse = await fetch(`/api/cards/${encodeURIComponent(selectedTargetCardId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ galleryMedia }),
+      });
+      if (!updateResponse.ok) {
+        const err = (await updateResponse.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(err.message || err.details?.[0] || `HTTP ${updateResponse.status}`);
+      }
+
+      setSelectedMediaIds([]);
+      setAddToCardOpen(false);
+      feedback.showSuccess(
+        `${addedCount} media item${addedCount === 1 ? '' : 's'} added to ${targetCard.title || 'the Card'}.`,
+        'Card updated'
+      );
+      if (studioShell?.selectedCardId === selectedTargetCardId) {
+        void studioShell.loadSelectedCard(selectedTargetCardId, { quiet: true });
+      }
+    } catch (err) {
+      feedback.showError(
+        err instanceof Error ? err.message : 'Failed to add media to the Card.',
+        'Could not update Card'
+      );
+    } finally {
+      setIsAddingToCard(false);
     }
   };
 
@@ -1568,6 +1690,13 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
               </button>
               <button
                 type="button"
+                onClick={handleOpenAddToCard}
+                className={cardAdminStyles.actionButton}
+              >
+                Add to existing card
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleCreateStackFromSelection()}
                 disabled={isCreatingStack || !createStackEligible}
                 className={cardAdminStyles.actionButton}
@@ -1603,6 +1732,80 @@ export default function MediaAdminContent(props: MediaAdminContentProps = {}) {
         ) : null}
       </div>
 
+      <EditModal
+        isOpen={addToCardOpen}
+        onClose={() => setAddToCardOpen(false)}
+        title="Add media to an existing Card"
+        footer={
+          <>
+            <button
+              type="button"
+              className={cardAdminStyles.actionButton}
+              onClick={() => void handleAddSelectionToCard()}
+              disabled={!selectedTargetCardId || isAddingToCard}
+            >
+              {isAddingToCard ? 'Adding…' : 'Add to Gallery'}
+            </button>
+            <button
+              type="button"
+              className={cardAdminStyles.actionButton}
+              onClick={() => setAddToCardOpen(false)}
+              disabled={isAddingToCard}
+            >
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <form
+          className={styles.cardChoiceSearch}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadCardChoices(cardChoiceSearch);
+          }}
+        >
+          <label htmlFor="media-card-choice-search">Find a Card by title</label>
+          <div className={styles.cardChoiceSearchRow}>
+            <input
+              id="media-card-choice-search"
+              value={cardChoiceSearch}
+              onChange={(event) => setCardChoiceSearch(event.target.value)}
+              className={styles.cardChoiceSearchInput}
+            />
+            <button type="submit" className={cardAdminStyles.actionButton} disabled={cardChoicesLoading}>
+              Search
+            </button>
+          </div>
+        </form>
+        {cardChoicesError ? <p role="alert">{cardChoicesError}</p> : null}
+        {cardChoicesLoading ? <p>Loading Cards…</p> : null}
+        {!cardChoicesLoading && !cardChoicesError && cardChoices.length === 0 ? (
+          <p>No Cards found.</p>
+        ) : null}
+        <fieldset className={styles.cardChoiceList}>
+          <legend className={styles.visuallyHidden}>Choose a Card</legend>
+          {cardChoices.map((card) => (
+            <label key={card.docId} className={styles.cardChoiceRow}>
+              <input
+                type="radio"
+                name="target-card"
+                value={card.docId}
+                checked={selectedTargetCardId === card.docId}
+                onChange={() => setSelectedTargetCardId(card.docId)}
+              />
+              <span>
+                <strong>{card.title || 'Untitled'}</strong>
+                <small>{card.type} · {card.status}</small>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {cardChoices.find((card) => card.docId === selectedTargetCardId)?.status === 'published' ? (
+          <p className={styles.cardChoiceWarning}>
+            This Card is published. Adding media updates what its readers can see immediately.
+          </p>
+        ) : null}
+      </EditModal>
       <EditModal
         isOpen={bulkDeleteModalOpen}
         onClose={() => setBulkDeleteModalOpen(false)}
