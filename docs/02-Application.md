@@ -416,18 +416,18 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 
 - **Content** — Title, subtitle, excerpt, body, status, and form-appropriate fields.
 - **Editor** — Rich text with paste, drop, and library media insertion.
-- **Cover** — Cover selection and framing.
-- **Gallery** — Ordered membership, captions, insertion, and reorder.
+- **Cover** — Cover selection, Card-local framing, and Card-local quarter-turn rotation. Adjusting a Cover presentation never rewrites the canonical Media item's default framing.
+- **Gallery** — Ordered membership, captions, insertion, reorder, slot-local framing, and slot-local quarter-turn rotation. Each Gallery presentation may differ without changing the canonical Media item or another Card.
 - **Tags** — The closed Compose section uses the same icon-and-word dimensional-heading typography as the other Studio panes and underlined selected tags and subjects; inheritance state remains inside the assignment modal rather than repeating `Inherited` or `Overridden` labels on the Compose face. The former `Edit tags…` field, separate Gallery-inheritance block, and new-card help copy do not compete with the assignment surface. Its tag-icon action opens `Card Tags`. The modal begins with the dimensional headings, shows the current Gallery tags in matching columns, then stages one `Inherit?` choice per dimension; `Search tags…` follows that source row before the aligned Subjects band and four taxonomy trees. Inherited dimensions lock tag membership to Gallery truth while leaving their assigned tags available for explicit Subject choices. Overridden dimensions dim the Gallery tags as reference and enable ordinary tag and Subject editing. Turning inheritance off keeps the inherited tags as the editable starting selection; turning it back on confirms that manual assignments will be replaced by the current Gallery tags. Cancel discards every staged change, while Apply commits tags, subjects, and inheritance together through one server-authoritative mutation.
 - **Inheritance truth** — Gallery inheritance is evaluated from actual Gallery membership, not every Media reference on the Card. A participating blank or unreviewed item makes the inherited dimension Unreviewed; intentional Unknown and Not applicable resolutions remain reviewed outcomes. Membership changes, tag/date/review changes, and inheritance override changes all reconcile stored tags, subjects, review state, derived fields, counts, and search projections before the operation is complete.
 - **Children** — Attach, remove, and order structural children.
 - **Preview** — Reader-oriented presentation preview.
 - **Alignment** — Compose, Reader, and compact previews share the applicable Reader rendering contracts.
 - **Reader edit** — Focused Reader editing shares overlapping authoring capabilities while retaining a smaller Reader-owned shell.
+- **Field guidance** — The in-app Author Guide distinguishes Type, title, subtitle, excerpt, Story text, Cover, Gallery, captions, dimensional Tags, audience, placement, and copied Prompt guidance without adding competing definitions to Compose.
 
 ⭕1 **Planned**
 
-- **Guidance** — Explain field roles in Help when needed; do not add inline definitions to the authoring forms.
 - **Editorial** — Add deliberate long-form presentation controls where approved.
 - **Context** — Keep historical context assistance distinct from writing rewrites.
 - **Quote** — Define and implement Quote authoring.
@@ -647,6 +647,7 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 - **Prompt hierarchy and ordering** — Topic results present each primary question with its own follow-ups. Authors can move primary questions within their Category and Topic or move follow-ups within their selected primary; each move is committed atomically through the Question authority and does not reorder another Topic or another primary's follow-ups.
 - **Legacy organization review** — `Needs organization` lists every prompt missing a Category or Topic, including legacy records that normalize as unorganized primary prompts. The author uses the ordinary prompt editor to supply the missing placement; saving reconciles the queue immediately. Opening the queue never migrates, deduplicates, or rewrites a prompt.
 - **Card-first copying** — From the Prompts pane, the author can copy one prompt or the currently filtered Topic into an already-open Compose Card. The copied questions become ordinary editable Card headings immediately and have no continuing dependency on the Prompt Library; later prompt edits never rewrite the Card.
+- **Flexible copy scope** — A primary question with follow-ups exposes a separate action that copies the primary followed by its ordered follow-ups. Together with single-prompt and filtered-Topic copying, this lets the author choose a useful amount of guidance without creating another answer record or Card automatically.
 
 📋 **Current contracts**
 
@@ -660,7 +661,6 @@ Legend: `✅ Complete` · `⭕1 Planned` · `⭕2 Future` · `❓ Open` · `📋
 ⭕1 **Planned**
 
 - **Structured Prompt Library completion** — Resolve author-confirmed duplicate consolidation in the legacy question bank and the remaining publication-time prompt-block behavior below. Follow-ups continue to draw out incidents, relationships, sensory detail, consequences, and meaning that a broad question alone may not retrieve.
-- **Flexible scope** — Insert one primary question, its useful follow-ups, or the useful prompts from a whole Topic. Any number of prompts may contribute to one Card, and the author explicitly starts another Card when the material warrants it.
 - **Card-type presentation** — For a Question Card, the selected primary question proposes the title and follow-ups enter the body as guidance. For a Story Card, selected questions enter the body as editable writing prompts. The author may retain, rewrite, or remove copied question text.
 - **Prompt blocks** — Editing-only prompt blocks live inside the Card document rather than in a separate answer store. Before publication, each remaining block is converted to ordinary reader-visible heading or question text, or removed; authored text beneath it remains ordinary Card body content.
 - **Independent Cards** — Inserting a prompt copies its text and any selected classification into the Card's authoring context without a continuing content dependency. Later prompt edits or deletion do not alter existing Cards.

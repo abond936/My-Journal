@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, FilterX, FolderOpen, Link2Off, ListPlus, Plus, Save, Tag, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, FilterX, FolderOpen, Link2Off, ListPlus, ListTree, Plus, Save, Tag, Trash2, X } from 'lucide-react';
 import EditModal from '@/components/admin/studio/cards/EditModal';
 import MacroTagSelector from '@/components/admin/studio/cards/MacroTagSelector';
 import CardDimensionalTagCommandBar from '@/components/admin/common/CardDimensionalTagCommandBar';
@@ -409,6 +409,19 @@ export default function StudioQuestionsPane() {
     }
     feedback.showSuccess(`${topicPrompts.length} Topic prompt${topicPrompts.length === 1 ? '' : 's'} copied into the open Card.`);
   }, [feedback, insertPromptText, questions, selectedCardId, selectedCategory, selectedTopic]);
+
+  const insertPrimaryGroupIntoCard = useCallback((primary: Question) => {
+    if (!selectedCardId) return;
+    const promptGroup = orderPromptLibraryQuestions(questions).filter((question) =>
+      question.docId === primary.docId ||
+      (question.promptKind === 'followup' && question.parentQuestionId === primary.docId)
+    );
+    if (promptGroup.length === 0 || promptGroup.some((question) => !insertPromptText(question.prompt))) {
+      feedback.showError('Keep the Card open in Compose while adding this prompt group.', 'Could not add prompt group');
+      return;
+    }
+    feedback.showSuccess(`${promptGroup.length} related prompt${promptGroup.length === 1 ? '' : 's'} copied into the open Card.`);
+  }, [feedback, insertPromptText, questions, selectedCardId]);
 
   const clearEditSaveTimer = useCallback(() => {
     if (editSaveTimerRef.current !== null) {
@@ -954,6 +967,9 @@ export default function StudioQuestionsPane() {
           const orderSiblings = getPromptOrderSiblings(question, questions);
           const orderIndex = orderSiblings.findIndex(candidate => candidate.docId === question.docId);
           const orderLabel = question.promptKind === 'primary' ? 'primary question' : 'follow-up question';
+          const followupCount = question.promptKind === 'primary'
+            ? questions.filter(candidate => candidate.promptKind === 'followup' && candidate.parentQuestionId === question.docId).length
+            : 0;
           return (
             <article
               key={question.docId}
@@ -1193,6 +1209,18 @@ export default function StudioQuestionsPane() {
                     >
                       <ListPlus size={16} aria-hidden="true" />
                     </button>
+                    {followupCount > 0 ? (
+                      <button
+                        type="button"
+                        className={styles.studioQuestionSmallButton}
+                        disabled={busy || !selectedCardId}
+                        onClick={() => insertPrimaryGroupIntoCard(question)}
+                        aria-label={`Add primary question and ${followupCount} follow-up${followupCount === 1 ? '' : 's'} to open Card`}
+                        title={selectedCardId ? 'Copy this primary question and its follow-ups into the open Card' : 'Open a Card in Compose first'}
+                      >
+                        <ListTree size={16} aria-hidden="true" />
+                      </button>
+                    ) : null}
                     {included ? (
                       <button
                         type="button"

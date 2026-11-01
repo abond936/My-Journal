@@ -69,11 +69,6 @@ export async function updateCardCover(
       if (changed && nextId) transaction.update(firestore.collection(MEDIA_COLLECTION).doc(nextId), {
         referencedByCardIds: FieldValue.arrayUnion(cardId), updatedAt: Date.now(),
       });
-      if (focalProvided && focalPoint && nextId && existingIds.has(nextId)) {
-        transaction.update(firestore.collection(MEDIA_COLLECTION).doc(nextId), {
-          objectPosition: `${focalPoint.x} ${focalPoint.y}`, updatedAt: Date.now(),
-        });
-      }
     });
     const updated = await getCardById(cardId);
     if (!updated) throw new Error(`Failed to fetch updated card with ID ${cardId}`);

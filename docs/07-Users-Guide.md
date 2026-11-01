@@ -258,7 +258,7 @@ After import, confirm that the files appear, inspect processing failures, and us
 
 If a scan or photo is corrected in another editor, open that existing Media item and choose **Replace image** instead of importing the edited file as a new item. Compare the current and proposed images, check their filenames, dimensions, and sizes, and confirm replacement only when they are the same underlying photo or scan. Replacement keeps the Media caption, tags, review decisions, and Story relationships. A different photo belongs as a new Media item; an exact file already owned by another item belongs in duplicate review. If the source is accepted but a rendition or search stage fails, the replacement remains visible as processing work that can be retried.
 
-When an image only needs to face the right way in one Story, rotate the Cover or that Gallery image in Compose instead of replacing the Media item. These quarter-turn controls belong to the Card presentation and do not alter the source image or its appearance in other Stories.
+When an image only needs a different crop or orientation in one Story, frame or rotate the Cover or that Gallery image in Compose instead of changing or replacing the Media item. These presentation controls belong to the Card and do not alter the canonical Media default, source image, or appearance in other Stories.
 
 **Default:** Import one understandable population, confirm that it is usable, then classify or author from it before adding another large population.
 
@@ -286,6 +286,19 @@ In the Tags destination, the **Cards** and **Media** counts beside a Tag open th
 
 Start with the reason another person should open the Story. Select the images, then supply only the words needed to make their meaning understandable.
 
+### Know what each Story field is for
+
+- **Type** chooses the form: Story for narrative, Gallery for an image-led sequence, Question for a prompt-led answer, or Callout for concise emphasized content.
+- **Title** makes the clearest short promise about what the reader will encounter. **Subtitle** adds useful framing that would make the title unwieldy; it is optional.
+- **Excerpt** is a short invitation used where the complete narrative does not fit. It should orient the reader rather than repeat the title or begin a second version of the Story.
+- **Story text** owns the complete authored meaning: memory, sequence, interpretation, and context that the images cannot communicate by themselves.
+- **Cover** is the leading visual presentation. **Gallery** is the ordered supporting image sequence. Framing, rotation, and Gallery order belong to this Card presentation; removing a reference does not delete canonical Media.
+- **Caption** explains what is specifically true or important about one Media item. Put broader interpretation in the Story text rather than repeating it under every image.
+- **Who, What, When, and Where** support intentional retrieval and context. They are not substitutes for the title, caption, or narrative.
+- **Audience** decides which readers may have access. **Feed and Collection placement** decide where authorized readers can encounter the Story. Access and placement are separate decisions.
+
+Question prompts copied from the Prompt Library are temporary authoring guidance once inserted. Keep, rewrite, answer, or remove them as the Story requires; they are not required publication fields and do not remain linked to the library.
+
 The phone Story flow separates the work into five manageable steps:
 
 1. **Words** — Give the Story a useful title and write the narrative it needs.
@@ -296,7 +309,7 @@ The phone Story flow separates the work into five manageable steps:
 
 In **Details**, choose **Suggest existing Tags from this Card** when the words already name a person, event, date label, or place that exists in the Tag library. Review each proposed hierarchy path and its title-or-story-text evidence, then choose **Add** only when it is true. This does not create Tags, choose a subject, or complete dimensional review automatically.
 
-When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
+When a memory needs help getting started, keep the Card open in Compose and use **Prompts**. Prompts may be organized by Category and Topic, with each broad primary question followed by its narrower questions that draw out people, sensory detail, consequences, and meaning. **Needs organization** finds older or incomplete prompts whose Category or Topic still needs your decision. Use the up and down actions to order primaries within the Topic or follow-ups within their primary. Add one useful prompt, one primary with its ordered follow-ups, or the visible Topic to the open Card. The questions are copied as ordinary editable headings: answer, rewrite, retain, or remove them in the Card. Later changes to the Prompt Library do not change the Story.
 
 On a phone, save or discard any unsaved Card changes when the guard asks before moving from **Cards** to **Prompts**. The selected Card remains the authoring target. Adding a prompt or Topic returns to that Card and inserts the guidance into Compose.
 

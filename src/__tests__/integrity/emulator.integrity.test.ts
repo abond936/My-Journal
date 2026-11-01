@@ -114,7 +114,8 @@ type CardServiceModule =
   typeof import('@/lib/services/cards/cardLifecycleService') &
   typeof import('@/lib/services/cards/cardMediaLifecycleService') &
   typeof import('@/lib/services/cards/cardTagMutationService') &
-  typeof import('@/lib/services/cards/cardCoverMutationService');
+  typeof import('@/lib/services/cards/cardCoverMutationService') &
+  typeof import('@/lib/services/cards/cardBroadMutationService');
 let cardServiceModulePromise: Promise<CardServiceModule> | null = null;
 type ImageImportServiceModule = typeof import('@/lib/services/images/imageImportService');
 let imageImportServiceModulePromise: Promise<ImageImportServiceModule> | null = null;
@@ -126,11 +127,13 @@ function getCardService(): Promise<CardServiceModule> {
       import('@/lib/services/cards/cardMediaLifecycleService'),
       import('@/lib/services/cards/cardTagMutationService'),
       import('@/lib/services/cards/cardCoverMutationService'),
-    ]).then(([lifecycle, media, tags, cover]) => ({
+      import('@/lib/services/cards/cardBroadMutationService'),
+    ]).then(([lifecycle, media, tags, cover, broad]) => ({
       ...lifecycle,
       ...media,
       ...tags,
       ...cover,
+      ...broad,
     }) as CardServiceModule);
   }
   return cardServiceModulePromise;
@@ -835,6 +838,48 @@ describeIfEmulator('Integrity gate (Firestore emulator)', () => {
     expect(findBrokenMediaBackReferences(cards, media)).toEqual([]);
     expect(media.find((m) => m.docId === 'media-a')?.referencedByCardIds ?? []).toEqual([]);
     expect(media.find((m) => m.docId === 'media-b')?.referencedByCardIds).toEqual([created.docId]);
+  });
+
+  it('keeps Cover focal framing on the Card across every Card mutation path', async () => {
+    const db = getFirestore(app);
+    const { createCard, updateCard, updateCardCover } = await getCardService();
+
+    await seedWhoAndWhatTags(db);
+    await db.collection('media').doc('media-cover-framing').set({
+      referencedByCardIds: [],
+      objectPosition: '18% 72%',
+      dimensionReview: completeDimensionReview,
+      readiness: { overall: 'ready' },
+    });
+
+    const created = await createCard({
+      title: 'Local cover framing',
+      type: 'story',
+      status: 'draft',
+      coverImageId: 'media-cover-framing',
+      coverImageFocalPoint: { x: 120, y: 240 },
+      tags: ['what-leaf'],
+      dimensionReview: completeDimensionReview,
+      content: '',
+    });
+    expect((await db.collection('media').doc('media-cover-framing').get()).data()?.objectPosition)
+      .toBe('18% 72%');
+
+    await updateCardCover(created.docId, {
+      coverImageFocalPoint: { x: 360, y: 180 },
+    });
+    expect((await db.collection('media').doc('media-cover-framing').get()).data()?.objectPosition)
+      .toBe('18% 72%');
+
+    await updateCard(created.docId, {
+      coverImageFocalPoint: { x: 640, y: 320 },
+    });
+    const [cardSnap, mediaSnap] = await Promise.all([
+      db.collection('cards').doc(created.docId).get(),
+      db.collection('media').doc('media-cover-framing').get(),
+    ]);
+    expect(cardSnap.data()?.coverImageFocalPoint).toEqual({ x: 640, y: 320 });
+    expect(mediaSnap.data()?.objectPosition).toBe('18% 72%');
   });
 });
 

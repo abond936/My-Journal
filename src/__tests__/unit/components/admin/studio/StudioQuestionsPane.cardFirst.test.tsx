@@ -6,6 +6,7 @@ import type { Question } from '@/lib/types/question';
 const routerReplace = jest.fn();
 const requestSelectCard = jest.fn();
 const registerQuestionCardDeleteSync = jest.fn();
+const insertPromptText = jest.fn(() => true);
 const feedback = {
   showError: jest.fn(),
   showSuccess: jest.fn(),
@@ -30,6 +31,24 @@ const questions: Question[] = [
     promptOrder: 0,
     createdAt: 1,
     updatedAt: 1,
+  },
+  {
+    docId: 'unlinked-followup',
+    prompt: 'What could you hear?',
+    prompt_lowercase: 'what could you hear?',
+    tagIds: [],
+    subjectTagIds: [],
+    subjectFilterTags: {},
+    tags: [],
+    usedByCardIds: [],
+    usageCount: 0,
+    category: 'Life',
+    topic: 'Trips',
+    promptKind: 'followup',
+    parentQuestionId: 'unlinked',
+    promptOrder: 0,
+    createdAt: 2,
+    updatedAt: 2,
   },
   {
     docId: 'linked',
@@ -79,7 +98,7 @@ jest.mock('@/components/admin/studio/StudioShellContext', () => ({
     upsertCollectionsCardList: jest.fn(),
     registerQuestionCardDeleteSync,
     selectedLoadState: 'idle',
-    insertPromptText: jest.fn(() => false),
+    insertPromptText,
   }),
 }));
 
@@ -124,7 +143,7 @@ describe('StudioQuestionsPane Card-first entry', () => {
   it('starts ordinary writing in Cards without creating a linked answer record', async () => {
     render(<StudioQuestionsPane />);
 
-    const start = await screen.findByRole('button', { name: 'Start a Card before adding prompts' });
+    const [start] = await screen.findAllByRole('button', { name: 'Start a Card before adding prompts' });
     expect(screen.queryByRole('button', { name: 'Create answer card in Compose' })).not.toBeInTheDocument();
     fireEvent.click(start);
 
@@ -145,5 +164,20 @@ describe('StudioQuestionsPane Card-first entry', () => {
       expect.objectContaining({ docId: 'card-existing', type: 'qa', title: 'Who taught you to cook?' })
     ));
     expect(routerReplace).toHaveBeenCalledWith('/admin/studio?card=card-existing');
+  });
+
+  it('copies one primary question with its ordered follow-ups into the open Card', async () => {
+    selectedCardId = 'card-draft';
+    render(<StudioQuestionsPane />);
+
+    fireEvent.click(await screen.findByRole('button', {
+      name: 'Add primary question and 1 follow-up to open Card',
+    }));
+
+    expect(insertPromptText.mock.calls.map(([prompt]) => prompt)).toEqual([
+      'What happened at the beach?',
+      'What could you hear?',
+    ]);
+    expect(feedback.showSuccess).toHaveBeenCalledWith('2 related prompts copied into the open Card.');
   });
 });

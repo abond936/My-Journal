@@ -1667,7 +1667,7 @@ The former stabilization objective and its controlling execution order are compl
 
 **Reconciliation** — The five-step mobile Story flow already owns Card entry and resumption, complete shared editing, device-image intake, existing-Media composition, exact durable Collection placement and order, Reader preview, audience and destination controls, and publication through the existing integrity owner. Governed Tag merge already owns exact impact review, target validation, assignment and subject consolidation, child movement, projection/count/completeness/search reconciliation, and source deletion. Cover and Gallery crop focus already persists as nondestructive presentation truth, including Gallery-slot override and canonical-Media fallback.
 
-**Remaining gaps** — Canon now leaves mobile voice/narration and assisted contextual classification, explicit author-partitioned Tag split and provenance-aware import consolidation, and per-presentation rotation as Planned. This status correction adds no new runtime behavior and does not represent those gaps as delivered.
+**Remaining gaps at this checkpoint** — This reconciliation left mobile voice/narration and assisted contextual classification, explicit author-partitioned Tag split and provenance-aware import consolidation, and per-presentation rotation as Planned. The later forty-third slice completes per-presentation Cover and Gallery rotation. This status correction itself added no runtime behavior and did not represent the other gaps as delivered.
 
 **Evidence** — The corresponding implementation slices, shared mutation owners, schemas, UI controls, and focused tests remain in the integrated branch. The immediately preceding full gate passes 242 suites and 1,324 tests, with four suites and 32 tests skipped; lint, production typecheck, diff checks, and the optimized 64-page build pass. No production request or data mutation occurred.
 
@@ -1724,6 +1724,54 @@ The former stabilization objective and its controlling execution order are compl
 **Verification gate** — Prove quarter-turn normalization and wrapping, no source-Media field, rotation persistence after dehydrating Gallery slots, explicit author controls, narrow Cover routing, removal cleanup, Reader and Studio rendering, duplication preservation, production typecheck, full lint, diff checks, optimized build, and the complete runnable Jest gate. No production writes are permitted.
 
 **Completion evidence** — Eight focused suites pass 68 cases across rotation math, persistence hygiene, Cover routing, Card form, Cover and Gallery author controls, Reader Gallery, and Reader Card rendering. The complete runnable Jest gate passes 247 suites and 1,336 tests, with four suites and 32 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. No production request, Card, Media, account, or Storage object changed.
+
+### Forty-fourth implementation slice — Card-local Cover framing integrity
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Enforce the Canon's separation between one Card's Cover presentation and the canonical Media item's reusable default framing.
+
+**Includes** — New-Card creation, narrow Cover mutation, and broad Card mutation; persistence of `coverImageFocalPoint` on the Card only; continued Card-to-Media reference maintenance; preservation of canonical Media `objectPosition`; and emulator-backed coverage across all three mutation paths.
+
+**Excludes** — Migration of historical Media focal positions; source-byte changes; Gallery-slot framing changes; automatic crop inference; production data mutation; merge; and deployment.
+
+**Contracts** — Media `objectPosition` remains the reusable archive default and fallback for a Card that has no explicit Cover focal point. Once an author frames a Cover, the Card owns that focal point. A Cover edit must not change another Card, a Gallery presentation, the Media bank, or canonical Media search truth.
+
+**Completion evidence** — The complete declared Firestore emulator gate passes three suites and 26 tests, including one case that creates a Card with explicit Cover framing and then changes it through both narrow and broad Card owners while proving the canonical Media `objectPosition` remains unchanged. The complete runnable Jest gate passes 247 suites and 1,337 tests, with four suites and 33 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass using the checked-in Theme fallback because this checkout has no cloud credentials. The first sandboxed build attempt encountered a generated-directory Windows `EPERM`; the identical build passed outside that filesystem restriction. No production request, Card, Media, account, or Storage object changed.
+
+### Forty-fifth implementation slice — Compose field-role guidance
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Help an author understand where each kind of Story information belongs without adding explanatory clutter to the authoring form.
+
+**Includes** — In-app Author Guide guidance for Type, title, subtitle, excerpt, Story text, Cover, Gallery, captions, Who/What/When/Where, audience, Feed and Collection placement, and copied Prompt guidance.
+
+**Excludes** — Inline Compose definitions; new fields; editorial rewriting; historical-context generation; Quote authoring; production data mutation; merge; and deployment.
+
+**Contracts** — Help explains field purpose without turning optional fields into requirements. Audience controls access; placement controls where authorized readers encounter the Card. Media captions state image-specific truth; Card narrative owns broader meaning. Prompt text becomes ordinary editable Card content after insertion.
+
+**Completion evidence** — The Author Guide is the existing in-app `/admin/help` source and now contains one concise field-role section. The Canon moves only Guidance to Complete; Editorial, Context, and Quote remain Planned. Documentation diff checks and the surrounding integration gate apply. No application data or runtime mutation occurred.
+
+### Forty-sixth implementation slice — Flexible Prompt copy scope
+
+**Definition:** Ready
+
+**Execution:** Complete locally; protected integration review pending
+
+**Outcome** — Let an author choose one prompt, one primary-question group, or a whole Topic as writing guidance for the open Card.
+
+**Includes** — A separate primary-group action when follow-ups exist; deterministic primary-then-follow-up order through the shared Prompt Library ordering contract; the existing desktop insertion owner; the existing mobile queued insertion and return to the selected Card; ordinary editable heading insertion; and focused Card-first compatibility coverage.
+
+**Excludes** — Selecting an arbitrary subset inside the group before insertion; automatic Card creation or boundary decisions; persistent prompt-block nodes; Question-Card title proposal; legacy duplicate consolidation; production data mutation; merge; and deployment.
+
+**Contracts** — Copying a group creates no relationship between the Card and Prompt Library. The author may retain, rewrite, answer, or remove any inserted heading and explicitly starts another Card when useful. Existing linked Question Cards retain their compatibility handoff.
+
+**Completion evidence** — The focused Card-first Prompt suite passes three cases: ordinary Card entry without a linked answer, legacy linked-Question compatibility, and ordered primary-plus-follow-up insertion. The complete runnable Jest gate passes 247 suites and 1,337 tests, with four suites and 33 tests skipped by declared environment gates. Full lint reports zero errors and the same twenty pre-existing warnings; production typecheck, diff checks, and the optimized 64-page build pass. No production request, Question, Card, account, or Storage object changed.
 
 ### 1. Release Candidate
 
